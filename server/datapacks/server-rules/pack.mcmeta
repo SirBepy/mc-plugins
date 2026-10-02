@@ -1,0 +1,10 @@
+{
+    "pack": {
+        "description": [
+            { "text": "Server Rules", "color": "gold" },
+            { "text": "\nOwner defaults, applied once per world", "color": "gray" }
+        ],
+        "min_format": [121, 0],
+        "max_format": [121, 0]
+    }
+}

@@ -21,6 +21,7 @@ names/        Names plugin
 safechests/   SafeChests plugin (add-on for Bolt)
 tag/          Tag plugin
 testserver/   run-paper config: boots a local Paper 26.3 server with every plugin + datapack
+server/       assembles the real friends-server folder (see docs/server.md)
 docs/         this plan
 ```
 

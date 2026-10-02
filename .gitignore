@@ -10,3 +10,8 @@ e2e/node_modules/
 .for_bepy/
 research_notes/
 reports/
+
+# Real server assembly: build output and anything secret, never committed.
+server/build/
+server/secrets.properties
+**/key.pem
