@@ -4,8 +4,8 @@ import {
 
 // NameA picks colors and nicknames; NameB watches chat, the tab list and the floating label.
 const PLATFORM_Y = 200;
-const BX = 16 * Math.floor(Math.random() * 250 - 125);
-const BZ = 16 * Math.floor(Math.random() * 250 - 125);
+const BX = 16 * Math.floor(Math.random() * 40 - 20);
+const BZ = 16 * Math.floor(Math.random() * 40 - 20);
 
 const rcon = await Rcon.connect();
 const bots = {};

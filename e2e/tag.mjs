@@ -6,8 +6,8 @@ import {
 // Three bots stand in a row on a fresh platform. PvPManager gives new players spawn PvP protection,
 // so every tag here also proves tagging works with PvP off.
 const PLATFORM_Y = 200;
-const BX = 16 * Math.floor(Math.random() * 250 - 125);
-const BZ = 16 * Math.floor(Math.random() * 250 - 125);
+const BX = 16 * Math.floor(Math.random() * 40 - 20);
+const BZ = 16 * Math.floor(Math.random() * 40 - 20);
 const HEAD_SLOT = 5;
 const PREFIX = '☣';
 
@@ -114,7 +114,22 @@ try {
 
   await step('head moves to TagB, helmet goes to inventory, TagA head removed', async () => {
     await waitFor(() => headItem(TagB)?.name === 'player_head', 'TagB wears the head');
-    await waitFor(() => TagB.inventory.items().some((i) => i.name === 'iron_helmet'), 'iron helmet in inventory');
+    try {
+      await waitFor(() => TagB.inventory.items().some((i) => i.name === 'iron_helmet'), 'iron helmet in inventory');
+    } catch (error) {
+      // This step has been seen to flake; dump where the helmet actually ended up (ender chest,
+      // dropped on the ground, or never marked at all) so the next failure carries evidence
+      // instead of a bare timeout.
+      const safe = (cmd) => rcon.command(cmd).catch((e) => `(${e.message})`);
+      const dump = [
+        await safe('data get entity TagB Inventory'),
+        await safe('data get entity TagB EnderItems'),
+        await safe('tag who'),
+      ];
+      console.error(`  bot view: head=${headItem(TagB)?.name} items=${TagB.inventory.items().map((i) => i.name)}`);
+      console.error(`Diagnostics for failed helmet relocation:\n  Inventory: ${dump[0]}\n  EnderItems: ${dump[1]}\n  whoIsIt: ${dump[2]}`);
+      throw error;
+    }
     await waitFor(() => headItem(TagA) == null, 'TagA head slot empty');
     assert(!TagA.inventory.items().some((i) => i.name === 'player_head'), 'TagA has no stray head');
   });

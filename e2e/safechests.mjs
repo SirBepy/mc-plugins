@@ -6,8 +6,8 @@ import {
 // Owner places chests on a stone platform high above terrain; Guest tries every access path.
 const PLATFORM_Y = 200;
 // A fresh spot every run, so protections and grants left by an earlier run can't leak in.
-const BX = 16 * Math.floor(Math.random() * 250 - 125);
-const BZ = 16 * Math.floor(Math.random() * 250 - 125);
+const BX = 16 * Math.floor(Math.random() * 40 - 20);
+const BZ = 16 * Math.floor(Math.random() * 40 - 20);
 const rcon = await Rcon.connect();
 let owner;
 let guest;

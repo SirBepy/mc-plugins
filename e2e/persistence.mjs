@@ -35,8 +35,8 @@ async function join(name, x, z) {
 
 try {
   if (phase === 'setup') {
-    const BX = 16 * Math.floor(Math.random() * 250 - 125);
-    const BZ = 16 * Math.floor(Math.random() * 250 - 125);
+    const BX = 16 * Math.floor(Math.random() * 40 - 20);
+    const BZ = 16 * Math.floor(Math.random() * 40 - 20);
     await rcon.command(`minecraft:forceload add ${BX - 16} ${BZ - 16} ${BX + 16} ${BZ + 16}`);
     await rcon.command(`minecraft:fill ${BX - 8} ${PLATFORM_Y} ${BZ - 8} ${BX + 8} ${PLATFORM_Y} ${BZ + 8} minecraft:stone`);
     await rcon.command(`minecraft:fill ${BX - 8} ${PLATFORM_Y + 1} ${BZ - 8} ${BX + 8} ${PLATFORM_Y + 4} ${BZ + 8} minecraft:air`);

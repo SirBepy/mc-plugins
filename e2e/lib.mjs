@@ -187,7 +187,8 @@ export async function waitForLine(bot, pattern, timeoutMs = 10_000, since = 0) {
   throw new Error(`${bot.username} never saw ${pattern}. Last lines:\n  ${bot.lines.slice(-8).join('\n  ')}`);
 }
 
-export async function waitFor(check, description, timeoutMs = 10_000) {
+// 20s default: a busy test server (fresh chunk generation) can stall the main thread for several seconds.
+export async function waitFor(check, description, timeoutMs = 20_000) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     if (await check()) return;
