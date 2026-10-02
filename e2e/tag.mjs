@@ -1,0 +1,200 @@
+import { Vec3 } from 'vec3';
+import {
+  Rcon, assert, createBot, quit, sleep, teleport, waitFor, waitForLine,
+} from './lib.mjs';
+
+// Three bots stand in a row on a fresh platform. PvPManager gives new players spawn PvP protection,
+// so every tag here also proves tagging works with PvP off.
+const PLATFORM_Y = 200;
+const BX = 16 * Math.floor(Math.random() * 250 - 125);
+const BZ = 16 * Math.floor(Math.random() * 250 - 125);
+const HEAD_SLOT = 5;
+const PREFIX = '☣';
+
+const rcon = await Rcon.connect();
+const bots = {};
+
+const results = [];
+async function step(name, fn) {
+  await fn();
+  results.push(name);
+  console.log(`PASS ${name}`);
+}
+
+function headItem(bot) {
+  return bot.inventory.slots[HEAD_SLOT];
+}
+
+async function whoIsIt() {
+  const reply = await rcon.command('tag who');
+  return reply.replace(/§./g, '').trim();
+}
+
+async function stats(name) {
+  const text = (await rcon.command(`tag stats ${name}`)).replace(/§./g, '');
+  const num = (label) => Number(new RegExp(`${label}: ([0-9.]+)`).exec(text)?.[1] ?? 'NaN');
+  return { points: num('points'), tagged: num('tagged'), made: num('tags made'), text };
+}
+
+async function hit(attacker, victim) {
+  const target = attacker.players[victim.username]?.entity;
+  assert(target, `${attacker.username} can see ${victim.username}`);
+  await attacker.lookAt(target.position.offset(0, 1.6, 0), true);
+  attacker.attack(target);
+  await sleep(600);
+}
+
+try {
+  await rcon.command(`minecraft:forceload add ${BX - 16} ${BZ - 16} ${BX + 16} ${BZ + 16}`);
+  await rcon.command(`minecraft:fill ${BX - 8} ${PLATFORM_Y} ${BZ - 8} ${BX + 8} ${PLATFORM_Y} ${BZ + 8} minecraft:stone`);
+  await rcon.command(`minecraft:fill ${BX - 8} ${PLATFORM_Y + 1} ${BZ - 8} ${BX + 8} ${PLATFORM_Y + 4} ${BZ + 8} minecraft:air`);
+  await rcon.command('tag clear');
+
+  for (const [name, dx] of [['TagA', 0], ['TagB', 2], ['TagC', 4]]) {
+    const bot = await createBot(name);
+    bots[name] = bot;
+    await rcon.command(`minecraft:gamemode survival ${name}`);
+    await rcon.command(`minecraft:clear ${name}`);
+    await rcon.command(`minecraft:effect clear ${name}`);
+    await teleport(rcon, bot, BX + dx, PLATFORM_Y + 1, BZ);
+    bot.chat('/tag optin');
+  }
+  const { TagA, TagB, TagC } = bots;
+  await sleep(1000);
+  // Stats persist across runs, so assertions compare against this baseline.
+  const before = { TagB: await stats('TagB') };
+
+  await step('admin makes TagA IT; everyone is told', async () => {
+    const mark = TagB.lines.length;
+    await rcon.command('tag set TagA');
+    await waitForLine(TagB, /made TagA IT/, 5_000, mark);
+    assert((await whoIsIt()).includes('TagA is IT'), 'tag who reports TagA');
+  });
+
+  await step('IT wears the head item', async () => {
+    await waitFor(() => headItem(TagA)?.name === 'player_head', 'TagA head slot is a player head');
+  });
+
+  await step('IT prefix shows in chat and the tab list', async () => {
+    const mark = TagB.lines.length;
+    TagA.chat('hello from IT');
+    const line = await waitForLine(TagB, /hello from IT/, 5_000, mark);
+    assert(line.includes(PREFIX) && line.includes('TagA'), `chat line has prefix: ${line}`);
+    await waitFor(() => TagB.players.TagA?.displayName?.toString().includes(PREFIX), 'tab entry has prefix');
+  });
+
+  await step('floating nametag label exists above IT for other players', async () => {
+    await waitFor(() => Object.values(TagB.entities).some((e) => e.name === 'text_display'
+      && e.position.distanceTo(TagA.entity.position) < 4), 'TagB sees a text_display near TagA', 8_000);
+  });
+
+  await step('crouching hides the floating label', async () => {
+    TagA.setControlState('sneak', true);
+    await waitFor(() => !Object.values(TagB.entities).some((e) => e.name === 'text_display'
+      && e.position.distanceTo(TagA.entity.position) < 4), 'label gone while sneaking', 5_000);
+    TagA.setControlState('sneak', false);
+    await waitFor(() => Object.values(TagB.entities).some((e) => e.name === 'text_display'
+      && e.position.distanceTo(TagA.entity.position) < 4), 'label back after standing', 5_000);
+  });
+
+  await rcon.command('minecraft:give TagB minecraft:iron_helmet 1');
+  await waitFor(() => TagB.inventory.items().some((i) => i.name === 'iron_helmet'), 'TagB got a helmet');
+  await TagB.equip(TagB.inventory.items().find((i) => i.name === 'iron_helmet'), 'head');
+  await waitFor(() => headItem(TagB)?.name === 'iron_helmet', 'TagB wears iron helmet');
+
+  await step('IT tags TagB with PvP protection on, dealing no damage', async () => {
+    const mark = TagC.lines.length;
+    const healthBefore = TagB.health;
+    await hit(TagA, TagB);
+    await waitForLine(TagC, /TagA tagged TagB/, 5_000, mark);
+    assert((await whoIsIt()).includes('TagB is IT'), 'TagB is IT now');
+    await sleep(500);
+    assert(TagB.health === healthBefore, `no damage (${healthBefore} -> ${TagB.health})`);
+  });
+
+  await step('head moves to TagB, helmet goes to inventory, TagA head removed', async () => {
+    await waitFor(() => headItem(TagB)?.name === 'player_head', 'TagB wears the head');
+    await waitFor(() => TagB.inventory.items().some((i) => i.name === 'iron_helmet'), 'iron helmet in inventory');
+    await waitFor(() => headItem(TagA) == null, 'TagA head slot empty');
+    assert(!TagA.inventory.items().some((i) => i.name === 'player_head'), 'TagA has no stray head');
+  });
+
+  await step('prefix moved from TagA to TagB', async () => {
+    await waitFor(() => TagC.players.TagB?.displayName?.toString().includes(PREFIX), 'TagB tab prefix');
+    await waitFor(() => !TagC.players.TagA?.displayName?.toString().includes(PREFIX), 'TagA tab prefix gone');
+  });
+
+  await step('no tagback: TagB cannot tag TagA right away', async () => {
+    const mark = TagB.lines.length;
+    await hit(TagB, TagA);
+    await waitForLine(TagB, /can't tag TagA back/, 5_000, mark);
+    assert((await whoIsIt()).includes('TagB is IT'), 'TagB still IT');
+  });
+
+  await step('the head cannot be taken off', async () => {
+    await TagB.clickWindow(HEAD_SLOT, 0, 0).catch(() => {});
+    await sleep(800);
+    if (TagB.inventory.selectedItem || TagB.currentWindow) TagB.closeWindow(TagB.currentWindow ?? TagB.inventory);
+    await sleep(500);
+    assert(headItem(TagB)?.name === 'player_head', 'head still worn');
+    const heads = TagB.inventory.items().filter((i) => i.name === 'player_head');
+    assert(heads.length === 0, `no head copied into inventory (found ${heads.length})`);
+  });
+
+  await step('but TagB can tag someone else immediately', async () => {
+    const mark = TagA.lines.length;
+    await hit(TagB, TagC);
+    await waitForLine(TagA, /TagB tagged TagC/, 5_000, mark);
+  });
+
+  await step('old helmet goes back on when TagB stops being IT', async () => {
+    await waitFor(() => headItem(TagB)?.name === 'iron_helmet', 'iron helmet re-equipped');
+    assert(!TagB.inventory.items().some((i) => i.name === 'player_head'), 'no head left on TagB');
+  });
+
+  await step('opted-out players cannot be tagged', async () => {
+    const mark = TagA.lines.length;
+    TagA.chat('/tag optout');
+    await waitForLine(TagA, /opted out of Tag/, 5_000, mark);
+    await hit(TagC, TagA);
+    await sleep(500);
+    assert((await whoIsIt()).includes('TagC is IT'), 'TagC still IT');
+    TagA.chat('/tag optin');
+  });
+
+  await step('IT cannot opt out', async () => {
+    const mark = TagC.lines.length;
+    TagC.chat('/tag optout');
+    await waitForLine(TagC, /You are IT and cannot opt out/, 5_000, mark);
+  });
+
+  await step('stats count tags and the +10 tag penalty', async () => {
+    const after = await stats('TagB');
+    assert(after.tagged === before.TagB.tagged + 1, `tagged +1: ${after.text}`);
+    assert(after.made === before.TagB.made + 1, `tags made +1: ${after.text}`);
+    assert(after.points >= before.TagB.points + 10, `points +10: ${after.text}`);
+  });
+
+  await step('sidebar board toggles on', async () => {
+    const mark = TagC.lines.length;
+    TagC.chat('/tag board');
+    await waitForLine(TagC, /sidebar enabled/, 5_000, mark);
+    await waitFor(() => TagC.scoreboard?.sidebar != null, 'sidebar objective shown');
+    TagC.chat('/tag board');
+  });
+
+  await step('IT gains points every minute while others are online', async () => {
+    const points = async () => (await stats('TagC')).points;
+    const start = await points();
+    await waitFor(async () => (await points()) > start, 'TagC points increased', 75_000);
+  });
+
+  console.log(`\nTag e2e: ${results.length} passed`);
+} catch (error) {
+  console.error(`FAIL after ${results.length} passed: ${error.message}`);
+  process.exitCode = 1;
+} finally {
+  await rcon.command(`minecraft:forceload remove ${BX - 16} ${BZ - 16} ${BX + 16} ${BZ + 16}`).catch(() => {});
+  await quit(...Object.values(bots));
+  rcon.close();
+}

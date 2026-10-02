@@ -5,11 +5,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const runDir = path.join(here, '..', 'testserver', 'run');
+const runDir = path.join(here, '..', 'testserver', 'run-e2e');
 
 export const HOST = '127.0.0.1';
 export const PORT = 25565;
-// Mineflayer tops out below the server version; ViaBackwards on the test server bridges the gap.
+// Mineflayer tops out at 26.1; ViaBackwards on the 26.2 e2e server bridges the gap.
 export const BOT_VERSION = '26.1';
 
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -100,14 +100,80 @@ export function createBot(username) {
   return new Promise((resolve, reject) => {
     const bot = mineflayer.createBot({ host: HOST, port: PORT, username, version: BOT_VERSION, auth: 'offline' });
     bot.lines = [];
+    bot.clicks = [];
     bot.on('messagestr', (text) => bot.lines.push(text));
+    bot.on('message', (message) => collectClickCommands(message.json, bot.clicks));
+    // Mineflayer renders player chat from plainMessage; a real client shows the server-rendered
+    // unsignedChatContent (where Names puts the prefix and colored name), so record that too.
+    bot._client.on('player_chat', (packet) => {
+      if (packet.unsignedChatContent) bot.lines.push(nbtText(packet.unsignedChatContent));
+    });
     const timer = setTimeout(() => reject(new Error(`${username} did not spawn`)), 60_000);
-    bot.once('spawn', () => {
+    bot.once('spawn', async () => {
       clearTimeout(timer);
+      // Teleporting a bot before its chunks arrive gets it kicked for an invalid move packet.
+      await bot.waitForChunksToLoad();
+      await sleep(500);
       resolve(bot);
     });
+    bot.on('kicked', (reason) => console.error(`[${username}] kicked: ${JSON.stringify(reason)}`));
     bot.once('kicked', (reason) => reject(new Error(`${username} kicked: ${JSON.stringify(reason)}`)));
     bot.once('error', reject);
+  });
+}
+
+/** Plain text of an NBT-encoded chat component ({type, value} wrappers, "" key for bare strings). */
+export function nbtText(node) {
+  if (node == null) return '';
+  if (typeof node !== 'object') return String(node);
+  if ('type' in node && 'value' in node && Object.keys(node).length === 2) {
+    if (node.type === 'list') return (node.value.value ?? []).map(nbtText).join('');
+    return nbtText(node.value);
+  }
+  if (Array.isArray(node)) return node.map(nbtText).join('');
+  return nbtText(node.text) + nbtText(node['']) + nbtText(node.extra);
+}
+
+// Chat JSON spells click events as clickEvent (older) or click_event (1.21.5+).
+function collectClickCommands(node, out) {
+  if (!node || typeof node !== 'object') return;
+  if (Array.isArray(node)) {
+    node.forEach((child) => collectClickCommands(child, out));
+    return;
+  }
+  const click = node.clickEvent ?? node.click_event;
+  if (click && click.action === 'run_command') {
+    out.push(click.value ?? click.command);
+  }
+  for (const value of Object.values(node)) {
+    if (value && typeof value === 'object') collectClickCommands(value, out);
+  }
+}
+
+export async function waitForClick(bot, pattern, timeoutMs = 10_000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const hit = bot.clicks.find((c) => pattern.test(c));
+    if (hit) return hit;
+    await sleep(100);
+  }
+  throw new Error(`${bot.username} never got a clickable ${pattern}. Clicks: ${JSON.stringify(bot.clicks)}`);
+}
+
+/** Right-clicks a container block; resolves true if a window opened, false if the server refused. */
+export async function tryOpen(bot, block, timeoutMs = 3_000) {
+  return new Promise((resolve) => {
+    const onOpen = (window) => {
+      clearTimeout(timer);
+      bot.closeWindow(window);
+      resolve(true);
+    };
+    const timer = setTimeout(() => {
+      bot.removeListener('windowOpen', onOpen);
+      resolve(false);
+    }, timeoutMs);
+    bot.once('windowOpen', onOpen);
+    bot.activateBlock(block).catch(() => {});
   });
 }
 
@@ -132,6 +198,15 @@ export async function waitFor(check, description, timeoutMs = 10_000) {
 
 export function assert(condition, message) {
   if (!condition) throw new Error(`Assertion failed: ${message}`);
+}
+
+/** Vanilla /tp (EssentialsX shadows the plain name), then waits for the destination chunks. */
+export async function teleport(rcon, bot, x, y, z) {
+  await rcon.command(`minecraft:tp ${bot.username} ${x} ${y} ${z}`);
+  await waitFor(() => bot.entity.position.distanceTo({ x: x + 0.5, y, z: z + 0.5 }) < 2
+    || bot.entity.position.distanceTo({ x, y, z }) < 2, `${bot.username} arrived at ${x} ${y} ${z}`);
+  await bot.waitForChunksToLoad();
+  await sleep(500);
 }
 
 export async function quit(...bots) {

@@ -32,56 +32,78 @@ val datapacks = listOf(
     "https://cdn.modrinth.com/data/wXiGiyGX/versions/sKKMLxcI/Amplified_Nether_v1.3.0%2B26.3.zip",
 )
 
-val runDir = layout.projectDirectory.dir("run")
-
-val prepareServer = tasks.register("prepareServer") {
-    description = "Downloads datapacks into the test world and writes first-run server settings."
-    val dir = runDir.asFile
-    outputs.upToDateWhen { false }
-    doLast {
-        val packDir = dir.resolve("world/datapacks").apply { mkdirs() }
-        datapacks.forEach { url ->
-            val name = java.net.URLDecoder.decode(url.substringAfterLast('/'), Charsets.UTF_8)
-            val target = packDir.resolve(name)
-            if (!target.exists()) {
-                logger.lifecycle("Downloading datapack $name")
-                URI(url).toURL().openStream().use { input -> target.outputStream().use { input.copyTo(it) } }
+// run/ is the real-feel server (Paper 26.3 + worldgen datapacks). run-e2e/ is for Mineflayer bots:
+// as of 2026-10-02 ViaBackwards mangles older clients' movement packets on a 26.3 server
+// ("Invalid move player packet"), and Mineflayer only speaks up to 26.1, so bots get a 26.2 server.
+fun registerPrepare(name: String, dir: java.io.File, withDatapacks: Boolean, motd: String) =
+    tasks.register(name) {
+        description = "Writes first-run server settings" + if (withDatapacks) " and downloads worldgen datapacks." else "."
+        outputs.upToDateWhen { false }
+        doLast {
+            if (withDatapacks) {
+                val packDir = dir.resolve("world/datapacks").apply { mkdirs() }
+                datapacks.forEach { url ->
+                    val file = java.net.URLDecoder.decode(url.substringAfterLast('/'), Charsets.UTF_8)
+                    val target = packDir.resolve(file)
+                    if (!target.exists()) {
+                        logger.lifecycle("Downloading datapack $file")
+                        URI(url).toURL().openStream().use { input -> target.outputStream().use { input.copyTo(it) } }
+                    }
+                }
+            }
+            // Offline mode lets the e2e bots join and RCON lets them run admin commands; this is a
+            // local-only test server, so the RCON password is random per checkout and never committed.
+            val props = dir.resolve("server.properties")
+            if (!props.exists()) {
+                dir.mkdirs()
+                val rconPassword = java.util.UUID.randomUUID().toString()
+                props.writeText(
+                    """
+                    online-mode=false
+                    white-list=false
+                    motd=$motd
+                    spawn-protection=0
+                    view-distance=8
+                    simulation-distance=6
+                    enable-command-block=true
+                    enable-rcon=true
+                    rcon.port=25575
+                    rcon.password=$rconPassword
+                    server-ip=127.0.0.1
+                    """.trimIndent() + "\n"
+                )
             }
         }
-        // Offline mode lets the e2e bots join and RCON lets them run admin commands; this is a
-        // local-only test server, so the RCON password is random per checkout and never committed.
-        val props = dir.resolve("server.properties")
-        if (!props.exists()) {
-            val rconPassword = java.util.UUID.randomUUID().toString()
-            props.writeText(
-                """
-                online-mode=false
-                white-list=false
-                motd=mc-plugins test server
-                spawn-protection=0
-                view-distance=8
-                simulation-distance=6
-                enable-command-block=true
-                enable-rcon=true
-                rcon.port=25575
-                rcon.password=$rconPassword
-                server-ip=127.0.0.1
-                """.trimIndent() + "\n"
-            )
-        }
     }
-}
 
-tasks.named<RunServer>("runServer") {
-    minecraftVersion("26.3")
-    runDirectory(runDir.asFile)
-    // -PthirdPartyOnly boots the server without our plugins, e.g. while one of them doesn't compile.
+fun RunServer.configureCommon() {
+    // -PthirdPartyOnly boots without our plugins; -Ponly=names,tag boots with only those,
+    // e.g. while another of ours doesn't compile yet.
+    val selected = (findProperty("only") as String?)?.split(',')?.map { ":${it.trim()}" }
     if (!project.hasProperty("thirdPartyOnly")) {
-        ourPlugins.forEach { pluginJars(project(it).tasks.named("shadowJar")) }
+        (selected ?: ourPlugins).forEach { pluginJars(project(it).tasks.named("shadowJar")) }
     }
     downloadPlugins {
         thirdPartyPlugins.forEach { url(it) }
     }
     jvmArgs("-Xms2G", "-Xmx4G", "-Dcom.mojang.eula.agree=true")
+}
+
+val runDir = layout.projectDirectory.dir("run").asFile
+val e2eDir = layout.projectDirectory.dir("run-e2e").asFile
+val prepareServer = registerPrepare("prepareServer", runDir, withDatapacks = true, motd = "mc-plugins test server")
+val prepareE2eServer = registerPrepare("prepareE2eServer", e2eDir, withDatapacks = false, motd = "mc-plugins e2e server")
+
+tasks.named<RunServer>("runServer") {
+    minecraftVersion("26.3")
+    runDirectory(runDir)
+    configureCommon()
     dependsOn(prepareServer)
+}
+
+tasks.register<RunServer>("runE2eServer") {
+    minecraftVersion("26.2")
+    runDirectory(e2eDir)
+    configureCommon()
+    dependsOn(prepareE2eServer)
 }

@@ -5,6 +5,7 @@ build/
 *.iml
 out/
 testserver/run/
+testserver/run-e2e/
 e2e/node_modules/
 .for_bepy/
 research_notes/
