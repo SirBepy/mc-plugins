@@ -86,10 +86,13 @@ public final class HeadService {
         }
     }
 
-    /** Re-applies the head if something (e.g. {@code /clear}) removed it. */
+    /**
+     * Re-applies the head if something (e.g. {@code /clear}) removed it. Goes through {@link #grant} so a
+     * helmet the player put on in the meantime is moved aside, not overwritten and lost.
+     */
     public void ensureWorn(Player player, HeadConfig config) {
         if (!isTagHead(player.getInventory().getHelmet())) {
-            player.getInventory().setHelmet(buildHead(config));
+            grant(player, config);
         }
     }
 
