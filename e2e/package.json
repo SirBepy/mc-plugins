@@ -1,0 +1,12 @@
+{
+  "name": "mc-plugins-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Mineflayer bot scenarios against the local test server (testserver/run, offline mode).",
+  "scripts": {
+    "test": "node run-all.mjs"
+  },
+  "dependencies": {
+    "mineflayer": "4.39.0"
+  }
+}

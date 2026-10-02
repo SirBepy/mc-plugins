@@ -48,17 +48,24 @@ val prepareServer = tasks.register("prepareServer") {
                 URI(url).toURL().openStream().use { input -> target.outputStream().use { input.copyTo(it) } }
             }
         }
-        // Offline mode lets the e2e bots join; this is a local test server only.
+        // Offline mode lets the e2e bots join and RCON lets them run admin commands; this is a
+        // local-only test server, so the RCON password is random per checkout and never committed.
         val props = dir.resolve("server.properties")
         if (!props.exists()) {
+            val rconPassword = java.util.UUID.randomUUID().toString()
             props.writeText(
                 """
                 online-mode=false
+                white-list=false
                 motd=mc-plugins test server
                 spawn-protection=0
                 view-distance=8
                 simulation-distance=6
                 enable-command-block=true
+                enable-rcon=true
+                rcon.port=25575
+                rcon.password=$rconPassword
+                server-ip=127.0.0.1
                 """.trimIndent() + "\n"
             )
         }
@@ -68,7 +75,10 @@ val prepareServer = tasks.register("prepareServer") {
 tasks.named<RunServer>("runServer") {
     minecraftVersion("26.3")
     runDirectory(runDir.asFile)
-    ourPlugins.forEach { pluginJars(project(it).tasks.named("shadowJar")) }
+    // -PthirdPartyOnly boots the server without our plugins, e.g. while one of them doesn't compile.
+    if (!project.hasProperty("thirdPartyOnly")) {
+        ourPlugins.forEach { pluginJars(project(it).tasks.named("shadowJar")) }
+    }
     downloadPlugins {
         thirdPartyPlugins.forEach { url(it) }
     }
