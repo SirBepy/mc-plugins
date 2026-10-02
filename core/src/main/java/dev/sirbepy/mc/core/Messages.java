@@ -37,11 +37,27 @@ public final class Messages {
 
     /** Sends nothing when the template is blank, so the owner can silence a message by emptying it. */
     public void send(Audience audience, String key, TagResolver... resolvers) {
+        send(audience, key, Map.of(), resolvers);
+    }
+
+    /**
+     * {@code literals} are spliced into the template text before parsing, because MiniMessage does not
+     * resolve placeholders inside tag arguments such as {@code <click:run_command:'/cmd <id>'>}. Only use
+     * it for values that cannot contain MiniMessage syntax (ids, numbers).
+     */
+    public void send(Audience audience, String key, Map<String, String> literals, TagResolver... resolvers) {
         String template = templates.get(key);
-        if (template != null && template.isBlank()) {
+        if (template == null) {
+            audience.sendMessage(render(key, resolvers));
             return;
         }
-        audience.sendMessage(render(key, resolvers));
+        if (template.isBlank()) {
+            return;
+        }
+        for (Map.Entry<String, String> literal : literals.entrySet()) {
+            template = template.replace("<" + literal.getKey() + ">", literal.getValue());
+        }
+        audience.sendMessage(MINI.deserialize(template, resolvers));
     }
 
     public static MiniMessage mini() {

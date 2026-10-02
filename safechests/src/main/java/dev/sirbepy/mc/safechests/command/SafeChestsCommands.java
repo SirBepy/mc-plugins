@@ -26,6 +26,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.popcraft.bolt.protection.Protection;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -110,9 +111,8 @@ public final class SafeChestsCommands {
         AccessRequest request = requests.create(requester.getUniqueId(), ownerId,
                 block.getWorld().getName(), block.getX(), block.getY(), block.getZ(), cfg.requestExpiry());
         cfg.messages().send(requester, "request-sent", Placeholder.unparsed("owner", ownerName));
-        cfg.messages().send(owner, "request-prompt",
+        cfg.messages().send(owner, "request-prompt", Map.of("id", request.id()),
                 Placeholder.unparsed("requester", requester.getName()),
-                Placeholder.unparsed("id", request.id()),
                 Placeholder.unparsed("x", String.valueOf(block.getX())),
                 Placeholder.unparsed("y", String.valueOf(block.getY())),
                 Placeholder.unparsed("z", String.valueOf(block.getZ())));
@@ -214,9 +214,16 @@ public final class SafeChestsCommands {
             duration = parsed.get();
         }
         WhitelistGrant grant = grants.grantWhitelist(owner.getUniqueId(), target.get().getUniqueId(), duration);
+        String durationText = grant.isPermanent() ? " permanently" : " for " + Durations.format(duration);
         cfg.messages().send(owner, "whitelist-added",
                 Placeholder.unparsed("player", target.get().getName() != null ? target.get().getName() : name),
-                Placeholder.unparsed("duration", grant.isPermanent() ? " permanently" : " for " + Durations.format(duration)));
+                Placeholder.unparsed("duration", durationText));
+        Player grantee = target.get().getPlayer();
+        if (grantee != null) {
+            cfg.messages().send(grantee, "whitelist-granted",
+                    Placeholder.unparsed("owner", owner.getName()),
+                    Placeholder.unparsed("duration", durationText));
+        }
         return Command.SINGLE_SUCCESS;
     }
 
