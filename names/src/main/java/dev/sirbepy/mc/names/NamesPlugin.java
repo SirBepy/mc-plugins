@@ -49,7 +49,7 @@ public final class NamesPlugin extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(new ChatListener(config, nameService), this);
         getServer().getPluginManager().registerEvents(new JoinQuitListener(teamManager, labels, changeService), this);
-        getServer().getPluginManager().registerEvents(new LabelTrackingListener(labels), this);
+        getServer().getPluginManager().registerEvents(new LabelTrackingListener(labels, this), this);
         getServer().getPluginManager().registerEvents(new ColorGuiListener(config, changeService), this);
         getServer().getPluginManager().registerEvents(anvilController, this);
 

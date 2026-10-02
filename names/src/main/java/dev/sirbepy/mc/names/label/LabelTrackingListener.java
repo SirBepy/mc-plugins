@@ -10,15 +10,30 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffectType;
 
-/** Spawns/destroys/refreshes the floating label on every event that can change who sees it. */
+/**
+ * Spawns/destroys/refreshes the floating label on every event that can change who sees it. State-change
+ * events fire before the change applies (isSneaking() still reports the old value inside
+ * PlayerToggleSneakEvent), so those refreshes run on the next tick.
+ */
 public final class LabelTrackingListener implements Listener {
 
     private final FloatingLabelManager labels;
+    private final Plugin plugin;
 
-    public LabelTrackingListener(FloatingLabelManager labels) {
+    public LabelTrackingListener(FloatingLabelManager labels, Plugin plugin) {
         this.labels = labels;
+        this.plugin = plugin;
+    }
+
+    private void refreshNextTick(Player player) {
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            if (player.isOnline()) {
+                labels.refresh(player);
+            }
+        });
     }
 
     @EventHandler
@@ -35,26 +50,26 @@ public final class LabelTrackingListener implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onSneakToggle(PlayerToggleSneakEvent event) {
-        labels.refresh(event.getPlayer());
+        refreshNextTick(event.getPlayer());
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onGameModeChange(PlayerGameModeChangeEvent event) {
-        labels.refresh(event.getPlayer());
+        refreshNextTick(event.getPlayer());
     }
 
     @EventHandler
     public void onPotionEffect(EntityPotionEffectEvent event) {
         if (event.getEntity() instanceof Player player && event.getModifiedType() == PotionEffectType.INVISIBILITY) {
-            labels.refresh(player);
+            refreshNextTick(player);
         }
     }
 
     @EventHandler
     public void onRespawn(PlayerRespawnEvent event) {
-        labels.refresh(event.getPlayer());
+        refreshNextTick(event.getPlayer());
     }
 
     @EventHandler
