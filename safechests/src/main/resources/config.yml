@@ -1,0 +1,44 @@
+# SafeChests: request/grant add-on for Bolt chest protection.
+
+alerts:
+  # When true, the owner is told every time someone is denied opening one of their chests,
+  # even if the requester never sends a request. Off by default so it is the owner's opt-in choice.
+  notify-owner-on-attempt: false
+
+grants:
+  # Duration granted by the owner's [5 min] button.
+  five-minute-duration: 5m
+  # How long an owner has to respond before a request expires.
+  request-expiry: 2m
+  # Minimum time between "This chest belongs to..." messages for the same denied player,
+  # so spam-clicking a locked chest cannot spam their chat.
+  debounce: 3s
+
+# The Bolt access type granted to a requester. Must exist in Bolt's own config.yml access types
+# (Bolt ships "normal" by default, which includes open/deposit/withdraw/interact).
+access-type: normal
+
+messages:
+  player-only: "<red>Only players can use this command."
+  denied: "<red>This chest belongs to <owner>.</red> <hover:show_text:'<yellow>Click to request access</yellow>'><click:run_command:'/safe-chests-one-time'><green>[Request access]</green></click></hover>"
+  owner-alert-attempt: "<yellow><requester> tried to open your chest at <x>, <y>, <z>."
+  no-target-chest: "<red>Look at a protected chest you were denied, then try again."
+  self-owned: "<red>That chest is already yours."
+  owner-offline: "<red><owner> is offline, the request was not sent."
+  request-sent: "<green>Request sent to <owner>."
+  request-prompt: "<yellow><requester> wants to open your chest at <x>, <y>, <z>:</yellow> <hover:show_text:'<green>One open, then revoked</green>'><click:run_command:'/safe-chests-respond <id> allow-once'><green>[Allow once]</green></click></hover> <hover:show_text:'<green>Access to all your chests for 5 minutes</green>'><click:run_command:'/safe-chests-respond <id> five-min'><green>[5 min]</green></click></hover> <hover:show_text:'<green>Permanent access to all your chests</green>'><click:run_command:'/safe-chests-respond <id> always'><green>[Always]</green></click></hover> <hover:show_text:'<red>Deny the request</red>'><click:run_command:'/safe-chests-respond <id> deny'><red>[Deny]</red></click></hover>"
+  request-expired: "<gray>Your request to <owner> expired."
+  request-not-found: "<red>That request no longer exists or already expired."
+  request-not-yours: "<red>That is not your request to answer."
+  request-denied-by-owner: "<red><owner> denied your request."
+  one-time-granted: "<green>You may open <owner>'s chest once."
+  whitelist-granted: "<green>You can now open all of <owner>'s chests<duration>."
+  whitelist-added: "<green><player> can now open all your chests<duration>."
+  whitelist-removed: "<green><player> can no longer open your chests."
+  whitelist-not-found: "<red><player> was not whitelisted to your chests."
+  whitelist-list-header: "<gray>Players whitelisted to your chests:"
+  whitelist-list-entry: "<gray> - <player> (<expiry>)"
+  whitelist-list-empty: "<gray>You have not whitelisted anyone."
+  invalid-duration: "<red>Invalid duration, try something like 300, 5m, or 1h."
+  player-not-found: "<red>Unknown player <player>, they must have played on this server before."
+  reload-success: "<green>SafeChests config reloaded."

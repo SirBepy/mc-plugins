@@ -1,0 +1,14 @@
+name: SafeChests
+version: ${version}
+main: dev.sirbepy.mc.safechests.SafeChestsPlugin
+api-version: "26.2"
+depend: [Bolt]
+author: sirbepy
+
+permissions:
+  safechests.use:
+    description: Request access to chests, whitelist players to your own chests, and respond to requests.
+    default: true
+  safechests.admin:
+    description: Reload SafeChests config.
+    default: op
