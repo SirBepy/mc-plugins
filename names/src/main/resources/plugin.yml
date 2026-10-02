@@ -1,0 +1,22 @@
+name: Names
+version: ${version}
+main: dev.sirbepy.mc.names.NamesPlugin
+api-version: "26.2"
+depend: [packetevents]
+
+permissions:
+  names.color:
+    description: Lets a player open /color and change their name color.
+    default: true
+  names.color.gradient:
+    description: Lets a player pick a gradient color in /color.
+    default: true
+  names.nick:
+    description: Lets a player open /nick and set their own nickname.
+    default: op
+  names.nick.others:
+    description: Lets a player set or reset another player's nickname.
+    default: op
+  names.admin:
+    description: Lets a player run /names reload.
+    default: op
