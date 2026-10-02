@@ -65,7 +65,9 @@ chunks:
   max-auto-save-chunks-per-tick: 24
   min-chunk-unload-count: 50
   min-chunk-unload-fraction: 0.05
-  prevent-moving-into-unloaded-chunks: false
+  # true: stops entities (minecarts, boats, projectiles) riding momentum into a chunk the
+  # server hasn't loaded, a cheap crash/dupe guard with no effect on farm output.
+  prevent-moving-into-unloaded-chunks: true
 collisions:
   allow-player-cramming-damage: false
   allow-vehicle-collisions: true
@@ -297,7 +299,9 @@ misc:
   disable-sprint-interruption-on-attack: false
   legacy-ender-pearl-behavior: false
   max-leash-distance: default
-  redstone-implementation: VANILLA
+  # Alternate Current: a faster, vanilla-equivalent redstone engine (not a rules change),
+  # cheaper on CPU for a friends server with lots of farms running at once.
+  redstone-implementation: ALTERNATE_CURRENT
   show-sign-click-command-failure-msgs-to-player: false
   update-pathfinding-on-block-update: true
 scoreboards:

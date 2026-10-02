@@ -1,0 +1,14 @@
+name: mod
+# Node schema verified against LuckPerms' own fixtures (standalone/src/test/resources/example/yaml,
+# tag v5.5): a plain string is shorthand for {value: true, no context/expiry}; a group parent is the
+# node "group.<name>"; a weight is the node "weight.<N>" (see common/.../node/types/Weight.java).
+permissions:
+- group.default
+- weight.50
+- minecraft.command.kick
+- minecraft.command.whitelist
+- minecraft.command.teleport
+- minecraft.command.tp
+- essentials.tempban
+- essentials.tempban.offline
+- tag.admin

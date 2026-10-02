@@ -1,0 +1,52 @@
+# Geyser-Spigot config, reconstructed from org.geysermc.geyser.configuration.GeyserConfig.java
+# (pinned build 2.11.3 / 1247, see buildSrc/src/main/kotlin/ServerArtifacts.kt) rather than copied
+# from a real generated file: Geyser currently fails to enable on Paper 26.3 build 143 beta
+# ("Couldn't find asBukkitCopy or asCraftMirror method on CraftItemStack", a shaded cloud command
+# library incompatibility with Paper 26.3's CraftItemStack changes, tracked upstream in
+# GeyserMC/Geyser#6716/#6730, fix pending in GeyserMC/Geyser#6712, still open and unmerged as of
+# 2026-10-02). Once GeyserMC ships a build that enables here, delete this file, let Geyser generate
+# its own on first successful boot, diff against this one, and re-commit.
+#
+# Values below are Geyser's own documented defaults except auth-type (floodgate, so Bedrock
+# players authenticate through Floodgate instead of a separate Microsoft/offline login) and the
+# bedrock listener port (19132, Geyser's default, kept explicit here for clarity).
+bedrock:
+  address: 0.0.0.0
+  port: 19132
+  webrtc-port: 0
+  clone-remote-port: false
+  enable-proxy-protocol: false
+  proxy-protocol-whitelisted-ips: []
+java:
+  address: 127.0.0.1
+  port: 25565
+  auth-type: floodgate
+  forward-hostname: false
+motd:
+  primary-motd: Geyser
+  secondary-motd: Another Geyser server.
+  passthrough-motd: true
+  max-players: 100
+  passthrough-player-counts: true
+  integrated-ping-passthrough: true
+  ping-passthrough-interval: 3
+gameplay:
+  server-name: Geyser
+  cooldown-type: crosshair
+  command-suggestions: true
+  show-coordinates: true
+  disable-bedrock-scaffolding: false
+  nether-roof-workaround: false
+  emotes-enabled: true
+  block-legacy-codes: true
+  unusable-space-block: minecraft:barrier
+default-locale: system
+log-player-ip-addresses: true
+saved-user-logins: []
+pending-authentication-timeout: 120
+notify-on-new-bedrock-update: true
+# The advanced/NetherNet-signaling block (mtu, caching, direct-io, etc.) is left out entirely:
+# its exact default values were not verified against a real generated file (see header note),
+# so Geyser will fill it in with its own defaults on first successful boot instead of us guessing.
+debug-mode: false
+config-version: 8

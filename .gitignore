@@ -11,7 +11,9 @@ e2e/node_modules/
 research_notes/
 reports/
 
-# Real server assembly: build output and anything secret, never committed.
-server/build/
+# Real server assembly: assembled folders (outside build/ on purpose, so `gradlew clean` can't
+# wipe a locally booted world or Floodgate's key.pem) and anything secret, never committed.
+server/dist/
+server/local/
 server/secrets.properties
 **/key.pem

@@ -108,16 +108,23 @@ fun writeStartScripts(distDir: File) {
     }
 }
 
-// No-op for now: DiscordSRV's config.yml isn't committed yet (docs/plan.md "Later" list), so there
-// is nowhere to put the token. This hook exists so wiring it up later touches one function, not the
-// whole assemble task.
+// Writes secrets.properties values into the ASSEMBLED copy only (distDir), never into
+// server/config/ (the committed, owner-editable source), so a real bot token never lands in git.
 fun injectSecrets(distDir: File) {
     val secretsFile = layout.projectDirectory.file("secrets.properties").asFile
     if (!secretsFile.exists()) return
     val props = java.util.Properties().apply { secretsFile.inputStream().use { load(it) } }
-    @Suppress("UNUSED_VARIABLE")
     val discordToken = props.getProperty("discordsrv.token") ?: return
-    // TODO(part 2): write discordToken into plugins/DiscordSRV/config.yml once that file is committed.
+    val configFile = distDir.resolve("plugins/DiscordSRV/config.yml")
+    if (!configFile.exists()) return
+    val lines = configFile.readLines().toMutableList()
+    // Overwrite unconditionally regardless of the line's current value (committed source ships an
+    // empty token so the secret scanner never flags a placeholder that looks real, e.g. "BOTTOKEN").
+    val idx = lines.indexOfFirst { it.startsWith("BotToken:") }
+    if (idx >= 0) {
+        lines[idx] = "BotToken: \"$discordToken\""
+        configFile.writeText(lines.joinToString("\n") + "\n")
+    }
 }
 
 // Local-smoke-test-only overrides, applied after the real server.properties is copied in. Never
@@ -147,14 +154,16 @@ fun applyLocalOverrides(propsFile: File, previousRconPassword: String?) {
 fun registerAssemble(name: String, distDirPath: String, local: Boolean) = tasks.register(name) {
     group = "server"
     description = if (local) {
-        "Assembles the real server folder into server/build/local with local-only overrides, for smoke testing."
+        "Assembles the real server folder into server/local with local-only overrides, for smoke testing."
     } else {
-        "Assembles the real friends-server folder into server/build/dist."
+        "Assembles the real friends-server folder into server/dist."
     }
     outputs.upToDateWhen { false }
     dependsOn(ourPluginProjects.map { project(it).tasks.named("shadowJar") })
     doLast {
-        val distDir = layout.buildDirectory.dir(distDirPath).get().asFile
+        // Lives under the project dir, not buildDirectory: `gradlew clean` wipes build/, which
+        // would otherwise delete a locally booted world and Floodgate's key.pem.
+        val distDir = layout.projectDirectory.dir(distDirPath).asFile
         distDir.mkdirs()
 
         // Captured before the config copy below overwrites server.properties, so a local rcon
@@ -207,3 +216,10 @@ fun registerAssemble(name: String, distDirPath: String, local: Boolean) = tasks.
 
 registerAssemble("assembleServer", "dist", local = false)
 registerAssemble("assembleLocalServer", "local", local = true)
+
+// No build/compile plugin is applied to this module (it only assembles files), so there's no
+// `clean` task by default; added for the one-time migration off the old server/build/{dist,local}
+// layout, and as a safety valve if Gradle itself ever writes stray cache files under build/.
+tasks.register<Delete>("clean") {
+    delete(layout.buildDirectory)
+}

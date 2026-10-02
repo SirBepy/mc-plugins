@@ -41,9 +41,12 @@ advancements:
 world-settings:
   default:
     below-zero-generation-in-existing-chunks: true
+    # Wider merge radii than default so dense farms (hoppers/droppers under a
+    # cobblestone/mob farm) collapse duplicate item/XP entity stacks sooner, cutting
+    # entity count without touching despawn timers, mob caps, or activation ranges.
     merge-radius:
-      exp: -1.0
-      item: 0.5
+      exp: 4.0
+      item: 3.5
     hunger:
       jump-walk-exhaustion: 0.05
       jump-sprint-exhaustion: 0.2

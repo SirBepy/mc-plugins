@@ -14,17 +14,19 @@ export const BOT_VERSION = '26.1';
 
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function serverProperty(key) {
-  const text = fs.readFileSync(path.join(runDir, 'server.properties'), 'utf8');
+function serverProperty(key, dir) {
+  const text = fs.readFileSync(path.join(dir, 'server.properties'), 'utf8');
   const line = text.split(/\r?\n/).find((l) => l.startsWith(key + '='));
   return line ? line.slice(key.length + 1).trim() : undefined;
 }
 
 /** Minimal Source RCON client: auth once, then one request per command. */
 export class Rcon {
-  static async connect() {
+  // dir: folder holding server.properties to read rcon.port/rcon.password from. Defaults to the
+  // e2e test server; server-check.mjs passes server/local instead.
+  static async connect(dir = runDir) {
     const rcon = new Rcon();
-    await rcon.#open(Number(serverProperty('rcon.port') ?? 25575), serverProperty('rcon.password'));
+    await rcon.#open(Number(serverProperty('rcon.port', dir) ?? 25575), serverProperty('rcon.password', dir));
     return rcon;
   }
 
