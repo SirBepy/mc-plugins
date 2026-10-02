@@ -64,10 +64,22 @@ public final class HeadService {
         // An empty slot comes back as an AIR stack (no meta), not null.
         ItemStack currentHelmet = player.getInventory().getHelmet();
         if (currentHelmet != null && !currentHelmet.isEmpty() && !isTagHead(currentHelmet)) {
-            mark(currentHelmet);
-            relocate(player, currentHelmet);
+            absorbDisplaced(player, currentHelmet);
         }
         player.getInventory().setHelmet(buildHead(config));
+    }
+
+    /**
+     * Marks {@code item} as a displaced helmet and relocates it, the same treatment a helmet gets
+     * when {@link #grant} moves it aside. Also used by {@link HeadProtectionListener} to rescue an
+     * item a player's own click was placing into the head slot at the exact moment they became IT:
+     * the click gets cancelled (the tag head must win the slot), but the item the click already
+     * pulled off its source slot onto the cursor needs somewhere to go, marked the same way, so a
+     * later {@link #revoke} can still find and restore it.
+     */
+    void absorbDisplaced(Player player, ItemStack item) {
+        mark(item);
+        relocate(player, item);
     }
 
     /** Removes the IT head and restores the marked original helmet if it can be found. */
