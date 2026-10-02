@@ -14,7 +14,7 @@ val datapacks = ServerArtifacts.datapacks
 // run/ is the real-feel server (Paper 26.3 + worldgen datapacks). run-e2e/ is for Mineflayer bots:
 // as of 2026-10-02 ViaBackwards mangles older clients' movement packets on a 26.3 server
 // ("Invalid move player packet"), and Mineflayer only speaks up to 26.1, so bots get a 26.2 server.
-fun registerPrepare(name: String, dir: java.io.File, withDatapacks: Boolean, motd: String) =
+fun registerPrepare(name: String, dir: java.io.File, withDatapacks: Boolean, motd: String, staticDatapacksDir: java.io.File? = null) =
     tasks.register(name) {
         description = "Writes first-run server settings" + if (withDatapacks) " and downloads worldgen datapacks." else "."
         outputs.upToDateWhen { false }
@@ -28,6 +28,15 @@ fun registerPrepare(name: String, dir: java.io.File, withDatapacks: Boolean, mot
                         logger.lifecycle("Downloading datapack $file")
                         URI(url).toURL().openStream().use { input -> target.outputStream().use { input.copyTo(it) } }
                     }
+                }
+            }
+            // Non-worldgen datapacks (e.g. the graves pack) load fine when dropped in after the world
+            // already exists, unlike worldgen packs above; always overwrite so a committed version bump
+            // reaches a world directory left over from a previous run.
+            if (staticDatapacksDir != null && staticDatapacksDir.exists()) {
+                val packDir = dir.resolve("world/datapacks").apply { mkdirs() }
+                staticDatapacksDir.listFiles { f -> f.isFile }?.forEach { source ->
+                    source.copyTo(packDir.resolve(source.name), overwrite = true)
                 }
             }
             // Offline mode lets the e2e bots join and RCON lets them run admin commands; this is a
@@ -70,8 +79,14 @@ fun RunServer.configureCommon() {
 
 val runDir = layout.projectDirectory.dir("run").asFile
 val e2eDir = layout.projectDirectory.dir("run-e2e").asFile
+val e2eDatapacksDir = layout.projectDirectory.dir("e2e-datapacks").asFile
 val prepareServer = registerPrepare("prepareServer", runDir, withDatapacks = true, motd = "mc-plugins test server")
-val prepareE2eServer = registerPrepare("prepareE2eServer", e2eDir, withDatapacks = false, motd = "mc-plugins e2e server")
+// e2e-datapacks/ holds committed, non-worldgen packs (the graves pack, for Tag's head-vs-grave e2e
+// scenario) built for the e2e server's pinned 26.2, separate from the real server's 26.3 build.
+val prepareE2eServer = registerPrepare(
+    "prepareE2eServer", e2eDir, withDatapacks = false, motd = "mc-plugins e2e server",
+    staticDatapacksDir = e2eDatapacksDir,
+)
 
 tasks.named<RunServer>("runServer") {
     minecraftVersion("26.3")
