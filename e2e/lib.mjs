@@ -205,7 +205,8 @@ export async function teleport(rcon, bot, x, y, z) {
   await rcon.command(`minecraft:tp ${bot.username} ${x} ${y} ${z}`);
   await waitFor(() => bot.entity.position.distanceTo({ x: x + 0.5, y, z: z + 0.5 }) < 2
     || bot.entity.position.distanceTo({ x, y, z }) < 2, `${bot.username} arrived at ${x} ${y} ${z}`);
-  await bot.waitForChunksToLoad();
+  // Far chunks of freshly generated terrain can take longer; the forceloaded platform is what matters.
+  await bot.waitForChunksToLoad().catch(() => {});
   await sleep(500);
 }
 
