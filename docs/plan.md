@@ -1,0 +1,143 @@
+# MC plugins: build plan and decisions
+
+Friends-only Paper server. Java players only for now (2 Bedrock players exist, Geyser/Floodgate is a later concern, do not design for it yet). Nothing paid, ever.
+
+## Platform
+
+- Server: **Paper 26.3** (beta channel at time of writing, Minecraft 26.3 "Wilderness Bound" released 2026-09-15). Chosen over 26.2 because new biomes only generate in chunks created on 26.3 and the Stardust Labs worldgen datapacks already target 26.3.
+- Plugins compile against **paper-api 26.2** (latest stable API, matches MockBukkit `mockbukkit-v26.2`). The Bukkit API is forward compatible, so 26.2-compiled jars run on 26.3.
+- Java 25 toolchain (Temurin 25 installed at `C:\Program Files\Eclipse Adoptium\jdk-25.0.4.101-hotspot`).
+- Gradle 9.8 wrapper, Kotlin DSL, one multi-module build. Shared build logic lives in `buildSrc` convention plugins.
+- Plain `plugin.yml` (not the experimental `paper-plugin.yml`). Commands are registered with Brigadier through `getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, ...)`, never in `plugin.yml`.
+- All player-facing text is Adventure `Component`, built from MiniMessage strings in each plugin's `config.yml` so the owner can restyle every message. Never the deprecated `sendMessage(String)` or `ChatColor`.
+- Every plugin has `/<plugin> reload` that re-reads config without a restart.
+- Base package: `dev.sirbepy.mc.<module>`.
+
+## Repo layout
+
+```
+core/         shared library (shaded + relocated into each plugin, not a plugin itself)
+names/        Names plugin
+safechests/   SafeChests plugin (add-on for Bolt)
+tag/          Tag plugin
+testserver/   run-paper config: boots a local Paper 26.3 server with every plugin + datapack
+docs/         this plan
+```
+
+`testserver/run/` is the local test server's directory (gitignored). `./gradlew :testserver:runServer` builds every plugin and boots it.
+
+## Third-party plugins on the test server
+
+Downloaded by `testserver/build.gradle.kts` (`downloadPlugins { modrinth(...) }`), never committed:
+
+- LuckPerms (permissions; `/lp editor` for the web UI)
+- HuskHomes (`/tpa`, `/tpaccept`, `/sethome`, `/home`, `/back`)
+- PvPManager (per-player `/pvp` toggle with cooldown)
+- Bolt (chest protection, SafeChests builds on its API)
+- PacketEvents (Names uses it for the floating nametag)
+- DiscordSRV (needs a bot token from the owner, stays unconfigured until then)
+- Shops: QuickShop-Hikari + VaultUnlocked + EssentialsX (EssentialsX only for its economy; its own `/home`, `/tpa`, `/back`, `/nick` etc must be disabled so HuskHomes and Names own those commands)
+- ViaVersion + ViaBackwards (lets slightly older clients and test bots join)
+
+Datapacks (Stardust Labs, Modrinth, installed into `world/datapacks` BEFORE the world is first generated): Terralith, Incendium, Nullscape, Structory, Structory: Towers, Amplified Nether.
+
+## Names plugin
+
+Owns everything about how a player's name looks. Replaces ColorfulNames, HexNicks and TAB. Other plugins (Tag) add prefixes through its API instead of touching names themselves, so nothing fights.
+
+### Features
+
+- `/color` opens a chest GUI: the 16 named colors, a curated set of hex colors, a few gradients, and Reset. Click applies instantly. Permission `names.color` (default: everyone). Gradients behind `names.color.gradient` (default: everyone).
+- `/nick` opens an anvil GUI to type a nickname (rename field). Also `/nick <name>`, `/nick reset`, and admin `/nick <player> <name|reset>`. Permission `names.nick` (default: op only; the owner grants it with LuckPerms). Rules (configurable): max 16 visible chars, letters/digits/underscore/space, cannot equal another known player's real name (anti-impersonation), MiniMessage tags stripped from player input.
+- `/names reload`.
+- Data: `plugins/Names/players.yml`, UUID to `{color, nick}`. Atomic writes (write temp file, then move over the original).
+
+### Rendering (everywhere the name shows)
+
+Name component = `[prefixes] + colored(nick or real name)`.
+
+- **Chat:** custom `ChatRenderer` on `AsyncChatEvent`, built from scratch (do not wrap Paper's default renderer, see Paper issue #13574). Format configurable, default `<prefixes><name><gray>: </gray><message>`.
+- **Tab list:** `player.playerListName(...)`.
+- **displayName:** `player.displayName(...)` too (without prefixes), so HuskHomes, DiscordSRV etc show the nick and color.
+- **Above head:** vanilla nametags only support 16 colors and always show the real username, so the real nametag is hidden (scoreboard team, `nameTagVisibility = never`) and a **packet-only TextDisplay** (PacketEvents) is mounted on the player client-side. Packet-only on purpose: a real passenger entity breaks cross-world teleports (Paper refuses to teleport a player with passengers across worlds, which would break `/home` and `/tpa`).
+  - Spawn the fake display for a viewer on Paper's `PlayerTrackEntityEvent`, destroy on `PlayerUntrackEntityEvent`; re-send on respawn, world change, and name change.
+  - **Crouching hides the label** (owner requirement), restored on stand-up. Also hidden in spectator mode and while invisible.
+  - A player never sees their own label.
+- **Scoreboard coexistence:** the hidden-nametag team lives on the main scoreboard. Plugins that give a player their own scoreboard (Tag's sidebar) must call `NamesApi.registerScoreboard(board)` so Names mirrors the team onto it.
+
+### Public API (used by Tag)
+
+`dev.sirbepy.mc.names.api.NamesApi`, fetched via Bukkit `ServicesManager`:
+
+- `setPrefix(UUID, String key, Component prefix, int priority)`, `removePrefix(UUID, String key)`. Lower priority renders first. Persisted? No: prefixes are owned and re-applied by the plugin that set them (Tag re-applies on enable and join).
+- `nameComponent(Player)`, the full rendered name with prefixes.
+- `registerScoreboard(Scoreboard)`, `unregisterScoreboard(Scoreboard)`.
+- `refresh(Player)`.
+
+## SafeChests plugin (add-on for an unmodified Bolt)
+
+Bolt already auto-locks chests on placement (owner-only). SafeChests adds the request and grant flow through Bolt's public `BoltAPI` (ServicesManager). Bolt is a hard dependency.
+
+- **Denied open:** Bolt silently cancels the open. SafeChests notices (monitor-priority listener, sees the cancelled event, confirms with `BoltAPI.canAccess`) and tells the requester: `This chest belongs to <owner>. [Request access]`. Debounced so spam-clicking doesn't spam chat.
+- **Owner alert on attempt:** server-config toggle `alerts.notify-owner-on-attempt` (default false), the owner's choice.
+- **`/safe-chests-one-time`** (also what the [Request access] button runs): sends the request. If the owner is offline: `<owner> is offline`, request dropped.
+- **Owner gets buttons:** `<requester> wants to open your chest at x y z: [Allow once] [5 min] [Always] [Deny]`. Requests expire after 2 minutes (configurable).
+  - Allow once = that one chest, one open, then revoked (on close).
+  - 5 min / Always = **all the owner's chests**, same as the whitelist command.
+- **`/safe-chests-whitelist <player> [time]`** = access to all the owner's chests; no time = permanent; time accepts `300`, `5m`, `1h`. `/safe-chests-unwhitelist <player>`, `/safe-chests-list`.
+- Timed grants persist with their expiry (`grants.yml`), so a restart never leaves a timed grant open forever; expired grants are revoked on startup and by a repeating check.
+- Implementation preference: use Bolt's own owner-wide trust/access lists where they exist, with SafeChests tracking expiries. Never edit Bolt's code.
+- `/safechests reload`.
+
+## Tag plugin
+
+Always-on, server-wide game of tag. Hard depends on Names.
+
+### Rules
+
+- **Everyone plays by default**; `/tag optout` and `/tag optin`. The IT player cannot opt out. Opted-out players cannot be tagged.
+- **Admin picks IT:** `/tag set <player>` (works for offline players: applied when they join), `/tag clear`.
+- **Tagging:** IT melee-hits a player. Projectiles do not count (config toggle). **No damage and it works even with PvP off or inside protected areas**: listen to `EntityDamageByEntityEvent` at `LOWEST` with `ignoreCancelled = false`, and cancel the damage on a valid tag. Both players must be in survival or adventure.
+- **Tagback cooldown:** the new IT cannot tag the player who just tagged them for 60s (configurable). Anyone else is fair game immediately.
+- **IT logs off:** stays IT until they come back (AFK handling is a later todo).
+- **Persistence:** all state in `plugins/Tag/state.yml` (current IT, last tagger, tagback expiry, per-player stats, opt-outs, pending actions for offline players). Written atomically on every change and every minute. Never rely on player PDC as the source of truth (offline PDC is read-only).
+
+### IT prefix
+
+Added through `NamesApi.setPrefix(uuid, "tag", ...)`. Configurable MiniMessage, default: green biohazard symbol `<green>☣</green> ` (owner picked option G). Shows in chat, tab list and above head via Names. A nickname change can never remove it because Names renders prefixes separately from the name.
+
+### Head item
+
+- Configurable: either a material id or a player-head texture. Default: a sheep head (player head with a sheep-face texture; vanilla has no sheep head item).
+- Becoming IT: the current helmet moves to the inventory; if full, the ender chest; if both full, it drops at the player's feet. The moved helmet is marked (PDC) so it can be found later.
+- Stops being IT: the head is removed and the marked original helmet goes back on the head if it's still in the inventory or ender chest.
+- The head cannot be removed, moved, dropped, or duped: cancel inventory click/drag/creative/drop events touching it (PDC marker), strip it from death drops, and delete stray marked heads found anywhere outside the IT player's helmet slot. A repeating check re-applies the head if something (like `/clear`) removed it.
+
+### Points (lowest wins)
+
+- Getting tagged: +10.
+- Every minute (configurable) while someone is IT: `n` = online players other than IT who haven't opted out.
+  - multiplier: `n = 0` gives 0 (safe); otherwise log curve `1 + 0.5 * log2(n)` (1 other = x1, 2 = x1.5, 4 = x2, 8 = x2.5). `curve: linear` gives `1 + 0.5 * (n - 1)`.
+  - IT online: `1 * multiplier` per minute. IT offline: `0.5 * multiplier` per minute (factor configurable).
+- Raw stats kept per player: times tagged, tags made, minutes IT online, minutes IT offline, points.
+- `/tag stats [player]`, `/tag top` (chat leaderboard, lowest first), `/tag board` toggles a personal sidebar (live top 5, your score, who is IT; registered with `NamesApi.registerScoreboard`). `/tag who`.
+
+### Logs
+
+Per-event config: `enabled`, `broadcast` (all players), `console`, `format` (MiniMessage with placeholders like `<tagger>`, `<tagged>`, `<it>`, `<points>`). Events: tag, tagback blocked (to the tagger only), IT set, IT cleared, IT joined, IT quit, opt out, opt in.
+
+`/tag reload`.
+
+## Testing
+
+1. **Unit tests** (JUnit 5, plain logic wherever possible: points math, cooldowns, duration parsing, grant expiry, name validation). MockBukkit for listener/command behavior where it supports the API used.
+2. **Real server + bots:** `testserver` runs in offline mode with ViaBackwards; Mineflayer scripts (Node) join as two or more bots and assert behavior through chat and inventory: tagging, tagback, no-damage-with-PvP-off, head swap, persistence across a server restart, chest denial and request flow.
+3. **Screenshots** of the visual parts (prefix in chat/tab/nametag, color GUI) for the owner.
+
+## Later (todos, not now)
+
+- AFK handling for the IT player.
+- Land claims (free only: Towny, GriefPrevention, HuskClaims; Towny's claims-per-resident is closest to "more members, more land").
+- In-world floating leaderboard.
+- Bedrock (Geyser/Floodgate) support and testing.
+- Deploying to the real server.

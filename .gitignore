@@ -1,0 +1,11 @@
+.gradle/
+build/
+.kotlin/
+.idea/
+*.iml
+out/
+testserver/run/
+e2e/node_modules/
+.for_bepy/
+research_notes/
+reports/
