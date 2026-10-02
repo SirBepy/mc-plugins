@@ -1,0 +1,123 @@
+package dev.sirbepy.mc.tag;
+
+import dev.sirbepy.mc.names.api.NamesApi;
+import dev.sirbepy.mc.tag.board.ScoreboardService;
+import dev.sirbepy.mc.tag.command.TagCommands;
+import dev.sirbepy.mc.tag.config.TagConfig;
+import dev.sirbepy.mc.tag.head.HeadProtectionListener;
+import dev.sirbepy.mc.tag.head.HeadService;
+import dev.sirbepy.mc.tag.listener.PlayerConnectionListener;
+import dev.sirbepy.mc.tag.listener.TagDamageListener;
+import dev.sirbepy.mc.tag.log.LogService;
+import dev.sirbepy.mc.tag.prefix.PrefixService;
+import dev.sirbepy.mc.tag.task.HeadWatchdogTask;
+import dev.sirbepy.mc.tag.task.PointsTask;
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.ServicesManager;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
+
+import java.io.File;
+
+public final class TagPlugin extends JavaPlugin {
+
+    private NamesApi names;
+    private HeadService heads;
+    private PrefixService prefix;
+    private ScoreboardService boards;
+    private LogService logService;
+    private TagService service;
+
+    private BukkitTask pointsTask;
+    private BukkitTask watchdogTask;
+
+    @Override
+    public void onLoad() {
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
+                event -> event.registrar().register(new TagCommands(this).build(), "Tag: a server-wide game of tag"));
+    }
+
+    @Override
+    public void onEnable() {
+        saveDefaultConfig();
+
+        ServicesManager servicesManager = Bukkit.getServicesManager();
+        names = servicesManager.load(NamesApi.class);
+        if (names == null) {
+            getLogger().severe("Names API not found (Names did not enable?). Disabling Tag.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
+        heads = new HeadService(this);
+        prefix = new PrefixService(names);
+        boards = new ScoreboardService(names);
+        logService = new LogService(getConfig().getConfigurationSection("logs"));
+        TagConfig config = TagConfig.load(getConfig(), logService);
+
+        service = new TagService(this, new File(getDataFolder(), "state.yml"), heads, prefix, boards, config);
+
+        getServer().getPluginManager().registerEvents(new TagDamageListener(service), this);
+        getServer().getPluginManager().registerEvents(new HeadProtectionListener(heads), this);
+        getServer().getPluginManager().registerEvents(new PlayerConnectionListener(service), this);
+
+        reapplyCurrentIt();
+        scheduleTasks(config);
+    }
+
+    @Override
+    public void onDisable() {
+        if (pointsTask != null) {
+            pointsTask.cancel();
+        }
+        if (watchdogTask != null) {
+            watchdogTask.cancel();
+        }
+        if (service != null) {
+            service.save();
+        }
+    }
+
+    public void reload() {
+        reloadConfig();
+        TagConfig config = TagConfig.load(getConfig(), logService);
+        service.setConfig(config);
+        reapplyCurrentIt();
+        if (pointsTask != null) {
+            pointsTask.cancel();
+        }
+        if (watchdogTask != null) {
+            watchdogTask.cancel();
+        }
+        scheduleTasks(config);
+    }
+
+    private void reapplyCurrentIt() {
+        var currentIt = service != null ? service.state().currentIt : null;
+        if (currentIt == null) {
+            return;
+        }
+        var online = getServer().getPlayer(currentIt);
+        if (online != null) {
+            prefix.apply(currentIt, service.config().prefixTemplate, service.config().prefixPriority);
+            heads.ensureWorn(online, service.config().head);
+        }
+    }
+
+    private void scheduleTasks(TagConfig config) {
+        long pointsTicks = Math.max(1, config.pointsIntervalSeconds * 20L);
+        pointsTask = getServer().getScheduler().runTaskTimer(this, new PointsTask(service), pointsTicks, pointsTicks);
+
+        long watchdogTicks = Math.max(1, config.headWatchdogSeconds * 20L);
+        watchdogTask = getServer().getScheduler().runTaskTimer(this, new HeadWatchdogTask(service), watchdogTicks, watchdogTicks);
+    }
+
+    public TagService service() {
+        return service;
+    }
+
+    public ScoreboardService boards() {
+        return boards;
+    }
+}

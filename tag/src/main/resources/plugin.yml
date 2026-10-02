@@ -1,0 +1,13 @@
+name: Tag
+main: dev.sirbepy.mc.tag.TagPlugin
+version: ${version}
+api-version: "26.2"
+depend: [Names]
+
+permissions:
+  tag.play:
+    description: Play the Tag game (get tagged, opt in/out, see stats).
+    default: true
+  tag.admin:
+    description: Administer Tag (set/clear IT, reload).
+    default: op

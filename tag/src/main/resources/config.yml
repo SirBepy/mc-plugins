@@ -1,0 +1,101 @@
+# Tag plugin configuration. `/tag reload` re-reads this without a restart.
+
+tag:
+  # Projectiles (arrows, tridents) count as a tag, not just melee hits.
+  allow-projectiles: false
+
+tagback:
+  # The new IT cannot immediately tag back whoever just tagged them.
+  seconds: 60
+  # How often the "tagback blocked" warning may repeat to the same IT player, so spam-hitting
+  # the protected player doesn't spam chat.
+  message-cooldown-seconds: 3
+
+points:
+  # Lowest total wins. Getting tagged costs you points (bad).
+  on-tag: 10.0
+  # IT gains this much per tick while online; offline IT gains base * offline-factor.
+  base: 1.0
+  offline-factor: 0.5
+  # "log" -> 1 + step * log2(n); "linear" -> 1 + step * (n - 1). n = online players other than
+  # IT who have not opted out.
+  curve: log
+  step: 0.5
+  interval-seconds: 60
+
+prefix:
+  # MiniMessage. U+2623 BIOHAZARD SIGN, owner-picked option G.
+  format: "<green>☣</green> "
+  priority: 0
+
+head:
+  # Set either `material` (a plain item, e.g. "IRON_HELMET") or `texture` (a base64 player-head
+  # skin). `material` wins if both are set. Leave both blank for the default sheep head below.
+  material: ""
+  # Default: a "Sheep" head from minecraft-heads.com (animals category). Hash mirrored via the
+  # TheLuca98/MinecraftHeads GitHub CSV export of the public minecraft-heads.com API and
+  # verified live against textures.minecraft.net (HTTP 200) on 2026-10-02. Vanilla has no sheep
+  # head item, hence the player-head texture.
+  texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHBzOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlL2M2MDdhMzczN2U5OWYxNDI2MjQxNTJhNjg1ODhmNGJmYWZmYjhjZDNmYTk5YzE5OTcxMTU0Y2M3NGYwZGRmNzEifX19"
+  # How often (seconds) to check the IT player still has the head on, in case /clear or similar
+  # removed it.
+  watchdog-interval-seconds: 5
+
+messages:
+  unknown-player: "<red>Unknown player: <player>.</red>"
+  it-set-confirm: "<green><player> is now IT.</green>"
+  it-cleared-confirm: "<green>IT cleared.</green>"
+  opted-out: "<yellow>You opted out of Tag. You can no longer be tagged.</yellow>"
+  already-opted-out: "<gray>You are already opted out.</gray>"
+  cannot-optout-as-it: "<red>You are IT and cannot opt out. Wait to be tagged or ask an admin.</red>"
+  opted-in: "<green>You opted back into Tag.</green>"
+  already-opted-in: "<gray>You are already opted in.</gray>"
+  board-enabled: "<green>Tag sidebar enabled.</green>"
+  board-disabled: "<gray>Tag sidebar disabled.</gray>"
+  nobody-it: "<gray>Nobody is IT right now.</gray>"
+  who-is-it: "<yellow><it> is IT.</yellow>"
+  reloaded: "<green>Tag config reloaded.</green>"
+
+# Placeholders available per event: <tagger>, <tagged>, <it>, <points>, <player>.
+logs:
+  tag:
+    enabled: true
+    broadcast: true
+    console: true
+    format: "<yellow><tagger> tagged <tagged>! <tagged> is now IT.</yellow>"
+  tagback-blocked:
+    # Always sent only to the tagger, never broadcast, regardless of this flag.
+    enabled: true
+    broadcast: false
+    console: false
+    format: "<gray>You can't tag <player> back yet.</gray>"
+  it-set:
+    enabled: true
+    broadcast: true
+    console: true
+    format: "<yellow><player> made <it> IT.</yellow>"
+  it-cleared:
+    enabled: true
+    broadcast: true
+    console: true
+    format: "<yellow><player> cleared IT.</yellow>"
+  it-joined:
+    enabled: true
+    broadcast: false
+    console: true
+    format: "<gray><it> (IT) joined.</gray>"
+  it-quit:
+    enabled: true
+    broadcast: false
+    console: true
+    format: "<gray><it> (IT) left. They stay IT until they return.</gray>"
+  opt-out:
+    enabled: false
+    broadcast: false
+    console: true
+    format: "<gray><player> opted out of Tag.</gray>"
+  opt-in:
+    enabled: false
+    broadcast: false
+    console: true
+    format: "<gray><player> opted into Tag.</gray>"
