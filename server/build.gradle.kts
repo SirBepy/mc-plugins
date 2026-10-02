@@ -136,8 +136,11 @@ fun applyLocalOverrides(propsFile: File, previousRconPassword: String?) {
         "white-list" to "false",
         "enforce-whitelist" to "false",
         "server-ip" to "127.0.0.1",
+        // 25566/25576 (not the real server's 25565/25575): so this local smoke server can run
+        // alongside testserver's bot e2e server, which owns 25565/25575.
+        "server-port" to "25566",
         "enable-rcon" to "true",
-        "rcon.port" to "25575",
+        "rcon.port" to "25576",
         "rcon.password" to rconPassword,
     )
     // On the very first local assemble, config/server.properties doesn't exist yet (it's generated
@@ -149,6 +152,23 @@ fun applyLocalOverrides(propsFile: File, previousRconPassword: String?) {
         if (idx >= 0) lines[idx] = line else lines.add(line)
     }
     propsFile.writeText(lines.joinToString("\n") + "\n")
+}
+
+// Local-smoke-test-only: Geyser's own Bedrock login validation checks a real Xbox Live JWT chain,
+// which the e2e bedrock-protocol test client (an unauthenticated/offline Bedrock client, see
+// e2e/bedrock.mjs) can never produce. Disabling it is a real security hole for the real server
+// (anyone could spoof a Bedrock username), so this is appended only to server/local's copy of the
+// config, never to server/config/plugins/Geyser-Spigot/config.yml. The committed config has no
+// "advanced:" block yet (see its own header), so this appends one rather than patching a line.
+fun applyLocalGeyserOverrides(distDir: File) {
+    val configFile = distDir.resolve("plugins/Geyser-Spigot/config.yml")
+    if (!configFile.exists()) return
+    val text = configFile.readText()
+    if (Regex("(?m)^advanced:").containsMatchIn(text)) return
+    configFile.writeText(
+        text.trimEnd('\n') + "\n" +
+            "advanced:\n  bedrock:\n    validate-bedrock-login: false\n"
+    )
 }
 
 fun registerAssemble(name: String, distDirPath: String, local: Boolean) = tasks.register(name) {
@@ -210,6 +230,7 @@ fun registerAssemble(name: String, distDirPath: String, local: Boolean) = tasks.
 
         if (local) {
             applyLocalOverrides(propsFile, previousRconPassword)
+            applyLocalGeyserOverrides(distDir)
         }
     }
 }

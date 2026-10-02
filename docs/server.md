@@ -40,8 +40,12 @@ Both are gitignored (`server/dist/`, `server/local/`).
 
 `.\gradlew.bat :server:assembleLocalServer` writes `server/local/` the same way, then
 overrides `server.properties` for local testing only: `online-mode=false`, `white-list=false`,
-`enforce-whitelist=false`, `server-ip=127.0.0.1`, RCON on with a random password generated once
-(kept across re-assembles, never committed). These overrides never reach `assembleServer`'s output.
+`enforce-whitelist=false`, `server-ip=127.0.0.1`, `server-port=25566`, RCON on port `25576` with a
+random password generated once (kept across re-assembles, never committed). The non-default ports
+let this local smoke server run alongside testserver's bot e2e server, which owns 25565/25575. It
+also appends `advanced.bedrock.validate-bedrock-login: false` to the assembled copy of Geyser's
+config, needed only so the unauthenticated e2e Bedrock test client (`e2e/bedrock.mjs`) can log in;
+never applied to the real server. None of these overrides ever reach `assembleServer`'s output.
 
 Boot it through the supervisor, never a bare background `java`:
 
@@ -51,23 +55,22 @@ powershell -File sv.ps1 ensure -Project mc-plugins-tag -Kind ephemeral -Root ser
 
 Watch with `sv.ps1 logs -Id local:java`, stop with an RCON `stop`, then `sv.ps1 rm -Id local:java`.
 
-## Known issue: Geyser does not currently enable
+## Known issue: Geyser release builds don't enable yet (worked around with an official preview build)
 
-Geyser-Spigot 2.11.3 build 1247 (the current pinned build) fails to enable on Paper 26.3 build 143
-beta: `IllegalArgumentException: Couldn't find asBukkitCopy or asCraftMirror method on
-CraftItemStack`, inside its shaded command-parser reflection (Paper 26.3 removed
-`CraftItemStack#asBukkitCopy`/`#asCraftMirror`, and Geyser's shaded `cloud` command library hasn't
-picked up the replacement `asBukkitMirror` method yet). This is an upstream Geyser/Paper-beta
-compatibility gap, not a config problem here; Bedrock players cannot join until GeyserMC ships a
-build that supports 26.3's beta internals. Floodgate loads fine but does nothing without Geyser.
-
-Re-checked 2026-10-02: `https://download.geysermc.org/v2/projects/geyser/versions/latest/builds`
-still reports build 1247 as latest (same sha256 as our pinned jar), so there is no newer build to
-pin yet. Tracked upstream in GeyserMC/Geyser#6716 and #6730 (both closed without a shipped fix);
-the actual fix, GeyserMC/Geyser#6712 ("Update to Java 26.3"), was still open and unmerged as of
-this check. Re-run the latest-builds check periodically; once a build enables here, pin it in
-`ServerArtifacts.kt` and let Geyser generate its own `plugins/Geyser-Spigot/config.yml` (replacing
-the reconstructed one in `server/config/`, see that file's header).
+Geyser-Spigot's release build (2.11.3 build 1247) fails to enable on Paper 26.3 build 143 beta:
+`IllegalArgumentException: Couldn't find asBukkitCopy or asCraftMirror method on CraftItemStack`,
+inside its shaded command-parser reflection (Paper 26.3 removed
+`CraftItemStack#asBukkitCopy`/`#asCraftMirror`, and Geyser's shaded `cloud` command library hadn't
+picked up the replacement `asBukkitMirror` method yet). This was an upstream Geyser/Paper-beta
+compatibility gap, not a config problem here. The fix shipped as GeyserMC/Geyser#6712 ("Update to
+Java 26.3"); as of 2026-10-02 it is still open/unmerged, but GeyserMC publishes official preview
+builds of open PRs on its own download API under the `geyserpreview` project
+(`https://download.geysermc.org/v2/projects/geyserpreview/versions/pr.6712/builds`). `ServerArtifacts.kt`
+is pinned to that preview's build 3057 (resolved 2026-10-02) instead of a release build, so Geyser
+now enables on server/local. Swap the pin back to a normal `geyser` release build once 26.3 support
+ships there (check `https://download.geysermc.org/v2/projects/geyser/versions/latest/builds`
+periodically), and once it does, let Geyser generate its own `plugins/Geyser-Spigot/config.yml`
+(replacing the reconstructed one in `server/config/`, see that file's header).
 
 ## Secrets
 
@@ -84,9 +87,9 @@ works normally.
    `server/seed/plugins/LuckPerms/yaml-storage/groups/`), then `op <you>` too (LuckPerms grants
    `*` but some vanilla checks still look at op status).
 3. Whitelist Java players: `whitelist add <name>` per player, then `whitelist reload`.
-4. Bedrock players (once Geyser can enable, see "Known issue" above): `fwhitelist add
-   <bedrockname>` per Floodgate player, after confirming Geyser bound its Bedrock port (log line
-   `Started Geyser on 0.0.0.0:19132`).
+4. Bedrock players: `fwhitelist add <bedrockname>` per Floodgate player, after confirming Geyser
+   bound its Bedrock port (log line `Started Geyser on 0.0.0.0:19132`). Geyser is currently running
+   off an official GeyserMC preview build, not a release build, see "Known issue" above.
 5. Pre-generate terrain with Chunky (world names are still `world` / `world_nether` /
    `world_the_end` on Paper 26.3 despite the 26.1+ on-disk `world/dimensions/...` restructuring;
    not independently re-confirmed this session, see docs note below):

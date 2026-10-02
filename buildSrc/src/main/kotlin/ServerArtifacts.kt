@@ -44,12 +44,17 @@ object ServerArtifacts {
             filename = "voicechat-bukkit-2.6.24.jar",
             sha256 = "af3d4e2ad318d3065959248c1370ae32a619752cb4d2a4fec2f7a79b10067769",
         ),
-        // Pinned to the concrete version/build resolved from "latest" on 2026-10-02 (2.11.3 / 1247),
-        // not tracked as "latest" going forward.
+        // Build 1247 (the then-latest release) fails to enable on Paper 26.3 beta: its shaded cloud
+        // command parser calls the removed CraftItemStack#asBukkitCopy/#asCraftMirror methods (see
+        // docs/server.md "Known issue"). Pinned instead to GeyserMC's own official preview build of
+        // GeyserMC/Geyser#6712 ("Update to Java 26.3", open/unmerged as of 2026-10-02), published on
+        // GeyserMC's own download API under the "geyserpreview" project (pr.6712, build 3057,
+        // resolved 2026-10-02 from https://download.geysermc.org/v2/projects/geyserpreview/versions/pr.6712/builds/3057).
+        // Swap this back to a normal "geyser" release build once 26.3 support ships there.
         PinnedJar(
-            url = "https://download.geysermc.org/v2/projects/geyser/versions/2.11.3/builds/1247/downloads/spigot",
+            url = "https://download.geysermc.org/v2/projects/geyserpreview/versions/pr.6712/builds/3057/downloads/spigot",
             filename = "Geyser-Spigot.jar",
-            sha256 = "6fed2d9711e2db3c365508ec10db36d06a0199abd226159d23d57f82662fd7a6",
+            sha256 = "d7fcfb9a2ad46980efef2e6a5f6837921b945fe2bbec34efd8c8ca552963c3e1",
         ),
         // Pinned to 2.2.5 / build 141, resolved the same way and on the same date as Geyser above.
         PinnedJar(
