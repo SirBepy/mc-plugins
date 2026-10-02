@@ -191,7 +191,7 @@ public final class TagService {
         }
         long now = System.currentTimeMillis();
         if (TagbackRule.isProtected(victim.getUniqueId(), state.lastTagger, state.tagbackExpiryMillis, now)) {
-            maybeWarnTagback(it, now);
+            maybeWarnTagback(it, victim, now);
             return TagResult.TAGBACK_BLOCKED;
         }
 
@@ -221,7 +221,7 @@ public final class TagService {
         return TagResult.OK;
     }
 
-    private void maybeWarnTagback(Player it, long now) {
+    private void maybeWarnTagback(Player it, Player victim, long now) {
         Long last = tagbackMessageCooldown.get(it.getUniqueId());
         long cooldownMillis = config.tagbackMessageCooldownSeconds * 1000L;
         if (last != null && now - last < cooldownMillis) {
@@ -229,7 +229,7 @@ public final class TagService {
         }
         tagbackMessageCooldown.put(it.getUniqueId(), now);
         config.logs.toPlayer(LogService.Event.TAGBACK_BLOCKED, it,
-                Placeholder.unparsed("player", it.getName()));
+                Placeholder.unparsed("player", victim.getName()));
     }
 
     public enum TagResult { OK, NOT_IT, OPTED_OUT, SELF, TAGBACK_BLOCKED }

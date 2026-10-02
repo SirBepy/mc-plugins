@@ -61,8 +61,9 @@ public final class HeadService {
 
     /** Gives {@code player} the IT head, moving their current helmet out of the way first. */
     public void grant(Player player, HeadConfig config) {
+        // An empty slot comes back as an AIR stack (no meta), not null.
         ItemStack currentHelmet = player.getInventory().getHelmet();
-        if (currentHelmet != null && !isTagHead(currentHelmet)) {
+        if (currentHelmet != null && !currentHelmet.isEmpty() && !isTagHead(currentHelmet)) {
             mark(currentHelmet);
             relocate(player, currentHelmet);
         }
