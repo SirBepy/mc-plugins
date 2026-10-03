@@ -33,8 +33,11 @@ function loadGroup(name) {
     if (/^permissions:/.test(line)) { inPermissions = true; continue; }
     if (inPermissions) {
       const m = line.match(/^-\s*(.+)$/);
-      if (m) permissions.push(m[1].trim().replace(/^'(.*)'$/, '$1'));
-      else if (line.trim() !== '' && !line.trim().startsWith('#')) inPermissions = false;
+      // A negated node is written as "- node:" followed by an indented "value: false"; it grants
+      // nothing, so it is dropped rather than counted as a granted permission.
+      if (m) permissions.push(m[1].trim().replace(/^'(.*)'$/, '$1').replace(/:$/, ''));
+      else if (/^\s+value:\s*false\s*$/.test(line)) permissions.pop();
+      else if (line.trim() !== '' && !line.trim().startsWith('#') && !/^\s/.test(line)) inPermissions = false;
     }
   }
   return permissions;
