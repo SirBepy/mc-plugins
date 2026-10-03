@@ -3,6 +3,9 @@
 Downloads every pinned file first and checks its size, sha1 and sha512 against the index, so a
 pack never ships with a hash the Modrinth App or Prism would reject at import time.
 
+Anything under mrpack/overrides/ is zipped in verbatim under overrides/ at the root of the
+.mrpack (the Modrinth App / Prism copy that tree straight into the instance folder on import).
+
 Run from anywhere: python client/mrpack/build.py
 """
 
@@ -15,6 +18,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 INDEX = HERE / "modrinth.index.json"
+OVERRIDES = HERE / "overrides"
 OUT = HERE.parent / "Los-Pollos-MineHermanos-26.3.mrpack"
 # Modrinth asks API/CDN clients for a descriptive User-Agent.
 USER_AGENT = "SirBepy/mc-plugins client-kit"
@@ -46,6 +50,12 @@ def main():
         sys.exit(1)
     with zipfile.ZipFile(OUT, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.write(INDEX, "modrinth.index.json")
+        if OVERRIDES.is_dir():
+            for path in sorted(OVERRIDES.rglob("*")):
+                if path.is_file():
+                    arcname = "overrides/" + path.relative_to(OVERRIDES).as_posix()
+                    zf.write(path, arcname)
+                    print(f"{arcname}: added")
     print(f"wrote {OUT}")
 
 

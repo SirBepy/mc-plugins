@@ -1,9 +1,9 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "1.1.0",
+  "versionId": "1.2.0",
   "name": "SirBepy Los Pollos MineHermanos (26.3)",
-  "summary": "Fabric 26.3 with Simple Voice Chat (proximity voice), Sodium (FPS) and the textures for the server's More Foods and Dungeons and Taverns datapacks.",
+  "summary": "Fabric 26.3 with Simple Voice Chat (proximity voice), Sodium (FPS), Iris + Complementary Reimagined (shaders, off by default), LambDynamicLights and the textures for the server's More Foods and Dungeons and Taverns datapacks.",
   "files": [
     {
       "path": "mods/fabric-api-0.161.0+26.3.jar",
@@ -64,6 +64,42 @@
         "https://cdn.modrinth.com/data/tpehi7ww/versions/WilF7nqU/dungeons-and-taverns-6.0.2.jar"
       ],
       "fileSize": 42195203
+    },
+    {
+      "path": "mods/iris-fabric-1.11.7+mc26.3.jar",
+      "hashes": {
+        "sha1": "fa03640ba1e4ef2f7ae3619c6373a06e46d0ba2c",
+        "sha512": "d8d3312f77fc52a48e4a6cd836fda33669bdebcb4de0b8c0d30adc808b287330a533e0baef355cc1ce6336a26851d9775369a802a4666b7b7a6266af20088f42"
+      },
+      "env": { "client": "required", "server": "unsupported" },
+      "downloads": [
+        "https://cdn.modrinth.com/data/YL57xq9U/versions/vTN4NRGW/iris-fabric-1.11.7%2Bmc26.3.jar"
+      ],
+      "fileSize": 2850938
+    },
+    {
+      "path": "mods/lambdynamiclights-4.13.0+26.3.jar",
+      "hashes": {
+        "sha1": "18c8ab40f03219bfcf809a83db6e3958ed8bb866",
+        "sha512": "67c37ca7d619bd7f2b0dc02217070c20e34fb3bb3363d4e23f5ef9ca90b1b58adb223fab73639a3499d366497316f1eb297d2759f3ffb976467b4759f784619d"
+      },
+      "env": { "client": "required", "server": "unsupported" },
+      "downloads": [
+        "https://cdn.modrinth.com/data/yBW8D80W/versions/rylKnJ4M/lambdynamiclights-4.13.0%2B26.3.jar"
+      ],
+      "fileSize": 1345715
+    },
+    {
+      "path": "shaderpacks/ComplementaryReimagined_r5.9.3.zip",
+      "hashes": {
+        "sha1": "838139b54cddb56b2e83cd260d8efd960ac536d6",
+        "sha512": "45304b1d7862afdb2177b7e6226fc9c6737911d17a4ad46cc9c519ca4deb935f05072cd337cd8b19a15bb8062b57b54eceec7bdee4cd572d94858e2946d37d85"
+      },
+      "env": { "client": "required", "server": "unsupported" },
+      "downloads": [
+        "https://cdn.modrinth.com/data/HVnmMxH1/versions/Bqen1mJX/ComplementaryReimagined_r5.9.3.zip"
+      ],
+      "fileSize": 553397
     }
   ],
   "dependencies": {

@@ -41,8 +41,10 @@ runs 2.6.24). Pick ONE way to install it:
      3. Modrinth App: click "+" (Create instance) > "From file" > pick the .mrpack.
         Prism Launcher: Add Instance > Import > pick the .mrpack.
      4. Sign in with your Microsoft account in the launcher, then launch the new instance.
-     It installs Fabric 26.3 + Fabric API + Simple Voice Chat + Sodium + the Reg's More
-     Foods and Dungeons and Taverns textures for you. Nothing else to set up.
+     It installs Fabric 26.3 + Fabric API + Simple Voice Chat + Sodium + Iris (shaders,
+     off by default, see section 4) + LambDynamicLights (held-light items glow, see
+     section 4) + the Reg's More Foods and Dungeons and Taverns textures for you.
+     Nothing else to set up.
      (The .mrpack format has no slot for a pack icon, so your launcher will show a
      generic icon for this instance - that's expected, not a broken install.)
 
@@ -116,15 +118,34 @@ Otherwise (plain vanilla, NeoForge), add them as resource packs:
 Bedrock can't load these, so on Bedrock the new foods look like placeholders.
 
 
-4. OPTIONAL: PERFORMANCE MODS
------------------------------
+4. OPTIONAL: SHADERS AND DYNAMIC LIGHTS
+----------------------------------------
+Already installed if you used the modpack (option A). Both only change your own game,
+nothing on the server, and Bedrock can't use either.
+
+Shaders (Iris + Complementary Reimagined): ship OFF by default so everyone's game starts
+fast and looks normal. To turn them on:
+  - Press "I" in-game to open the shader pack menu, select Complementary Reimagined
+    (already picked for you), and enable it there. Or press "K" to instantly toggle
+    shaders on/off without opening a menu.
+  - If shaders make your game laggy or crash, press "K" to turn them off again, or open
+    the "I" menu and disable them. Both keys can be remapped in Options > Controls >
+    Key Binds (Iris section).
+
+Dynamic lights (LambDynamicLights): nothing to turn on. Any torch, lantern, or other
+light-emitting item you (or another entity) are holding lights up the area around you
+automatically.
+
+
+5. OPTIONAL: PERFORMANCE MODS
+------------------------------
 Sodium makes the game run much faster (higher FPS) on most PCs. It is already in the
 modpack (option A). For manual Fabric installs, add the Sodium link from option B.
 Sodium 0.9.2 for 26.3 exists for Fabric and NeoForge. It only changes your own game,
 nothing on the server.
 
 
-5. BEDROCK PLAYERS (phone, tablet, Windows Bedrock, console)
+6. BEDROCK PLAYERS (phone, tablet, Windows Bedrock, console)
 ------------------------------------------------------------
 Bedrock can join too, through a bridge (Geyser).
 
@@ -143,7 +164,7 @@ Good to know:
   play on console and want to join.
 
 
-6. TROUBLESHOOTING
+7. TROUBLESHOOTING
 ------------------
 "Unknown host" / "Can't resolve hostname" with sirbepy.mcserver.host
   Use the backup address eu-de-p59-a6-cg.kineticpanel.net:25566 (with the :25566).
