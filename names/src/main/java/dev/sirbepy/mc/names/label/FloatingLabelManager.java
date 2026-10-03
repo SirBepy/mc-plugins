@@ -65,14 +65,28 @@ public final class FloatingLabelManager {
         }
     }
 
-    public void onTrack(Player target, Player viewer) {
+    /**
+     * Records the pairing only. PlayerTrackEntityEvent fires before Paper sends the target's spawn packet,
+     * so a SetPassengers sent now names an entity the viewer's client doesn't have yet and is dropped,
+     * leaving the label standing where the target was. Call {@link #showTo} a tick later instead.
+     *
+     * @return false when nothing needs showing (a player never sees their own label)
+     */
+    public boolean onTrack(Player target, Player viewer) {
         if (target.getUniqueId().equals(viewer.getUniqueId())) {
-            return;
+            return false;
         }
         trackers.computeIfAbsent(target.getUniqueId(), uuid -> ConcurrentHashMap.newKeySet()).add(viewer.getUniqueId());
-        if (!isHidden(target)) {
-            spawnAndMount(target, viewer);
+        return true;
+    }
+
+    /** Spawns and mounts the label for a viewer that is still tracking the target, unless it's hidden. */
+    public void showTo(Player target, Player viewer) {
+        Set<UUID> viewerIds = trackers.get(target.getUniqueId());
+        if (viewerIds == null || !viewerIds.contains(viewer.getUniqueId()) || isHidden(target)) {
+            return;
         }
+        spawnAndMount(target, viewer);
     }
 
     public void onUntrack(Player target, Player viewer) {

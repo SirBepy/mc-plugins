@@ -38,8 +38,13 @@ public final class LabelTrackingListener implements Listener {
 
     @EventHandler
     public void onTrack(PlayerTrackEntityEvent event) {
-        if (event.getEntity() instanceof Player target) {
-            labels.onTrack(target, event.getPlayer());
+        if (event.getEntity() instanceof Player target && labels.onTrack(target, event.getPlayer())) {
+            Player viewer = event.getPlayer();
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                if (target.isOnline() && viewer.isOnline()) {
+                    labels.showTo(target, viewer);
+                }
+            });
         }
     }
 
