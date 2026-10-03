@@ -3,6 +3,11 @@ name: default
 # The false nodes switch off HuskHomes and QuickShop extras that default to everyone (or come with the
 # quickshop.player bundle); admin.yml re-grants them, since an inherited explicit false beats admin's '*'.
 permissions:
+# Simple Voice Chat declares these in plugin.yml with no default, which Bukkit treats as op-only, so
+# non-op players had no voice chat until they were granted here.
+- voicechat.listen
+- voicechat.speak
+- voicechat.groups
 - pvpmanager.command.pvp
 - quickshop.player
 - quickshop.browse.teleport:
