@@ -13,6 +13,8 @@ scoreboard players set initialized server_rules 1
 gamerule players_sleeping_percentage 50
 # fire_spread_radius_around_player replaced doFireTick; 0 means fire never spreads from its source.
 gamerule fire_spread_radius_around_player 0
+# Hides the Player Locator Bar, which points every player at every other player within range.
+gamerule locator_bar false
 
 # Paper 26.3 keeps a separate world border per dimension (confirmed via each dimension's own
 # world_border.dat), so the nether needs its own execute-in. A #minecraft:load function's command
