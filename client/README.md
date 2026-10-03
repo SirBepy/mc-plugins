@@ -11,8 +11,8 @@ markdown) and, for voice chat, `SirBepy-Friends-Server-26.3.mrpack`.
 - `mrpack/build.py`: re-downloads every pinned file, verifies size + both hashes, then zips the
   index into the `.mrpack`. Run `python client/mrpack/build.py` after changing a pin.
 
-`<BEDROCK_PORT>` in `SETUP.txt` is a placeholder until the Kinetic Hosting panel's extra port for
-Geyser is known (see `docs/server.md` / todo 10).
+Ports in `SETUP.txt` (Bedrock 25572, voice UDP 25604) are the Kinetic Hosting panel's
+allocations, see `docs/server.md` "Kinetic (current host)".
 
 ## Pack contents (pinned 2026-10-03)
 

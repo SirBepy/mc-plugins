@@ -3,7 +3,7 @@ SIRBEPY'S FRIENDS SERVER - PLAYER SETUP
 
 Server version: Minecraft Java 26.3
 Java address:   eu-de-p59-a6-cg.kineticpanel.net:25566
-Bedrock:        eu-de-p59-a6-cg.kineticpanel.net, port <BEDROCK_PORT>
+Bedrock:        eu-de-p59-a6-cg.kineticpanel.net, port 25572
 
 The ":25566" at the end of the Java address is required. Without it you won't connect.
 
@@ -108,7 +108,7 @@ Bedrock can join too, through a bridge (Geyser).
 1. Make sure Joe has whitelisted your Xbox gamertag (see section 1).
 2. Play > Servers > scroll down > Add Server.
 3. Server Address: eu-de-p59-a6-cg.kineticpanel.net
-   Port: <BEDROCK_PORT>
+   Port: 25572
 4. Join. You must be signed in with your Xbox/Microsoft account.
 
 Good to know:
@@ -138,7 +138,8 @@ Voice chat icon says disconnected / nobody hears you
   - Make sure you installed Simple Voice Chat 2.6.24 for 26.3 (not an older version).
   - Press V > Settings and check the right microphone is selected, and that you're not
     muted or have voice chat disabled.
-  - Voice uses a separate UDP network port on the server. If it's broken for everyone,
+  - Voice uses a separate UDP network port on the server (25604). You don't type it
+    anywhere, the mod finds it by itself. If it's broken for everyone,
     tell Joe (the server's voice port may be blocked). If it's only you, your network
     (school/work Wi-Fi, some VPNs) may be blocking UDP: try another network.
 
