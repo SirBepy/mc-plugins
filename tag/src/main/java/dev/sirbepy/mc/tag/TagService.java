@@ -260,6 +260,9 @@ public final class TagService {
             config.logs.fire(LogService.Event.IT_QUIT, Placeholder.unparsed("it", player.getName()));
         }
         boards.disable(player);
+        // Spam guard, not state: nothing left to debounce once the player is gone, and keeping it
+        // around would leak one UUID per player forever.
+        tagbackMessageCooldown.remove(player.getUniqueId());
     }
 
     // --- points tick -----------------------------------------------------------------------
