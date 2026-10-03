@@ -5,7 +5,6 @@ import dev.sirbepy.mc.names.config.NamesConfig;
 import dev.sirbepy.mc.names.data.ColorChoice;
 import dev.sirbepy.mc.names.data.ColorPalette;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -83,11 +82,11 @@ public final class ColorGui implements InventoryHolder {
         return item;
     }
 
-    private static ItemStack resetItem(Messages messages) {
+    /** Package-private so tests can prove a configured override of color-gui-reset is what gets rendered. */
+    static ItemStack resetItem(Messages messages) {
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
-        meta.displayName(Component.text("Reset", NamedTextColor.GRAY)
-                .decoration(TextDecoration.ITALIC, false));
+        meta.displayName(messages.render("color-gui-reset").decoration(TextDecoration.ITALIC, false));
         meta.lore(List.of(messages.render("color-gui-apply-hint").decoration(TextDecoration.ITALIC, false)));
         item.setItemMeta(meta);
         return item;

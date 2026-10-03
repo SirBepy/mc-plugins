@@ -67,6 +67,7 @@ messages:
   player-only: "<red>Only a player can run that command.</red>"
   color-gui-title: "<dark_gray>Choose a color"
   color-gui-apply-hint: "<gray>Click to apply</gray>"
+  color-gui-reset: "<gray>Reset</gray>"
   color-applied: "<green>Color applied.</green>"
   color-reset: "<green>Color reset to default.</green>"
   gradient-no-permission: "<red>You don't have permission to use gradients.</red>"
@@ -82,3 +83,4 @@ messages:
   nick-impersonation: "<red>That nickname is already a player's real name.</red>"
   nick-player-not-found: "<red>No player named <target> was found.</red>"
   reload-done: "<green>Names reloaded.</green>"
+  reload-usage: "Usage: /names reload"
