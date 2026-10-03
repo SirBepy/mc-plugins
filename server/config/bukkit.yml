@@ -10,7 +10,8 @@
 # Website: https://papermc.io/
 
 settings:
-  allow-end: true
+  # The End stays closed until the owner opens it; flip back to true and restart to open it.
+  allow-end: false
   warn-on-overload: true
   permissions-file: permissions.yml
   update-folder: update
