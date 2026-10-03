@@ -1,13 +1,13 @@
 import { Vec3 } from 'vec3';
 import {
-  Rcon, assert, createBot, quit, sleep, teleport, waitFor, waitForLine,
+  Rcon, assert, buildPlatform, createBot, quit, randomOrigin, releasePlatform, sleep, teleport,
+  waitFor, waitForLine,
 } from './lib.mjs';
 
 // Three bots stand in a row on a fresh platform. PvPManager gives new players spawn PvP protection,
 // so every tag here also proves tagging works with PvP off.
 const PLATFORM_Y = 200;
-const BX = 16 * Math.floor(Math.random() * 40 - 20);
-const BZ = 16 * Math.floor(Math.random() * 40 - 20);
+const { bx: BX, bz: BZ } = randomOrigin();
 const HEAD_SLOT = 5;
 const PREFIX = '☣';
 
@@ -45,9 +45,7 @@ async function hit(attacker, victim) {
 }
 
 try {
-  await rcon.command(`minecraft:forceload add ${BX - 16} ${BZ - 16} ${BX + 16} ${BZ + 16}`);
-  await rcon.command(`minecraft:fill ${BX - 8} ${PLATFORM_Y} ${BZ - 8} ${BX + 8} ${PLATFORM_Y} ${BZ + 8} minecraft:stone`);
-  await rcon.command(`minecraft:fill ${BX - 8} ${PLATFORM_Y + 1} ${BZ - 8} ${BX + 8} ${PLATFORM_Y + 4} ${BZ + 8} minecraft:air`);
+  await buildPlatform(rcon, BX, BZ, PLATFORM_Y);
   await rcon.command('tag clear');
 
   for (const [name, dx] of [['TagA', 0], ['TagB', 2], ['TagC', 4]]) {
@@ -209,7 +207,7 @@ try {
   console.error(`FAIL after ${results.length} passed: ${error.message}`);
   process.exitCode = 1;
 } finally {
-  await rcon.command(`minecraft:forceload remove ${BX - 16} ${BZ - 16} ${BX + 16} ${BZ + 16}`).catch(() => {});
+  await releasePlatform(rcon, BX, BZ);
   await quit(...Object.values(bots));
   rcon.close();
 }

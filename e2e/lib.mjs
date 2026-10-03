@@ -219,3 +219,21 @@ export async function quit(...bots) {
   }
   await sleep(500);
 }
+
+/** A fresh spot every run, so protections and grants left by an earlier run can't leak in. */
+export function randomOrigin() {
+  return { bx: 16 * Math.floor(Math.random() * 40 - 20), bz: 16 * Math.floor(Math.random() * 40 - 20) };
+}
+
+/** Forceloads around (bx, bz) and carves a 16x16 stone floor at y with 4 blocks of air above it. */
+export async function buildPlatform(rcon, bx, bz, y) {
+  // /fill silently does nothing in unloaded chunks.
+  await rcon.command(`minecraft:forceload add ${bx - 16} ${bz - 16} ${bx + 16} ${bz + 16}`);
+  await rcon.command(`minecraft:fill ${bx - 8} ${y} ${bz - 8} ${bx + 8} ${y} ${bz + 8} minecraft:stone`);
+  await rcon.command(`minecraft:fill ${bx - 8} ${y + 1} ${bz - 8} ${bx + 8} ${y + 4} ${bz + 8} minecraft:air`);
+}
+
+/** Releases the forceload ticket added by buildPlatform. Never throws: always called during cleanup. */
+export async function releasePlatform(rcon, bx, bz) {
+  await rcon.command(`minecraft:forceload remove ${bx - 16} ${bz - 16} ${bx + 16} ${bz + 16}`).catch(() => {});
+}

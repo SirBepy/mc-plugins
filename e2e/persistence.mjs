@@ -3,7 +3,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Vec3 } from 'vec3';
 import {
-  Rcon, assert, createBot, quit, sleep, teleport, tryOpen, waitFor, waitForLine,
+  Rcon, assert, buildPlatform, createBot, quit, randomOrigin, releasePlatform, sleep, teleport,
+  tryOpen, waitFor, waitForLine,
 } from './lib.mjs';
 
 // Two phases around a real server restart:
@@ -38,11 +39,8 @@ async function join(name, x, z) {
 
 try {
   if (phase === 'setup') {
-    const BX = 16 * Math.floor(Math.random() * 40 - 20);
-    const BZ = 16 * Math.floor(Math.random() * 40 - 20);
-    await rcon.command(`minecraft:forceload add ${BX - 16} ${BZ - 16} ${BX + 16} ${BZ + 16}`);
-    await rcon.command(`minecraft:fill ${BX - 8} ${PLATFORM_Y} ${BZ - 8} ${BX + 8} ${PLATFORM_Y} ${BZ + 8} minecraft:stone`);
-    await rcon.command(`minecraft:fill ${BX - 8} ${PLATFORM_Y + 1} ${BZ - 8} ${BX + 8} ${PLATFORM_Y + 4} ${BZ + 8} minecraft:air`);
+    const { bx: BX, bz: BZ } = randomOrigin();
+    await buildPlatform(rcon, BX, BZ, PLATFORM_Y);
     const owner = await join('PersB', BX, BZ);
     const longGuest = await join('PersA', BX + 2, BZ);
     const shortGuest = await join('PersC', BX + 4, BZ);
@@ -113,7 +111,7 @@ try {
     owner.chat('/safe-chests-unwhitelist PersA');
     await sleep(500);
     await rcon.command('tag clear');
-    await rcon.command(`minecraft:forceload remove ${BX - 16} ${BZ - 16} ${BX + 16} ${BZ + 16}`);
+    await releasePlatform(rcon, BX, BZ);
     fs.rmSync(stateFile);
     console.log(`\nPersistence e2e: ${results.length} passed`);
   } else {

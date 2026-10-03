@@ -1,13 +1,12 @@
 import { Vec3 } from 'vec3';
 import {
-  Rcon, assert, createBot, quit, sleep, teleport, tryOpen, waitFor, waitForClick, waitForLine,
+  Rcon, assert, buildPlatform, createBot, quit, randomOrigin, releasePlatform, sleep, teleport,
+  tryOpen, waitFor, waitForClick, waitForLine,
 } from './lib.mjs';
 
 // Owner places chests on a stone platform high above terrain; Guest tries every access path.
 const PLATFORM_Y = 200;
-// A fresh spot every run, so protections and grants left by an earlier run can't leak in.
-const BX = 16 * Math.floor(Math.random() * 40 - 20);
-const BZ = 16 * Math.floor(Math.random() * 40 - 20);
+const { bx: BX, bz: BZ } = randomOrigin();
 const rcon = await Rcon.connect();
 let owner;
 let guest;
@@ -37,10 +36,7 @@ async function step(name, fn) {
 }
 
 try {
-  // /fill silently does nothing in unloaded chunks.
-  await rcon.command(`minecraft:forceload add ${BX - 16} ${BZ - 16} ${BX + 16} ${BZ + 16}`);
-  await rcon.command(`minecraft:fill ${BX - 8} ${PLATFORM_Y} ${BZ - 8} ${BX + 8} ${PLATFORM_Y} ${BZ + 8} minecraft:stone`);
-  await rcon.command(`minecraft:fill ${BX - 8} ${PLATFORM_Y + 1} ${BZ - 8} ${BX + 8} ${PLATFORM_Y + 4} ${BZ + 8} minecraft:air`);
+  await buildPlatform(rcon, BX, BZ, PLATFORM_Y);
   owner = await createBot('ChestOwner');
   guest = await createBot('ChestGuest');
   for (const bot of [owner, guest]) {
@@ -144,7 +140,7 @@ try {
   console.error(`FAIL after ${results.length} passed: ${error.message}`);
   process.exitCode = 1;
 } finally {
-  await rcon.command(`minecraft:forceload remove ${BX - 16} ${BZ - 16} ${BX + 16} ${BZ + 16}`).catch(() => {});
+  await releasePlatform(rcon, BX, BZ);
   await quit(owner, guest);
   rcon.close();
 }

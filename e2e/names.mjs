@@ -1,11 +1,11 @@
 import {
-  Rcon, assert, createBot, nbtText, quit, sleep, teleport, waitFor, waitForLine,
+  Rcon, assert, buildPlatform, createBot, nbtText, quit, randomOrigin, releasePlatform, sleep, teleport,
+  waitFor, waitForLine,
 } from './lib.mjs';
 
 // NameA picks colors and nicknames; NameB watches chat, the tab list and the floating label.
 const PLATFORM_Y = 200;
-const BX = 16 * Math.floor(Math.random() * 40 - 20);
-const BZ = 16 * Math.floor(Math.random() * 40 - 20);
+const { bx: BX, bz: BZ } = randomOrigin();
 
 const rcon = await Rcon.connect();
 const bots = {};
@@ -35,9 +35,7 @@ async function openWindow(bot, command) {
 }
 
 try {
-  await rcon.command(`minecraft:forceload add ${BX - 16} ${BZ - 16} ${BX + 16} ${BZ + 16}`);
-  await rcon.command(`minecraft:fill ${BX - 8} ${PLATFORM_Y} ${BZ - 8} ${BX + 8} ${PLATFORM_Y} ${BZ + 8} minecraft:stone`);
-  await rcon.command(`minecraft:fill ${BX - 8} ${PLATFORM_Y + 1} ${BZ - 8} ${BX + 8} ${PLATFORM_Y + 4} ${BZ + 8} minecraft:air`);
+  await buildPlatform(rcon, BX, BZ, PLATFORM_Y);
   for (const [name, dx] of [['NameA', 0], ['NameB', 3]]) {
     const bot = await createBot(name);
     bots[name] = bot;
@@ -49,6 +47,26 @@ try {
   await rcon.command('nick NameA reset').catch(() => {});
   NameA.chat('/nick reset');
   await sleep(500);
+
+  // Guard for todo 14: a brand-new username (LuckPerms has never loaded this player before) must
+  // get names.color (default: everyone) on its very first command, not "You don't have permission
+  // to do that." Root-caused as unreproducible after a fresh world + fresh LuckPerms H2 store and
+  // ~30 join attempts (sequential and concurrent, near-0ms join-to-command); kept as a regression
+  // tripwire since the denial, when it appeared once, was real (plugin message, not a timeout).
+  await step('a never-before-seen player can use /color right after joining', async () => {
+    const freshName = `Frsh${Date.now().toString(36)}`;
+    const freshBot = await createBot(freshName);
+    bots[freshName] = freshBot;
+    const mark = freshBot.lines.length;
+    try {
+      const window = await openWindow(freshBot, '/color');
+      freshBot.closeWindow(window);
+    } catch (error) {
+      const seen = freshBot.lines.slice(mark);
+      const denied = seen.some((l) => /permission/i.test(l));
+      throw new Error(denied ? `denied on first command: ${seen.join(' | ')}` : error.message);
+    }
+  });
 
   await step('/color opens a GUI with colors', async () => {
     const window = await openWindow(NameA, '/color');
@@ -125,7 +143,7 @@ try {
   process.exitCode = 1;
 } finally {
   await rcon.command('minecraft:deop NameA').catch(() => {});
-  await rcon.command(`minecraft:forceload remove ${BX - 16} ${BZ - 16} ${BX + 16} ${BZ + 16}`).catch(() => {});
+  await releasePlatform(rcon, BX, BZ);
   await quit(...Object.values(bots));
   rcon.close();
 }

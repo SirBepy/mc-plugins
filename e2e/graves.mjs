@@ -1,5 +1,5 @@
 import {
-  Rcon, assert, createBot, quit, sleep, teleport, waitFor,
+  Rcon, assert, buildPlatform, createBot, quit, randomOrigin, releasePlatform, sleep, teleport, waitFor,
 } from './lib.mjs';
 
 // Risk under test: the real server ships Vanilla Tweaks' graves datapack, which scoops every item
@@ -8,8 +8,7 @@ import {
 // should never see it; the player's other items (including the PDC-marked displaced helmet) should
 // still land in the grave normally, and the head should come back on after respawn via the watchdog.
 const PLATFORM_Y = 200;
-const BX = 16 * Math.floor(Math.random() * 40 - 20);
-const BZ = 16 * Math.floor(Math.random() * 40 - 20);
+const { bx: BX, bz: BZ } = randomOrigin();
 const HEAD_SLOT = 5;
 
 const rcon = await Rcon.connect();
@@ -51,9 +50,7 @@ async function nearestItemEntityDump(pos) {
 }
 
 try {
-  await rcon.command(`minecraft:forceload add ${BX - 16} ${BZ - 16} ${BX + 16} ${BZ + 16}`);
-  await rcon.command(`minecraft:fill ${BX - 8} ${PLATFORM_Y} ${BZ - 8} ${BX + 8} ${PLATFORM_Y} ${BZ + 8} minecraft:stone`);
-  await rcon.command(`minecraft:fill ${BX - 8} ${PLATFORM_Y + 1} ${BZ - 8} ${BX + 8} ${PLATFORM_Y + 4} ${BZ + 8} minecraft:air`);
+  await buildPlatform(rcon, BX, BZ, PLATFORM_Y);
   await rcon.command('tag clear');
 
   bot = await createBot('GraveA');
@@ -127,7 +124,7 @@ try {
   console.error(`FAIL after ${results.length} passed: ${error.message}`);
   process.exitCode = 1;
 } finally {
-  await rcon.command(`minecraft:forceload remove ${BX - 16} ${BZ - 16} ${BX + 16} ${BZ + 16}`).catch(() => {});
+  await releasePlatform(rcon, BX, BZ);
   await quit(bot);
   rcon.close();
 }
