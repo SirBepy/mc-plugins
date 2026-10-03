@@ -71,8 +71,32 @@ public final class GrantManager {
         pruneTombstones(Instant.now());
     }
 
-    /** Re-applies every pending tombstone, unless a grant made since the revoke now covers it again. */
+    /**
+     * Re-applies every pending tombstone, unless a grant made since the revoke now covers it again, then
+     * restarts the retention clock on all of them (boot-only: see {@link #replayPendingTombstones()}).
+     */
     private void applyTombstones() {
+        replayPendingTombstones();
+        // The replay is itself an async Bolt write, so the retention clock restarts now: after a long
+        // downtime the boot-time prune would otherwise drop a tombstone whose replay hasn't landed yet.
+        if (!whitelistTombstones.isEmpty() || !oneTimeTombstones.isEmpty()) {
+            Instant now = Instant.now();
+            whitelistTombstones.replaceAll(t -> new WhitelistTombstone(t.owner(), t.grantee(), now));
+            oneTimeTombstones.replaceAll(t -> new OneTimeTombstone(t.world(), t.x(), t.y(), t.z(), t.grantee(), now));
+            store.saveWhitelistTombstones(whitelistTombstones);
+            store.saveOneTimeTombstones(oneTimeTombstones);
+        }
+    }
+
+    /**
+     * Re-applies every pending tombstone against Bolt's current protection set, unless a grant made since
+     * the revoke now covers it again. Idempotent and safe to call on every periodic sweep (not just boot):
+     * re-revoking an access entry that is already gone is a no-op, and a tombstone whose protection is not
+     * yet visible to Bolt (e.g. the boot sweep ran before Bolt's own load finished, or hit a transient
+     * error) is simply retried next time, closing the gap a one-shot boot pass could miss - see
+     * {@code SafeChestsPlugin}'s periodic sweep.
+     */
+    public void replayPendingTombstones() {
         for (WhitelistTombstone tombstone : whitelistTombstones) {
             if (isWhitelisted(tombstone.owner(), tombstone.grantee())) {
                 continue;
@@ -91,15 +115,6 @@ public final class GrantManager {
                 continue;
             }
             bolt.revokeAccess(protection, tombstone.grantee());
-        }
-        // The replay is itself an async Bolt write, so the retention clock restarts now: after a long
-        // downtime the boot-time prune would otherwise drop a tombstone whose replay hasn't landed yet.
-        if (!whitelistTombstones.isEmpty() || !oneTimeTombstones.isEmpty()) {
-            Instant now = Instant.now();
-            whitelistTombstones.replaceAll(t -> new WhitelistTombstone(t.owner(), t.grantee(), now));
-            oneTimeTombstones.replaceAll(t -> new OneTimeTombstone(t.world(), t.x(), t.y(), t.z(), t.grantee(), now));
-            store.saveWhitelistTombstones(whitelistTombstones);
-            store.saveOneTimeTombstones(oneTimeTombstones);
         }
     }
 

@@ -46,6 +46,9 @@ public final class SafeChestsPlugin extends JavaPlugin {
     }
 
     private void sweep() {
+        // Finishes any revoke the boot pass could not see yet (e.g. Bolt's own protection load was still
+        // empty/incomplete at that moment): idempotent, so replaying an already-applied tombstone is a no-op.
+        grants.replayPendingTombstones();
         grants.sweepExpiredWhitelist(java.time.Instant.now());
         grants.pruneTombstones(java.time.Instant.now());
         requests.sweepExpired().forEach(request -> {

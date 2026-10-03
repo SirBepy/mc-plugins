@@ -209,6 +209,28 @@ class TombstoneReplayTest {
     }
 
     @Test
+    void periodicReplayFinishesARevokeTheBootPassCouldNotSeeYet() {
+        // Simulates Bolt's own protection load being empty/incomplete at boot time (e.g. a transient
+        // error in Bolt's own store): the boot sweep finds no protection to revoke, so the tombstone it
+        // wrote is the only record of the pending revoke. The chest only becomes visible to Bolt
+        // afterwards, still carrying the access entry a correctly-functioning boot sweep would have
+        // stripped. The periodic sweep's replay (not a second boot) must finish that revoke once Bolt's
+        // set is actually complete - this is what distinguishes replayPendingTombstones from a boot-only fix.
+        GrantStore store = new GrantStore(storeFile, Logger.getAnonymousLogger());
+        store.saveWhitelistTombstones(List.of(new WhitelistTombstone(owner, grantee, Instant.now())));
+        GrantManager reloaded = new GrantManager(new BoltAccess(api), store, () -> "normal");
+        reloaded.loadAndSweep(); // Bolt has no protections yet: nothing to revoke, tombstone survives
+
+        BlockProtection chestA = chest(owner, 0); // the chest "appears" to Bolt only now
+        chestA.getAccess().put(Source.player(grantee).toString(), "normal"); // still carries stale access
+
+        reloaded.replayPendingTombstones(); // what the periodic sweep (every 15s) now also calls
+
+        assertFalse(chestA.getAccess().containsKey(Source.player(grantee).toString()),
+                "the periodic sweep must finish a revoke the boot pass could not see yet");
+    }
+
+    @Test
     void grantsYmlRoundTripsWhitelistAndOneTimeTombstones() {
         GrantStore store = new GrantStore(storeFile, Logger.getAnonymousLogger());
         Instant when = Instant.now().minus(Duration.ofMinutes(2));
