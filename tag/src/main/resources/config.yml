@@ -55,6 +55,9 @@ messages:
   nobody-it: "<gray>Nobody is IT right now.</gray>"
   who-is-it: "<yellow><it> is IT.</yellow>"
   reloaded: "<green>Tag config reloaded.</green>"
+  stats-line: "<aqua><player> - points: <points>, tagged: <tagged>, tags made: <made>, minutes IT (online/offline): <minutes-online>/<minutes-offline></aqua>"
+  leaderboard-header: "<gold>Tag leaderboard (lowest wins):</gold>"
+  leaderboard-entry: "<white><rank>. <player> - <points></white>"
 
 # Placeholders available per event: <tagger>, <tagged>, <it>, <points>, <player>.
 logs:

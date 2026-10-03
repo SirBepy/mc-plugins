@@ -2,13 +2,12 @@ package dev.sirbepy.mc.tag.command;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.tree.LiteralCommandNode;
+import dev.sirbepy.mc.core.Messages;
 import dev.sirbepy.mc.tag.TagPlugin;
 import dev.sirbepy.mc.tag.TagService;
 import dev.sirbepy.mc.tag.state.PlayerStats;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -17,8 +16,11 @@ import org.bukkit.entity.Player;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Function;
 
 /** Registers every `/tag ...` subcommand through Brigadier (never plugin.yml, per the house rule). */
 public final class TagCommands {
@@ -165,28 +167,44 @@ public final class TagCommands {
         return com.mojang.brigadier.Command.SINGLE_SUCCESS;
     }
 
-    private void sendStats(CommandSender sender, java.util.UUID uuid, String name) {
+    private void sendStats(CommandSender sender, UUID uuid, String name) {
         PlayerStats stats = plugin.service().state().statsFor(uuid);
-        sender.sendMessage(Component.text(name + " - points: " + TagService.formatPoints(stats.points)
-                + ", tagged: " + stats.timesTagged + ", tags made: " + stats.tagsMade
-                + ", minutes IT (online/offline): " + String.format(java.util.Locale.ROOT, "%.1f/%.1f",
-                stats.minutesItOnline, stats.minutesItOffline), NamedTextColor.AQUA));
+        sendStats(sender, plugin.service().config().messages, name, stats);
+    }
+
+    /** Package-private so tests can prove a configured override of {@code stats-line} is what gets sent. */
+    static void sendStats(CommandSender sender, Messages messages, String name, PlayerStats stats) {
+        messages.send(sender, "stats-line",
+                Placeholder.unparsed("player", name),
+                Placeholder.unparsed("points", TagService.formatPoints(stats.points)),
+                Placeholder.unparsed("tagged", String.valueOf(stats.timesTagged)),
+                Placeholder.unparsed("made", String.valueOf(stats.tagsMade)),
+                Placeholder.unparsed("minutes-online", String.format(Locale.ROOT, "%.1f", stats.minutesItOnline)),
+                Placeholder.unparsed("minutes-offline", String.format(Locale.ROOT, "%.1f", stats.minutesItOffline)));
     }
 
     private int runTop(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
         CommandSender sender = ctx.getSource().getSender();
-        List<Map.Entry<java.util.UUID, PlayerStats>> ranked = plugin.service().state().stats.entrySet().stream()
+        List<Map.Entry<UUID, PlayerStats>> ranked = plugin.service().state().stats.entrySet().stream()
                 .sorted(Comparator.comparingDouble(e -> e.getValue().points))
                 .limit(10)
                 .toList();
-        sender.sendMessage(Component.text("Tag leaderboard (lowest wins):", NamedTextColor.GOLD));
+        sendLeaderboard(sender, plugin.service().config().messages, ranked, plugin.service()::nameOf);
+        return com.mojang.brigadier.Command.SINGLE_SUCCESS;
+    }
+
+    /** Package-private so tests can prove a configured override of the leaderboard templates is what gets sent. */
+    static void sendLeaderboard(CommandSender sender, Messages messages, List<Map.Entry<UUID, PlayerStats>> ranked,
+                                 Function<UUID, String> nameOf) {
+        messages.send(sender, "leaderboard-header");
         int rank = 1;
-        for (Map.Entry<java.util.UUID, PlayerStats> entry : ranked) {
-            sender.sendMessage(Component.text(rank + ". " + plugin.service().nameOf(entry.getKey()) + " - "
-                    + TagService.formatPoints(entry.getValue().points), NamedTextColor.WHITE));
+        for (Map.Entry<UUID, PlayerStats> entry : ranked) {
+            messages.send(sender, "leaderboard-entry",
+                    Placeholder.unparsed("rank", String.valueOf(rank)),
+                    Placeholder.unparsed("player", nameOf.apply(entry.getKey())),
+                    Placeholder.unparsed("points", TagService.formatPoints(entry.getValue().points)));
             rank++;
         }
-        return com.mojang.brigadier.Command.SINGLE_SUCCESS;
     }
 
     private int runBoard(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
