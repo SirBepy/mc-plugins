@@ -28,6 +28,13 @@ object ServerArtifacts {
         "https://cdn.modrinth.com/data/aKCwCJlY/versions/EV74q3tR/Structory_v1.3.18%2B26.3.zip",
         "https://cdn.modrinth.com/data/j3FONRYr/versions/4ahPGAsT/Structory_Towers_v1.0.19%2B26.3.zip",
         "https://cdn.modrinth.com/data/wXiGiyGX/versions/sKKMLxcI/Amplified_Nether_v1.3.0%2B26.3.zip",
+        // Structure pack #2 alongside Structory (Joe: "I think dungeons-and-taverns is better, but
+        // structory might work better with the other datapacks"); no documented conflict found
+        // between the two, or with Terralith/Incendium, so both ship (resolved 2026-10-03).
+        "https://cdn.modrinth.com/data/tpehi7ww/versions/iqFWpMVO/Dungeons%20and%20Taverns%20v6.0.2.zip",
+        // Stonecutter recipe expansion (500+ recipes), unrelated to player heads despite the link
+        // Joe sent (see server/datapacks/README.md); pure data, no textures/conflicts.
+        "https://cdn.modrinth.com/data/DuUMFIfX/versions/IJwVIaLT/MasterCutter%2Bv1.8.0-mc26.3.zip",
     )
 
     // A pinned download with an explicit target filename and expected hash: some hosts (GeyserMC's
