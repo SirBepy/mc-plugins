@@ -47,6 +47,7 @@ public final class SafeChestsPlugin extends JavaPlugin {
 
     private void sweep() {
         grants.sweepExpiredWhitelist(java.time.Instant.now());
+        grants.pruneTombstones(java.time.Instant.now());
         requests.sweepExpired().forEach(request -> {
             org.bukkit.entity.Player requester = getServer().getPlayer(request.requester());
             org.bukkit.entity.Player owner = getServer().getPlayer(request.owner());

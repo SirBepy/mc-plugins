@@ -7,9 +7,12 @@ import {
 } from './lib.mjs';
 
 // Two phases around a real server restart:
-//   node persistence.mjs setup   -> make PersA IT, give PersA a long chest grant and PersC a 3s one
+//   node persistence.mjs setup   -> make PersA IT, give PersA a long chest grant and PersC a 3s one,
+//                                    then whitelist and immediately unwhitelist PersD with no pause
+//                                    before the restart (see PersD below for why)
 //   (restart the e2e server)
-//   node persistence.mjs verify  -> IT, head, prefix and the long grant survived; the short one expired
+//   node persistence.mjs verify  -> IT, head, prefix and the long grant survived; the short one
+//                                    expired; PersD's revoke (made right before the kill) stayed revoked
 const phase = process.argv[2];
 const here = path.dirname(fileURLToPath(import.meta.url));
 const stateFile = path.join(here, '..', 'testserver', 'run-e2e', 'persistence-e2e.json');
@@ -55,6 +58,17 @@ try {
     await waitForLine(owner, /PersA can now open all your chests/);
     owner.chat('/safe-chests-whitelist PersC 3s');
     await waitForLine(owner, /PersC can now open all your chests/);
+
+    await join('PersD', BX + 6, BZ);
+    owner.chat('/safe-chests-whitelist PersD 1h');
+    await waitForLine(owner, /PersD can now open all your chests/);
+    owner.chat('/safe-chests-unwhitelist PersD');
+    await waitForLine(owner, /PersD can no longer open your chests/);
+    // No wait here before the restart below: GrantManager's revoke tombstone (grants.yml), not a live
+    // sweep having time to run, is what must keep PersD out - Bolt's own save for this revoke
+    // (BoltAPI.saveProtection -> SQLStore.saveBlockProtection's discarded CompletableFuture.runAsync)
+    // is deliberately given no chance to land before the kill.
+
     await rcon.command('tag set PersA');
     await waitFor(() => longGuest.inventory.slots[5]?.name === 'player_head', 'PersA wears the head');
     fs.writeFileSync(stateFile, JSON.stringify({ BX, BZ, chest: [BX, PLATFORM_Y + 1, BZ + 3] }));
@@ -89,6 +103,11 @@ try {
 
     await step('the 3s chest grant that expired during downtime is revoked', async () => {
       assert(!(await tryOpen(shortGuest, shortGuest.blockAt(new Vec3(...chest)))), 'PersC denied');
+    });
+
+    await step('a whitelist revoke made right before the hard kill stays revoked after boot', async () => {
+      const deniedGuest = await join('PersD', BX + 6, BZ);
+      assert(!(await tryOpen(deniedGuest, deniedGuest.blockAt(new Vec3(...chest)))), 'PersD denied');
     });
 
     owner.chat('/safe-chests-unwhitelist PersA');
