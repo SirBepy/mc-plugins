@@ -28,6 +28,12 @@ permissions:
 - essentials.seen
 - essentials.mail
 - essentials.mail.send
+# EssentialsX keeps the inventory/XP of anyone holding these, which '*' grants admins; inherited false
+# here makes death drop everything for every group, admin included.
+- essentials.keepinv:
+    value: false
+- essentials.keepxp:
+    value: false
 - huskhomes.max_homes.3
 - huskhomes.command.rtp:
     value: false
