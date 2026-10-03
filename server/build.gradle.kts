@@ -139,24 +139,11 @@ fun injectSecrets(distDir: File) {
     }
 }
 
-// Local-smoke-test-only overrides, applied after the real server.properties is copied in. Never
-// called by assembleServer, only assembleLocalServer, so these never reach the real server.
-fun applyLocalOverrides(propsFile: File, previousRconPassword: String?) {
-    val rconPassword = previousRconPassword?.takeIf { it.isNotBlank() } ?: java.util.UUID.randomUUID().toString()
-    val overrides = linkedMapOf(
-        "online-mode" to "false",
-        "white-list" to "false",
-        "enforce-whitelist" to "false",
-        "server-ip" to "127.0.0.1",
-        // 25566/25576 (not the real server's 25565/25575): so this local smoke server can run
-        // alongside testserver's bot e2e server, which owns 25565/25575.
-        "server-port" to "25566",
-        "enable-rcon" to "true",
-        "rcon.port" to "25576",
-        "rcon.password" to rconPassword,
-    )
-    // On the very first local assemble, config/server.properties doesn't exist yet (it's generated
-    // from this first boot, per docs/server.md), so there may be nothing to read here yet.
+// Shared by every local-only override function below: patches/appends properties into an existing
+// (or absent, on a very first assemble) server.properties without touching unrelated keys.
+fun applyPropertyOverrides(propsFile: File, overrides: Map<String, String>) {
+    // On the very first assemble of a fresh dist dir, server.properties doesn't exist yet (it's
+    // generated from this first boot, per docs/server.md), so there may be nothing to read here yet.
     val lines = if (propsFile.exists()) propsFile.readLines().toMutableList() else mutableListOf()
     overrides.forEach { (key, value) ->
         val line = "$key=$value"
@@ -164,6 +151,50 @@ fun applyLocalOverrides(propsFile: File, previousRconPassword: String?) {
         if (idx >= 0) lines[idx] = line else lines.add(line)
     }
     propsFile.writeText(lines.joinToString("\n") + "\n")
+}
+
+// A fresh random password only on the very first assemble of a dist dir; re-assembling keeps
+// whatever RCON already authenticates with so a booted server's console doesn't get locked out.
+fun rconPasswordOrGenerate(previous: String?) = previous?.takeIf { it.isNotBlank() } ?: java.util.UUID.randomUUID().toString()
+
+// Local-smoke-test-only overrides, applied after the real server.properties is copied in. Never
+// called by assembleServer, only assembleLocalServer, so these never reach the real server.
+fun applyLocalOverrides(propsFile: File, previousRconPassword: String?) {
+    applyPropertyOverrides(
+        propsFile,
+        linkedMapOf(
+            "online-mode" to "false",
+            "white-list" to "false",
+            "enforce-whitelist" to "false",
+            "server-ip" to "127.0.0.1",
+            // 25566/25576 (not the real server's 25565/25575): so this local smoke server can run
+            // alongside testserver's bot e2e server, which owns 25565/25575.
+            "server-port" to "25566",
+            "enable-rcon" to "true",
+            "rcon.port" to "25576",
+            "rcon.password" to rconPasswordOrGenerate(previousRconPassword),
+        ),
+    )
+}
+
+// Terrain-pregeneration-only overrides: a disposable, Chunky-driven boot used once to generate the
+// world before it's uploaded to the host, never touched by assembleServer or assembleLocalServer.
+fun applyPregenOverrides(propsFile: File, previousRconPassword: String?) {
+    applyPropertyOverrides(
+        propsFile,
+        linkedMapOf(
+            "online-mode" to "false",
+            "white-list" to "false",
+            "enforce-whitelist" to "false",
+            "server-ip" to "127.0.0.1",
+            // 25567/25577: distinct from the real server (25565/25575), server/local (25566/25576)
+            // and testserver's e2e server (25565/25575), so all four can run at once if needed.
+            "server-port" to "25567",
+            "enable-rcon" to "true",
+            "rcon.port" to "25577",
+            "rcon.password" to rconPasswordOrGenerate(previousRconPassword),
+        ),
+    )
 }
 
 // Local-smoke-test-only: Geyser's own Bedrock login validation checks a real Xbox Live JWT chain,
@@ -183,12 +214,16 @@ fun applyLocalGeyserOverrides(distDir: File) {
     )
 }
 
-fun registerAssemble(name: String, distDirPath: String, local: Boolean) = tasks.register(name) {
+// REAL ships to the host as-is; LOCAL and PREGEN are both disposable, local-only boots that get
+// server.properties overrides (different ports/passwords each, see applyLocalOverrides/applyPregenOverrides).
+enum class AssembleMode { REAL, LOCAL, PREGEN }
+
+fun registerAssemble(name: String, distDirPath: String, mode: AssembleMode) = tasks.register(name) {
     group = "server"
-    description = if (local) {
-        "Assembles the real server folder into server/local with local-only overrides, for smoke testing."
-    } else {
-        "Assembles the real friends-server folder into server/dist."
+    description = when (mode) {
+        AssembleMode.REAL -> "Assembles the real friends-server folder into server/dist."
+        AssembleMode.LOCAL -> "Assembles the real server folder into server/local with local-only overrides, for smoke testing."
+        AssembleMode.PREGEN -> "Assembles the real server folder into server/pregen with local-only overrides, for one-time Chunky terrain pre-generation."
     }
     outputs.upToDateWhen { false }
     dependsOn(ourPluginProjects.map { project(it).tasks.named("shadowJar") })
@@ -199,9 +234,9 @@ fun registerAssemble(name: String, distDirPath: String, local: Boolean) = tasks.
         distDir.mkdirs()
 
         // Captured before the config copy below overwrites server.properties, so a local rcon
-        // password survives repeated assembleLocalServer runs ("generated once").
+        // password survives repeated assembleLocalServer/assemblePregenServer runs ("generated once").
         val propsFile = distDir.resolve("server.properties")
-        val previousRconPassword = if (local && propsFile.exists()) {
+        val previousRconPassword = if (mode != AssembleMode.REAL && propsFile.exists()) {
             propsFile.readLines().firstOrNull { it.startsWith("rcon.password=") }?.substringAfter('=')
         } else {
             null
@@ -252,15 +287,20 @@ fun registerAssemble(name: String, distDirPath: String, local: Boolean) = tasks.
         writeStartScripts(distDir)
         injectSecrets(distDir)
 
-        if (local) {
-            applyLocalOverrides(propsFile, previousRconPassword)
-            applyLocalGeyserOverrides(distDir)
+        when (mode) {
+            AssembleMode.LOCAL -> {
+                applyLocalOverrides(propsFile, previousRconPassword)
+                applyLocalGeyserOverrides(distDir)
+            }
+            AssembleMode.PREGEN -> applyPregenOverrides(propsFile, previousRconPassword)
+            AssembleMode.REAL -> {}
         }
     }
 }
 
-registerAssemble("assembleServer", "dist", local = false)
-registerAssemble("assembleLocalServer", "local", local = true)
+registerAssemble("assembleServer", "dist", AssembleMode.REAL)
+registerAssemble("assembleLocalServer", "local", AssembleMode.LOCAL)
+registerAssemble("assemblePregenServer", "pregen", AssembleMode.PREGEN)
 
 fun gitShortSha(): String {
     val process = ProcessBuilder("git", "rev-parse", "--short", "HEAD")

@@ -15,6 +15,7 @@ reports/
 # wipe a locally booted world or Floodgate's key.pem) and anything secret, never committed.
 server/dist/
 server/local/
+server/pregen/
 server/secrets.properties
 server/bundle/
 **/key.pem
