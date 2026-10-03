@@ -18,6 +18,9 @@ object ServerArtifacts {
         "https://cdn.modrinth.com/data/hXiIvTyT/versions/nY6VN1XH/EssentialsX-2.22.0.jar",
         "https://cdn.modrinth.com/data/P1OZGk5p/versions/FaishMnD/ViaVersion-5.12.0.jar",
         "https://cdn.modrinth.com/data/NpvuJQoq/versions/SxGhdsPK/ViaBackwards-5.12.0.jar",
+        // Land claims. Modrinth lists Towny up to 26.2 only; enabled cleanly on Paper 26.3 build 143
+        // (checked 2026-10-03).
+        "https://cdn.modrinth.com/data/Vs77PB2W/versions/pra46LOM/Towny-0.103.2.0.jar",
     )
 
     // Worldgen datapacks must exist before the world is first generated.

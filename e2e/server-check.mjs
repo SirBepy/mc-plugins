@@ -167,10 +167,23 @@ const plugins = await rcon.command('plugins');
 const expectedPlugins = [
   'Bolt', 'Chunky', 'DiscordSRV', 'Essentials', 'floodgate', 'Geyser-Spigot', 'HuskHomes',
   'LuckPerms', 'Names', 'packetevents', 'PvPManager', 'QuickShop-Hikari', 'SafeChests', 'Tag',
-  'Vault', 'ViaBackwards', 'ViaVersion', 'voicechat',
+  'Towny', 'Vault', 'ViaBackwards', 'ViaVersion', 'voicechat',
 ];
 const missingPlugins = expectedPlugins.filter((p) => !plugins.includes(p));
 report('plugins lists every expected plugin', missingPlugins.length === 0, missingPlugins.join(', ') || plugins);
+
+// Read after boot, not just after assemble: Towny rewrites its config on startup, so this proves
+// the free-towns override survived that rewrite.
+const townyConfig = fs.readFileSync(path.join(localDir, 'plugins/Towny/settings/config.yml'), 'utf8');
+const paidTownyPrices = ['price_new_town', 'price_claim_townblock', 'price_outpost', 'price_town_upkeep',
+  'price_new_nation', 'price_nation_upkeep', 'price_death']
+  .filter((key) => !new RegExp(`^\\s+${key}: '0(\\.0)?'`, 'm').test(townyConfig));
+report('Towny towns are free (creation, claims, upkeep, death cost all 0)', paidTownyPrices.length === 0,
+  paidTownyPrices.join(', ') || 'all 0');
+const closedWilderness = ['build', 'destroy', 'item_use', 'switch']
+  .filter((what) => !new RegExp(`^\\s+unclaimed_zone_${what}: 'true'`, 'm').test(townyConfig));
+report('Towny wilderness stays open (build, destroy, item use, switch)', closedWilderness.length === 0,
+  closedWilderness.join(', ') || 'all open');
 
 await rcon.command('stop');
 rcon.close();

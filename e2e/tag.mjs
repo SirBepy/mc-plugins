@@ -36,6 +36,17 @@ async function stats(name) {
   return { points: num('points'), tagged: num('tagged'), made: num('tags made'), text };
 }
 
+// A blocked tag (tagback, opted out) is a real PvP hit wherever PvP is on (Towny wilderness), so
+// PvPManager can hold both players in combat for 15s and swallow their commands: retry until heard.
+async function chatUntil(bot, command, pattern) {
+  const mark = bot.lines.length;
+  await waitFor(async () => {
+    bot.chat(command);
+    await sleep(1_000);
+    return bot.lines.slice(mark).some((l) => pattern.test(l));
+  }, `${bot.username} got ${pattern} for ${command}`, 25_000);
+}
+
 async function hit(attacker, victim) {
   const target = attacker.players[victim.username]?.entity;
   assert(target, `${attacker.username} can see ${victim.username}`);
@@ -166,19 +177,15 @@ try {
   });
 
   await step('opted-out players cannot be tagged', async () => {
-    const mark = TagA.lines.length;
-    TagA.chat('/tag optout');
-    await waitForLine(TagA, /opted out of Tag/, 5_000, mark);
+    await chatUntil(TagA, '/tag optout', /opted out of Tag/);
     await hit(TagC, TagA);
     await sleep(500);
     assert((await whoIsIt()).includes('TagC is IT'), 'TagC still IT');
-    TagA.chat('/tag optin');
+    await chatUntil(TagA, '/tag optin', /opted back into Tag/);
   });
 
   await step('IT cannot opt out', async () => {
-    const mark = TagC.lines.length;
-    TagC.chat('/tag optout');
-    await waitForLine(TagC, /You are IT and cannot opt out/, 5_000, mark);
+    await chatUntil(TagC, '/tag optout', /You are IT and cannot opt out/);
   });
 
   await step('stats count tags and the +10 tag penalty', async () => {

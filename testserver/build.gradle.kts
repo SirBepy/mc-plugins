@@ -39,6 +39,10 @@ fun registerPrepare(name: String, dir: java.io.File, withDatapacks: Boolean, mot
                     source.copyTo(packDir.resolve(source.name), overwrite = true)
                 }
             }
+            // Towny's rules (free towns, open wilderness) must match the real server for a bot run to
+            // mean anything. Towny copies them into each world's own file only when it first sees the
+            // world, so an older run dir needs its plugins/Towny/data/worlds/ deleted once.
+            serverTownyConfig.copyTo(dir.resolve("plugins/Towny/settings/config.yml"), overwrite = true)
             // Offline mode lets the e2e bots join and RCON lets them run admin commands; this is a
             // local-only test server, so the RCON password is random per checkout and never committed.
             val props = dir.resolve("server.properties")
@@ -77,6 +81,7 @@ fun RunServer.configureCommon() {
     jvmArgs("-Xms2G", "-Xmx4G", "-Dcom.mojang.eula.agree=true")
 }
 
+val serverTownyConfig = rootProject.layout.projectDirectory.file("server/config/plugins/Towny/settings/config.yml").asFile
 val runDir = layout.projectDirectory.dir("run").asFile
 val e2eDir = layout.projectDirectory.dir("run-e2e").asFile
 val e2eDatapacksDir = layout.projectDirectory.dir("e2e-datapacks").asFile
