@@ -29,9 +29,8 @@ Plain vanilla Minecraft works. Mods are optional.
 3. Server Address: eu-de-p59-a6-cg.kineticpanel.net:25566
 4. Done > double-click the server.
 
-Resource pack: right now the server does NOT send a resource pack, so you won't get a
-"download resource pack?" prompt. If one is added later, the server will offer it when you
-join: click "Yes" / "Proceed" so you see everything correctly.
+The server does NOT send you a resource pack, so you won't get a "download resource pack?"
+prompt. It does have 200+ new foods that need textures on your side: see section 4.
 
 
 3. OPTIONAL: PROXIMITY VOICE CHAT
@@ -43,25 +42,32 @@ voice and nobody hears you.
 You need the client mod "Simple Voice Chat" version 2.6.24 for Minecraft 26.3 (the server
 runs 2.6.24). Pick ONE way to install it:
 
-  A) EASIEST: the modpack file (one click, includes Sodium for more FPS)
+  A) EASIEST: the modpack file (one click, also includes Sodium for more FPS and the
+     food/dungeon textures from section 4)
      1. Install the Modrinth App (https://modrinth.com/app) or Prism Launcher
         (https://prismlauncher.org). Both are free.
      2. Get the file "SirBepy-Friends-Server-26.3.mrpack" from Joe.
      3. Modrinth App: click "+" (Create instance) > "From file" > pick the .mrpack.
         Prism Launcher: Add Instance > Import > pick the .mrpack.
      4. Sign in with your Microsoft account in the launcher, then launch the new instance.
-     It installs Fabric 26.3 + Fabric API + Simple Voice Chat + Sodium for you.
+     It installs Fabric 26.3 + Fabric API + Simple Voice Chat + Sodium + the Reg's More
+     Foods and Dungeons and Taverns textures for you. Nothing else to set up.
 
   B) MANUAL with Fabric (the normal Minecraft Launcher)
      1. Download the Fabric installer from https://fabricmc.net/use/installer/ and run it.
         Choose Minecraft version 26.3, click Install.
-     2. Download these three files (click the "Download" button on each page):
+     2. Download these files (click the "Download" button on each page):
         - Fabric API 0.161.0+26.3:
           https://modrinth.com/mod/fabric-api/version/bNnaTiuM
         - Simple Voice Chat fabric-2.6.24+26.3:
           https://modrinth.com/plugin/simple-voice-chat/version/OLnMVWXy
         - Sodium 0.9.2 (optional, more FPS):
           https://modrinth.com/mod/sodium/version/bAZQdGpg
+        - Reg's More Foods 1.5.2+26.3+mod (food textures, recommended):
+          https://modrinth.com/datapack/reg-more-foods/version/ebuLruaV
+        - Dungeons and Taverns 6.0.2 Fabric (dungeon key textures, optional, 42 MB):
+          https://modrinth.com/datapack/dungeons-and-taverns/version/WilF7nqU
+        With the last two in your mods folder you can skip section 4.
      3. Put the .jar files into your mods folder:
         Windows: press Win+R, type %appdata%\.minecraft\mods and press Enter
                  (create the "mods" folder if it doesn't exist).
@@ -73,7 +79,7 @@ runs 2.6.24). Pick ONE way to install it:
      Install NeoForge for 26.3 (https://neoforged.net), then put
      Simple Voice Chat neoforge-2.6.24+26.3 in the mods folder:
      https://modrinth.com/plugin/simple-voice-chat/versions?g=26.3&l=neoforge
-     (NeoForge does not need Fabric API.)
+     (NeoForge does not need Fabric API.) For the food textures, use section 4.
 
 Using voice chat in-game:
 - Press V to open the voice chat menu. The first time, it walks you through setup and asks
@@ -93,7 +99,31 @@ Using voice chat in-game:
 Players on Bedrock (phone, console, Windows Bedrock) can't use voice chat.
 
 
-4. OPTIONAL: PERFORMANCE MODS
+4. TEXTURES FOR THE NEW FOODS (RECOMMENDED)
+-------------------------------------------
+The server adds 200+ new foods (Reg's More Foods) and new dungeons with keys (Dungeons and
+Taverns). The server can't send you their textures, so without them the new foods show
+wrong/placeholder icons. They still work, they just look off.
+
+Already done for you if you used the modpack (option A) or the manual Fabric list (option B).
+Otherwise (plain vanilla, NeoForge), add them as resource packs:
+
+1. Food textures (recommended):
+   a. Open https://modrinth.com/datapack/reg-more-foods/version/Ts1r8zla and download
+      "Reg's More Foods Pack v1.5.2+26.3 (UNZIP ME).zip".
+   b. Unzip it. Inside is "Reg's More Foods Resourcepack v1.5.2+26.3.zip": keep THAT one
+      zipped, you don't need the rest.
+2. Dungeon key textures (optional, 21 MB, only changes how the keys look):
+   download "Dungeons and Taverns v6.0.2.zip" from
+   https://modrinth.com/datapack/dungeons-and-taverns/version/iqFWpMVO (don't unzip it).
+3. In Minecraft: Options > Resource Packs > Open Pack Folder, and drop the zip(s) in.
+4. Back in the Resource Packs screen, hover each new pack on the left and click its arrow
+   so it moves to the right ("Selected"). Click Done.
+
+Bedrock can't load these, so on Bedrock the new foods look like placeholders.
+
+
+5. OPTIONAL: PERFORMANCE MODS
 -----------------------------
 Sodium makes the game run much faster (higher FPS) on most PCs. It is already in the
 modpack (option A). For manual Fabric installs, add the Sodium link from option B.
@@ -101,7 +131,7 @@ Sodium 0.9.2 for 26.3 exists for Fabric and NeoForge. It only changes your own g
 nothing on the server.
 
 
-5. BEDROCK PLAYERS (phone, tablet, Windows Bedrock, console)
+6. BEDROCK PLAYERS (phone, tablet, Windows Bedrock, console)
 ------------------------------------------------------------
 Bedrock can join too, through a bridge (Geyser).
 
@@ -120,7 +150,7 @@ Good to know:
   play on console and want to join.
 
 
-6. TROUBLESHOOTING
+7. TROUBLESHOOTING
 ------------------
 "You are not white-listed on this server!"
   Joe hasn't added you yet, or the name he has is wrong. Send him your exact Java
@@ -146,3 +176,7 @@ Voice chat icon says disconnected / nobody hears you
 Game crashes on start with mods
   Make sure every mod file says 26.3 and you picked the Fabric 26.3 installation.
   Don't mix Fabric and NeoForge files in the same mods folder.
+
+New foods have weird/placeholder icons
+  You're missing the food textures: see section 4. If you added the resource pack,
+  check it's on the "Selected" side in Options > Resource Packs.

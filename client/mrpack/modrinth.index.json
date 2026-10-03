@@ -1,9 +1,9 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "1.0.0",
+  "versionId": "1.1.0",
   "name": "SirBepy Friends Server (26.3)",
-  "summary": "Fabric 26.3 with Simple Voice Chat (proximity voice) and Sodium (FPS).",
+  "summary": "Fabric 26.3 with Simple Voice Chat (proximity voice), Sodium (FPS) and the textures for the server's More Foods and Dungeons and Taverns datapacks.",
   "files": [
     {
       "path": "mods/fabric-api-0.161.0+26.3.jar",
@@ -40,6 +40,30 @@
         "https://cdn.modrinth.com/data/AANobbMI/versions/bAZQdGpg/sodium-fabric-0.9.2%2Bmc26.3.jar"
       ],
       "fileSize": 1908068
+    },
+    {
+      "path": "mods/regs-more-foods-1.5.2+26.3+mod.jar",
+      "hashes": {
+        "sha1": "fb39b548a2d216c32ea28da367d7c0cc71274e40",
+        "sha512": "599e233192250cf3e03423ab568725eea03dabc94b1db703a16c14f5fb1d7c1e71ac28480437f3beddbf2be018db22deede0e0fbdfcd3354649d2f04adb6bfc3"
+      },
+      "env": { "client": "required", "server": "unsupported" },
+      "downloads": [
+        "https://cdn.modrinth.com/data/2jidfU3A/versions/ebuLruaV/regs-more-foods-1.5.2%2B26.3%2Bmod.jar"
+      ],
+      "fileSize": 3236171
+    },
+    {
+      "path": "mods/dungeons-and-taverns-6.0.2.jar",
+      "hashes": {
+        "sha1": "172ba3915c8da4c46bdf63a24a8cff2b485b838d",
+        "sha512": "b0ccf52512560a8115b356c5a3e585c71966af10729f2d43641af268258272bb9f9c68c53c49eb79a5d5f645ba9e0dff6e4ae2b654eaf6a6d146977de435c025"
+      },
+      "env": { "client": "required", "server": "unsupported" },
+      "downloads": [
+        "https://cdn.modrinth.com/data/tpehi7ww/versions/WilF7nqU/dungeons-and-taverns-6.0.2.jar"
+      ],
+      "fileSize": 42195203
     }
   ],
   "dependencies": {
