@@ -1,0 +1,9 @@
+[Unit]
+Description=Nightly Minecraft backup timer (05:00 Europe/Zagreb; provision.sh sets the host timezone)
+
+[Timer]
+OnCalendar=*-*-* 05:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

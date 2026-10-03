@@ -1,0 +1,21 @@
+[Unit]
+Description=Minecraft (Paper) friends server
+After=network.target
+
+[Service]
+Type=simple
+User=minecraft
+Group=minecraft
+WorkingDirectory=/opt/minecraft/server
+ExecStart=/opt/minecraft/server/start.sh
+Restart=on-failure
+RestartSec=10
+# Paper's shutdown hook treats SIGTERM the same as the console "stop" command (saves worlds,
+# disables plugins) since PaperMC/Paper#5592 (see GH issue #5270); TimeoutStopSec gives it room to
+# finish that on a full world before systemd escalates to SIGKILL.
+KillSignal=SIGTERM
+TimeoutStopSec=180
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target

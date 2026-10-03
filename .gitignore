@@ -16,4 +16,5 @@ reports/
 server/dist/
 server/local/
 server/secrets.properties
+server/bundle/
 **/key.pem

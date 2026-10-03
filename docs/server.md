@@ -91,8 +91,9 @@ works normally.
    bound its Bedrock port (log line `Started Geyser on 0.0.0.0:19132`). Geyser is currently running
    off an official GeyserMC preview build, not a release build, see "Known issue" above.
 5. Pre-generate terrain with Chunky (world names are still `world` / `world_nether` /
-   `world_the_end` on Paper 26.3 despite the 26.1+ on-disk `world/dimensions/...` restructuring;
-   not independently re-confirmed this session, see docs note below):
+   `world_the_end` on Paper 26.3 despite the on-disk layout being one `world/` folder with
+   `dimensions/minecraft/{overworld,the_nether,the_end}/` inside, confirmed 2026-10-03 against a
+   real booted `server/local`):
    ```
    chunky world world
    chunky radius 5000
@@ -107,7 +108,39 @@ works normally.
 7. Before any plugin update: back up the whole server folder. Update one plugin at a time, boot,
    confirm it enables, then move to the next.
 
-## Deploy (not done yet)
+## Deploy
 
-Syncing `server/dist/` to the Hetzner VPS, systemd unit, firewall, and secrets provisioning
-are a later task.
+Hetzner CX43 (16 GB/8 vCPU), Ubuntu 24.04, Nuremberg or Falkenstein. RCON stays off on the real
+server, so there's no console after first boot: the owner op/whitelist/LuckPerms-admin step below
+is done by `:server:seedPlayers` instead of typed commands.
+
+**Owner, once, in the Hetzner panel:** create the CX43 (Ubuntu 24.04, Nuremberg/Falkenstein), add
+the SSH key from `~/.ssh/id_ed25519.pub`, enable Hetzner Backups.
+
+**Claude, once (provisioning):**
+```
+scp -r server/deploy root@<ip>:/root/deploy
+ssh root@<ip> 'bash /root/deploy/provision.sh'
+```
+
+**Claude, every deploy (first time and every update):**
+```
+.\gradlew.bat :server:seedPlayers :server:deployBundle --no-daemon --console=plain
+scp server/bundle/mc-server-bundle.tar.gz root@<ip>:/root/mc-server-bundle.tar.gz
+ssh root@<ip> 'bash /opt/minecraft/bin/apply-bundle.sh /root/mc-server-bundle.tar.gz'
+```
+Back up first (`ssh root@<ip> '/opt/minecraft/bin/backup.sh pre-update'`), update one plugin's
+pinned URL in `ServerArtifacts.kt` at a time, re-run the deploy, confirm it enables before the next.
+
+**First boot:**
+1. Edit `server/players.properties` (`admins=`, `players=`, comma-separated Java usernames),
+   re-run `seedPlayers` + `deployBundle` + apply-bundle *before* the very first start: it writes
+   `server/seed/{ops.json,whitelist.json,plugins/LuckPerms/yaml-storage/users/<uuid>.yml}` (admin
+   parent group), which only ever fills in files that don't already exist on the server. Missed
+   someone? `op <name>` / `whitelist add <name>` / `lp user <name> parent set admin` still work
+   once you're in-game as an existing admin.
+2. Bedrock players: `fwhitelist add <bedrockname>` in-game as admin, after confirming Geyser bound
+   its Bedrock port (`journalctl -u minecraft -n 50`, look for `Started Geyser on 0.0.0.0:19132`).
+3. Pre-generate terrain as admin in-game (see Chunky commands above).
+4. Nightly backups run automatically (`mc-backup.timer`, 05:00 Europe/Zagreb, newest 3 kept); check
+   `systemctl list-timers mc-backup.timer`.
