@@ -26,6 +26,7 @@ public final class TagConfig {
     public final HeadConfig head;
     public final long headWatchdogSeconds;
     public final AfkConfig afk;
+    public final LeaderboardConfig leaderboard;
     public final Messages messages;
     public final LogService logs;
 
@@ -47,6 +48,7 @@ public final class TagConfig {
         this.head = HeadConfig.from(root.getConfigurationSection("head"));
         this.headWatchdogSeconds = root.getLong("head.watchdog-interval-seconds", 5);
         this.afk = AfkConfig.from(root.getConfigurationSection("afk"));
+        this.leaderboard = LeaderboardConfig.from(root.getConfigurationSection("leaderboard"));
         this.messages = new Messages(root.getConfigurationSection("messages"));
         this.logs = logs;
     }

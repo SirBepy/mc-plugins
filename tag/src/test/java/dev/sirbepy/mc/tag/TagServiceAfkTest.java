@@ -2,6 +2,7 @@ package dev.sirbepy.mc.tag;
 
 import dev.sirbepy.mc.names.api.NamesApi;
 import dev.sirbepy.mc.tag.afk.AfkTracker;
+import dev.sirbepy.mc.tag.board.LeaderboardEntityService;
 import dev.sirbepy.mc.tag.board.ScoreboardService;
 import dev.sirbepy.mc.tag.config.TagConfig;
 import dev.sirbepy.mc.tag.head.HeadService;
@@ -68,8 +69,9 @@ class TagServiceAfkTest {
         TagConfig config = TagConfig.load(root, new LogService(null));
         File stateFile = new File(tempDir.toFile(), "state.yml");
         PluginMock plugin = MockBukkit.createMockPlugin();
+        LeaderboardEntityService leaderboard = new LeaderboardEntityService(plugin, config.leaderboard, () -> service.state());
         return new TagService(plugin, stateFile, new HeadService(plugin), new PrefixService(new NoopNamesApi()),
-                new ScoreboardService(new NoopNamesApi()), config, afkTracker);
+                new ScoreboardService(new NoopNamesApi()), leaderboard, config, afkTracker);
     }
 
     private YamlConfiguration baseRoot() {

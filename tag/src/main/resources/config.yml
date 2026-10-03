@@ -57,6 +57,23 @@ afk:
   # minutes, so an e2e can set tiny values here and `/tag reload` to test AFK handling quickly.
   check-interval-seconds: 1
 
+leaderboard:
+  # The in-world TextDisplay placed by `/tag leaderboard place`. Distinct from the chat-only
+  # messages.leaderboard-header/entry used by `/tag top`.
+  size: 10
+  billboard: CENTER
+  scale: 0.75
+  line-width: 250
+  see-through: false
+  board:
+    header: "<gold><bold>Tag leaderboard</bold></gold> <gray>(lowest wins)</gray>"
+    entry: "<gray><rank>.</gray> <white><player></white> <yellow><points></yellow>"
+    footer: "<gray>IT: <green>☣</green> <it></gray>"
+    # Shown in the footer's <it> when nobody is currently IT.
+    nobody: "nobody"
+    # Shown between the header and footer when nobody has stats yet.
+    empty: "<gray>No points yet.</gray>"
+
 messages:
   unknown-player: "<red>Unknown player: <player>.</red>"
   it-set-confirm: "<green><player> is now IT.</green>"
@@ -75,6 +92,10 @@ messages:
   leaderboard-header: "<gold>Tag leaderboard (lowest wins):</gold>"
   leaderboard-entry: "<white><rank>. <player> - <points></white>"
   afk-warning: "<yellow>You've been idle as IT. Move within <seconds>s or IT passes to someone else.</yellow>"
+  leaderboard-player-only: "<red>Run this in-game as the player who should stand where the board goes.</red>"
+  leaderboard-placed: "<green>Leaderboard placed.</green>"
+  leaderboard-removed: "<gray>Leaderboard removed.</gray>"
+  leaderboard-none: "<gray>There is no leaderboard to remove.</gray>"
 
 # Placeholders available per event: <tagger>, <tagged>, <it>, <points>, <player>, <old_it>, <new_it>.
 logs:

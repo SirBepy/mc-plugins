@@ -5,6 +5,7 @@ import com.mojang.brigadier.tree.LiteralCommandNode;
 import dev.sirbepy.mc.core.Messages;
 import dev.sirbepy.mc.tag.TagPlugin;
 import dev.sirbepy.mc.tag.TagService;
+import dev.sirbepy.mc.tag.logic.LeaderboardRanking;
 import dev.sirbepy.mc.tag.state.PlayerStats;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -14,13 +15,11 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
 
 /** Registers every `/tag ...` subcommand through Brigadier (never plugin.yml, per the house rule). */
 public final class TagCommands {
@@ -65,6 +64,10 @@ public final class TagCommands {
                 .then(Commands.literal("reload")
                         .requires(src -> src.getSender().hasPermission("tag.admin"))
                         .executes(this::runReload))
+                .then(Commands.literal("leaderboard")
+                        .requires(src -> src.getSender().hasPermission("tag.admin"))
+                        .then(Commands.literal("place").executes(this::runLeaderboardPlace))
+                        .then(Commands.literal("remove").executes(this::runLeaderboardRemove)))
                 .build();
     }
 
@@ -185,25 +188,23 @@ public final class TagCommands {
 
     private int runTop(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
         CommandSender sender = ctx.getSource().getSender();
-        List<Map.Entry<UUID, PlayerStats>> ranked = plugin.service().state().stats.entrySet().stream()
-                .sorted(Comparator.comparingDouble(e -> e.getValue().points))
-                .limit(10)
+        TagService service = plugin.service();
+        List<LeaderboardRanking.Entry> entries = service.state().stats.entrySet().stream()
+                .map(e -> new LeaderboardRanking.Entry(e.getKey(), service.nameOf(e.getKey()), e.getValue().points))
                 .toList();
-        sendLeaderboard(sender, plugin.service().config().messages, ranked, plugin.service()::nameOf);
+        List<LeaderboardRanking.Row> ranked = LeaderboardRanking.rank(entries, 10);
+        sendLeaderboard(sender, service.config().messages, ranked);
         return com.mojang.brigadier.Command.SINGLE_SUCCESS;
     }
 
     /** Package-private so tests can prove a configured override of the leaderboard templates is what gets sent. */
-    static void sendLeaderboard(CommandSender sender, Messages messages, List<Map.Entry<UUID, PlayerStats>> ranked,
-                                 Function<UUID, String> nameOf) {
+    static void sendLeaderboard(CommandSender sender, Messages messages, List<LeaderboardRanking.Row> ranked) {
         messages.send(sender, "leaderboard-header");
-        int rank = 1;
-        for (Map.Entry<UUID, PlayerStats> entry : ranked) {
+        for (LeaderboardRanking.Row row : ranked) {
             messages.send(sender, "leaderboard-entry",
-                    Placeholder.unparsed("rank", String.valueOf(rank)),
-                    Placeholder.unparsed("player", nameOf.apply(entry.getKey())),
-                    Placeholder.unparsed("points", TagService.formatPoints(entry.getValue().points)));
-            rank++;
+                    Placeholder.unparsed("rank", String.valueOf(row.rank())),
+                    Placeholder.unparsed("player", row.name()),
+                    Placeholder.unparsed("points", TagService.formatPoints(row.points())));
         }
     }
 
@@ -235,6 +236,30 @@ public final class TagCommands {
         CommandSender sender = ctx.getSource().getSender();
         plugin.reload();
         plugin.service().config().messages.send(sender, "reloaded");
+        return com.mojang.brigadier.Command.SINGLE_SUCCESS;
+    }
+
+    private int runLeaderboardPlace(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
+        return handleLeaderboardPlace(ctx.getSource().getSender(), plugin.service());
+    }
+
+    /** Package-private so tests can prove console/RCON is rejected without a real location. */
+    static int handleLeaderboardPlace(CommandSender sender, TagService service) {
+        // Console/RCON has no location to place at: refuse outright rather than falling back to
+        // spawn or 0,0,0, which would silently place the board somewhere nobody asked for.
+        if (!(sender instanceof Player player)) {
+            service.config().messages.send(sender, "leaderboard-player-only");
+            return 0;
+        }
+        service.placeLeaderboard(player.getLocation());
+        service.config().messages.send(sender, "leaderboard-placed");
+        return com.mojang.brigadier.Command.SINGLE_SUCCESS;
+    }
+
+    private int runLeaderboardRemove(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
+        CommandSender sender = ctx.getSource().getSender();
+        boolean removed = plugin.service().removeLeaderboard();
+        plugin.service().config().messages.send(sender, removed ? "leaderboard-removed" : "leaderboard-none");
         return com.mojang.brigadier.Command.SINGLE_SUCCESS;
     }
 }

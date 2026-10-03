@@ -31,6 +31,7 @@ class StateRepositoryTest {
         original.tagbackExpiryMillis = 123_456_789L;
         original.optedOut.add(optedOut);
         original.pending.put(pendingPlayer, PendingAction.BECOME_IT);
+        original.leaderboardLocation = new TagState.LeaderboardLocation("world", 12.5, 65.0, -3.5);
 
         PlayerStats stats = original.statsFor(taggedOnce);
         stats.timesTagged = 3;
@@ -50,6 +51,7 @@ class StateRepositoryTest {
         assertEquals(original.optedOut, loaded.optedOut);
         assertEquals(original.pending, loaded.pending);
         assertEquals(stats, loaded.statsFor(taggedOnce));
+        assertEquals(original.leaderboardLocation, loaded.leaderboardLocation);
     }
 
     @Test
@@ -63,5 +65,20 @@ class StateRepositoryTest {
         assertTrue(state.stats.isEmpty());
         assertTrue(state.optedOut.isEmpty());
         assertTrue(state.pending.isEmpty());
+        assertNull(state.leaderboardLocation);
+    }
+
+    @Test
+    void loadingAnOldFileWithoutTheLeaderboardSectionLeavesItNull(@TempDir Path tempDir) throws IOException {
+        File file = tempDir.resolve("old-state.yml").toFile();
+        TagState original = new TagState();
+        original.currentIt = UUID.randomUUID();
+        StateRepository.save(original, file);
+        assertNull(original.leaderboardLocation, "sanity: this save predates the leaderboard field");
+
+        TagState loaded = StateRepository.load(file);
+
+        assertEquals(original.currentIt, loaded.currentIt);
+        assertNull(loaded.leaderboardLocation, "a state.yml written before todo 03 must still load cleanly");
     }
 }

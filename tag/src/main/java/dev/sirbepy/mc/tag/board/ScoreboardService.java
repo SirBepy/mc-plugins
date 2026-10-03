@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.tag.board;
 
 import dev.sirbepy.mc.names.api.NamesApi;
+import dev.sirbepy.mc.tag.logic.LeaderboardRanking;
 import dev.sirbepy.mc.tag.state.PlayerStats;
 import dev.sirbepy.mc.tag.state.TagState;
 import net.kyori.adventure.text.Component;
@@ -14,7 +15,6 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,17 +78,16 @@ public final class ScoreboardService {
             board.resetScores(entry);
         }
 
-        List<Map.Entry<UUID, PlayerStats>> ranked = state.stats.entrySet().stream()
-                .sorted(Comparator.comparingDouble(e -> e.getValue().points))
+        List<LeaderboardRanking.Entry> entries = state.stats.entrySet().stream()
+                .map(e -> new LeaderboardRanking.Entry(e.getKey(), nameOf(e.getKey()), e.getValue().points))
                 .toList();
+        List<LeaderboardRanking.Row> ranked = LeaderboardRanking.rank(entries, 5);
 
-        int line = ranked.size() + 10;
+        int line = state.stats.size() + 10;
         line = writeLine(objective, line, Component.text("IT: " + nameOf(state.currentIt), NamedTextColor.RED));
 
-        int shown = Math.min(5, ranked.size());
-        for (int i = 0; i < shown; i++) {
-            Map.Entry<UUID, PlayerStats> e = ranked.get(i);
-            Component text = Component.text((i + 1) + ". " + nameOf(e.getKey()) + " " + format(e.getValue().points));
+        for (LeaderboardRanking.Row row : ranked) {
+            Component text = Component.text(row.rank() + ". " + row.name() + " " + format(row.points()));
             line = writeLine(objective, line, text);
         }
 

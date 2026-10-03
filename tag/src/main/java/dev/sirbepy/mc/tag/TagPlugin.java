@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.tag;
 
 import dev.sirbepy.mc.names.api.NamesApi;
+import dev.sirbepy.mc.tag.board.LeaderboardEntityService;
 import dev.sirbepy.mc.tag.board.ScoreboardService;
 import dev.sirbepy.mc.tag.command.TagCommands;
 import dev.sirbepy.mc.tag.config.TagConfig;
@@ -28,6 +29,7 @@ public final class TagPlugin extends JavaPlugin {
     private HeadService heads;
     private PrefixService prefix;
     private ScoreboardService boards;
+    private LeaderboardEntityService leaderboard;
     private LogService logService;
     private TagService service;
 
@@ -58,15 +60,20 @@ public final class TagPlugin extends JavaPlugin {
         boards = new ScoreboardService(names);
         logService = new LogService(getConfig().getConfigurationSection("logs"));
         TagConfig config = TagConfig.load(getConfig(), logService);
+        // service isn't constructed yet, but the lambda reads the field lazily on first event
+        // fire (chunk load, plugin enable below), by which point it's always set.
+        leaderboard = new LeaderboardEntityService(this, config.leaderboard, () -> service.state());
 
-        service = new TagService(this, new File(getDataFolder(), "state.yml"), heads, prefix, boards, config);
+        service = new TagService(this, new File(getDataFolder(), "state.yml"), heads, prefix, boards, leaderboard, config);
 
         getServer().getPluginManager().registerEvents(new TagDamageListener(service), this);
         getServer().getPluginManager().registerEvents(new HeadProtectionListener(heads), this);
         getServer().getPluginManager().registerEvents(new PlayerConnectionListener(service), this);
         getServer().getPluginManager().registerEvents(new AfkActivityListener(service), this);
+        getServer().getPluginManager().registerEvents(leaderboard, this);
 
         reapplyCurrentIt();
+        leaderboard.ensureSpawned();
         scheduleTasks(config);
     }
 
@@ -81,6 +88,9 @@ public final class TagPlugin extends JavaPlugin {
         if (afkTask != null) {
             afkTask.cancel();
         }
+        if (leaderboard != null) {
+            leaderboard.despawn();
+        }
         if (service != null) {
             service.save();
         }
@@ -90,6 +100,8 @@ public final class TagPlugin extends JavaPlugin {
         reloadConfig();
         TagConfig config = TagConfig.load(getConfig(), logService);
         service.setConfig(config);
+        leaderboard.setConfig(config.leaderboard);
+        leaderboard.refresh(service.state());
         reapplyCurrentIt();
         if (pointsTask != null) {
             pointsTask.cancel();

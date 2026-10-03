@@ -136,6 +136,14 @@ export function nbtText(node) {
   return nbtText(node.text) + nbtText(node['']) + nbtText(node.extra);
 }
 
+/** Every text_display the bot can see, with its plain text (all text-like metadata joined). */
+export function textDisplays(bot) {
+  return Object.values(bot.entities).filter((e) => e.name === 'text_display').map((e) => ({
+    entity: e,
+    text: e.metadata.map((value) => (value && typeof value === 'object' ? nbtText(value) : '')).join(' '),
+  }));
+}
+
 // Chat JSON spells click events as clickEvent (older) or click_event (1.21.5+).
 function collectClickCommands(node, out) {
   if (!node || typeof node !== 'object') return;

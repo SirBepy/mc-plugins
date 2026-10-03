@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.tag;
 
 import dev.sirbepy.mc.names.api.NamesApi;
+import dev.sirbepy.mc.tag.board.LeaderboardEntityService;
 import dev.sirbepy.mc.tag.board.ScoreboardService;
 import dev.sirbepy.mc.tag.config.TagConfig;
 import dev.sirbepy.mc.tag.head.HeadService;
@@ -57,8 +58,9 @@ class TagServiceQuitTest {
 
         TagConfig config = TagConfig.load(root, new LogService(null));
         File stateFile = new File(tempDir.toFile(), "state.yml");
+        LeaderboardEntityService leaderboard = new LeaderboardEntityService(plugin, config.leaderboard, () -> service.state());
         service = new TagService(plugin, stateFile, new HeadService(plugin), new PrefixService(new NoopNamesApi()),
-                new ScoreboardService(new NoopNamesApi()), config);
+                new ScoreboardService(new NoopNamesApi()), leaderboard, config);
 
         // "it" just became IT by tagging "victim", so "victim" is tagback-protected and attempting
         // to tag them back is what drives maybeWarnTagback() / the cooldown map under test.

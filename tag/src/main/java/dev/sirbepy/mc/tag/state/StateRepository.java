@@ -58,6 +58,17 @@ public final class StateRepository {
             }
         }
 
+        ConfigurationSection leaderboardSection = yaml.getConfigurationSection("leaderboard");
+        if (leaderboardSection != null) {
+            String world = leaderboardSection.getString("world");
+            if (world != null) {
+                state.leaderboardLocation = new TagState.LeaderboardLocation(world,
+                        leaderboardSection.getDouble("x"),
+                        leaderboardSection.getDouble("y"),
+                        leaderboardSection.getDouble("z"));
+            }
+        }
+
         return state;
     }
 
@@ -86,6 +97,13 @@ public final class StateRepository {
 
         for (Map.Entry<UUID, PendingAction> entry : state.pending.entrySet()) {
             yaml.set("pending." + entry.getKey(), entry.getValue().name());
+        }
+
+        if (state.leaderboardLocation != null) {
+            yaml.set("leaderboard.world", state.leaderboardLocation.world);
+            yaml.set("leaderboard.x", state.leaderboardLocation.x);
+            yaml.set("leaderboard.y", state.leaderboardLocation.y);
+            yaml.set("leaderboard.z", state.leaderboardLocation.z);
         }
 
         YamlFiles.saveAtomically(yaml, file);

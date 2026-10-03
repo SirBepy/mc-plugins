@@ -4,11 +4,11 @@ import { fileURLToPath } from 'node:url';
 import { Vec3 } from 'vec3';
 import {
   Rcon, assert, buildPlatform, createBot, quit, randomOrigin, releasePlatform, sleep, teleport,
-  tryOpen, waitFor, waitForLine,
+  textDisplays, tryOpen, waitFor, waitForLine,
 } from './lib.mjs';
 
 // Two phases around a real server restart:
-//   node persistence.mjs setup   -> make PersA IT, give PersA a long chest grant and PersC a 3s one,
+//   node persistence.mjs setup   -> place the in-world leaderboard at PersB, make PersA IT, give PersA a long chest grant and PersC a 3s one,
 //                                    then whitelist and immediately unwhitelist PersD with no pause
 //                                    before the restart (see PersD below for why)
 //   (restart the e2e server)
@@ -69,6 +69,11 @@ try {
 
     await rcon.command('tag set PersA');
     await waitFor(() => longGuest.inventory.slots[5]?.name === 'player_head', 'PersA wears the head');
+
+    await rcon.command('op PersB');
+    owner.chat('/tag leaderboard place');
+    await waitForLine(owner, /Leaderboard placed/);
+    await rcon.command('deop PersB');
     fs.writeFileSync(stateFile, JSON.stringify({ BX, BZ, chest: [BX, PLATFORM_Y + 1, BZ + 3] }));
     // The supervisor restart kills the process, which would drop unsaved chunks (the chest itself);
     // plugin state files are written on every change and need no flush.
@@ -108,7 +113,16 @@ try {
       assert(!(await tryOpen(deniedGuest, deniedGuest.blockAt(new Vec3(...chest)))), 'PersD denied');
     });
 
+    await step('the in-world leaderboard is back after the restart', async () => {
+      await waitFor(() => textDisplays(longGuest).some((d) => /Tag leaderboard/.test(d.text)
+        && d.entity.position.distanceTo(owner.entity.position) < 3), 'PersA sees the board at PersB', 8_000);
+    });
+
     owner.chat('/safe-chests-unwhitelist PersA');
+    await rcon.command('op PersB');
+    owner.chat('/tag leaderboard remove');
+    await waitForLine(owner, /Leaderboard removed/);
+    await rcon.command('deop PersB');
     await sleep(500);
     await rcon.command('tag clear');
     await releasePlatform(rcon, BX, BZ);

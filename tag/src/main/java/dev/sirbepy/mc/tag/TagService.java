@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.tag;
 
 import dev.sirbepy.mc.tag.afk.AfkTracker;
+import dev.sirbepy.mc.tag.board.LeaderboardEntityService;
 import dev.sirbepy.mc.tag.board.ScoreboardService;
 import dev.sirbepy.mc.tag.config.TagConfig;
 import dev.sirbepy.mc.tag.head.HeadService;
@@ -16,6 +17,7 @@ import dev.sirbepy.mc.tag.state.TagState;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -40,6 +42,7 @@ public final class TagService {
     private final HeadService heads;
     private final PrefixService prefix;
     private final ScoreboardService boards;
+    private final LeaderboardEntityService leaderboard;
 
     private TagState state;
     private TagConfig config;
@@ -49,20 +52,21 @@ public final class TagService {
     private final Map<UUID, Long> tagbackMessageCooldown = new HashMap<>();
 
     public TagService(JavaPlugin plugin, File stateFile, HeadService heads, PrefixService prefix,
-                       ScoreboardService boards, TagConfig config) {
-        this(plugin, stateFile, heads, prefix, boards, config,
+                       ScoreboardService boards, LeaderboardEntityService leaderboard, TagConfig config) {
+        this(plugin, stateFile, heads, prefix, boards, leaderboard, config,
                 new AfkTracker(System::currentTimeMillis, config.afk.thresholdSeconds * 1000L));
     }
 
     // Package-private: lets tests inject a fake-clock AfkTracker so idle/threshold/warning
     // behavior is deterministic without sleeping through real `afk.*-seconds` durations.
     TagService(JavaPlugin plugin, File stateFile, HeadService heads, PrefixService prefix,
-               ScoreboardService boards, TagConfig config, AfkTracker afkTracker) {
+               ScoreboardService boards, LeaderboardEntityService leaderboard, TagConfig config, AfkTracker afkTracker) {
         this.plugin = plugin;
         this.stateFile = stateFile;
         this.heads = heads;
         this.prefix = prefix;
         this.boards = boards;
+        this.leaderboard = leaderboard;
         this.config = config;
         this.afkTracker = afkTracker;
         this.state = loadOrNew();
@@ -161,6 +165,7 @@ public final class TagService {
                 Placeholder.unparsed("it", nameOf(newIt)),
                 Placeholder.unparsed("player", admin.getName()));
         boards.refreshAll(state);
+        leaderboard.refresh(state);
     }
 
     public void adminClear(CommandSender admin) {
@@ -176,6 +181,7 @@ public final class TagService {
 
         config.logs.fire(LogService.Event.IT_CLEARED, Placeholder.unparsed("player", admin.getName()));
         boards.refreshAll(state);
+        leaderboard.refresh(state);
     }
 
     private void retireIt(UUID uuid) {
@@ -234,6 +240,7 @@ public final class TagService {
                 Placeholder.unparsed("tagged", victim.getName()),
                 Placeholder.unparsed("it", victim.getName()));
         boards.refreshAll(state);
+        leaderboard.refresh(state);
         return TagResult.OK;
     }
 
@@ -372,6 +379,7 @@ public final class TagService {
                 Placeholder.unparsed("old_it", from.getName()),
                 Placeholder.unparsed("new_it", to.getName()));
         boards.refreshAll(state);
+        leaderboard.refresh(state);
     }
 
     // --- points tick -----------------------------------------------------------------------
@@ -400,6 +408,35 @@ public final class TagService {
         }
         save();
         boards.refreshAll(state);
+        leaderboard.refresh(state);
+    }
+
+    // --- in-world leaderboard -----------------------------------------------------------------
+
+    /**
+     * Block-centered x/z so the board reads as "over this block" instead of drifting toward
+     * whichever corner the admin happened to be standing on; y + 1.5 puts the text around head
+     * height rather than at floor level.
+     */
+    public void placeLeaderboard(Location adminLocation) {
+        state.leaderboardLocation = new TagState.LeaderboardLocation(
+                adminLocation.getWorld().getName(),
+                Math.floor(adminLocation.getX()) + 0.5,
+                Math.floor(adminLocation.getY()) + 1.5,
+                Math.floor(adminLocation.getZ()) + 0.5);
+        save();
+        leaderboard.ensureSpawned();
+    }
+
+    /** Returns false (and leaves everything untouched) when there was no board to remove. */
+    public boolean removeLeaderboard() {
+        if (state.leaderboardLocation == null) {
+            return false;
+        }
+        state.leaderboardLocation = null;
+        save();
+        leaderboard.despawn();
+        return true;
     }
 
     public void ensureHeadWorn() {
