@@ -11,4 +11,12 @@ permissions:
 - minecraft.command.tp
 - essentials.tempban
 - essentials.tempban.offline
+# EssentialsX owns /kick and /tp on this server, so the minecraft.* nodes above only cover the
+# minecraft:-prefixed fallbacks.
+- essentials.kick
+- essentials.tp
+- essentials.tp.others
 - tag.admin
+# Names checks names.nick before names.nick.others, so fixing someone else's nick needs both.
+- names.nick
+- names.nick.others

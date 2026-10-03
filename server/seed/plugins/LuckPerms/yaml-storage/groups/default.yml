@@ -1,1 +1,38 @@
 name: default
+# EssentialsX takes over vanilla /msg /r /list /me /help, so those need its own nodes to keep working.
+# The false nodes switch off HuskHomes and QuickShop extras that default to everyone (or come with the
+# quickshop.player bundle); admin.yml re-grants them, since an inherited explicit false beats admin's '*'.
+permissions:
+- pvpmanager.command.pvp
+- quickshop.player
+- quickshop.browse.teleport:
+    value: false
+- quickshop.tag.tagged.teleport:
+    value: false
+- essentials.balance
+- essentials.balancetop
+- essentials.pay
+- essentials.msg
+- essentials.r
+- essentials.list
+- essentials.me
+- essentials.help
+- essentials.afk
+- essentials.afk.auto
+- essentials.ignore
+- essentials.seen
+- essentials.mail
+- essentials.mail.send
+- huskhomes.max_homes.3
+- huskhomes.command.rtp:
+    value: false
+- huskhomes.command.warp:
+    value: false
+- huskhomes.command.warplist:
+    value: false
+- huskhomes.command.phome:
+    value: false
+- huskhomes.command.phomelist:
+    value: false
+- huskhomes.command.edithome.privacy:
+    value: false
