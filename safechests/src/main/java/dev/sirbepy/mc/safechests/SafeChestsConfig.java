@@ -14,6 +14,8 @@ public final class SafeChestsConfig {
     private final Duration requestExpiry;
     private final Duration debounce;
     private final String accessType;
+    private final boolean bedrockFormsEnabled;
+    private final boolean bedrockAutoOpenRequestForm;
     private final Messages messages;
 
     public SafeChestsConfig(FileConfiguration config) {
@@ -22,6 +24,8 @@ public final class SafeChestsConfig {
         this.requestExpiry = Durations.parse(config.getString("grants.request-expiry", "2m")).orElse(Duration.ofMinutes(2));
         this.debounce = Durations.parse(config.getString("grants.debounce", "3s")).orElse(Duration.ofSeconds(3));
         this.accessType = config.getString("access-type", "normal");
+        this.bedrockFormsEnabled = config.getBoolean("bedrock.forms", true);
+        this.bedrockAutoOpenRequestForm = config.getBoolean("bedrock.auto-open-request-form", false);
         this.messages = new Messages(config.getConfigurationSection("messages"));
     }
 
@@ -43,6 +47,14 @@ public final class SafeChestsConfig {
 
     public String accessType() {
         return accessType;
+    }
+
+    public boolean bedrockFormsEnabled() {
+        return bedrockFormsEnabled;
+    }
+
+    public boolean bedrockAutoOpenRequestForm() {
+        return bedrockAutoOpenRequestForm;
     }
 
     public Messages messages() {

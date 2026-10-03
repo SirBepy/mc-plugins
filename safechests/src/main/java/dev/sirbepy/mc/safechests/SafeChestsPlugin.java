@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.safechests;
 
+import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.safechests.bolt.BoltAccess;
 import dev.sirbepy.mc.safechests.command.SafeChestsCommands;
 import dev.sirbepy.mc.safechests.grant.GrantManager;
@@ -34,12 +35,13 @@ public final class SafeChestsPlugin extends JavaPlugin {
         grants = new GrantManager(bolt, store, () -> config.get().accessType());
         grants.loadAndSweep();
         requests = new RequestManager();
+        BedrockForms bedrockForms = BedrockForms.create(this);
 
-        getServer().getPluginManager().registerEvents(new ChestDenialListener(bolt, requests, config::get), this);
+        getServer().getPluginManager().registerEvents(new ChestDenialListener(bolt, requests, config::get, bedrockForms), this);
         getServer().getPluginManager().registerEvents(new GrantRevokeListener(bolt, grants), this);
         new NewProtectionListener(bolt, grants, this).register();
 
-        new SafeChestsCommands(bolt, grants, requests, config::get, this::reload).register(this);
+        new SafeChestsCommands(bolt, grants, requests, config::get, this::reload, bedrockForms).register(this);
 
         long intervalTicks = SWEEP_INTERVAL.toMillis() / 50;
         getServer().getScheduler().runTaskTimer(this, this::sweep, intervalTicks, intervalTicks);

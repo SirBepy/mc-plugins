@@ -3,6 +3,7 @@ version: ${version}
 main: dev.sirbepy.mc.names.NamesPlugin
 api-version: "26.2"
 depend: [packetevents]
+softdepend: [floodgate]
 
 permissions:
   names.color:

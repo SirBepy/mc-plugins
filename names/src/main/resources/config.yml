@@ -9,6 +9,11 @@ nickname:
   # Letters, digits, underscore and space only.
   allowed-pattern: "^[A-Za-z0-9_ ]+$"
 
+bedrock:
+  # Bedrock players (Floodgate) get a Cumulus input form for /nick instead of the anvil GUI,
+  # which Bedrock's UI can't render. Ignored when Floodgate isn't installed.
+  forms: true
+
 label:
   # How far above the mount point (the player's head, since the display rides the player) the
   # floating text sits. Tuned by eye in-game; see FloatingLabelManager.
@@ -72,6 +77,8 @@ messages:
   color-reset: "<green>Color reset to default.</green>"
   gradient-no-permission: "<red>You don't have permission to use gradients.</red>"
   nick-gui-title: "<dark_gray>Type a nickname"
+  nick-form-title: "Nickname"
+  nick-form-label: "Type your new nickname (empty = cancel)"
   nick-usage: "<red>Usage: /nick <name|reset>, or /nick with no arguments to open the editor.</red>"
   nick-set: "<green>Nickname set to <white><nick></white>.</green>"
   nick-set-other: "<green>Set <white><target></white>'s nickname to <white><nick></white>.</green>"

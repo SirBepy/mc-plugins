@@ -18,6 +18,7 @@ public final class NamesConfig {
     private volatile ColorPalette palette;
     private volatile NickValidator nickValidator;
     private volatile LabelSettings labelSettings;
+    private volatile boolean bedrockFormsEnabled;
 
     public NamesConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -37,6 +38,7 @@ public final class NamesConfig {
                 (float) config.getDouble("label.offset-y", 0.35),
                 config.getBoolean("label.use-default-background", false),
                 config.getBoolean("label.see-through", false));
+        bedrockFormsEnabled = config.getBoolean("bedrock.forms", true);
     }
 
     public Component renderChat(TagResolver... resolvers) {
@@ -57,5 +59,9 @@ public final class NamesConfig {
 
     public LabelSettings labelSettings() {
         return labelSettings;
+    }
+
+    public boolean bedrockFormsEnabled() {
+        return bedrockFormsEnabled;
     }
 }

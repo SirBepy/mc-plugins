@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.names;
 
+import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.names.api.NamesApi;
 import dev.sirbepy.mc.names.command.ColorCommand;
 import dev.sirbepy.mc.names.command.CommandRegistrar;
@@ -46,6 +47,7 @@ public final class NamesPlugin extends JavaPlugin {
         Bukkit.getServicesManager().register(NamesApi.class, api, this, ServicePriority.Normal);
 
         NickAnvilController anvilController = new NickAnvilController(config, nickApplier);
+        BedrockForms bedrockForms = BedrockForms.create(this);
 
         getServer().getPluginManager().registerEvents(new ChatListener(config, nameService), this);
         getServer().getPluginManager().registerEvents(new JoinQuitListener(teamManager, labels, changeService), this);
@@ -54,7 +56,7 @@ public final class NamesPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(anvilController, this);
 
         ColorCommand colorCommand = new ColorCommand(config);
-        NickCommand nickCommand = new NickCommand(config, nickApplier, anvilController);
+        NickCommand nickCommand = new NickCommand(config, nickApplier, anvilController, bedrockForms, nameStore);
         NamesReloadCommand reloadCommand = new NamesReloadCommand(config, changeService);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 CommandRegistrar.register(event.registrar(), colorCommand, nickCommand, reloadCommand));

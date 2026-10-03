@@ -1,6 +1,8 @@
 package dev.sirbepy.mc.names.command;
 
+import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.names.config.NamesConfig;
+import dev.sirbepy.mc.names.data.NameStore;
 import dev.sirbepy.mc.names.gui.NickAnvilController;
 import dev.sirbepy.mc.names.render.NickApplier;
 import io.papermc.paper.command.brigadier.BasicCommand;
@@ -14,21 +16,26 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * {@code /nick}: opens the anvil GUI. {@code /nick <name>} and {@code /nick reset} act on the
- * caller. {@code /nick <player> <name|reset>} is the admin form, permission {@code
- * names.nick.others}; it only resolves online players, matching the {@code nick-player-not-found}
- * message.
+ * {@code /nick}: opens the anvil GUI, or a Bedrock player gets a Cumulus input form instead (see
+ * {@link #openNickEditor}). {@code /nick <name>} and {@code /nick reset} act on the caller.
+ * {@code /nick <player> <name|reset>} is the admin form, permission {@code names.nick.others}; it
+ * only resolves online players, matching the {@code nick-player-not-found} message.
  */
 public final class NickCommand implements BasicCommand {
 
     private final NamesConfig config;
     private final NickApplier nickApplier;
     private final NickAnvilController anvilController;
+    private final BedrockForms bedrockForms;
+    private final NameStore nameStore;
 
-    public NickCommand(NamesConfig config, NickApplier nickApplier, NickAnvilController anvilController) {
+    public NickCommand(NamesConfig config, NickApplier nickApplier, NickAnvilController anvilController,
+                        BedrockForms bedrockForms, NameStore nameStore) {
         this.config = config;
         this.nickApplier = nickApplier;
         this.anvilController = anvilController;
+        this.bedrockForms = bedrockForms;
+        this.nameStore = nameStore;
     }
 
     @Override
@@ -42,11 +49,34 @@ public final class NickCommand implements BasicCommand {
             return;
         }
         switch (args.length) {
-            case 0 -> anvilController.open(player);
+            case 0 -> openNickEditor(player);
             case 1 -> handleSelf(player, args[0]);
             case 2 -> handleOther(player, args[0], args[1]);
             default -> config.messages().send(player, "nick-usage");
         }
+    }
+
+    /**
+     * Bedrock players get a Cumulus input form (no anvil in Bedrock's UI); everyone else keeps
+     * the anvil GUI. Prefilled with the player's current nick, same as the anvil's rename field
+     * starts from the current displayed text. Package-private so tests can drive it directly,
+     * without going through a Brigadier {@code CommandSourceStack} (see NamesReloadCommand).
+     */
+    void openNickEditor(Player player) {
+        if (config.bedrockFormsEnabled() && bedrockForms.isBedrock(player.getUniqueId())) {
+            String prefill = nameStore.getNick(player.getUniqueId()).orElse("");
+            bedrockForms.openInput(player,
+                    config.messages().renderPlain("nick-form-title"),
+                    config.messages().renderPlain("nick-form-label"),
+                    prefill,
+                    typed -> {
+                        if (!typed.isBlank()) {
+                            nickApplier.setNick(player, typed, player, true);
+                        }
+                    });
+            return;
+        }
+        anvilController.open(player);
     }
 
     private void handleSelf(Player player, String arg) {

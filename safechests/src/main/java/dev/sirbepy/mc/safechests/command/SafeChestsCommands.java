@@ -7,6 +7,7 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import dev.sirbepy.mc.core.Durations;
+import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.safechests.SafeChestsConfig;
 import dev.sirbepy.mc.safechests.bolt.BoltAccess;
 import dev.sirbepy.mc.safechests.grant.GrantManager;
@@ -17,6 +18,7 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
@@ -26,6 +28,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.popcraft.bolt.protection.Protection;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -42,14 +46,16 @@ public final class SafeChestsCommands {
     private final RequestManager requests;
     private final Supplier<SafeChestsConfig> config;
     private final Runnable reload;
+    private final BedrockForms bedrockForms;
 
     public SafeChestsCommands(BoltAccess bolt, GrantManager grants, RequestManager requests,
-                               Supplier<SafeChestsConfig> config, Runnable reload) {
+                               Supplier<SafeChestsConfig> config, Runnable reload, BedrockForms bedrockForms) {
         this.bolt = bolt;
         this.grants = grants;
         this.requests = requests;
         this.config = config;
         this.reload = reload;
+        this.bedrockForms = bedrockForms;
     }
 
     public void register(JavaPlugin plugin) {
@@ -60,6 +66,7 @@ public final class SafeChestsCommands {
             commands.register(unwhitelistCommand(), "Revoke a player's access to all your chests");
             commands.register(listCommand(), "List who is whitelisted to your chests");
             commands.register(respondCommand(), "Respond to an access request (internal)");
+            commands.register(pendingCommand(), "List and answer your pending chest requests");
             commands.register(reloadCommand(), "Reload SafeChests' config");
         });
     }
@@ -78,7 +85,8 @@ public final class SafeChestsCommands {
                 .build();
     }
 
-    private void sendRequest(Player requester) {
+    /** Package-private so tests can drive it directly, without going through Brigadier. */
+    void sendRequest(Player requester) {
         SafeChestsConfig cfg = config.get();
         Protection protection = bolt.protectionLookingAt(requester, LOOK_DISTANCE);
         Block block;
@@ -111,11 +119,37 @@ public final class SafeChestsCommands {
         AccessRequest request = requests.create(requester.getUniqueId(), ownerId,
                 block.getWorld().getName(), block.getX(), block.getY(), block.getZ(), cfg.requestExpiry());
         cfg.messages().send(requester, "request-sent", Placeholder.unparsed("owner", ownerName));
-        cfg.messages().send(owner, "request-prompt", Map.of("id", request.id()),
-                Placeholder.unparsed("requester", requester.getName()),
-                Placeholder.unparsed("x", String.valueOf(block.getX())),
-                Placeholder.unparsed("y", String.valueOf(block.getY())),
-                Placeholder.unparsed("z", String.valueOf(block.getZ())));
+        notifyOwnerOfRequest(owner, request);
+    }
+
+    /**
+     * Java owners keep the clickable chat buttons. A Bedrock owner cannot invoke those, so they get
+     * a typed-command instruction instead, plus (if configured) the answer form opens right away.
+     * Package-private so tests can drive it directly.
+     */
+    void notifyOwnerOfRequest(Player owner, AccessRequest request) {
+        SafeChestsConfig cfg = config.get();
+        if (cfg.bedrockFormsEnabled() && bedrockForms.isBedrock(owner.getUniqueId())) {
+            cfg.messages().send(owner, "request-prompt-bedrock", requestPlaceholders(request));
+            if (cfg.bedrockAutoOpenRequestForm() && !requests.hasOpenForm(owner.getUniqueId())) {
+                openAnswerForm(owner, request);
+            }
+            return;
+        }
+        sendRequestPrompt(owner, request);
+    }
+
+    private void sendRequestPrompt(Player owner, AccessRequest request) {
+        config.get().messages().send(owner, "request-prompt", Map.of("id", request.id()), requestPlaceholders(request));
+    }
+
+    private TagResolver[] requestPlaceholders(AccessRequest request) {
+        return new TagResolver[] {
+                Placeholder.unparsed("requester", bolt.ownerDisplayName(request.requester())),
+                Placeholder.unparsed("x", String.valueOf(request.x())),
+                Placeholder.unparsed("y", String.valueOf(request.y())),
+                Placeholder.unparsed("z", String.valueOf(request.z()))
+        };
     }
 
     private LiteralCommandNode<CommandSourceStack> respondCommand() {
@@ -129,14 +163,24 @@ public final class SafeChestsCommands {
                 .build();
     }
 
-    private enum Action { ALLOW_ONCE, FIVE_MIN, ALWAYS, DENY }
+    // Package-private: the Bedrock answer form's button click needs the same enum the chat buttons use.
+    enum Action { ALLOW_ONCE, FIVE_MIN, ALWAYS, DENY }
 
     private int respond(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx, String id, Action action) {
-        SafeChestsConfig cfg = config.get();
         Player owner = requirePlayer(ctx.getSource());
         if (owner == null) {
             return Command.SINGLE_SUCCESS;
         }
+        return respondAsPlayer(owner, id, action);
+    }
+
+    /**
+     * The single validated path every [Allow once]/[5 min]/[Always]/[Deny] answer runs through,
+     * whether it came from a chat click-event or a Bedrock answer form's button click. Package-private
+     * so tests can drive it directly.
+     */
+    int respondAsPlayer(Player owner, String id, Action action) {
+        SafeChestsConfig cfg = config.get();
         // Authorization boundary: the id alone proves nothing, the responder must be the request's owner.
         Optional<AccessRequest> validated = requests.validate(id, owner.getUniqueId());
         if (validated.isEmpty()) {
@@ -179,6 +223,90 @@ public final class SafeChestsCommands {
                     Placeholder.unparsed("owner", owner.getName()),
                     Placeholder.unparsed("duration", duration == null ? " permanently" : " for " + Durations.format(duration)));
         }
+    }
+
+    private LiteralCommandNode<CommandSourceStack> pendingCommand() {
+        return Commands.literal("safe-chests-pending")
+                .requires(src -> src.getSender().hasPermission("safechests.use"))
+                .executes(ctx -> {
+                    Player owner = requirePlayer(ctx.getSource());
+                    if (owner == null) {
+                        return Command.SINGLE_SUCCESS;
+                    }
+                    handlePending(owner);
+                    return Command.SINGLE_SUCCESS;
+                })
+                .build();
+    }
+
+    /**
+     * Java owners get the pending requests re-listed as chat lines. A Bedrock owner gets the answer
+     * form directly for a single pending request, or a chooser first for two or more. Package-private
+     * so tests can drive it directly, without going through Brigadier.
+     */
+    void handlePending(Player owner) {
+        SafeChestsConfig cfg = config.get();
+        // Running the command is the owner's own reset: a closed auto-opened form (no callback ever
+        // fires for a close, see RequestManager.clearFormOpen) would otherwise suppress auto-open forever.
+        requests.clearFormOpen(owner.getUniqueId());
+        List<AccessRequest> pendingRequests = requests.pendingForOwner(owner.getUniqueId());
+        if (pendingRequests.isEmpty()) {
+            cfg.messages().send(owner, "no-pending");
+            return;
+        }
+        if (cfg.bedrockFormsEnabled() && bedrockForms.isBedrock(owner.getUniqueId())) {
+            if (pendingRequests.size() == 1) {
+                openAnswerForm(owner, pendingRequests.get(0));
+            } else {
+                openChooserForm(owner, pendingRequests);
+            }
+            return;
+        }
+        for (AccessRequest request : pendingRequests) {
+            sendRequestPrompt(owner, request);
+        }
+    }
+
+    /** One button per request; picking one opens that request's answer form. */
+    private void openChooserForm(Player owner, List<AccessRequest> pendingRequests) {
+        SafeChestsConfig cfg = config.get();
+        List<String> buttons = new ArrayList<>();
+        for (AccessRequest request : pendingRequests) {
+            buttons.add(bolt.ownerDisplayName(request.requester()) + " at " + request.x() + " " + request.y() + " " + request.z());
+        }
+        bedrockForms.openButtons(owner, cfg.messages().renderPlain("form-request-title"), "", buttons, index -> {
+            requests.clearFormOpen(owner.getUniqueId());
+            if (index >= 0 && index < pendingRequests.size()) {
+                openAnswerForm(owner, pendingRequests.get(index));
+            }
+        });
+        requests.markFormOpen(owner.getUniqueId());
+    }
+
+    /** Allow once / 5 min / Always / Deny; a click answers through the exact same validated path
+     * {@link #respondAsPlayer} gives the chat buttons, by id, so an answered or expired request in
+     * the meantime still falls through to the usual request-not-found message. */
+    private void openAnswerForm(Player owner, AccessRequest request) {
+        SafeChestsConfig cfg = config.get();
+        List<String> buttons = List.of(
+                cfg.messages().renderPlain("form-button-allow-once"),
+                cfg.messages().renderPlain("form-button-five-min"),
+                cfg.messages().renderPlain("form-button-always"),
+                cfg.messages().renderPlain("form-button-deny"));
+        String content = cfg.messages().renderPlain("form-request-content", requestPlaceholders(request));
+        bedrockForms.openButtons(owner, cfg.messages().renderPlain("form-request-title"), content, buttons, index -> {
+            // The only callback core's BedrockForms gives for this form; a close with no click never
+            // reaches here, which is exactly the "stays suppressed until /safe-chests-pending" case.
+            requests.clearFormOpen(owner.getUniqueId());
+            Action action = switch (index) {
+                case 0 -> Action.ALLOW_ONCE;
+                case 1 -> Action.FIVE_MIN;
+                case 2 -> Action.ALWAYS;
+                default -> Action.DENY;
+            };
+            respondAsPlayer(owner, request.id(), action);
+        });
+        requests.markFormOpen(owner.getUniqueId());
     }
 
     private LiteralCommandNode<CommandSourceStack> whitelistCommand() {

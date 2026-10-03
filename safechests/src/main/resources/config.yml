@@ -18,15 +18,34 @@ grants:
 # (Bolt ships "normal" by default, which includes open/deposit/withdraw/interact).
 access-type: normal
 
+bedrock:
+  # Lets Bedrock players (Geyser + Floodgate) use typed commands and Cumulus forms instead of
+  # chat click-events, which Bedrock's client cannot invoke.
+  forms: true
+  # When true, a Bedrock owner's answer form opens automatically when a new request arrives,
+  # instead of needing /safe-chests-pending. Off by default so an unprompted form never surprises
+  # the owner; once an auto-opened form is closed without answering, auto-open stays suppressed
+  # for that owner until they run /safe-chests-pending or the request expires.
+  auto-open-request-form: false
+
 messages:
   player-only: "<red>Only players can use this command."
   denied: "<red>This chest belongs to <owner>.</red> <hover:show_text:'<yellow>Click to request access</yellow>'><click:run_command:'/safe-chests-one-time'><green>[Request access]</green></click></hover>"
+  denied-bedrock: "<gray>This chest belongs to <owner>. Type <white>/safe-chests-one-time</white> to ask for access.</gray>"
   owner-alert-attempt: "<yellow><requester> tried to open your chest at <x>, <y>, <z>."
   no-target-chest: "<red>Look at a protected chest you were denied, then try again."
   self-owned: "<red>That chest is already yours."
   owner-offline: "<red><owner> is offline, the request was not sent."
   request-sent: "<green>Request sent to <owner>."
   request-prompt: "<yellow><requester> wants to open your chest at <x>, <y>, <z>:</yellow> <hover:show_text:'<green>One open, then revoked</green>'><click:run_command:'/safe-chests-respond <id> allow-once'><green>[Allow once]</green></click></hover> <hover:show_text:'<green>Access to all your chests for 5 minutes</green>'><click:run_command:'/safe-chests-respond <id> five-min'><green>[5 min]</green></click></hover> <hover:show_text:'<green>Permanent access to all your chests</green>'><click:run_command:'/safe-chests-respond <id> always'><green>[Always]</green></click></hover> <hover:show_text:'<red>Deny the request</red>'><click:run_command:'/safe-chests-respond <id> deny'><red>[Deny]</red></click></hover>"
+  request-prompt-bedrock: "<yellow><requester></yellow> wants to open your chest at <x> <y> <z>. Type <white>/safe-chests-pending</white> to answer."
+  no-pending: "<gray>No pending chest requests.</gray>"
+  form-request-title: "Chest access request"
+  form-request-content: "<requester> wants to open your chest at <x> <y> <z>"
+  form-button-allow-once: "Allow once"
+  form-button-five-min: "5 minutes"
+  form-button-always: "Always"
+  form-button-deny: "Deny"
   request-expired: "<gray>Your request to <owner> expired."
   request-not-found: "<red>That request no longer exists or already expired."
   request-not-yours: "<red>That is not your request to answer."

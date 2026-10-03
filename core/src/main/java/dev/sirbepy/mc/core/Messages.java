@@ -4,6 +4,7 @@ import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.HashMap;
@@ -33,6 +34,12 @@ public final class Messages {
             return Component.text("[missing message: " + key + "]");
         }
         return MINI.deserialize(template, resolvers);
+    }
+
+    /** Flattens a configured MiniMessage template to plain text, for UIs that can't render it
+     * (e.g. a Bedrock Cumulus form title/label only understands legacy formatting, not tags). */
+    public String renderPlain(String key, TagResolver... resolvers) {
+        return PlainTextComponentSerializer.plainText().serialize(render(key, resolvers));
     }
 
     /** Sends nothing when the template is blank, so the owner can silence a message by emptying it. */

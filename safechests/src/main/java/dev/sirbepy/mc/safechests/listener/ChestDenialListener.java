@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.safechests.listener;
 
+import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.safechests.SafeChestsConfig;
 import dev.sirbepy.mc.safechests.bolt.BoltAccess;
 import dev.sirbepy.mc.safechests.request.RequestManager;
@@ -35,11 +36,14 @@ public final class ChestDenialListener implements Listener {
     private final BoltAccess bolt;
     private final RequestManager requests;
     private final Supplier<SafeChestsConfig> config;
+    private final BedrockForms bedrockForms;
 
-    public ChestDenialListener(BoltAccess bolt, RequestManager requests, Supplier<SafeChestsConfig> config) {
+    public ChestDenialListener(BoltAccess bolt, RequestManager requests, Supplier<SafeChestsConfig> config,
+                                BedrockForms bedrockForms) {
         this.bolt = bolt;
         this.requests = requests;
         this.config = config;
+        this.bedrockForms = bedrockForms;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
@@ -64,7 +68,8 @@ public final class ChestDenialListener implements Listener {
         }
     }
 
-    private void handleDenied(Player player, Block block) {
+    /** Package-private so tests can drive it directly, without constructing a real denied event. */
+    void handleDenied(Player player, Block block) {
         Protection protection = bolt.api().findProtection(block);
         if (protection == null || bolt.canOpen(protection, player.getUniqueId())) {
             return;
@@ -73,7 +78,9 @@ public final class ChestDenialListener implements Listener {
         SafeChestsConfig cfg = config.get();
         String ownerName = bolt.ownerDisplayName(protection.getOwner());
         if (requests.shouldNotifyDenial(player.getUniqueId(), cfg.debounce())) {
-            cfg.messages().send(player, "denied", Placeholder.unparsed("owner", ownerName));
+            // Bedrock can't invoke a chat click-event, so it gets a typed-command instruction instead.
+            boolean bedrock = cfg.bedrockFormsEnabled() && bedrockForms.isBedrock(player.getUniqueId());
+            cfg.messages().send(player, bedrock ? "denied-bedrock" : "denied", Placeholder.unparsed("owner", ownerName));
         }
         if (cfg.notifyOwnerOnAttempt()) {
             Player owner = player.getServer().getPlayer(protection.getOwner());

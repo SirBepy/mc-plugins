@@ -11,6 +11,7 @@ import org.popcraft.bolt.protection.BlockProtection;
 import org.popcraft.bolt.protection.EntityProtection;
 import org.popcraft.bolt.protection.Protection;
 import org.popcraft.bolt.source.PlayerSourceResolver;
+import org.popcraft.bolt.source.Source;
 import org.popcraft.bolt.source.SourceResolver;
 import org.popcraft.bolt.source.SourceTransformer;
 
@@ -26,9 +27,11 @@ import java.util.function.Consumer;
  * GrantManager never calls throws, so a test that reaches one is a signal the production code grew
  * a new dependency this fake needs to catch up with.
  */
-final class FakeBoltAPI implements BoltAPI {
+// Public so SafeChestsCommandsBedrockTest (a different package) can reuse this fake too, rather
+// than duplicating it just to construct a GrantManager for the Bedrock pending-command tests.
+public final class FakeBoltAPI implements BoltAPI {
 
-    final List<Protection> protections = new ArrayList<>();
+    public final List<Protection> protections = new ArrayList<>();
 
     @Override
     public Collection<Protection> loadProtections() {
@@ -96,9 +99,20 @@ final class FakeBoltAPI implements BoltAPI {
         protections.removeIf(p -> p.getId().equals(protection.getId()));
     }
 
+    // Minimal real implementation (not a throw): ChestDenialListenerBedrockTest needs a BlockProtection
+    // lookup by location, matching Bolt's own block-coordinate identity for a BlockProtection.
     @Override
     public Protection findProtection(Block block) {
-        throw new UnsupportedOperationException();
+        for (Protection protection : protections) {
+            if (protection instanceof BlockProtection blockProtection
+                    && blockProtection.getWorld().equals(block.getWorld().getName())
+                    && blockProtection.getX() == block.getX()
+                    && blockProtection.getY() == block.getY()
+                    && blockProtection.getZ() == block.getZ()) {
+                return protection;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -126,9 +140,11 @@ final class FakeBoltAPI implements BoltAPI {
         throw new UnsupportedOperationException();
     }
 
+    // Minimal real implementation: ChestDenialListenerBedrockTest needs the owner/no-access distinction
+    // handleDenied relies on (canOpen must be false for a requester with no grant, true for the owner).
     @Override
     public boolean canAccess(Protection protection, UUID uuid, String... permissions) {
-        throw new UnsupportedOperationException();
+        return protection.getOwner().equals(uuid) || protection.getAccess().containsKey(Source.player(uuid).toString());
     }
 
     @Override

@@ -6,9 +6,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -19,9 +22,14 @@ import java.util.function.Supplier;
  */
 public final class RequestManager {
 
-    private final Map<String, AccessRequest> pending = new HashMap<>();
+    // LinkedHashMap so pendingForOwner() can return requests oldest-first without a separate
+    // creation-time field on AccessRequest.
+    private final Map<String, AccessRequest> pending = new LinkedHashMap<>();
     private final Map<UUID, Instant> lastDenialAt = new HashMap<>();
     private final Map<UUID, Block> lastDeniedBlock = new HashMap<>();
+    // Owners with a SafeChests answer form currently open, so auto-open never stacks a second
+    // form on top of one the owner hasn't answered yet.
+    private final Set<UUID> openFormOwners = new HashSet<>();
     private final Supplier<Instant> clock;
 
     public RequestManager() {
@@ -55,6 +63,33 @@ public final class RequestManager {
     public void forgetPlayer(UUID player) {
         lastDenialAt.remove(player);
         lastDeniedBlock.remove(player);
+        openFormOwners.remove(player);
+    }
+
+    /** @return the owner's live, non-expired requests, oldest first. Does not evict expired ones. */
+    public List<AccessRequest> pendingForOwner(UUID owner) {
+        Instant now = clock.get();
+        return pending.values().stream()
+                .filter(request -> request.owner().equals(owner) && !request.isExpired(now))
+                .toList();
+    }
+
+    /** Marks that the owner now has a SafeChests answer/chooser form open. */
+    public void markFormOpen(UUID owner) {
+        openFormOwners.add(owner);
+    }
+
+    /**
+     * Clears the owner's open-form flag. Called whenever a form's button click answers a request
+     * (core's {@link dev.sirbepy.mc.core.bedrock.BedrockForms} gives no callback for a form closed
+     * without a click), and when the owner explicitly runs {@code /safe-chests-pending} again.
+     */
+    public void clearFormOpen(UUID owner) {
+        openFormOwners.remove(owner);
+    }
+
+    public boolean hasOpenForm(UUID owner) {
+        return openFormOwners.contains(owner);
     }
 
     public AccessRequest create(UUID requester, UUID owner, String world, int x, int y, int z, Duration expiry) {

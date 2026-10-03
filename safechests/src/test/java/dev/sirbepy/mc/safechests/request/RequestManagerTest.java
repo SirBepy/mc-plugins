@@ -9,6 +9,7 @@ import org.mockbukkit.mockbukkit.ServerMock;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -89,6 +90,33 @@ class RequestManagerTest {
 
         clock.set(clock.get().plus(Duration.ofSeconds(4)));
         assertTrue(requests.shouldNotifyDenial(player, debounce), "a denial after the window must notify again");
+    }
+
+    @Test
+    void pendingForOwnerFiltersByOwnerExcludesExpiredAndOrdersOldestFirst() {
+        UUID owner = UUID.randomUUID();
+        UUID otherOwner = UUID.randomUUID();
+        AccessRequest first = requests.create(UUID.randomUUID(), owner, "world", 0, 0, 0, Duration.ofMinutes(2));
+        requests.create(UUID.randomUUID(), otherOwner, "world", 1, 0, 0, Duration.ofMinutes(2));
+        AccessRequest second = requests.create(UUID.randomUUID(), owner, "world", 2, 0, 0, Duration.ofMinutes(2));
+        requests.create(UUID.randomUUID(), owner, "world", 3, 0, 0, Duration.ofSeconds(30));
+
+        clock.set(clock.get().plus(Duration.ofSeconds(31)));
+
+        assertEquals(List.of(first, second), requests.pendingForOwner(owner),
+                "must exclude the other owner's request and the expired one, oldest first");
+    }
+
+    @Test
+    void openFormFlagIsPerOwnerAndClearedByForgetPlayer() {
+        UUID owner = UUID.randomUUID();
+        assertFalse(requests.hasOpenForm(owner), "no form is open until one is marked open");
+
+        requests.markFormOpen(owner);
+        assertTrue(requests.hasOpenForm(owner));
+
+        requests.forgetPlayer(owner);
+        assertFalse(requests.hasOpenForm(owner), "quitting must clear a stale open-form flag too");
     }
 
     @Test

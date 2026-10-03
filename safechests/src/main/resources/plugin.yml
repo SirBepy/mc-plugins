@@ -3,6 +3,7 @@ version: ${version}
 main: dev.sirbepy.mc.safechests.SafeChestsPlugin
 api-version: "26.2"
 depend: [Bolt]
+softdepend: [floodgate]
 author: sirbepy
 
 permissions:
