@@ -21,6 +21,9 @@ object ServerArtifacts {
         // Land claims. Modrinth lists Towny up to 26.2 only; enabled cleanly on Paper 26.3 build 143
         // (checked 2026-10-03).
         "https://cdn.modrinth.com/data/Vs77PB2W/versions/pra46LOM/Towny-0.103.2.0.jar",
+        // Skills/XP in place of mcMMO, whose current builds are paid-only (no official free jar on
+        // GitHub, Hangar or Modrinth, checked 2026-10-03). Modrinth lists 26.3 for this version.
+        "https://cdn.modrinth.com/data/uDdZAVls/versions/9rSJ3THD/AuraSkills-2.4.0.jar",
     )
 
     // Worldgen datapacks must exist before the world is first generated.
