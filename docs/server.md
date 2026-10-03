@@ -152,3 +152,17 @@ pinned URL in `ServerArtifacts.kt` at a time, re-run the deploy, confirm it enab
 3. Pre-generate terrain as admin in-game (see Chunky commands above).
 4. Nightly backups run automatically (`mc-backup.timer`, 05:00 Europe/Zagreb, newest 3 kept); check
    `systemctl list-timers mc-backup.timer`.
+
+## Kinetic (current host)
+
+The Hetzner VPS plan above is the eventual target; the server actually runs on a rented Kinetic
+Panel slot today (Pterodactyl-compatible, node EU-DE-P59, Germany). Deploy mechanics differ enough
+from the Hetzner steps (no root shell, panel API instead) to need their own notes: see
+`server/deploy/KINETIC.md` and `server/deploy/kinetic.mjs`.
+
+- **Java**: `eu-de-p59-a6-cg.kineticpanel.net:25566`
+- **Bedrock** (Geyser): `eu-de-p59-a6-cg.kineticpanel.net:25572`
+- **Voice chat** (Simple Voice Chat): port `25604`, same host
+- **SFTP**: `eu-de-p59-a6-cg.kineticpanel.net:2022`, user `<panel-username>.dd499ae3`, key auth only
+- The whitelist is on. Joe adds players from the panel's console tab: `whitelist add <name>`,
+  `op <name>`, `lp user <name> parent set admin`. Bedrock players: `fwhitelist add <gamertag>`.

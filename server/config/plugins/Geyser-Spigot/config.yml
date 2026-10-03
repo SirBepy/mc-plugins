@@ -9,15 +9,18 @@
 # be deleted and replaced by Geyser's own first-boot-generated config, diffed and re-committed.
 #
 # Values below are Geyser's own documented defaults except auth-type (floodgate, so Bedrock
-# players authenticate through Floodgate instead of a separate Microsoft/offline login) and the
-# bedrock listener port (19132, Geyser's default, kept explicit here for clarity). java.port is not
-# actually used as configured: for the plugin platform (as opposed to Standalone), Geyser always
-# overrides java.address/java.port from Bukkit.getPort() at startup (GeyserImpl#start, "platformType
-# != STANDALONE" branch), so it automatically follows whatever server-port the Paper server itself
-# binds to (25565 real, 25566 local smoke, see server/build.gradle.kts) with no override needed here.
+# players authenticate through Floodgate instead of a separate Microsoft/offline login), and the
+# bedrock listener port. java.port is not actually used as configured: for the plugin platform (as
+# opposed to Standalone), Geyser always overrides java.address/java.port from Bukkit.getPort() at
+# startup (GeyserImpl#start, "platformType != STANDALONE" branch), so it automatically follows
+# whatever server-port the Paper server itself binds to, with no override needed here.
+#
+# bedrock.port is 25572 (Kinetic Panel allocation [42267], noted "geyser-bedrock"), not Geyser's
+# default 19132: Kinetic only opens the allocations it assigns, so Bedrock clients must connect on
+# the assigned port, not the UDP default (see server/deploy/KINETIC.md).
 bedrock:
   address: 0.0.0.0
-  port: 19132
+  port: 25572
   webrtc-port: 0
   clone-remote-port: false
   enable-proxy-protocol: false
