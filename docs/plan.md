@@ -1,6 +1,6 @@
 # MC plugins: build plan and decisions
 
-Friends-only Paper server. Java players only for now (2 Bedrock players exist, Geyser/Floodgate is a later concern, do not design for it yet). Nothing paid, ever.
+Friends-only Paper server. Mostly Java players; 2 Bedrock players join through Geyser + Floodgate, and the custom plugins treat Floodgate as an optional soft dependency (Bedrock players get forms or typed-command hints where Java players get clickable chat). Nothing paid, ever.
 
 ## Platform
 
@@ -50,6 +50,7 @@ Owns everything about how a player's name looks. Replaces ColorfulNames, HexNick
 
 - `/color` opens a chest GUI: the 16 named colors, a curated set of hex colors, a few gradients, and Reset. Click applies instantly. Permission `names.color` (default: everyone). Gradients behind `names.color.gradient` (default: everyone).
 - `/nick` opens an anvil GUI to type a nickname (rename field). Also `/nick <name>`, `/nick reset`, and admin `/nick <player> <name|reset>`. Permission `names.nick` (default: op only; the owner grants it with LuckPerms). Rules (configurable): max 16 visible chars, letters/digits/underscore/space, cannot equal another known player's real name (anti-impersonation), MiniMessage tags stripped from player input.
+  - **Bedrock:** `/nick` opens a Cumulus input form instead of the anvil GUI when the player is on Bedrock (Floodgate), behind `bedrock.forms` (default: on).
 - `/names reload`.
 - Data: `plugins/Names/players.yml`, UUID to `{color, nick}`. Atomic writes (write temp file, then move over the original).
 
@@ -89,6 +90,7 @@ Bolt already auto-locks chests on placement (owner-only). SafeChests adds the re
 - Timed grants persist with their expiry (`grants.yml`), so a restart never leaves a timed grant open forever; expired grants are revoked on startup and by a repeating check.
 - Implementation preference: use Bolt's own owner-wide trust/access lists where they exist, with SafeChests tracking expiries. Never edit Bolt's code.
 - `/safechests reload`.
+- **Bedrock:** a denied requester on Bedrock gets a typed `/safe-chests-one-time` instruction instead of the chat click-event; an owner on Bedrock gets a typed `/safe-chests-pending` instruction instead of chat buttons, with an optional (config, default off) auto-opened answer form on every new request. `/safe-chests-pending` re-lists pending requests for a Java owner, or for a Bedrock owner opens the answer form directly (a chooser first if more than one), where a click answers through the exact same validated respond path the chat buttons use.
 
 ## Tag plugin
 
@@ -100,7 +102,8 @@ Always-on, server-wide game of tag. Hard depends on Names.
 - **Admin picks IT:** `/tag set <player>` (works for offline players: applied when they join), `/tag clear`.
 - **Tagging:** IT melee-hits a player. Projectiles do not count (config toggle). **No damage and it works even with PvP off or inside protected areas**: listen to `EntityDamageByEntityEvent` at `LOWEST` with `ignoreCancelled = false`, and cancel the damage on a valid tag. Both players must be in survival or adventure.
 - **Tagback cooldown:** the new IT cannot tag the player who just tagged them for 60s (configurable). Anyone else is fair game immediately.
-- **IT logs off:** stays IT until they come back (AFK handling is a later todo).
+- **IT logs off:** stays IT until they come back.
+- **AFK handling (configurable, `afk:` in config.yml):** idle this long (no movement/chat/command/block/interact/inventory activity, `afk.threshold-seconds`) counts as AFK, detected silently (no broadcast; EssentialsX already announces its own AFK). AFK players are excluded from the points multiplier's `n` (`afk.exclude-from-multiplier`) but stay taggable. An IT who stays AFK keeps accruing points at the normal online rate; if IT is online and idle past `afk.it-pass-after-seconds`, IT auto-passes to a random eligible online player (not AFK, not opted out, survival/adventure, avoiding the previous IT unless they're the only one), with no +10 and no tagback cooldown for the receiver. IT gets a one-time warning `afk.it-pass-warning-seconds` before the pass. Offline IT is never auto-passed.
 - **Persistence:** all state in `plugins/Tag/state.yml` (current IT, last tagger, tagback expiry, per-player stats, opt-outs, pending actions for offline players). Written atomically on every change and every minute. Never rely on player PDC as the source of truth (offline PDC is read-only).
 
 ### IT prefix
@@ -122,6 +125,7 @@ Added through `NamesApi.setPrefix(uuid, "tag", ...)`. Configurable MiniMessage, 
   - IT online: `1 * multiplier` per minute. IT offline: `0.5 * multiplier` per minute (factor configurable).
 - Raw stats kept per player: times tagged, tags made, minutes IT online, minutes IT offline, points.
 - `/tag stats [player]`, `/tag top` (chat leaderboard, lowest first), `/tag board` toggles a personal sidebar (live top 5, your score, who is IT; registered with `NamesApi.registerScoreboard`). `/tag who`.
+- `/tag leaderboard place` (admin, in-game only) drops a floating leaderboard at the admin's location; `/tag leaderboard remove` takes it down. It is a non-persistent `TextDisplay` (never written to the world file), respawned from the location saved in `state.yml` on plugin enable and whenever its chunk (re)loads, so it survives a restart without ever duplicating. Ties share a rank (competition ranking), using the same ranking as `/tag top` and the sidebar.
 
 ### Logs
 
@@ -137,8 +141,6 @@ Per-event config: `enabled`, `broadcast` (all players), `console`, `format` (Min
 
 ## Later (todos, not now)
 
-- AFK handling for the IT player.
 - Land claims (free only: Towny, GriefPrevention, HuskClaims; Towny's claims-per-resident is closest to "more members, more land").
-- In-world floating leaderboard.
-- Bedrock (Geyser/Floodgate) support and testing.
+- Bedrock testing on a real Bedrock client (forms and Geyser-translated GUIs can't be driven by the bots).
 - Deploying to the real server.
