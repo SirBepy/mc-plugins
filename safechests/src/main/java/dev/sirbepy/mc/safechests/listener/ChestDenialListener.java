@@ -15,6 +15,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.BlockInventoryHolder;
 import org.bukkit.inventory.InventoryHolder;
@@ -84,6 +85,11 @@ public final class ChestDenialListener implements Listener {
                         Placeholder.unparsed("z", String.valueOf(block.getZ())));
             }
         }
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        requests.forgetPlayer(event.getPlayer().getUniqueId());
     }
 
     private Block blockOf(InventoryHolder holder) {

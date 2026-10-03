@@ -1,6 +1,11 @@
 package dev.sirbepy.mc.safechests.request;
 
+import org.bukkit.block.Block;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockbukkit.mockbukkit.MockBukkit;
+import org.mockbukkit.mockbukkit.ServerMock;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -15,6 +20,16 @@ class RequestManagerTest {
 
     private final AtomicReference<Instant> clock = new AtomicReference<>(Instant.parse("2026-01-01T00:00:00Z"));
     private final RequestManager requests = new RequestManager(clock::get);
+
+    @BeforeEach
+    void setUp() {
+        MockBukkit.mock();
+    }
+
+    @AfterEach
+    void tearDown() {
+        MockBukkit.unmock();
+    }
 
     @Test
     void validateSucceedsOnlyForTheRealOwner() {
@@ -74,5 +89,22 @@ class RequestManagerTest {
 
         clock.set(clock.get().plus(Duration.ofSeconds(4)));
         assertTrue(requests.shouldNotifyDenial(player, debounce), "a denial after the window must notify again");
+    }
+
+    @Test
+    void forgetPlayerClearsBothTheDenialDebounceAndTheLastDeniedBlock() {
+        ServerMock server = MockBukkit.getMock();
+        Block block = server.addSimpleWorld("world").getBlockAt(0, 64, 0);
+        UUID player = UUID.randomUUID();
+        requests.shouldNotifyDenial(player, Duration.ofSeconds(3));
+        requests.rememberDeniedBlock(player, block);
+        assertTrue(requests.lastDeniedBlock(player).isPresent(), "sanity check: the block must be remembered first");
+
+        requests.forgetPlayer(player);
+
+        assertTrue(requests.shouldNotifyDenial(player, Duration.ofSeconds(3)),
+                "forgetting the player must clear the debounce, or a rejoin would stay silently suppressed");
+        assertFalse(requests.lastDeniedBlock(player).isPresent(),
+                "forgetting the player must drop the last denied block too, or memory never shrinks");
     }
 }

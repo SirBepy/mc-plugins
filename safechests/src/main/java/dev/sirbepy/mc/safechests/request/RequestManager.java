@@ -51,6 +51,12 @@ public final class RequestManager {
         return Optional.ofNullable(lastDeniedBlock.get(player));
     }
 
+    /** Called on quit: nothing left to debounce or feed `/safe-chests-one-time` once the player is gone. */
+    public void forgetPlayer(UUID player) {
+        lastDenialAt.remove(player);
+        lastDeniedBlock.remove(player);
+    }
+
     public AccessRequest create(UUID requester, UUID owner, String world, int x, int y, int z, Duration expiry) {
         String id = UUID.randomUUID().toString();
         AccessRequest request = new AccessRequest(id, requester, owner, world, x, y, z, clock.get().plus(expiry));
