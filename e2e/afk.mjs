@@ -65,7 +65,11 @@ try {
     yaw = (yaw + 0.6) % (Math.PI * 2);
     AfkC.look(yaw, 0, true).catch(() => {});
   }, 400);
-  await sleep(1000);
+  // Joining and teleporting three bots takes several seconds, long enough for AfkA to already be
+  // past the warning point; a head turn restarts both idle clocks right before AfkA becomes IT.
+  await AfkA.look(1, 0, true);
+  await AfkB.look(1, 0, true);
+  await sleep(1500);
 
   const markA = AfkA.lines.length;
   const markB = AfkB.lines.length;
