@@ -82,7 +82,12 @@ public final class HeadService {
         relocate(player, item);
     }
 
-    /** Removes the IT head and restores the marked original helmet if it can be found. */
+    /**
+     * Removes the IT head and restores the marked original helmet if it can be found. A second
+     * {@link #grant} during the same IT streak (a late equip caught by {@link #ensureWorn}) marks a
+     * second helmet; only one can ever be worn again, so every other marked helmet found afterward
+     * is unmarked rather than left to be mistaken for a displaced helmet on some later revoke.
+     */
     public void revoke(Player player) {
         ItemStack worn = player.getInventory().getHelmet();
         if (isTagHead(worn)) {
@@ -95,6 +100,18 @@ public final class HeadService {
         if (restored != null) {
             unmark(restored);
             player.getInventory().setHelmet(restored);
+        }
+        unmarkStrayHelmets(player.getInventory());
+        unmarkStrayHelmets(player.getEnderChest());
+    }
+
+    private void unmarkStrayHelmets(Inventory inventory) {
+        ItemStack[] contents = inventory.getContents();
+        for (int i = 0; i < contents.length; i++) {
+            if (isMarkedHelmet(contents[i])) {
+                unmark(contents[i]);
+                inventory.setItem(i, contents[i]);
+            }
         }
     }
 
