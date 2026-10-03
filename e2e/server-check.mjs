@@ -126,23 +126,21 @@ const datapackList = await rcon.command('datapack list');
 const countMatch = datapackList.match(/There are (\d+) data pack\(s\) enabled/);
 const enabledCount = countMatch ? Number(countMatch[1]) : 0;
 
-const committedDatapackDir = path.join(here, '..', 'server', 'datapacks');
-const committedPacks = fs.readdirSync(committedDatapackDir).filter((f) => f !== 'README.md');
-// Pinned Stardust worldgen packs downloaded by ServerArtifacts.kt's `datapacks` list - filenames
-// must stay in sync with buildSrc/src/main/kotlin/ServerArtifacts.kt if a version is ever bumped.
-const stardustPacks = [
-  'Terralith_v2.6.5+26.3.zip',
-  'Incendium_Legacy_v5.5.3+26.3.zip',
-  'Nullscape_v2.0.1+26.3.zip',
-  'Structory_v1.3.18+26.3.zip',
-  'Structory_Towers_v1.0.19+26.3.zip',
-  'Amplified_Nether_v1.3.0+26.3.zip',
-];
-const expectedPacks = [...committedPacks, ...stardustPacks];
+// :server:assembleLocalServer writes this manifest with the exact filenames it placed into
+// world/datapacks (committed server/datapacks/ entries plus the Stardust zips it derived from
+// ServerArtifacts.kt's pinned URLs), so this check never needs its own copy of either list.
+const manifestPath = path.join(localDir, 'datapacks.manifest.json');
+let manifest;
+try {
+  manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+} catch (e) {
+  throw new Error(`Could not read ${manifestPath} - run :server:assembleLocalServer first (${e.message})`);
+}
+const expectedPacks = [...manifest.bundled, ...manifest.stardust];
 const actualFiles = new Set(fs.readdirSync(path.join(localDir, 'world/datapacks')));
 const missingPacks = expectedPacks.filter((p) => !actualFiles.has(p));
 report(
-  'world/datapacks contains every committed pack plus the 6 Stardust packs',
+  `world/datapacks contains every committed pack plus all ${manifest.stardust.length} Stardust packs`,
   missingPacks.length === 0,
   missingPacks.length ? `missing: ${missingPacks.join(', ')}` : `${expectedPacks.length} packs on disk`,
 );

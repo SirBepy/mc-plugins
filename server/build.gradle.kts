@@ -73,6 +73,16 @@ fun copyTreeIfAbsent(src: File, destRoot: File, exclude: (File) -> Boolean = { f
 
 val isReadmeFile: (File) -> Boolean = { it.name == "README.md" }
 
+// Minimal hand-rolled JSON: these filenames never contain a quote or backslash (Modrinth slugs and
+// the committed datapacks/ entries), so a full JSON writer dependency isn't worth adding for this.
+fun jsonStringArray(values: List<String>) = values.joinToString(",\n    ") { "\"$it\"" }
+
+fun jsonManifest(stardust: List<String>, bundled: List<String>) =
+    "{\n" +
+        "  \"stardust\": [\n    ${jsonStringArray(stardust)}\n  ],\n" +
+        "  \"bundled\": [\n    ${jsonStringArray(bundled)}\n  ]\n" +
+        "}\n"
+
 fun writeStartScripts(distDir: File) {
     val jarName = ServerArtifacts.paperDownload.filename
     // Aikar's flags (https://docs.papermc.io/paper/aikars-flags), sized for the CX43 VPS (16 GB RAM).
@@ -213,11 +223,23 @@ fun registerAssemble(name: String, distDirPath: String, local: Boolean) = tasks.
         }
 
         val datapackDir = distDir.resolve("world/datapacks").apply { mkdirs() }
-        ServerArtifacts.datapacks.forEach { url ->
+        val stardustFilenames = ServerArtifacts.datapacks.map { url ->
             val filename = java.net.URLDecoder.decode(url.substringAfterLast('/'), Charsets.UTF_8)
             downloadIfMissing(url, datapackDir.resolve(filename))
+            filename
         }
-        copyTree(layout.projectDirectory.dir("datapacks").asFile, datapackDir, exclude = isReadmeFile)
+        val committedDatapacksDir = layout.projectDirectory.dir("datapacks").asFile
+        copyTree(committedDatapacksDir, datapackDir, exclude = isReadmeFile)
+        // Top-level entries only (matches what lands directly under world/datapacks: a committed
+        // pack is either one zip file or one folder, never copied file-by-file into the manifest).
+        val bundledFilenames = (committedDatapacksDir.listFiles() ?: emptyArray())
+            .filter { !isReadmeFile(it) }
+            .map { it.name }
+            .sorted()
+
+        // e2e/server-check.mjs reads this instead of hardcoding the Stardust filenames itself, so
+        // bumping a pinned URL above changes what the check expects without touching the e2e script.
+        distDir.resolve("datapacks.manifest.json").writeText(jsonManifest(stardustFilenames, bundledFilenames))
 
         copyTree(layout.projectDirectory.dir("config").asFile, distDir)
         copyTreeIfAbsent(layout.projectDirectory.dir("seed").asFile, distDir, exclude = isReadmeFile)
