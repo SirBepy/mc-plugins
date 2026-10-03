@@ -1,11 +1,11 @@
 # client/
 
 Everything a player needs to join the friends server. Hand players `SETUP.txt` (plain text, no
-markdown) and, for voice chat, `SirBepy-Friends-Server-26.3.mrpack`.
+markdown) and, for voice chat, `Los-Pollos-MineHermanos-26.3.mrpack`.
 
 - `SETUP.txt`: joining, optional voice chat, datapack textures, optional Sodium, Bedrock,
   troubleshooting.
-- `SirBepy-Friends-Server-26.3.mrpack`: Modrinth modpack (Modrinth App or Prism Launcher import).
+- `Los-Pollos-MineHermanos-26.3.mrpack`: Modrinth modpack (Modrinth App or Prism Launcher import).
   Contains only `modrinth.index.json`; the launcher downloads the jars from Modrinth's CDN and
   checks their hashes.
 - `mrpack/modrinth.index.json`: the pack's source of truth (pinned URLs, sizes, sha1, sha512).

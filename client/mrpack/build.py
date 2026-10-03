@@ -1,4 +1,4 @@
-"""Builds client/SirBepy-Friends-Server-26.3.mrpack from modrinth.index.json.
+"""Builds client/Los-Pollos-MineHermanos-26.3.mrpack from modrinth.index.json.
 
 Downloads every pinned file first and checks its size, sha1 and sha512 against the index, so a
 pack never ships with a hash the Modrinth App or Prism would reject at import time.
@@ -15,7 +15,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 INDEX = HERE / "modrinth.index.json"
-OUT = HERE.parent / "SirBepy-Friends-Server-26.3.mrpack"
+OUT = HERE.parent / "Los-Pollos-MineHermanos-26.3.mrpack"
 # Modrinth asks API/CDN clients for a descriptive User-Agent.
 USER_AGENT = "SirBepy/mc-plugins client-kit"
 
