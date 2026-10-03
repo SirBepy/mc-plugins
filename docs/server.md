@@ -90,6 +90,14 @@ works normally.
 4. Bedrock players: `fwhitelist add <bedrockname>` per Floodgate player, after confirming Geyser
    bound its Bedrock port (log line `Started Geyser on 0.0.0.0:19132`). Geyser is currently running
    off an official GeyserMC preview build, not a release build, see "Known issue" above.
+   Bedrock checks only a real Bedrock client can do (the bots can't render forms or Geyser's GUI
+   translation), once, with one of the Bedrock players:
+   - `/nick` opens a "Nickname" text form; submitting a name changes chat, tab and the floating label.
+   - `/color` opens the color chest GUI and a click applies the color.
+   - Opening someone else's chest says to type `/safe-chests-one-time`; the owner (on Bedrock) is
+     told to type `/safe-chests-pending`, which opens Allow once / 5 minutes / Always / Deny.
+   - As IT, the sheep head shows on the player (Geyser bug #5795 can hide custom heads until
+     re-equipped) and the IT prefix shows in chat and above the head.
 5. Pre-generate terrain with Chunky (world names are still `world` / `world_nether` /
    `world_the_end` on Paper 26.3 despite the on-disk layout being one `world/` folder with
    `dimensions/minecraft/{overworld,the_nether,the_end}/` inside, confirmed 2026-10-03 against a
