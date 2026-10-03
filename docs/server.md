@@ -160,9 +160,36 @@ Panel slot today (Pterodactyl-compatible, node EU-DE-P59, Germany). Deploy mecha
 from the Hetzner steps (no root shell, panel API instead) to need their own notes: see
 `server/deploy/KINETIC.md` and `server/deploy/kinetic.mjs`.
 
-- **Java**: `eu-de-p59-a6-cg.kineticpanel.net:25566`
-- **Bedrock** (Geyser): `eu-de-p59-a6-cg.kineticpanel.net:25572`
+- **Java**: `sirbepy.mcserver.host` (SRV record to `eu-de-p59-a6-cg.kineticpanel.net:25566`, no port
+  needed once DNS has propagated; the bare hostname:25566 still works directly too).
+- **Bedrock** (Geyser): `eu-de-p59-a6-cg.kineticpanel.net:25572` (SRV is Java-only; Bedrock ignores
+  it, so this stays the plain host:port, no subdomain).
 - **Voice chat** (Simple Voice Chat): port `25604`, same host
 - **SFTP**: `eu-de-p59-a6-cg.kineticpanel.net:2022`, user `<panel-username>.dd499ae3`, key auth only
-- The whitelist is on. Joe adds players from the panel's console tab: `whitelist add <name>`,
-  `op <name>`, `lp user <name> parent set admin`. Bedrock players: `fwhitelist add <gamertag>`.
+- The whitelist is off (Joe's call, 2026-10-03: anyone with the address can join; online-mode stays
+  on). SirBepy is op and LuckPerms admin. To lock it down later, from the panel's console tab:
+  `whitelist on`, `whitelist add <name>`, Bedrock players `fwhitelist add <gamertag>`.
+- The subdomain was created via the panel API: `POST /api/client/servers/{id}/subdomain` with body
+  `{"subdomain","domainId"}` (list existing: `GET` same path; available domains: `GET
+  /api/client/servers/{id}/domains`). No `kinetic.mjs` subcommand for this yet, added ad hoc.
+
+## First production deploy (2026-10-03)
+
+Bundle built with `:server:deployBundle`, uploaded via SFTP to the server root as
+`mc-server-bundle.tar.gz`, then extracted with `kinetic.mjs decompress . mc-server-bundle.tar.gz`
+(the panel's decompress endpoint does support .tar.gz; the root argument must be `.`, not `/` - Git
+Bash on Windows rewrites a bare `/` to the Git install path before Node ever sees it, which looked
+like a dead decompress endpoint until `kinetic.mjs ls .` proved the daemon connection was fine).
+`seed/plugins/LuckPerms/yaml-storage` moved up into `plugins/LuckPerms/yaml-storage` with a single
+SFTP `rename` (no `plugins/LuckPerms/yaml-storage` existed yet to clobber), then the tarball and the
+emptied `seed/` tree were deleted. `SERVER_JARFILE` set to `paper.jar` before first boot.
+
+`server-port` was NOT rewritten by Pterodactyl on first boot - the uploaded `server.properties` still
+said `25565` (the committed file's VPS-path value) after decompressing, so it needed a manual
+SFTP-side fix to `25566` before `power start`. Confirmed boot: Paper 26.3 build 143, all 18 plugins
+enabled (DiscordSRV self-disabled as expected, no bot token configured), Geyser bound UDP 25572,
+voice chat bound 25604, all 16 datapacks + vanilla + paper loaded with no errors, world border
+10000/2500, `players_sleeping_percentage` 50, `fire_spread_radius_around_player` 0. External pings
+(Java via `minecraft-protocol`, Bedrock via `bedrock-protocol`) both succeeded from this PC.
+Overworld/Nether pregen (`chunky`, square, center 0 0, radius 5000/1250) started via console
+commands; nether finished in 8:40 (25,281 chunks), overworld left running.
