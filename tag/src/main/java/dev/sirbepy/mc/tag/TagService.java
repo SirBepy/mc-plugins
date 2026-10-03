@@ -1,9 +1,11 @@
 package dev.sirbepy.mc.tag;
 
+import dev.sirbepy.mc.tag.afk.AfkTracker;
 import dev.sirbepy.mc.tag.board.ScoreboardService;
 import dev.sirbepy.mc.tag.config.TagConfig;
 import dev.sirbepy.mc.tag.head.HeadService;
 import dev.sirbepy.mc.tag.log.LogService;
+import dev.sirbepy.mc.tag.logic.AfkEligibility;
 import dev.sirbepy.mc.tag.logic.PendingAction;
 import dev.sirbepy.mc.tag.logic.PendingActions;
 import dev.sirbepy.mc.tag.logic.TagbackRule;
@@ -13,6 +15,7 @@ import dev.sirbepy.mc.tag.state.StateRepository;
 import dev.sirbepy.mc.tag.state.TagState;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -21,10 +24,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
 /** Central orchestrator: the single place that mutates {@link TagState} and keeps it persisted. */
@@ -38,18 +43,28 @@ public final class TagService {
 
     private TagState state;
     private TagConfig config;
+    private final AfkTracker afkTracker;
 
     // Not persisted: just a spam guard for the tagback-blocked message.
     private final Map<UUID, Long> tagbackMessageCooldown = new HashMap<>();
 
     public TagService(JavaPlugin plugin, File stateFile, HeadService heads, PrefixService prefix,
                        ScoreboardService boards, TagConfig config) {
+        this(plugin, stateFile, heads, prefix, boards, config,
+                new AfkTracker(System::currentTimeMillis, config.afk.thresholdSeconds * 1000L));
+    }
+
+    // Package-private: lets tests inject a fake-clock AfkTracker so idle/threshold/warning
+    // behavior is deterministic without sleeping through real `afk.*-seconds` durations.
+    TagService(JavaPlugin plugin, File stateFile, HeadService heads, PrefixService prefix,
+               ScoreboardService boards, TagConfig config, AfkTracker afkTracker) {
         this.plugin = plugin;
         this.stateFile = stateFile;
         this.heads = heads;
         this.prefix = prefix;
         this.boards = boards;
         this.config = config;
+        this.afkTracker = afkTracker;
         this.state = loadOrNew();
     }
 
@@ -72,6 +87,7 @@ public final class TagService {
 
     public void setConfig(TagConfig config) {
         this.config = config;
+        afkTracker.setThresholdMillis(config.afk.thresholdSeconds * 1000L);
     }
 
     public void save() {
@@ -237,6 +253,10 @@ public final class TagService {
     // --- join/quit -----------------------------------------------------------------------
 
     public void onJoin(Player player) {
+        // A relogging IT must never be instantly treated as idle, and offline time never counts
+        // as idle: joining always counts as activity.
+        markActive(player.getUniqueId());
+
         Optional<PendingAction> pending = PendingActions.take(state.pending, player.getUniqueId());
         pending.ifPresent(action -> {
             if (action == PendingAction.BECOME_IT) {
@@ -263,6 +283,95 @@ public final class TagService {
         // Spam guard, not state: nothing left to debounce once the player is gone, and keeping it
         // around would leak one UUID per player forever.
         tagbackMessageCooldown.remove(player.getUniqueId());
+        afkTracker.remove(player.getUniqueId());
+    }
+
+    // --- AFK -----------------------------------------------------------------------------------
+
+    /** Records player activity (movement, chat, commands, blocks, interaction, inventory). */
+    public void markActive(UUID uuid) {
+        if (!config.afk.enabled) {
+            return;
+        }
+        afkTracker.markActive(uuid);
+    }
+
+    public boolean isAfk(UUID uuid) {
+        return config.afk.enabled && afkTracker.isAfk(uuid);
+    }
+
+    /**
+     * Warns and/or auto-passes IT for being idle too long. Called once per {@code
+     * afk.check-interval-seconds} tick; a no-op whenever AFK handling or auto-pass is off, IT is
+     * offline (owner decision: IT who logs off stays IT), or nobody is currently IT.
+     */
+    public void checkItAfk() {
+        if (!config.afk.enabled || !config.afk.autoPass) {
+            return;
+        }
+        UUID itId = state.currentIt;
+        if (itId == null) {
+            return;
+        }
+        Player it = Bukkit.getPlayer(itId);
+        if (it == null) {
+            return;
+        }
+
+        long idleMillis = afkTracker.idleMillis(itId);
+        long passAfterMillis = config.afk.itPassAfterSeconds * 1000L;
+        long warnSeconds = config.afk.itPassWarningSeconds;
+
+        if (warnSeconds > 0 && idleMillis < passAfterMillis) {
+            long warnAtMillis = passAfterMillis - warnSeconds * 1000L;
+            if (idleMillis >= warnAtMillis && afkTracker.warnOnceIfNotAlready(itId)) {
+                config.messages.send(it, "afk-warning", Placeholder.unparsed("seconds", String.valueOf(warnSeconds)));
+            }
+        }
+
+        if (idleMillis >= passAfterMillis) {
+            tryAutoPassIt(it);
+        }
+    }
+
+    private void tryAutoPassIt(Player it) {
+        UUID previous = state.lastTagger;
+        List<AfkEligibility.Candidate> candidates = Bukkit.getOnlinePlayers().stream()
+                .filter(p -> !p.getUniqueId().equals(it.getUniqueId()))
+                .map(p -> new AfkEligibility.Candidate(p.getUniqueId(), afkTracker.isAfk(p.getUniqueId()),
+                        isOptedOut(p.getUniqueId()),
+                        p.getGameMode() == GameMode.SURVIVAL || p.getGameMode() == GameMode.ADVENTURE))
+                .toList();
+        List<UUID> eligible = AfkEligibility.eligible(candidates, previous);
+        if (eligible.isEmpty()) {
+            return;
+        }
+        UUID chosenId = eligible.get(ThreadLocalRandom.current().nextInt(eligible.size()));
+        Player chosen = Bukkit.getPlayer(chosenId);
+        if (chosen == null) {
+            return;
+        }
+        autoPassIt(it, chosen);
+    }
+
+    /**
+     * Passes IT from an idle player to {@code to} without the usual tag rewards: no +10 for the
+     * receiver and no tagback cooldown, since nobody actually tagged anybody.
+     */
+    public void autoPassIt(Player from, Player to) {
+        retireIt(from.getUniqueId());
+
+        state.currentIt = to.getUniqueId();
+        state.lastTagger = null;
+        state.tagbackExpiryMillis = 0L;
+        save();
+
+        crownIt(to);
+
+        config.logs.fire(LogService.Event.IT_AFK_PASSED,
+                Placeholder.unparsed("old_it", from.getName()),
+                Placeholder.unparsed("new_it", to.getName()));
+        boards.refreshAll(state);
     }
 
     // --- points tick -----------------------------------------------------------------------
@@ -275,6 +384,7 @@ public final class TagService {
         int n = (int) Bukkit.getOnlinePlayers().stream()
                 .filter(p -> !p.getUniqueId().equals(it))
                 .filter(p -> !isOptedOut(p.getUniqueId()))
+                .filter(p -> !(config.afk.excludeFromMultiplier && isAfk(p.getUniqueId())))
                 .count();
         double multiplier = dev.sirbepy.mc.tag.logic.PointsMath.multiplier(n, config.pointsCurve, config.pointsStep);
         boolean online = Bukkit.getPlayer(it) != null;

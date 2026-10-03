@@ -16,7 +16,7 @@ public final class LogService {
     private static final MiniMessage MINI = MiniMessage.miniMessage();
 
     public enum Event {
-        TAG, TAGBACK_BLOCKED, IT_SET, IT_CLEARED, IT_JOINED, IT_QUIT, OPT_OUT, OPT_IN
+        TAG, TAGBACK_BLOCKED, IT_SET, IT_CLEARED, IT_JOINED, IT_QUIT, OPT_OUT, OPT_IN, IT_AFK_PASSED
     }
 
     private final Map<Event, LogEntry> entries = new EnumMap<>(Event.class);
@@ -72,6 +72,7 @@ public final class LogService {
             case IT_QUIT -> "it-quit";
             case OPT_OUT -> "opt-out";
             case OPT_IN -> "opt-in";
+            case IT_AFK_PASSED -> "it-afk-passed";
         };
     }
 }

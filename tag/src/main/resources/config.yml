@@ -41,6 +41,22 @@ head:
   # removed it.
   watchdog-interval-seconds: 5
 
+afk:
+  # Master switch: false disables idle sampling, multiplier exclusion, and IT auto-pass entirely.
+  enabled: true
+  # Idle this long (no movement/chat/command/block/interact/inventory activity) = AFK.
+  threshold-seconds: 300
+  # AFK players don't count toward the points multiplier's n (see points.curve above).
+  exclude-from-multiplier: true
+  # IT who stays idle this long passes IT to a random eligible online player.
+  auto-pass: true
+  it-pass-after-seconds: 600
+  # Warn IT only, this many seconds before the pass. 0 disables the warning.
+  it-pass-warning-seconds: 60
+  # How often (seconds) to sample player position/facing for the idle check. Seconds, not
+  # minutes, so an e2e can set tiny values here and `/tag reload` to test AFK handling quickly.
+  check-interval-seconds: 1
+
 messages:
   unknown-player: "<red>Unknown player: <player>.</red>"
   it-set-confirm: "<green><player> is now IT.</green>"
@@ -58,8 +74,9 @@ messages:
   stats-line: "<aqua><player> - points: <points>, tagged: <tagged>, tags made: <made>, minutes IT (online/offline): <minutes-online>/<minutes-offline></aqua>"
   leaderboard-header: "<gold>Tag leaderboard (lowest wins):</gold>"
   leaderboard-entry: "<white><rank>. <player> - <points></white>"
+  afk-warning: "<yellow>You've been idle as IT. Move within <seconds>s or IT passes to someone else.</yellow>"
 
-# Placeholders available per event: <tagger>, <tagged>, <it>, <points>, <player>.
+# Placeholders available per event: <tagger>, <tagged>, <it>, <points>, <player>, <old_it>, <new_it>.
 logs:
   tag:
     enabled: true
@@ -102,3 +119,8 @@ logs:
     broadcast: false
     console: true
     format: "<gray><player> opted into Tag.</gray>"
+  it-afk-passed:
+    enabled: true
+    broadcast: true
+    console: true
+    format: "<gray><old_it> was away too long, IT passed to <new_it>.</gray>"

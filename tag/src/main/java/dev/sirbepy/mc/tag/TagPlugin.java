@@ -6,10 +6,12 @@ import dev.sirbepy.mc.tag.command.TagCommands;
 import dev.sirbepy.mc.tag.config.TagConfig;
 import dev.sirbepy.mc.tag.head.HeadProtectionListener;
 import dev.sirbepy.mc.tag.head.HeadService;
+import dev.sirbepy.mc.tag.listener.AfkActivityListener;
 import dev.sirbepy.mc.tag.listener.PlayerConnectionListener;
 import dev.sirbepy.mc.tag.listener.TagDamageListener;
 import dev.sirbepy.mc.tag.log.LogService;
 import dev.sirbepy.mc.tag.prefix.PrefixService;
+import dev.sirbepy.mc.tag.task.AfkSamplingTask;
 import dev.sirbepy.mc.tag.task.HeadWatchdogTask;
 import dev.sirbepy.mc.tag.task.PointsTask;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
@@ -31,6 +33,7 @@ public final class TagPlugin extends JavaPlugin {
 
     private BukkitTask pointsTask;
     private BukkitTask watchdogTask;
+    private BukkitTask afkTask;
 
     @Override
     public void onLoad() {
@@ -61,6 +64,7 @@ public final class TagPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new TagDamageListener(service), this);
         getServer().getPluginManager().registerEvents(new HeadProtectionListener(heads), this);
         getServer().getPluginManager().registerEvents(new PlayerConnectionListener(service), this);
+        getServer().getPluginManager().registerEvents(new AfkActivityListener(service), this);
 
         reapplyCurrentIt();
         scheduleTasks(config);
@@ -73,6 +77,9 @@ public final class TagPlugin extends JavaPlugin {
         }
         if (watchdogTask != null) {
             watchdogTask.cancel();
+        }
+        if (afkTask != null) {
+            afkTask.cancel();
         }
         if (service != null) {
             service.save();
@@ -89,6 +96,10 @@ public final class TagPlugin extends JavaPlugin {
         }
         if (watchdogTask != null) {
             watchdogTask.cancel();
+        }
+        if (afkTask != null) {
+            afkTask.cancel();
+            afkTask = null;
         }
         scheduleTasks(config);
     }
@@ -111,6 +122,11 @@ public final class TagPlugin extends JavaPlugin {
 
         long watchdogTicks = Math.max(1, config.headWatchdogSeconds * 20L);
         watchdogTask = getServer().getScheduler().runTaskTimer(this, new HeadWatchdogTask(service), watchdogTicks, watchdogTicks);
+
+        if (config.afk.enabled) {
+            long afkTicks = Math.max(1, config.afk.checkIntervalSeconds * 20L);
+            afkTask = getServer().getScheduler().runTaskTimer(this, new AfkSamplingTask(service), afkTicks, afkTicks);
+        }
     }
 
     public TagService service() {
