@@ -109,7 +109,7 @@ await checkOwnership('tpa', 'huskhomes');
 await checkOwnership('back', 'huskhomes');
 await checkOwnership('nick', 'names');
 
-// Gamerules and world border, set once per world by the server-rules datapack (see
+// Gamerules set once per world by the server-rules datapack (see
 // server/datapacks/server-rules/data/server_rules/function/load.mcfunction).
 const sleepRule = await rcon.command('gamerule players_sleeping_percentage');
 report('players_sleeping_percentage = 50', /\bset to 50\b/.test(sleepRule), sleepRule);
@@ -117,10 +117,6 @@ const fireRule = await rcon.command('gamerule fire_spread_radius_around_player')
 report('fire_spread_radius_around_player = 0', /\bset to 0\b/.test(fireRule), fireRule);
 const locatorRule = await rcon.command('gamerule locator_bar');
 report('locator_bar = false', /\bset to false\b/.test(locatorRule), locatorRule);
-const overworldBorder = await rcon.command('worldborder get');
-report('overworld worldborder = 10000', /\b10000\b/.test(overworldBorder), overworldBorder);
-const netherBorder = await rcon.command('execute in minecraft:the_nether run worldborder get');
-report('nether worldborder = 2500', /\b2500\b/.test(netherBorder), netherBorder);
 
 // Datapacks: `datapack list`'s own chat component is truncated by the server itself past a certain
 // length (confirmed live - it cuts off mid-list before every committed pack name fits, independent

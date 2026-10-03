@@ -15,12 +15,3 @@ gamerule players_sleeping_percentage 50
 gamerule fire_spread_radius_around_player 0
 # Hides the Player Locator Bar, which points every player at every other player within range.
 gamerule locator_bar false
-
-# Paper 26.3 keeps a separate world border per dimension (confirmed via each dimension's own
-# world_border.dat), so the nether needs its own execute-in. A #minecraft:load function's command
-# source position is the overworld's 0,0,0, so "~ ~" centers on the origin (world spawn is chosen
-# near it, small against a 5000 radius); execute in carries the same raw coordinates into the nether.
-worldborder center ~ ~
-worldborder set 10000
-execute in minecraft:the_nether run worldborder center ~ ~
-execute in minecraft:the_nether run worldborder set 2500

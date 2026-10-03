@@ -78,7 +78,7 @@ matching Paper 26.3. See the owner-requests section above for why the resource p
 
 ## server-rules/
 
-A custom folder datapack (not from Vanilla Tweaks): sets sleep percentage, disables fire spread,
-and sets the overworld/nether world border, once per world. See its own README section in
-`server-rules/pack.mcmeta`'s description and `docs/server.md` for the gamerule ids and border
-values used, and why.
+A custom folder datapack (not from Vanilla Tweaks): sets sleep percentage, disables fire spread
+and hides the locator bar, once per world. No world border: the owner removed it (2026-10-03).
+See its own README section in `server-rules/pack.mcmeta`'s description and `docs/server.md` for
+the gamerule ids used, and why.
