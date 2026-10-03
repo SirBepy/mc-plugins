@@ -1,0 +1,147 @@
+SIRBEPY'S FRIENDS SERVER - PLAYER SETUP
+=======================================
+
+Server version: Minecraft Java 26.3
+Java address:   eu-de-p59-a6-cg.kineticpanel.net:25566
+Bedrock:        eu-de-p59-a6-cg.kineticpanel.net, port <BEDROCK_PORT>
+
+The ":25566" at the end of the Java address is required. Without it you won't connect.
+
+
+1. BEFORE ANYTHING: GET WHITELISTED
+-----------------------------------
+The server only lets in people Joe has added.
+
+- Java players: send Joe your exact Minecraft Java username.
+- Bedrock players: send Joe your exact Xbox gamertag.
+
+Wait until Joe says you're added, then join.
+
+
+2. JOINING (JAVA, NO MODS NEEDED)
+---------------------------------
+Plain vanilla Minecraft works. Mods are optional.
+
+1. Open the Minecraft Launcher and make sure it starts version 26.3
+   ("Latest release" is fine while 26.3 is the newest; if a newer version is out,
+   go to Installations > New installation > pick 26.3).
+2. Play > Multiplayer > Add Server.
+3. Server Address: eu-de-p59-a6-cg.kineticpanel.net:25566
+4. Done > double-click the server.
+
+Resource pack: right now the server does NOT send a resource pack, so you won't get a
+"download resource pack?" prompt. If one is added later, the server will offer it when you
+join: click "Yes" / "Proceed" so you see everything correctly.
+
+
+3. OPTIONAL: PROXIMITY VOICE CHAT
+---------------------------------
+The server runs Simple Voice Chat: you hear people near you, quieter the further away they are.
+It's optional. If you don't install the mod, the game works normally, you just won't hear
+voice and nobody hears you.
+
+You need the client mod "Simple Voice Chat" version 2.6.24 for Minecraft 26.3 (the server
+runs 2.6.24). Pick ONE way to install it:
+
+  A) EASIEST: the modpack file (one click, includes Sodium for more FPS)
+     1. Install the Modrinth App (https://modrinth.com/app) or Prism Launcher
+        (https://prismlauncher.org). Both are free.
+     2. Get the file "SirBepy-Friends-Server-26.3.mrpack" from Joe.
+     3. Modrinth App: click "+" (Create instance) > "From file" > pick the .mrpack.
+        Prism Launcher: Add Instance > Import > pick the .mrpack.
+     4. Sign in with your Microsoft account in the launcher, then launch the new instance.
+     It installs Fabric 26.3 + Fabric API + Simple Voice Chat + Sodium for you.
+
+  B) MANUAL with Fabric (the normal Minecraft Launcher)
+     1. Download the Fabric installer from https://fabricmc.net/use/installer/ and run it.
+        Choose Minecraft version 26.3, click Install.
+     2. Download these three files (click the "Download" button on each page):
+        - Fabric API 0.161.0+26.3:
+          https://modrinth.com/mod/fabric-api/version/bNnaTiuM
+        - Simple Voice Chat fabric-2.6.24+26.3:
+          https://modrinth.com/plugin/simple-voice-chat/version/OLnMVWXy
+        - Sodium 0.9.2 (optional, more FPS):
+          https://modrinth.com/mod/sodium/version/bAZQdGpg
+     3. Put the .jar files into your mods folder:
+        Windows: press Win+R, type %appdata%\.minecraft\mods and press Enter
+                 (create the "mods" folder if it doesn't exist).
+        Mac:     ~/Library/Application Support/minecraft/mods
+     4. In the Minecraft Launcher, pick the "fabric-loader-26.3" installation and Play.
+
+  C) NEOFORGE instead of Fabric (only if you already use NeoForge: its 26.3 version is
+     still a beta, so Fabric is recommended)
+     Install NeoForge for 26.3 (https://neoforged.net), then put
+     Simple Voice Chat neoforge-2.6.24+26.3 in the mods folder:
+     https://modrinth.com/plugin/simple-voice-chat/versions?g=26.3&l=neoforge
+     (NeoForge does not need Fabric API.)
+
+Using voice chat in-game:
+- Press V to open the voice chat menu. The first time, it walks you through setup and asks
+  you to choose:
+    * Push to talk: you only talk while holding a key (default: Caps Lock). Best if you
+      have background noise or don't want to be heard by accident.
+    * Voice activation: your mic turns on when you speak loud enough. Set the threshold
+      slider so your normal voice triggers it but keyboard/background noise doesn't.
+- The V menu also has: Settings (pick your microphone and speaker, volumes, change
+  push to talk vs voice activation later), Mute yourself, Disable voice chat entirely,
+  and Groups (talk to friends anywhere on the map, not just nearby).
+- All voice keys can be changed in Options > Controls > Key Binds (Voice Chat section).
+- A small icon on screen shows your voice status. If it shows as disconnected,
+  see Troubleshooting below.
+- Windows/Mac may ask for microphone permission for Java the first time: allow it.
+
+Players on Bedrock (phone, console, Windows Bedrock) can't use voice chat.
+
+
+4. OPTIONAL: PERFORMANCE MODS
+-----------------------------
+Sodium makes the game run much faster (higher FPS) on most PCs. It is already in the
+modpack (option A). For manual Fabric installs, add the Sodium link from option B.
+Sodium 0.9.2 for 26.3 exists for Fabric and NeoForge. It only changes your own game,
+nothing on the server.
+
+
+5. BEDROCK PLAYERS (phone, tablet, Windows Bedrock, console)
+------------------------------------------------------------
+Bedrock can join too, through a bridge (Geyser).
+
+1. Make sure Joe has whitelisted your Xbox gamertag (see section 1).
+2. Play > Servers > scroll down > Add Server.
+3. Server Address: eu-de-p59-a6-cg.kineticpanel.net
+   Port: <BEDROCK_PORT>
+4. Join. You must be signed in with your Xbox/Microsoft account.
+
+Good to know:
+- In-game your name shows with a "." in front (e.g. ".Steve"). Spaces in gamertags
+  become "_". That's normal, it keeps Bedrock and Java names apart.
+- No voice chat on Bedrock.
+- Some menus look a bit different on Bedrock (they appear as forms), but work the same.
+- Consoles (Xbox, PlayStation, Switch) don't have an "Add Server" button. Ask Joe if you
+  play on console and want to join.
+
+
+6. TROUBLESHOOTING
+------------------
+"You are not white-listed on this server!"
+  Joe hasn't added you yet, or the name he has is wrong. Send him your exact Java
+  username (Bedrock: exact Xbox gamertag) and wait for his OK.
+
+"Outdated client" / "Outdated server" / "Incompatible version"
+  Your game isn't on 26.3. In the launcher, create an installation for 26.3 (section 2),
+  or the Fabric 26.3 instance from section 3.
+
+"Can't connect to server" / "Connection refused" / timed out
+  Check the address ends in :25566. If it still fails, the server may be down or
+  restarting: ask Joe.
+
+Voice chat icon says disconnected / nobody hears you
+  - Make sure you installed Simple Voice Chat 2.6.24 for 26.3 (not an older version).
+  - Press V > Settings and check the right microphone is selected, and that you're not
+    muted or have voice chat disabled.
+  - Voice uses a separate UDP network port on the server. If it's broken for everyone,
+    tell Joe (the server's voice port may be blocked). If it's only you, your network
+    (school/work Wi-Fi, some VPNs) may be blocking UDP: try another network.
+
+Game crashes on start with mods
+  Make sure every mod file says 26.3 and you picked the Fabric 26.3 installation.
+  Don't mix Fabric and NeoForge files in the same mods folder.
