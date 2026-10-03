@@ -43,8 +43,8 @@ runs 2.6.24). Pick ONE way to install it:
      4. Sign in with your Microsoft account in the launcher, then launch the new instance.
      It installs Fabric 26.3 + Fabric API + Simple Voice Chat + Sodium + Iris (shaders,
      off by default, see section 4) + LambDynamicLights (held-light items glow, see
-     section 4) + the Reg's More Foods and Dungeons and Taverns textures for you.
-     Nothing else to set up.
+     section 4) + the Reg's More Foods and Dungeons and Taverns textures + a set of
+     optional quality-of-life mods (see section 5) for you. Nothing else to set up.
      (The .mrpack format has no slot for a pack icon, so your launcher will show a
      generic icon for this instance - that's expected, not a broken install.)
 
@@ -137,12 +137,23 @@ light-emitting item you (or another entity) are holding lights up the area aroun
 automatically.
 
 
-5. OPTIONAL: PERFORMANCE MODS
-------------------------------
-Sodium makes the game run much faster (higher FPS) on most PCs. It is already in the
-modpack (option A). For manual Fabric installs, add the Sodium link from option B.
-Sodium 0.9.2 for 26.3 exists for Fabric and NeoForge. It only changes your own game,
-nothing on the server.
+5. OPTIONAL: PERFORMANCE AND QUALITY-OF-LIFE MODS
+--------------------------------------------------
+All already in the modpack (option A). They only change your own game, nothing on the
+server.
+
+Performance (higher FPS, less RAM, all from Sodium): Sodium, Lithium, FerriteCore,
+Entity Culling, ImmediatelyFast.
+
+Quality of life:
+  - Continuity: connected textures (glass, bookshelves) when a resource pack supports it.
+  - Mod Menu: press the mods button on the title screen to see/configure installed mods.
+  - AppleSkin: shows exact food/saturation values in the HUD.
+  - Mouse Tweaks: drag the mouse across inventory slots to move or split items.
+  - Jade: hover over a block or mob to see info about it.
+
+For manual Fabric installs, these aren't in the links list above; ask Joe if you want them
+individually.
 
 
 6. BEDROCK PLAYERS (phone, tablet, Windows Bedrock, console)

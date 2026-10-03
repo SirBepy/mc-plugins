@@ -33,6 +33,16 @@ subdomain with an SRV record to `eu-de-p59-a6-cg.kineticpanel.net:25566` (checke
 | Iris Shaders | 1.11.7+26.3-fabric (`vTN4NRGW`) | release | shader loader; ships OFF by default, see below |
 | Complementary Reimagined | r5.9.3 (`Bqen1mJX`) | release | the shader pack Iris preselects (still OFF by default) |
 | LambDynamicLights | 4.13.0+26.3 (`rylKnJ4M`) | release | held/dropped light-emitting items light up the area |
+| Entity Culling | 1.11.2 (`F4loCvYt`) | release | skips rendering entities fully hidden behind blocks; FPS |
+| ImmediatelyFast | 1.17.1+26.3 (`3MP9UR23`) | release | faster item/text rendering; author benchmarks show it still helps with Iris+Sodium active |
+| FerriteCore | 9.0.0-fabric (`d5ddUdiB`) | release | reduces client RAM usage |
+| Lithium | 0.26.2+mc26.3 (`xS0Q8LSi`) | release | general game-logic optimizations; same org (CaffeineMC) as Sodium |
+| Continuity | 3.0.1+26.3 (`Jt2sCWTQ`) | release | lets resource packs use connected textures (glass, bookshelves, etc.) with Sodium |
+| Text Placeholder API | 3.2.0+26.3 (`lXytLqWj`) | release | required dependency of Mod Menu |
+| Mod Menu | 21.0.0 (`kyy7dbrZ`) | release | in-game screen to see/configure installed mods |
+| AppleSkin | 3.0.10+mc26.3 (`PHjDtQay`) | release | shows food/saturation/exhaustion values in the HUD |
+| Mouse Tweaks | 2.31 (`LeMuMhLv`) | release | drag-to-move/drag-to-split items across inventory slots |
+| Jade | 26.3.5 (`71CTWqdE`) | release | hover overlay with block/entity info |
 
 The RMF/D&T pair are the projects' own "+mod" jars: no classes, just `data/` + `assets/` wrapped
 as a Fabric mod, so Fabric loads their assets as an always-on built-in resource pack (their
@@ -91,6 +101,32 @@ Checked through the Modrinth API (`/v2/project`, `/v2/team/<id>/members`, `/v2/p
   Shader pack (zip of shader source, no `.class`/`.jar`); loader is `iris`, not `fabric`.
 - **LambDynamicLights**: project `yBW8D80W` (slug `lambdynamiclights`), owner `LambdAurora`,
   source github.com/LambdAurora/LambDynamicLights, ~60M downloads.
+- **Entity Culling**: project `NNAgCjsB` (slug `entityculling`), source
+  github.com/tr7zw/EntityCulling, ~174M downloads. No declared incompatibilities on Modrinth; no
+  mention of LambDynamicLights in its description either (checked 2026-10-03).
+- **ImmediatelyFast**: project `5ZwdcRci` (slug `immediatelyfast`), source
+  github.com/RaphiMC/ImmediatelyFast, ~127M downloads. Its own description benchmarks it running
+  with "Iris and Sodium" active (60 -> 76 FPS), so it's tested against that combo already in the
+  pack.
+- **FerriteCore**: project `uXXizFIs` (slug `ferrite-core`), source
+  github.com/malte0811/FerriteCore, ~155M downloads. No declared dependencies or incompatibilities.
+- **Lithium**: project `gvQqBUqZ` (slug `lithium`), source github.com/CaffeineMC/lithium-fabric,
+  ~131M downloads. Same org (CaffeineMC) as Sodium, so the two are maintained together.
+- **Continuity**: project `1IjD5062` (slug `continuity`), source github.com/PepperCode1/Continuity,
+  ~75M downloads. Client-side only, built to supply connected textures alongside Sodium (the
+  Sodium team recommends it for that purpose); requires Fabric API (already in the pack).
+- **Text Placeholder API**: project `eXts2L7r` (slug `placeholder-api`), source
+  github.com/Patbox/TextPlaceholderAPI, ~67M downloads. Pulled in only because Mod Menu 21.0.0
+  lists it as a required dependency.
+- **Mod Menu**: project `mOgUt4GM` (slug `modmenu`), source github.com/TerraformersMC/ModMenu,
+  ~149M downloads. Required deps: Fabric API (already in pack) and Text Placeholder API (added
+  above).
+- **AppleSkin**: project `EsAfCjCV` (slug `appleskin`), source github.com/squeek502/AppleSkin,
+  ~92M downloads. Requires Fabric API (already in the pack).
+- **Mouse Tweaks**: project `aC3cM3Vq` (slug `mouse-tweaks`), source
+  github.com/YaLTeR/MouseTweaks, ~60M downloads. No declared dependencies or incompatibilities.
+- **Jade**: project `nvQzSEkH` (slug `jade`), source github.com/Snownee/Jade, ~69M downloads.
+  Requires Fabric API (already in the pack); JEI is only an optional dependency, not pulled in.
 - All are the official projects under their canonical slugs (not forks or look-alikes), and each
   has a build whose only game version is `26.3`.
 - `build.py` confirmed each CDN file matches the pinned size, sha1 and sha512.
