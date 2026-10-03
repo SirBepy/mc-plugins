@@ -13,7 +13,9 @@ markdown) and, for voice chat, `SirBepy-Friends-Server-26.3.mrpack`.
   index into the `.mrpack`. Run `python client/mrpack/build.py` after changing a pin.
 
 Ports in `SETUP.txt` (Bedrock 25572, voice UDP 25604) are the Kinetic Hosting panel's
-allocations, see `docs/server.md` "Kinetic (current host)".
+allocations, see `docs/server.md` "Kinetic (current host)". `sirbepy.mcserver.host` is Kinetic's
+subdomain with an SRV record to `eu-de-p59-a6-cg.kineticpanel.net:25566` (checked with nslookup
+2026-10-03); Bedrock ignores SRV, so it keeps the raw host + port.
 
 ## Pack contents (pinned 2026-10-03)
 

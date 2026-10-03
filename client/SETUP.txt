@@ -2,23 +2,14 @@ SIRBEPY'S FRIENDS SERVER - PLAYER SETUP
 =======================================
 
 Server version: Minecraft Java 26.3
-Java address:   eu-de-p59-a6-cg.kineticpanel.net:25566
+Java address:   sirbepy.mcserver.host
+                (backup if that doesn't work: eu-de-p59-a6-cg.kineticpanel.net:25566)
 Bedrock:        eu-de-p59-a6-cg.kineticpanel.net, port 25572
 
-The ":25566" at the end of the Java address is required. Without it you won't connect.
+No port needed for sirbepy.mcserver.host. The backup address does need the ":25566".
 
 
-1. BEFORE ANYTHING: GET WHITELISTED
------------------------------------
-The server only lets in people Joe has added.
-
-- Java players: send Joe your exact Minecraft Java username.
-- Bedrock players: send Joe your exact Xbox gamertag.
-
-Wait until Joe says you're added, then join.
-
-
-2. JOINING (JAVA, NO MODS NEEDED)
+1. JOINING (JAVA, NO MODS NEEDED)
 ---------------------------------
 Plain vanilla Minecraft works. Mods are optional.
 
@@ -26,14 +17,14 @@ Plain vanilla Minecraft works. Mods are optional.
    ("Latest release" is fine while 26.3 is the newest; if a newer version is out,
    go to Installations > New installation > pick 26.3).
 2. Play > Multiplayer > Add Server.
-3. Server Address: eu-de-p59-a6-cg.kineticpanel.net:25566
+3. Server Address: sirbepy.mcserver.host
 4. Done > double-click the server.
 
 The server does NOT send you a resource pack, so you won't get a "download resource pack?"
-prompt. It does have 200+ new foods that need textures on your side: see section 4.
+prompt. It does have 200+ new foods that need textures on your side: see section 3.
 
 
-3. OPTIONAL: PROXIMITY VOICE CHAT
+2. OPTIONAL: PROXIMITY VOICE CHAT
 ---------------------------------
 The server runs Simple Voice Chat: you hear people near you, quieter the further away they are.
 It's optional. If you don't install the mod, the game works normally, you just won't hear
@@ -43,7 +34,7 @@ You need the client mod "Simple Voice Chat" version 2.6.24 for Minecraft 26.3 (t
 runs 2.6.24). Pick ONE way to install it:
 
   A) EASIEST: the modpack file (one click, also includes Sodium for more FPS and the
-     food/dungeon textures from section 4)
+     food/dungeon textures from section 3)
      1. Install the Modrinth App (https://modrinth.com/app) or Prism Launcher
         (https://prismlauncher.org). Both are free.
      2. Get the file "SirBepy-Friends-Server-26.3.mrpack" from Joe.
@@ -67,7 +58,7 @@ runs 2.6.24). Pick ONE way to install it:
           https://modrinth.com/datapack/reg-more-foods/version/ebuLruaV
         - Dungeons and Taverns 6.0.2 Fabric (dungeon key textures, optional, 42 MB):
           https://modrinth.com/datapack/dungeons-and-taverns/version/WilF7nqU
-        With the last two in your mods folder you can skip section 4.
+        With the last two in your mods folder you can skip section 3.
      3. Put the .jar files into your mods folder:
         Windows: press Win+R, type %appdata%\.minecraft\mods and press Enter
                  (create the "mods" folder if it doesn't exist).
@@ -79,7 +70,7 @@ runs 2.6.24). Pick ONE way to install it:
      Install NeoForge for 26.3 (https://neoforged.net), then put
      Simple Voice Chat neoforge-2.6.24+26.3 in the mods folder:
      https://modrinth.com/plugin/simple-voice-chat/versions?g=26.3&l=neoforge
-     (NeoForge does not need Fabric API.) For the food textures, use section 4.
+     (NeoForge does not need Fabric API.) For the food textures, use section 3.
 
 Using voice chat in-game:
 - Press V to open the voice chat menu. The first time, it walks you through setup and asks
@@ -99,7 +90,7 @@ Using voice chat in-game:
 Players on Bedrock (phone, console, Windows Bedrock) can't use voice chat.
 
 
-4. TEXTURES FOR THE NEW FOODS (RECOMMENDED)
+3. TEXTURES FOR THE NEW FOODS (RECOMMENDED)
 -------------------------------------------
 The server adds 200+ new foods (Reg's More Foods) and new dungeons with keys (Dungeons and
 Taverns). The server can't send you their textures, so without them the new foods show
@@ -123,7 +114,7 @@ Otherwise (plain vanilla, NeoForge), add them as resource packs:
 Bedrock can't load these, so on Bedrock the new foods look like placeholders.
 
 
-5. OPTIONAL: PERFORMANCE MODS
+4. OPTIONAL: PERFORMANCE MODS
 -----------------------------
 Sodium makes the game run much faster (higher FPS) on most PCs. It is already in the
 modpack (option A). For manual Fabric installs, add the Sodium link from option B.
@@ -131,15 +122,15 @@ Sodium 0.9.2 for 26.3 exists for Fabric and NeoForge. It only changes your own g
 nothing on the server.
 
 
-6. BEDROCK PLAYERS (phone, tablet, Windows Bedrock, console)
+5. BEDROCK PLAYERS (phone, tablet, Windows Bedrock, console)
 ------------------------------------------------------------
 Bedrock can join too, through a bridge (Geyser).
 
-1. Make sure Joe has whitelisted your Xbox gamertag (see section 1).
-2. Play > Servers > scroll down > Add Server.
-3. Server Address: eu-de-p59-a6-cg.kineticpanel.net
+1. Play > Servers > scroll down > Add Server.
+2. Server Address: eu-de-p59-a6-cg.kineticpanel.net
    Port: 25572
-4. Join. You must be signed in with your Xbox/Microsoft account.
+   (sirbepy.mcserver.host does NOT work on Bedrock, use the address above.)
+3. Join. You must be signed in with your Xbox/Microsoft account.
 
 Good to know:
 - In-game your name shows with a "." in front (e.g. ".Steve"). Spaces in gamertags
@@ -150,19 +141,22 @@ Good to know:
   play on console and want to join.
 
 
-7. TROUBLESHOOTING
+6. TROUBLESHOOTING
 ------------------
-"You are not white-listed on this server!"
-  Joe hasn't added you yet, or the name he has is wrong. Send him your exact Java
-  username (Bedrock: exact Xbox gamertag) and wait for his OK.
-
-"Outdated client" / "Outdated server" / "Incompatible version"
-  Your game isn't on 26.3. In the launcher, create an installation for 26.3 (section 2),
-  or the Fabric 26.3 instance from section 3.
+"Unknown host" / "Can't resolve hostname" with sirbepy.mcserver.host
+  Use the backup address eu-de-p59-a6-cg.kineticpanel.net:25566 (with the :25566).
 
 "Can't connect to server" / "Connection refused" / timed out
-  Check the address ends in :25566. If it still fails, the server may be down or
-  restarting: ask Joe.
+  Try the backup address above. If both fail, the server may be down or restarting:
+  ask Joe.
+
+"You are not white-listed on this server!"
+  Joe has turned on a whitelist. Send him your exact Java username (Bedrock: exact
+  Xbox gamertag) and wait for his OK.
+
+"Outdated client" / "Outdated server" / "Incompatible version"
+  Your game isn't on 26.3. In the launcher, create an installation for 26.3 (section 1),
+  or the Fabric 26.3 instance from section 2.
 
 Voice chat icon says disconnected / nobody hears you
   - Make sure you installed Simple Voice Chat 2.6.24 for 26.3 (not an older version).
@@ -178,5 +172,5 @@ Game crashes on start with mods
   Don't mix Fabric and NeoForge files in the same mods folder.
 
 New foods have weird/placeholder icons
-  You're missing the food textures: see section 4. If you added the resource pack,
+  You're missing the food textures: see section 3. If you added the resource pack,
   check it's on the "Selected" side in Options > Resource Packs.
