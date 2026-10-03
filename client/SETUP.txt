@@ -44,7 +44,8 @@ runs 2.6.24). Pick ONE way to install it:
      It installs Fabric 26.3 + Fabric API + Simple Voice Chat + Sodium + Iris (shaders,
      off by default, see section 4) + LambDynamicLights (held-light items glow, see
      section 4) + the Reg's More Foods and Dungeons and Taverns textures + a set of
-     optional quality-of-life mods (see section 5) for you. Nothing else to set up.
+     optional quality-of-life mods, including inventory auto-sorting (see section 5)
+     for you. Nothing else to set up.
      (The .mrpack format has no slot for a pack icon, so your launcher will show a
      generic icon for this instance - that's expected, not a broken install.)
 
@@ -151,6 +152,10 @@ Quality of life:
   - AppleSkin: shows exact food/saturation values in the HUD.
   - Mouse Tweaks: drag the mouse across inventory slots to move or split items.
   - Jade: hover over a block or mob to see info about it.
+  - Inventory Profiles Next: auto-sorts your inventory and chests. Click the small sort
+    button it adds in the corner of any inventory/chest screen to sort that container;
+    you can also assign your own keyboard shortcut for it in Mod Menu's mod list ->
+    Inventory Profiles Next -> Hotkeys (no key is bound by default).
 
 For manual Fabric installs, these aren't in the links list above; ask Joe if you want them
 individually.

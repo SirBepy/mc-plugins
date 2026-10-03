@@ -43,6 +43,9 @@ subdomain with an SRV record to `eu-de-p59-a6-cg.kineticpanel.net:25566` (checke
 | AppleSkin | 3.0.10+mc26.3 (`PHjDtQay`) | release | shows food/saturation/exhaustion values in the HUD |
 | Mouse Tweaks | 2.31 (`LeMuMhLv`) | release | drag-to-move/drag-to-split items across inventory slots |
 | Jade | 26.3.5 (`71CTWqdE`) | release | hover overlay with block/entity info |
+| Fabric Language Kotlin | 1.14.1+kotlin.2.4.20 (`eRRZzGMc`) | release | required dependency of libIPN/Inventory Profiles Next |
+| libIPN | fabric-26.3-6.9.0 (`aKBFonyQ`) | release | required dependency of Inventory Profiles Next |
+| Inventory Profiles Next | fabric-26.3-2.3.8 (`y8vT21Sb`) | release | inventory auto-sort button/keybind, lockable slots |
 
 The RMF/D&T pair are the projects' own "+mod" jars: no classes, just `data/` + `assets/` wrapped
 as a Fabric mod, so Fabric loads their assets as an always-on built-in resource pack (their
@@ -78,7 +81,7 @@ file entry pointing at the CDN, not a direct-upload bundle) provided it isn't mo
 enabled by default, is credited in the modpack's description. It ships OFF by default here, so
 that credit condition doesn't apply, but it's credited above anyway.
 
-## Safety check (2026-10-03)
+## Safety check (2026-10-03, updated for Inventory Profiles Next)
 
 Checked through the Modrinth API (`/v2/project`, `/v2/team/<id>/members`, `/v2/project/<id>/version`):
 
@@ -127,6 +130,21 @@ Checked through the Modrinth API (`/v2/project`, `/v2/team/<id>/members`, `/v2/p
   github.com/YaLTeR/MouseTweaks, ~60M downloads. No declared dependencies or incompatibilities.
 - **Jade**: project `nvQzSEkH` (slug `jade`), source github.com/Snownee/Jade, ~69M downloads.
   Requires Fabric API (already in the pack); JEI is only an optional dependency, not pulled in.
+- **Inventory Profiles Next**: project `O7RBXm3n` (slug `inventory-profiles-next`), team owner
+  `blackd` (matches the version's author id), source codeberg.org/Inventory-Profiles-Next-Mod/IPN
+  (mirrors github.com/blackd/Inventory-Profiles), license AGPL-3.0-or-later, ~40M downloads.
+  Modrinth lists its version environment as `client_only`, so it's safe on the Paper server as-is.
+  Required deps per its version's dependency list: Fabric API (already in the pack), libIPN and
+  Fabric Language Kotlin (both added below). No declared incompatibility with Mouse Tweaks on its
+  Modrinth page, in its project description, or via web search (2026-10-03); the two don't overlap
+  functionally, IPN draws its own sort/dump buttons in inventory screens and assigns separate
+  configurable hotkeys, it doesn't touch Mouse Tweaks' click-drag behavior.
+- **libIPN**: project `onSQdWhM` (slug `libipn`), same team as Inventory Profiles Next, source
+  github.com/blackd/libIPN, ~35M downloads. Required dependency of Inventory Profiles Next (shared
+  library code); its own required deps are Fabric API and Fabric Language Kotlin (both in the pack).
+- **Fabric Language Kotlin**: project `Ha28R6CL` (slug `fabric-language-kotlin`), owned by the
+  FabricMC team, source github.com/FabricMC/fabric-language-kotlin, ~123M downloads. Required
+  dependency of libIPN/Inventory Profiles Next (they're written in Kotlin).
 - All are the official projects under their canonical slugs (not forks or look-alikes), and each
   has a build whose only game version is `26.3`.
 - `build.py` confirmed each CDN file matches the pinned size, sha1 and sha512.
