@@ -18,7 +18,7 @@
 //   delete <file...>                  delete files/dirs from server root (kept, unused today)
 
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -137,7 +137,10 @@ async function cmdPower(action) {
   console.log(`power: ${action} sent`);
 }
 
-async function cmdConsole(command) {
+// Exported so claude-reply.mjs can send its one tellraw through the same panel console API,
+// without duplicating serverIdentifier()/api()'s auth and error handling; the CLI switch below
+// still calls this the same way it always has.
+export async function cmdConsole(command) {
   const id = await serverIdentifier();
   await api(`/servers/${id}/command`, { method: "POST", body: { command } });
   console.log(`command sent: ${command}`);
@@ -230,51 +233,56 @@ async function cmdDelete(files) {
   console.log(`deleted: ${files.join(", ")}`);
 }
 
-const [, , sub, ...args] = process.argv;
+// Guarded so `import { cmdConsole } from "./kinetic.mjs"` (claude-reply.mjs does this) never runs
+// this CLI dispatch against the importer's own process.argv; only a direct `node kinetic.mjs ...`
+// invocation reaches here, same as before this guard existed.
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const [, , sub, ...args] = process.argv;
 
-try {
-  switch (sub) {
-    case "info":
-      await cmdInfo();
-      break;
-    case "ssh-key-add":
-      await cmdSshKeyAdd(args[0], args[1]);
-      break;
-    case "alloc-add":
-      await cmdAllocAdd();
-      break;
-    case "alloc-note":
-      await cmdAllocNote(args[0], args.slice(1).join(" "));
-      break;
-    case "var":
-      await cmdVar(args[0], args[1]);
-      break;
-    case "power":
-      await cmdPower(args[0]);
-      break;
-    case "cmd":
-      await cmdConsole(args.join(" "));
-      break;
-    case "log":
-      await cmdLog(args[0] ?? 100);
-      break;
-    case "ls":
-      await cmdLs(args[0] ?? "/");
-      break;
-    case "prop":
-      await cmdProp(args[0], args.length > 1 ? args.slice(1).join(" ") : undefined);
-      break;
-    case "decompress":
-      await cmdDecompress(args[0], args[1]);
-      break;
-    case "delete":
-      await cmdDelete(args);
-      break;
-    default:
-      console.error("unknown subcommand. See the header comment in this file for usage.");
-      process.exit(1);
+  try {
+    switch (sub) {
+      case "info":
+        await cmdInfo();
+        break;
+      case "ssh-key-add":
+        await cmdSshKeyAdd(args[0], args[1]);
+        break;
+      case "alloc-add":
+        await cmdAllocAdd();
+        break;
+      case "alloc-note":
+        await cmdAllocNote(args[0], args.slice(1).join(" "));
+        break;
+      case "var":
+        await cmdVar(args[0], args[1]);
+        break;
+      case "power":
+        await cmdPower(args[0]);
+        break;
+      case "cmd":
+        await cmdConsole(args.join(" "));
+        break;
+      case "log":
+        await cmdLog(args[0] ?? 100);
+        break;
+      case "ls":
+        await cmdLs(args[0] ?? "/");
+        break;
+      case "prop":
+        await cmdProp(args[0], args.length > 1 ? args.slice(1).join(" ") : undefined);
+        break;
+      case "decompress":
+        await cmdDecompress(args[0], args[1]);
+        break;
+      case "delete":
+        await cmdDelete(args);
+        break;
+      default:
+        console.error("unknown subcommand. See the header comment in this file for usage.");
+        process.exit(1);
+    }
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
   }
-} catch (err) {
-  console.error(err.message);
-  process.exit(1);
 }

@@ -1,0 +1,9 @@
+name: ClaudeBridge
+main: dev.sirbepy.mc.claudebridge.ClaudeBridgePlugin
+version: ${version}
+api-version: "26.2"
+
+permissions:
+  claudebridge.use:
+    description: Lets a player send a message to Claude via /claude.
+    default: true

@@ -4,6 +4,22 @@ Panel: https://kineticpanel.net, Pterodactyl-compatible client API, server ident
 Use `node server/deploy/kinetic.mjs <subcommand>` for everything below (reads the key from
 `server/secrets.properties`, never prints it).
 
+## claude-reply.mjs
+
+`node server/deploy/claude-reply.mjs <player> <message...>` sends one ClaudeBridge reply into
+chat, as a single `tellraw` built with `JSON.stringify` only (no click events or formatting from
+the input). It imports `cmdConsole` from `kinetic.mjs` (exported for this) rather than
+reimplementing the panel console call, so it goes through the same auth/error handling as
+`kinetic.mjs cmd`. `<player>` must match `/^\.?[A-Za-z0-9_]{1,17}$/` (a Floodgate/Bedrock name
+starts with `.`); `<message...>` is 1-400 characters. `--all` targets `@a` instead and drops the
+`<player>` argument entirely (`claude-reply.mjs --all <message...>`). `--dry-run` prints the exact
+console command instead of sending it - useful since it needs no live server or even a valid API
+key reachable, other than importing `kinetic.mjs` itself (which still reads
+`server/secrets.properties` at import time; a `--dry-run` run still needs that file to exist).
+`kinetic.mjs`'s own CLI dispatch is guarded to only run on a direct `node kinetic.mjs ...`
+invocation, not on this import, so importing it doesn't also run its own argv parsing against
+claude-reply.mjs's arguments.
+
 - **No root shell.** Kinetic exposes only SFTP (port 2022, user `<panel-username>.dd499ae3`) and
   the client API; `server/deploy/apply-bundle.sh` assumes SSH root and cannot run there. Upload
   `mc-server-bundle.tar.gz` via SFTP to the server root, then extract with
