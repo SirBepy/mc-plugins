@@ -1,0 +1,13 @@
+{
+  "entity": "this",
+  "predicate": {
+    "minecraft:slots": {
+      "container.*": {
+        "predicates": {
+          "minecraft:custom_data": "{menu_backpack:{}}"
+        }
+      }
+    }
+  },
+  "type": "minecraft:entity_properties"
+}

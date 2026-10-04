@@ -1,0 +1,30 @@
+{
+  "terms": [
+    {
+      "term": {
+        "entity": "this",
+        "predicate": {
+          "minecraft:slots": {
+            "container.26": {
+              "predicates": {
+                "minecraft:custom_data": "{menu_backpack:{}}"
+              }
+            }
+          }
+        },
+        "type": "minecraft:entity_properties"
+      },
+      "type": "minecraft:inverted"
+    },
+    {
+      "entity": "this",
+      "predicate": {
+        "minecraft:slots": {
+          "container.26": {}
+        }
+      },
+      "type": "minecraft:entity_properties"
+    }
+  ],
+  "type": "minecraft:all_of"
+}

@@ -1,0 +1,6 @@
+{
+  "components": {
+    "minecraft:item_model": "backpacks:gui/next_page"
+  },
+  "type": "minecraft:set_components"
+}

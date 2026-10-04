@@ -1,0 +1,19 @@
+{
+  "criteria": {
+    "requirement": {
+      "trigger": "minecraft:tick",
+      "conditions": {
+        "player": {
+          "entity": "this",
+          "predicate": {
+            "nbt": "{Tags:[backpacks.backpack_menu_summoned]}"
+          },
+          "type": "minecraft:entity_properties"
+        }
+      }
+    }
+  },
+  "rewards": {
+    "function": "backpacks:bp/main"
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "criteria": {
+    "requirement": {
+      "trigger": "minecraft:tick",
+      "conditions": {
+        "player": {
+          "terms": [
+            {
+              "term": {
+                "entity": "this",
+                "predicate": {
+                  "nbt": "{Tags:[backpacks.backpack_menu_summoned]}"
+                },
+                "type": "minecraft:entity_properties"
+              },
+              "type": "minecraft:inverted"
+            },
+            {
+              "entity": "this",
+              "predicate": {
+                "flags": {
+                  "is_sneaking": false
+                }
+              },
+              "type": "minecraft:entity_properties"
+            },
+            {
+              "terms": [
+                {
+                  "entity": "this",
+                  "predicate": {
+                    "equipment": {
+                      "offhand": {
+                        "predicates": {
+                          "minecraft:custom_data": "{backpacks:{}}"
+                        }
+                      }
+                    }
+                  },
+                  "type": "minecraft:entity_properties"
+                },
+                {
+                  "entity": "this",
+                  "predicate": {
+                    "equipment": {
+                      "mainhand": {
+                        "predicates": {
+                          "minecraft:custom_data": "{backpacks:{}}"
+                        }
+                      }
+                    }
+                  },
+                  "type": "minecraft:entity_properties"
+                }
+              ],
+              "type": "minecraft:any_of"
+            }
+          ],
+          "type": "minecraft:all_of"
+        }
+      }
+    }
+  },
+  "rewards": {
+    "function": "backpacks:bp/summon/main"
+  }
+}

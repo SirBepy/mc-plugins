@@ -1,0 +1,31 @@
+{
+  "terms": [
+    {
+      "entity": "this",
+      "predicate": {
+        "minecraft:equipment": {
+          "offhand": {
+            "predicates": {
+              "minecraft:custom_data": "{backpacks:{contents:{slots:\"enderchest\"}}}"
+            }
+          }
+        }
+      },
+      "type": "minecraft:entity_properties"
+    },
+    {
+      "entity": "this",
+      "predicate": {
+        "minecraft:equipment": {
+          "mainhand": {
+            "predicates": {
+              "minecraft:custom_data": "{backpacks:{contents:{slots:\"enderchest\"}}}"
+            }
+          }
+        }
+      },
+      "type": "minecraft:entity_properties"
+    }
+  ],
+  "type": "minecraft:any_of"
+}

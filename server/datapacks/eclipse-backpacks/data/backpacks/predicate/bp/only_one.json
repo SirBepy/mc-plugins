@@ -1,0 +1,73 @@
+{
+  "terms": [
+    {
+      "terms": [
+        {
+          "term": {
+            "entity": "this",
+            "predicate": {
+              "minecraft:equipment": {
+                "offhand": {
+                  "predicates": {
+                    "minecraft:custom_data": "{backpacks:{}}"
+                  }
+                }
+              }
+            },
+            "type": "minecraft:entity_properties"
+          },
+          "type": "minecraft:inverted"
+        },
+        {
+          "entity": "this",
+          "predicate": {
+            "minecraft:equipment": {
+              "mainhand": {
+                "predicates": {
+                  "minecraft:custom_data": "{backpacks:{}}"
+                }
+              }
+            }
+          },
+          "type": "minecraft:entity_properties"
+        }
+      ],
+      "type": "minecraft:all_of"
+    },
+    {
+      "terms": [
+        {
+          "term": {
+            "entity": "this",
+            "predicate": {
+              "minecraft:equipment": {
+                "mainhand": {
+                  "predicates": {
+                    "minecraft:custom_data": "{backpacks:{}}"
+                  }
+                }
+              }
+            },
+            "type": "minecraft:entity_properties"
+          },
+          "type": "minecraft:inverted"
+        },
+        {
+          "entity": "this",
+          "predicate": {
+            "minecraft:equipment": {
+              "offhand": {
+                "predicates": {
+                  "minecraft:custom_data": "{backpacks:{}}"
+                }
+              }
+            }
+          },
+          "type": "minecraft:entity_properties"
+        }
+      ],
+      "type": "minecraft:all_of"
+    }
+  ],
+  "type": "minecraft:any_of"
+}

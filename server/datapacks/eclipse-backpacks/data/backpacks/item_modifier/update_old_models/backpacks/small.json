@@ -1,0 +1,6 @@
+{
+  "components": {
+    "minecraft:item_model": "backpacks:backpacks/normal/1/brown"
+  },
+  "type": "minecraft:set_components"
+}

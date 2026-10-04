@@ -1,0 +1,34 @@
+{
+  "terms": [
+    {
+      "term": {
+        "entity": "this",
+        "predicate": {
+          "minecraft:equipment": {
+            "offhand": {
+              "predicates": {
+                "minecraft:custom_data": "{backpacks:{init:{}}}"
+              }
+            }
+          }
+        },
+        "type": "minecraft:entity_properties"
+      },
+      "type": "minecraft:inverted"
+    },
+    {
+      "entity": "this",
+      "predicate": {
+        "minecraft:equipment": {
+          "offhand": {
+            "predicates": {
+              "minecraft:custom_data": "{backpacks:{}}"
+            }
+          }
+        }
+      },
+      "type": "minecraft:entity_properties"
+    }
+  ],
+  "type": "minecraft:all_of"
+}

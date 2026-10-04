@@ -82,3 +82,21 @@ A custom folder datapack (not from Vanilla Tweaks): sets sleep percentage, disab
 and hides the locator bar, once per world. No world border: the owner removed it (2026-10-03).
 See its own README section in `server-rules/pack.mcmeta`'s description and `docs/server.md` for
 the gamerule ids used, and why.
+
+## eclipse-backpacks/, ported 2026-10-03
+
+A custom folder datapack: "Backpacks!" by EclipseStudios (Apache-2.0, Modrinth `vanilla-backpacks`,
+upstream v1.3.5), which only ships a 26.2 datapack build. Ported by hand to 26.3's data pack_format
+121 - the 26.2 build fails Paper 26.3's registry load outright (advancement/predicate/item_modifier
+condition dispatch keys were renamed in that format jump). See `eclipse-backpacks/PORTED.md` for
+the full list of files changed and why (Apache-2.0 requires stating changes); no gameplay logic was
+touched, only JSON key renames/reshapes. Verified booting clean on local Paper 26.3 build 143 with
+`eclipse-backpacks` enabled and its load functions runnable over RCON.
+
+Companion resource pack (`1.3.5-backpacks_rscp-26.2.zip`, not committed/hosted here): its
+`pack.mcmeta` declares resource format 84-88, while 26.3's actual client resource format is 97
+(`version.json` inside `paper-26.3-143.jar`: `resource_major: 97`). A 26.3 client will likely show
+an "old format" warning but should still render it correctly - its item textures already use the
+post-24w `assets/<ns>/items/*.json` item model definition system that the `item_model` component
+needs, unchanged since format 84. Not modified or re-hosted per the task brief; in-client rendering
+was not verified.

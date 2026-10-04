@@ -1,0 +1,13 @@
+{
+  "criteria": {
+    "requirement": {
+      "trigger": "minecraft:recipe_crafted",
+      "conditions": {
+        "recipes": "backpacks:smithing/upgrade/4"
+      }
+    }
+  },
+  "rewards": {
+    "function": "backpacks:bp/upgrade/to_4/main"
+  }
+}

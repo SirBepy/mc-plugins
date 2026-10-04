@@ -41,9 +41,10 @@ object ServerArtifacts {
         // Stonecutter recipe expansion (500+ recipes), unrelated to player heads despite the link
         // Joe sent (see server/datapacks/README.md); pure data, no textures/conflicts.
         "https://cdn.modrinth.com/data/DuUMFIfX/versions/IJwVIaLT/MasterCutter%2Bv1.8.0-mc26.3.zip",
-        // Craftable backpack items, the only backpack datapack with a 26.3 build (checked 2026-10-03).
-        // CC-BY-ND: shipped unmodified. Its textures come from the companion resource pack that
-        // server.properties `resource-pack` offers on join; without it Java clients see a carrot on a stick.
+        // Superseded by the Eclipse "Backpacks!" port in server/datapacks/eclipse-backpacks, but kept so
+        // backpacks crafted from it still open and can be emptied. CC-BY-ND: shipped unmodified. Its own
+        // textures are no longer offered (server.properties pushes Eclipse's pack), so Java clients see
+        // these as a carrot on a stick.
         "https://cdn.modrinth.com/data/mbRlC0kb/versions/gPNeY4V0/Backpacks26.3-DP.zip",
     )
 

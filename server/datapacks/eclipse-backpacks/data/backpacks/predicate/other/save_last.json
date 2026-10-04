@@ -1,0 +1,19 @@
+{
+  "terms": [
+    {
+      "entity": "this",
+      "predicate": {
+        "minecraft:nbt": "{Tags:[backpacks.mainhand]}"
+      },
+      "type": "minecraft:entity_properties"
+    },
+    {
+      "entity": "this",
+      "predicate": {
+        "minecraft:nbt": "{Tags:[backpacks.offhand]}"
+      },
+      "type": "minecraft:entity_properties"
+    }
+  ],
+  "type": "minecraft:any_of"
+}
