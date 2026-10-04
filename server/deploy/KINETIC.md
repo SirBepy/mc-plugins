@@ -31,6 +31,14 @@ Use `node server/deploy/kinetic.mjs <subcommand>` for everything below (reads th
   panel (2026-10-03)**: after decompressing, `server.properties` still had `server-port=25565`.
   Fixed manually: SFTP-get the file, edit `server-port=25566` locally, SFTP-put it back, before
   `power start`. Do this every fresh deploy (a decompress always re-lays the committed file).
+- **`prop` subcommand** replaces that manual SFTP round trip for single-key edits to the live
+  `/server.properties`: `kinetic.mjs prop <key>` prints the current `key=value` line as-is;
+  `kinetic.mjs prop <key> <value>` replaces only that line's value, failing loudly if the key
+  doesn't exist (never appends, never touches any other line, preserves the file's exact line
+  endings and trailing newline). Most properties are read once at startup, so a value change needs
+  `kinetic.mjs power restart` to take effect. Java's `Properties` writer escapes a literal colon in
+  a value as `\:`; `prop` prints that raw escaped line unchanged and writes a new value exactly as
+  given (unescaped), since Paper accepts both forms on read.
 - **Bedrock + voice chat ports already fixed in git**, no Kinetic-side edit needed:
   - `server/config/plugins/Geyser-Spigot/config.yml` `bedrock.port` -> `25572` (allocation [42267],
     noted "geyser-bedrock"). `java.port`/`java.address` stay as-is, Geyser auto-follows Bukkit's port.

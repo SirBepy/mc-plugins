@@ -13,6 +13,7 @@
 //   cmd "<console command>"           send a console command
 //   log [n]                           last n lines of logs/latest.log (default 100)
 //   ls <dir>                          list files in a server directory
+//   prop <key> [value]                get/set one line in /server.properties (most keys need a restart)
 //   decompress <dir> <file>           decompress an archive already on the server
 //   delete <file...>                  delete files/dirs from server root (kept, unused today)
 
@@ -142,15 +143,31 @@ async function cmdConsole(command) {
   console.log(`command sent: ${command}`);
 }
 
-async function cmdLog(n = 100) {
-  const id = await serverIdentifier();
-  // /files/contents returns the raw file as the response body (not JSON), so this bypasses
-  // the api() helper's JSON.parse.
-  const res = await fetch(`${PANEL}/api/client/servers/${id}/files/contents?file=${encodeURIComponent("/logs/latest.log")}`, {
+// /files/contents returns the raw file as the response body (not JSON), so this bypasses
+// the api() helper's JSON.parse.
+async function filesContents(id, file) {
+  const res = await fetch(`${PANEL}/api/client/servers/${id}/files/contents?file=${encodeURIComponent(file)}`, {
     headers: { Authorization: `Bearer ${apiKey}`, Accept: "text/plain" },
   });
   const text = await res.text();
-  if (!res.ok) throw new Error(`log fetch -> ${res.status} ${res.statusText}: ${text.slice(0, 500)}`);
+  if (!res.ok) throw new Error(`read ${file} -> ${res.status} ${res.statusText}: ${text.slice(0, 500)}`);
+  return text;
+}
+
+// /files/write takes the new file body as the raw request body, not a JSON envelope.
+async function filesWrite(id, file, content) {
+  const res = await fetch(`${PANEL}/api/client/servers/${id}/files/write?file=${encodeURIComponent(file)}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "text/plain" },
+    body: content,
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`write ${file} -> ${res.status} ${res.statusText}: ${text.slice(0, 500)}`);
+}
+
+async function cmdLog(n = 100) {
+  const id = await serverIdentifier();
+  const text = await filesContents(id, "/logs/latest.log");
   const lines = text.split(/\r?\n/);
   console.log(lines.slice(-Number(n)).join("\n"));
 }
@@ -162,6 +179,37 @@ async function cmdLs(dir) {
     const e = entry.attributes;
     console.log(`${e.is_file ? "f" : "d"} ${e.size ?? ""}\t${e.name}`);
   }
+}
+
+// Splits keeping the line terminators as their own array elements (even indices are line
+// content, odd indices are the terminator that followed), so the exact mix of \r\n/\n and the
+// presence or absence of a trailing newline survive an untouched rejoin.
+function splitKeepingLineEndings(text) {
+  return text.split(/(\r\n|\n)/);
+}
+
+async function cmdProp(key, value) {
+  if (!key) throw new Error("prop requires a key, e.g. `prop motd`");
+  const id = await serverIdentifier();
+  const file = "/server.properties";
+  const parts = splitKeepingLineEndings(await filesContents(id, file));
+  let lineIndex = -1;
+  for (let i = 0; i < parts.length; i += 2) {
+    const eq = parts[i].indexOf("=");
+    if (eq !== -1 && parts[i].slice(0, eq) === key) {
+      lineIndex = i;
+      break;
+    }
+  }
+  if (lineIndex === -1) throw new Error(`key "${key}" not found in ${file}, refusing to append`);
+  if (value === undefined) {
+    console.log(parts[lineIndex]);
+    return;
+  }
+  const eq = parts[lineIndex].indexOf("=");
+  parts[lineIndex] = parts[lineIndex].slice(0, eq + 1) + value;
+  await filesWrite(id, file, parts.join(""));
+  console.log(`${key}=${value}`);
 }
 
 async function cmdDecompress(dir, file) {
@@ -212,6 +260,9 @@ try {
       break;
     case "ls":
       await cmdLs(args[0] ?? "/");
+      break;
+    case "prop":
+      await cmdProp(args[0], args.length > 1 ? args.slice(1).join(" ") : undefined);
       break;
     case "decompress":
       await cmdDecompress(args[0], args[1]);
