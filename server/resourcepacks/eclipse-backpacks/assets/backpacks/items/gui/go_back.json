@@ -1,0 +1,7 @@
+{
+    "model": {
+        "type": "model",
+        "model": "backpacks:item/gui/go_back"
+    },
+    "oversized_in_gui": true
+}
