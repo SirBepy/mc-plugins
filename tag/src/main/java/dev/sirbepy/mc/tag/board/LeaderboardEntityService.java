@@ -105,7 +105,11 @@ public final class LeaderboardEntityService implements Listener {
         }
     }
 
-    /** Updates the live entity's text if one is spawned and valid; a no-op otherwise. */
+    /**
+     * Updates the live entity's text and appearance (billboard, scale, line-width, see-through)
+     * if one is spawned and valid; a no-op otherwise. Reapplying in place, rather than
+     * despawn-and-respawn, keeps the "never two boards" property trivially true.
+     */
     public void refresh(TagState state) {
         TagState.LeaderboardLocation loc = state.leaderboardLocation;
         if (loc == null) {
@@ -118,6 +122,7 @@ public final class LeaderboardEntityService implements Listener {
         Component text = renderText(state);
         for (Entity entity : world.getEntities()) {
             if (isOurs(entity) && entity instanceof TextDisplay display && display.isValid()) {
+                applyAppearance(display);
                 display.text(text);
             }
         }

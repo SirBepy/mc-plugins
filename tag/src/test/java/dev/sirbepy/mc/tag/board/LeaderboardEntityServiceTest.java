@@ -4,6 +4,7 @@ import dev.sirbepy.mc.tag.config.LeaderboardConfig;
 import dev.sirbepy.mc.tag.state.TagState;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.persistence.PersistentDataType;
@@ -90,5 +91,21 @@ class LeaderboardEntityServiceTest {
         service.ensureSpawned();
 
         assertEquals(0, ours().size());
+    }
+
+    @Test
+    void reloadReappliesScaleToTheLiveBoardInsteadOfOnlyItsText() {
+        state.leaderboardLocation = new TagState.LeaderboardLocation("world", 0.5, 65.0, 0.5);
+        service.ensureSpawned();
+
+        YamlConfiguration section = new YamlConfiguration();
+        section.set("scale", 2.5);
+        service.setConfig(LeaderboardConfig.from(section));
+        service.refresh(state);
+
+        List<Entity> ours = ours();
+        assertEquals(1, ours.size(), "reload must keep exactly one board, never spawn a second");
+        TextDisplay display = (TextDisplay) ours.get(0);
+        assertEquals(2.5f, display.getTransformation().getScale().x(), 1e-6);
     }
 }
