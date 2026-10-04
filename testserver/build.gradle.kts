@@ -5,7 +5,7 @@ plugins {
     id("xyz.jpenilla.run-paper") version "3.1.0"
 }
 
-val ourPlugins = listOf(":names", ":safechests", ":tag", ":claudebridge")
+val ourPlugins = listOf(":names", ":safechests", ":tag", ":claudebridge", ":tweaks")
 
 // Pinned artifact URLs live in buildSrc/src/main/kotlin/ServerArtifacts.kt, shared with server/.
 val thirdPartyPlugins = ServerArtifacts.thirdPartyPlugins

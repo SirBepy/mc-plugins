@@ -1,0 +1,4 @@
+name: Tweaks
+main: dev.sirbepy.mc.tweaks.TweaksPlugin
+version: ${version}
+api-version: "26.2"
