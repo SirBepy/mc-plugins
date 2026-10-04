@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "1.5.0",
+  "versionId": "1.6.0",
   "name": "SirBepy Los Pollos MineHermanos (26.3)",
   "summary": "Fabric 26.3 with Simple Voice Chat (proximity voice), Sodium + Lithium + FerriteCore + Entity Culling + ImmediatelyFast (FPS/memory), Continuity (connected textures), Iris + Complementary Reimagined (shaders, off by default), LambDynamicLights, Mod Menu, AppleSkin, Mouse Tweaks, Jade, Inventory Profiles Next (inventory auto-sort), Roughly Enough Items (recipe viewer) and the textures for the server's More Foods and Dungeons and Taverns datapacks.",
   "files": [

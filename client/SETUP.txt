@@ -104,6 +104,14 @@ wrong/placeholder icons. They still work, they just look off.
 Already done for you if you used the modpack (option A) or the manual Fabric list (option B).
 Otherwise (plain vanilla, NeoForge), add them as resource packs:
 
+MODPACK USERS (option A) - ONE EXTRA CLICK:
+The modpack also ships a small "rmf-26.3-fix" resource pack that fixes a handful of Reg's More
+Foods items that otherwise look wrong (or make REAL vanilla pottery sherds/banner patterns look
+like food) on 26.3. It's included but OFF by default so this update never changes anyone's
+existing settings. Turn it on once:
+   Options > Resource Packs > find "rmf-26.3-fix" on the left > click its arrow so it moves to
+   the right ("Selected") > Done.
+
 1. Food textures (recommended):
    a. Open https://modrinth.com/datapack/reg-more-foods/version/Ts1r8zla and download
       "Reg's More Foods Pack v1.5.2+26.3 (UNZIP ME).zip".

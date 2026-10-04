@@ -6,6 +6,10 @@ pack never ships with a hash the Modrinth App or Prism would reject at import ti
 Anything under mrpack/overrides/ is zipped in verbatim under overrides/ at the root of the
 .mrpack (the Modrinth App / Prism copy that tree straight into the instance folder on import).
 
+Before that, client/resourcepack/rmf-26.3-fix/ (our own RMF carrier-item fix, see its README.md)
+is zipped fresh into overrides/resourcepacks/rmf-26.3-fix.zip, so the source folder stays the only
+thing committed and the zip is always rebuilt from current contents.
+
 Run from anywhere: python client/mrpack/build.py
 """
 
@@ -20,8 +24,20 @@ HERE = Path(__file__).resolve().parent
 INDEX = HERE / "modrinth.index.json"
 OVERRIDES = HERE / "overrides"
 OUT = HERE.parent / "Los-Pollos-MineHermanos-26.3.mrpack"
+RESOURCEPACK_SRC = HERE.parent / "resourcepack" / "rmf-26.3-fix"
+RESOURCEPACK_OUT = OVERRIDES / "resourcepacks" / "rmf-26.3-fix.zip"
 # Modrinth asks API/CDN clients for a descriptive User-Agent.
 USER_AGENT = "SirBepy/mc-plugins client-kit"
+
+
+def build_resourcepack_zip():
+    RESOURCEPACK_OUT.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(RESOURCEPACK_OUT, "w", zipfile.ZIP_DEFLATED) as zf:
+        for path in sorted(RESOURCEPACK_SRC.rglob("*")):
+            if path.is_file():
+                arcname = path.relative_to(RESOURCEPACK_SRC).as_posix()
+                zf.write(path, arcname)
+    print(f"built {RESOURCEPACK_OUT} from {RESOURCEPACK_SRC}")
 
 
 def verify(entry):
@@ -48,6 +64,7 @@ def main():
         failed |= bool(problems)
     if failed:
         sys.exit(1)
+    build_resourcepack_zip()
     with zipfile.ZipFile(OUT, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.write(INDEX, "modrinth.index.json")
         if OVERRIDES.is_dir():

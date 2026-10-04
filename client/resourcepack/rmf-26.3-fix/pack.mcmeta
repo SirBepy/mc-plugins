@@ -1,0 +1,27 @@
+{
+  "pack": {
+    "min_format": 97,
+    "max_format": [
+      100,
+      0
+    ],
+    "pack_format": 97,
+    "description": [
+      {
+        "text": "RMF 26.3 carrier fix ",
+        "color": "gold",
+        "italic": false
+      },
+      {
+        "text": "- ",
+        "color": "gray",
+        "italic": false
+      },
+      {
+        "text": "SirBepy",
+        "color": "blue",
+        "bold": false
+      }
+    ]
+  }
+}
