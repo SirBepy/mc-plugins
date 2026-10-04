@@ -19,3 +19,6 @@ server/pregen/
 server/secrets.properties
 server/bundle/
 **/key.pem
+
+# Zipped by client/mrpack/build.py from client/resourcepack/ on every build.
+client/mrpack/overrides/resourcepacks/
