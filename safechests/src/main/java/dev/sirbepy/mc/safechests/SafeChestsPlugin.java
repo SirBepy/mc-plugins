@@ -6,6 +6,7 @@ import dev.sirbepy.mc.safechests.command.SafeChestsCommands;
 import dev.sirbepy.mc.safechests.grant.GrantManager;
 import dev.sirbepy.mc.safechests.grant.GrantStore;
 import dev.sirbepy.mc.safechests.listener.ChestDenialListener;
+import dev.sirbepy.mc.safechests.listener.CopperGolemAccessListener;
 import dev.sirbepy.mc.safechests.listener.GrantRevokeListener;
 import dev.sirbepy.mc.safechests.listener.NewProtectionListener;
 import dev.sirbepy.mc.safechests.request.RequestManager;
@@ -39,6 +40,7 @@ public final class SafeChestsPlugin extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(new ChestDenialListener(bolt, requests, config::get, bedrockForms), this);
         getServer().getPluginManager().registerEvents(new GrantRevokeListener(bolt, grants), this);
+        getServer().getPluginManager().registerEvents(new CopperGolemAccessListener(bolt), this);
         new NewProtectionListener(bolt, grants, this).register();
 
         new SafeChestsCommands(bolt, grants, requests, config::get, this::reload, bedrockForms).register(this);
