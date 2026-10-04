@@ -7,8 +7,9 @@
 # snake_case resource ids, and fire spread is now an integer radius, not the old doFireTick
 # boolean toggle.
 scoreboard objectives add server_rules dummy
-# Above the once-per-world guard: the donkey loop reschedules itself, but a restart clears schedules.
+# Above the once-per-world guard: these loops reschedule themselves, but a restart clears schedules.
 function server_rules:faster_donkeys
+function server_rules:unlock_recipes
 execute if score initialized server_rules matches 1 run return 0
 scoreboard players set initialized server_rules 1
 
