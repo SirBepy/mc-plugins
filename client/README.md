@@ -7,6 +7,7 @@ markdown) and, for voice chat, `Los-Pollos-MineHermanos-26.3.mrpack`.
   lights, optional Sodium, Bedrock, troubleshooting.
 - `Los-Pollos-MineHermanos-26.3.mrpack`: Modrinth modpack (Modrinth App or Prism Launcher import).
   Contains `modrinth.index.json` plus an `overrides/` folder (`config/iris.properties`,
+  `config/inventoryprofilesnext/inventoryprofiles.json`,
   `resourcepacks/rmf-26.3-fix.zip` and `resourcepacks/Eclipse-Backpacks-textures-26.3.zip`); the launcher downloads the jars/shaderpack from Modrinth's
   CDN, checks their hashes, and copies `overrides/` straight into the instance folder.
 - `mrpack/modrinth.index.json`: the pack's source of truth (pinned URLs, sizes, sha1, sha512).
@@ -112,6 +113,17 @@ permits adding it to a modpack through "Modrinth or CurseForge's existing system
 file entry pointing at the CDN, not a direct-upload bundle) provided it isn't modified and, if
 enabled by default, is credited in the modpack's description. It ships OFF by default here, so
 that credit condition doesn't apply, but it's credited above anyway.
+
+### Inventory Profiles Next ships quiet
+
+`mrpack/overrides/config/inventoryprofilesnext/inventoryprofiles.json` turns off, at Joe's request
+(2026-10-04): the green hover highlight (`highlight_foused_items`, IPN's own typo; it paints every
+slot matching the hovered item green), the center-screen "IPN WARNING ... replace failed"
+auto-refill alert and its sound, and the update check (a pinned pack always looks outdated).
+Sections, key names and the `{"value": ...}` shape for key-toggle options are from IPN
+`Configs.kt` (blackd/Inventory-Profiles, `platforms/shared-1.20.5+`) and libIPN
+`ConfigKeyToggleBoolean.kt`. IPN itself saves only non-default keys, so a sparse file is its
+native format. It is one file, so a modpack update resets any IPN setting a player changed.
 
 ## Safety check (2026-10-03, updated for Inventory Profiles Next)
 
