@@ -4,10 +4,12 @@ Upstream: "Backpacks!" by EclipseStudios, resource pack `1.3.5-backpacks_rscp-26
 (https://modrinth.com/datapack/vanilla-backpacks), licensed Apache-2.0. Companion to the ported
 datapack in `server/datapacks/eclipse-backpacks/`.
 
-Served to players from the website repo (`sirbepys-minecraft-server`,
-`site/downloads/Eclipse-Backpacks-textures-26.3.zip`) because Modrinth only hosts the original.
-Rebuild the zip from this folder with every file at the zip root, then update `resource-pack-sha1`
-in `server/config/server.properties` and on the live server.
+Served to players as half of the server's join resource pack, merged with
+`client/resourcepack/rmf-26.3-fix/` by `server/resourcepacks/build_server_pack.py` into
+`LosPollos-server-pack-26.3.zip`, hosted from the website repo (`sirbepys-minecraft-server`,
+`site/downloads/`) because Modrinth only hosts the original. After a change: rerun that script,
+re-host the zip, then update `resource-pack-sha1` in `server/config/server.properties` and on the
+live server.
 
 ## Changes from upstream (2026-10-04)
 

@@ -22,3 +22,6 @@ server/bundle/
 
 # Zipped by client/mrpack/build.py from client/resourcepack/ on every build.
 client/mrpack/overrides/resourcepacks/
+
+# Zipped by server/resourcepacks/build_server_pack.py, hosted on the website.
+server/resourcepacks/dist/

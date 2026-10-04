@@ -60,4 +60,5 @@ player has it installed (which the modpack pins from the official Modrinth CDN).
 ## Build
 
 Zipped into the modpack at build time by `client/mrpack/build.py` as
-`overrides/resourcepacks/rmf-26.3-fix.zip`.
+`overrides/resourcepacks/rmf-26.3-fix.zip`, and merged into the server's join resource pack by
+`server/resourcepacks/build_server_pack.py`.

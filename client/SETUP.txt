@@ -20,8 +20,8 @@ Plain vanilla Minecraft works. Mods are optional.
 3. Server Address: sirbepy.mcserver.host
 4. Done > double-click the server.
 
-When you join, the server offers a small resource pack with the backpack and minecart
-textures: click Yes. It also has 200+ new foods that need textures on your side: see
+When you join, the server offers a small resource pack with the backpack, minecart and
+food-fix textures: click Yes. It also has 200+ new foods that need textures on your side: see
 section 3.
 
 
