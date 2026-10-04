@@ -20,8 +20,9 @@ Plain vanilla Minecraft works. Mods are optional.
 3. Server Address: sirbepy.mcserver.host
 4. Done > double-click the server.
 
-The server does NOT send you a resource pack, so you won't get a "download resource pack?"
-prompt. It does have 200+ new foods that need textures on your side: see section 3.
+When you join, the server offers a small resource pack with the backpack and minecart
+textures: click Yes. It also has 200+ new foods that need textures on your side: see
+section 3.
 
 
 2. OPTIONAL: PROXIMITY VOICE CHAT
@@ -111,6 +112,8 @@ like food) on 26.3. It's included but OFF by default so this update never change
 existing settings. Turn it on once:
    Options > Resource Packs > find "rmf-26.3-fix" on the left > click its arrow so it moves to
    the right ("Selected") > Done.
+If you clicked No on the server's backpack texture prompt, the modpack has that pack too:
+turn on "Eclipse-Backpacks-textures-26.3" the same way and keep it ABOVE "Default".
 
 1. Food textures (recommended):
    a. Open https://modrinth.com/datapack/reg-more-foods/version/Ts1r8zla and download

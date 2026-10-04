@@ -6,9 +6,10 @@ pack never ships with a hash the Modrinth App or Prism would reject at import ti
 Anything under mrpack/overrides/ is zipped in verbatim under overrides/ at the root of the
 .mrpack (the Modrinth App / Prism copy that tree straight into the instance folder on import).
 
-Before that, client/resourcepack/rmf-26.3-fix/ (our own RMF carrier-item fix, see its README.md)
-is zipped fresh into overrides/resourcepacks/rmf-26.3-fix.zip, so the source folder stays the only
-thing committed and the zip is always rebuilt from current contents.
+Before that, each source folder in RESOURCEPACKS is zipped fresh into overrides/resourcepacks/, so
+the source folders stay the only thing committed and the zips are always rebuilt from current
+contents: client/resourcepack/rmf-26.3-fix/ (our own RMF carrier-item fix, see its README.md) and
+server/resourcepacks/eclipse-backpacks/ (the 26.3-patched Backpacks! textures, see its PORTED.md).
 
 Run from anywhere: python client/mrpack/build.py
 """
@@ -24,20 +25,34 @@ HERE = Path(__file__).resolve().parent
 INDEX = HERE / "modrinth.index.json"
 OVERRIDES = HERE / "overrides"
 OUT = HERE.parent / "Los-Pollos-MineHermanos-26.3.mrpack"
-RESOURCEPACK_SRC = HERE.parent / "resourcepack" / "rmf-26.3-fix"
-RESOURCEPACK_OUT = OVERRIDES / "resourcepacks" / "rmf-26.3-fix.zip"
+# The backpack zip name matches the copy the server offers on join (resource-pack= in
+# server.properties), so a player who has both sees one recognisable name.
+RESOURCEPACKS = [
+    (HERE.parent / "resourcepack" / "rmf-26.3-fix", "rmf-26.3-fix.zip"),
+    (HERE.parent.parent / "server" / "resourcepacks" / "eclipse-backpacks",
+     "Eclipse-Backpacks-textures-26.3.zip"),
+]
 # Modrinth asks API/CDN clients for a descriptive User-Agent.
 USER_AGENT = "SirBepy/mc-plugins client-kit"
 
 
-def build_resourcepack_zip():
-    RESOURCEPACK_OUT.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(RESOURCEPACK_OUT, "w", zipfile.ZIP_DEFLATED) as zf:
-        for path in sorted(RESOURCEPACK_SRC.rglob("*")):
-            if path.is_file():
-                arcname = path.relative_to(RESOURCEPACK_SRC).as_posix()
-                zf.write(path, arcname)
-    print(f"built {RESOURCEPACK_OUT} from {RESOURCEPACK_SRC}")
+def zip_tree(zf, src_dir, arc_prefix=""):
+    arcnames = []
+    for path in sorted(src_dir.rglob("*")):
+        if path.is_file():
+            arcname = arc_prefix + path.relative_to(src_dir).as_posix()
+            zf.write(path, arcname)
+            arcnames.append(arcname)
+    return arcnames
+
+
+def build_resourcepack_zips():
+    for src, name in RESOURCEPACKS:
+        out = OVERRIDES / "resourcepacks" / name
+        out.parent.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
+            zip_tree(zf, src)
+        print(f"built {out} from {src}")
 
 
 def verify(entry):
@@ -64,15 +79,12 @@ def main():
         failed |= bool(problems)
     if failed:
         sys.exit(1)
-    build_resourcepack_zip()
+    build_resourcepack_zips()
     with zipfile.ZipFile(OUT, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.write(INDEX, "modrinth.index.json")
         if OVERRIDES.is_dir():
-            for path in sorted(OVERRIDES.rglob("*")):
-                if path.is_file():
-                    arcname = "overrides/" + path.relative_to(OVERRIDES).as_posix()
-                    zf.write(path, arcname)
-                    print(f"{arcname}: added")
+            for arcname in zip_tree(zf, OVERRIDES, "overrides/"):
+                print(f"{arcname}: added")
     print(f"wrote {OUT}")
 
 

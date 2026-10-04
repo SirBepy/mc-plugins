@@ -6,21 +6,23 @@ markdown) and, for voice chat, `Los-Pollos-MineHermanos-26.3.mrpack`.
 - `SETUP.txt`: joining, optional voice chat, datapack textures, optional shaders, dynamic
   lights, optional Sodium, Bedrock, troubleshooting.
 - `Los-Pollos-MineHermanos-26.3.mrpack`: Modrinth modpack (Modrinth App or Prism Launcher import).
-  Contains `modrinth.index.json` plus an `overrides/` folder (`config/iris.properties` and
-  `resourcepacks/rmf-26.3-fix.zip`); the launcher downloads the jars/shaderpack from Modrinth's
+  Contains `modrinth.index.json` plus an `overrides/` folder (`config/iris.properties`,
+  `resourcepacks/rmf-26.3-fix.zip` and `resourcepacks/Eclipse-Backpacks-textures-26.3.zip`); the launcher downloads the jars/shaderpack from Modrinth's
   CDN, checks their hashes, and copies `overrides/` straight into the instance folder.
 - `mrpack/modrinth.index.json`: the pack's source of truth (pinned URLs, sizes, sha1, sha512).
 - `mrpack/overrides/`: files copied verbatim into the instance folder on import, same relative
-  path. `config/iris.properties` (see "Shaders ship off by default" below) plus a
-  build-time-generated `resourcepacks/rmf-26.3-fix.zip` (not committed, see next point).
+  path. `config/iris.properties` (see "Shaders ship off by default" below) plus the
+  build-time-generated `resourcepacks/*.zip` (not committed, see next points).
 - `resourcepack/rmf-26.3-fix/`: source folder for our own small resource pack that fixes Reg's
   More Foods carrier-item display bugs on 26.3 (own files only, no RMF art/models copied - see
   its `README.md`). Ships in the modpack but off by default (see `SETUP.txt` section 3) so
   updating never changes a player's existing resource pack selection.
-- `mrpack/build.py`: re-downloads every pinned file, verifies size + both hashes, zips
-  `resourcepack/rmf-26.3-fix/` into `overrides/resourcepacks/rmf-26.3-fix.zip`, then zips the
-  index and `overrides/` into the `.mrpack`. Run `python client/mrpack/build.py` after changing a
-  pin or the fix pack.
+- `../server/resourcepacks/eclipse-backpacks/`: the 26.3-patched Backpacks! textures, the same
+  pack the server offers on join. Also shipped in the modpack, off by default, for players who
+  declined the join prompt.
+- `mrpack/build.py`: re-downloads every pinned file, verifies size + both hashes, zips both
+  resource pack folders into `overrides/resourcepacks/`, then zips the index and `overrides/`
+  into the `.mrpack`. Run `python client/mrpack/build.py` after changing a pin or either pack.
 
 Ports in `SETUP.txt` (Bedrock 25572, voice UDP 25604) are the Kinetic Hosting panel's
 allocations, see `docs/server.md` "Kinetic (current host)". `sirbepy.mcserver.host` is Kinetic's
