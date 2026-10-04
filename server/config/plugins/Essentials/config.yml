@@ -399,9 +399,9 @@ use-nbt-serialization-in-createkit: false
 enabledSigns:
   #- color
   #- balance
-  #- buy
+  - buy
   #- free
-  #- sell
+  - sell
   #- trade
   #- enchant
   #- repair

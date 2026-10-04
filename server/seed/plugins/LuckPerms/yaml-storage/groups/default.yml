@@ -17,6 +17,9 @@ permissions:
 - essentials.balance
 - essentials.balancetop
 - essentials.pay
+# The spawn market is admin-made Essentials [Sell]/[Buy] signs; only admins (via '*') create them.
+- essentials.signs.use.sell
+- essentials.signs.use.buy
 - essentials.msg
 - essentials.r
 - essentials.list
