@@ -46,6 +46,29 @@ subdomain with an SRV record to `eu-de-p59-a6-cg.kineticpanel.net:25566` (checke
 | Fabric Language Kotlin | 1.14.1+kotlin.2.4.20 (`eRRZzGMc`) | release | required dependency of libIPN/Inventory Profiles Next |
 | libIPN | fabric-26.3-6.9.0 (`aKBFonyQ`) | release | required dependency of Inventory Profiles Next |
 | Inventory Profiles Next | fabric-26.3-2.3.8 (`y8vT21Sb`) | release | inventory auto-sort button/keybind, lockable slots |
+| Cloth Config API | 26.3.159+fabric (`fg2uyxOW`) | release | required dependency of REI |
+| Architectury API | 22.0.3+fabric (`gAI51C1M`) | release | required dependency of REI |
+| Roughly Enough Items (REI) | 26.3.823+fabric (`ePn2dRJ1`) | release | recipe viewer (vanilla recipes only on this server, see below); added 2026-10-04 |
+
+### Recipe viewer: REI, vanilla recipes only
+
+Chosen 2026-10-04 over JEI and EMI (checked against the Modrinth API that day): EMI has no build
+past 1.21.1, and every JEI 26.3 build is a beta. REI is the only one with a 26.3 Fabric release.
+
+Since 1.21.2 a server only sends a player the recipes they've unlocked, not the whole recipe list,
+and Paper can't run REI's server half. REI covers vanilla recipes with a built-in local fallback
+(REI issue #2063 shows it on a plain Paper 26.2 server), so vanilla lookups work. The server's
+datapack recipes (Backpacks!, Reg's More Foods, MasterCutter) don't show up, except possibly ones
+the player has already unlocked in the recipe book. That case wasn't tested in-game, and #2063
+(open) reports those entries vanishing after an in-game unlock. RMF's own docs add that its foods
+reuse vanilla item ids, so looking one up in any viewer shows the vanilla item's recipes. Custom
+recipes are documented on the website's recipes page instead, which also covers Bedrock.
+
+Paper-side recipe sync plugins (JEIRecipeFix, JustEnoughRecipes, JEIServerProxy, JEI Recipe
+Bridge) were checked the same day: none lists 26.3 support.
+
+Default REI keys (`ConfigObjectImpl.java`, `26.3` branch of github.com/shedaniel/RoughlyEnoughItems):
+`R` recipes for the hovered item, `U` its uses, `Ctrl+O` hides the item list.
 
 The RMF/D&T pair are the projects' own "+mod" jars: no classes, just `data/` + `assets/` wrapped
 as a Fabric mod, so Fabric loads their assets as an always-on built-in resource pack (their
@@ -145,6 +168,17 @@ Checked through the Modrinth API (`/v2/project`, `/v2/team/<id>/members`, `/v2/p
 - **Fabric Language Kotlin**: project `Ha28R6CL` (slug `fabric-language-kotlin`), owned by the
   FabricMC team, source github.com/FabricMC/fabric-language-kotlin, ~123M downloads. Required
   dependency of libIPN/Inventory Profiles Next (they're written in Kotlin).
+- **Roughly Enough Items** (added 2026-10-04): project `nfn13YXA` (slug `rei`), team owner
+  `shedaniel`, source github.com/shedaniel/RoughlyEnoughItems, license MIT, ~26M downloads. Its
+  jar's `fabric.mod.json` depends on Fabric API, Architectury `>=22.0.0`, Fabric Loader
+  `>=0.19.0` and Minecraft `~26.3`; Modrinth also lists Cloth Config as required. No reported
+  conflicts with Sodium, Iris, Jade or Inventory Profiles Next (web search, 2026-10-04).
+- **Cloth Config API**: project `9s6osm5g` (slug `cloth-config`), owner `shedaniel` (same as
+  REI), source github.com/shedaniel/ClothConfig, LGPL-3.0-only, ~174M downloads.
+- **Architectury API**: project `lhGA9TYQ` (slug `architectury-api`), team `MaxNeedsSnacks`
+  (author) and `Juuz`, source github.com/architectury/architectury, LGPL-3.0-only, ~102M
+  downloads. Its jar requires Fabric Loader `>=0.19.5` and Fabric API `>=0.160.5`, both met
+  exactly by the pack's pins.
 - All are the official projects under their canonical slugs (not forks or look-alikes), and each
   has a build whose only game version is `26.3`.
 - `build.py` confirmed each CDN file matches the pinned size, sha1 and sha512.

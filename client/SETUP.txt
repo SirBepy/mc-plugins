@@ -44,8 +44,8 @@ runs 2.6.24). Pick ONE way to install it:
      It installs Fabric 26.3 + Fabric API + Simple Voice Chat + Sodium + Iris (shaders,
      off by default, see section 4) + LambDynamicLights (held-light items glow, see
      section 4) + the Reg's More Foods and Dungeons and Taverns textures + a set of
-     optional quality-of-life mods, including inventory auto-sorting (see section 5)
-     for you. Nothing else to set up.
+     optional quality-of-life mods, including inventory auto-sorting and a recipe viewer
+     (see section 5) for you. Nothing else to set up.
      (The .mrpack format has no slot for a pack icon, so your launcher will show a
      generic icon for this instance - that's expected, not a broken install.)
 
@@ -156,6 +156,11 @@ Quality of life:
     button it adds in the corner of any inventory/chest screen to sort that container;
     you can also assign your own keyboard shortcut for it in Mod Menu's mod list ->
     Inventory Profiles Next -> Hotkeys (no key is bound by default).
+  - Roughly Enough Items (REI): a searchable item list next to every inventory screen.
+    Hover an item and press R to see how to craft it, or U to see what it's used in.
+    Ctrl+O hides or shows the list. It only knows vanilla recipes: the server's own
+    recipes (backpacks, the new foods, extra stonecutter recipes) are listed at
+    https://sirbepy.github.io/sirbepys-minecraft-server/recipes/
 
 For manual Fabric installs, these aren't in the links list above; ask Joe if you want them
 individually.
@@ -176,6 +181,8 @@ Good to know:
   become "_". That's normal, it keeps Bedrock and Java names apart.
 - No voice chat on Bedrock.
 - Some menus look a bit different on Bedrock (they appear as forms), but work the same.
+- The server's own recipes (backpacks, new foods) may not show in the Bedrock recipe
+  book. They're listed at https://sirbepy.github.io/sirbepys-minecraft-server/recipes/
 - Consoles (Xbox, PlayStation, Switch) don't have an "Add Server" button. Ask Joe if you
   play on console and want to join.
 
