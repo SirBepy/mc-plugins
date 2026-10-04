@@ -3,7 +3,6 @@ package dev.sirbepy.mc.tweaks.listener;
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import org.bukkit.Location;
 import org.bukkit.entity.Cow;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.minecart.HopperMinecart;
 import org.bukkit.entity.minecart.RideableMinecart;
 import org.junit.jupiter.api.AfterEach;
@@ -11,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
+import org.mockbukkit.mockbukkit.entity.EntityMock;
 import org.mockbukkit.mockbukkit.entity.HopperMinecartMock;
 import org.mockbukkit.mockbukkit.entity.RideableMinecartMock;
 import org.mockbukkit.mockbukkit.world.WorldMock;
@@ -38,10 +38,11 @@ class MinecartSpeedListenerTest {
         MockBukkit.unmock();
     }
 
-    // MockBukkit's world.spawn() doesn't support minecart types, so the mocks are added directly.
-    private <T extends Entity> T add(T entity) {
-        world.addEntity(entity);
-        entity.teleport(new Location(world, 0, 64, 0));
+    // MockBukkit's world.spawn() and world.addEntity() don't support minecarts, so the mocks are
+    // registered with the server directly.
+    private <T extends EntityMock> T add(T entity) {
+        entity.setLocation(new Location(world, 0, 64, 0));
+        server.registerEntity(entity);
         return entity;
     }
 
