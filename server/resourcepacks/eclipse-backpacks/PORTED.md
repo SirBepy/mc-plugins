@@ -20,4 +20,13 @@ in `server/config/server.properties` and on the live server.
   live under `textures/item/backpacks/`. The items atlas still covers them; adding them to both is
   harmless and covers whichever atlas the 3D models resolve against.
 
-Unverified on a real client at the time of writing: players were asked to confirm in game.
+- `assets/minecraft/shaders/core/text.vsh`: rebuilt from the 26.3 client jar's own `text.vsh` with
+  upstream's `#7b7b00` title-recolor block appended. Upstream's copy used the pre-26.3 shader syntax
+  (`#moj_import`, no `layout(location)`); 26.3 failed to compile it, which made the client drop the
+  WHOLE pack whenever it sat above Default (players saw purple backpacks plus a visible menu
+  minecart). Below Default the vanilla shader won, so models loaded but Default's opaque
+  `minecart.png` made the menu minecart visible.
+- `assets/minecraft/shaders/core/text_background.vsh`: removed; 26.3 has no shader by that name.
+
+Confirmed in game 2026-10-04 (CoffiebagSupreme) that the backpack models render with the
+format/atlas fixes; the shader fix is pending player confirmation.
