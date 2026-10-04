@@ -59,6 +59,8 @@ subdomain with an SRV record to `eu-de-p59-a6-cg.kineticpanel.net:25566` (checke
 | Cloth Config API | 26.3.159+fabric (`fg2uyxOW`) | release | required dependency of REI |
 | Architectury API | 22.0.3+fabric (`gAI51C1M`) | release | required dependency of REI |
 | Roughly Enough Items (REI) | 26.3.823+fabric (`ePn2dRJ1`) | release | recipe viewer (vanilla recipes only on this server, see below); added 2026-10-04 |
+| YetAnotherConfigLib (YACL) | 3.9.7+26.3-fabric (`s9SjoFu1`) | release | required dependency of Controlify |
+| Controlify | 3.5.3+mc26.3 (`fo76vL20`) | release | controller support (Xbox/PlayStation/Switch pads), Joe asked 2026-10-04 |
 
 ### Recipe viewer: REI, vanilla recipes only
 
@@ -200,6 +202,13 @@ Checked through the Modrinth API (`/v2/project`, `/v2/team/<id>/members`, `/v2/p
   (author) and `Juuz`, source github.com/architectury/architectury, LGPL-3.0-only, ~102M
   downloads. Its jar requires Fabric Loader `>=0.19.5` and Fabric API `>=0.160.5`, both met
   exactly by the pack's pins.
+- **Controlify** (added 2026-10-04): project `DOUdJVEm` (slug `controlify`), team owner
+  `isxander`, source github.com/isXander/Controlify, LGPL-3.0-or-later, ~24M downloads. Its
+  jar's `fabric.mod.json` depends on Minecraft `>=26.3 <26.4`, Fabric Loader `>=0.19` and YACL;
+  Modrinth also lists Fabric API as required and Mod Menu as optional. Client-only.
+- **YetAnotherConfigLib v3**: project `1eAoo2KR` (slug `yacl`), owner `isxander` (same as
+  Controlify), source github.com/isXander/YetAnotherConfigLib, LGPL-3.0-or-later, ~127M
+  downloads. Requires only Fabric API.
 - All are the official projects under their canonical slugs (not forks or look-alikes), and each
   has a build whose only game version is `26.3`.
 - `build.py` confirmed each CDN file matches the pinned size, sha1 and sha512.

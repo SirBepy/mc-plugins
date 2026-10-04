@@ -1,9 +1,9 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "1.7.1",
+  "versionId": "1.8.0",
   "name": "SirBepy Los Pollos MineHermanos (26.3)",
-  "summary": "Fabric 26.3 with Simple Voice Chat (proximity voice), Sodium + Lithium + FerriteCore + Entity Culling + ImmediatelyFast (FPS/memory), Continuity (connected textures), Iris + Complementary Reimagined (shaders, off by default), LambDynamicLights, Mod Menu, AppleSkin, Mouse Tweaks, Jade, Inventory Profiles Next (inventory auto-sort), Roughly Enough Items (recipe viewer) and the textures for the server's More Foods, Dungeons and Taverns and Backpacks! datapacks.",
+  "summary": "Fabric 26.3 with Simple Voice Chat (proximity voice), Sodium + Lithium + FerriteCore + Entity Culling + ImmediatelyFast (FPS/memory), Continuity (connected textures), Iris + Complementary Reimagined (shaders, off by default), LambDynamicLights, Mod Menu, AppleSkin, Mouse Tweaks, Jade, Inventory Profiles Next (inventory auto-sort), Roughly Enough Items (recipe viewer), Controlify (controller support) and the textures for the server's More Foods, Dungeons and Taverns and Backpacks! datapacks.",
   "files": [
     {
       "path": "mods/fabric-api-0.161.0+26.3.jar",
@@ -292,6 +292,30 @@
         "https://cdn.modrinth.com/data/nfn13YXA/versions/ePn2dRJ1/RoughlyEnoughItems-26.3.823.jar"
       ],
       "fileSize": 2421403
+    },
+    {
+      "path": "mods/yet_another_config_lib_v3-3.9.7+26.3-fabric.jar",
+      "hashes": {
+        "sha1": "e54d86dd4a78f95cd6ec0309d96fae01e661c00d",
+        "sha512": "f3957028dd31cae78f08aee3e768f61bd12c4c8423257d357bc3c1a2172047c769d37901f99775c7ffff1e5ee794025dc72738b2869cab06f1c2811841d68b24"
+      },
+      "env": { "client": "required", "server": "unsupported" },
+      "downloads": [
+        "https://cdn.modrinth.com/data/1eAoo2KR/versions/s9SjoFu1/yet_another_config_lib_v3-3.9.7%2B26.3-fabric.jar"
+      ],
+      "fileSize": 1125377
+    },
+    {
+      "path": "mods/controlify-3.5.3+mc26.3-universal.jar",
+      "hashes": {
+        "sha1": "9df91163e9a325c83215df29bf743bd0e4aa544f",
+        "sha512": "cd4e64a9621dff200329b249dc63fc4542ce554db16c75c4b04cfa7495bf84e1a4bca0f89a7a9d4d425f6b6f23c8df52ab8ce323ee18ae49c6cf24858697bbf7"
+      },
+      "env": { "client": "required", "server": "unsupported" },
+      "downloads": [
+        "https://cdn.modrinth.com/data/DOUdJVEm/versions/fo76vL20/controlify-3.5.3%2Bmc26.3-universal.jar"
+      ],
+      "fileSize": 6410187
     }
   ],
   "dependencies": {

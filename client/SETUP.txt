@@ -172,6 +172,8 @@ Quality of life:
     Ctrl+O hides or shows the list. It only knows vanilla recipes: the server's own
     recipes (backpacks, the new foods, extra stonecutter recipes) are listed at
     https://sirbepy.github.io/sirbepys-minecraft-server/recipes/
+  - Controlify: play with a controller (Xbox, PlayStation, Switch). Plug it in or pair it
+    before or after launching; Controlify shows a setup screen the first time it sees it.
 
 For manual Fabric installs, these aren't in the links list above; ask Joe if you want them
 individually.
