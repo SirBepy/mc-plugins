@@ -5,6 +5,9 @@ api-version: "26.2"
 author: sirbepy
 
 permissions:
+  market.price:
+    description: Use /suggested-price.
+    default: true
   market.admin:
     description: Force a new set of buyers at the spawn market.
     default: op

@@ -4,12 +4,15 @@ import com.mojang.brigadier.Command;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.World;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.InputStream;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -24,6 +27,9 @@ public final class MarketPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        // Adds keys a newer jar introduced (e.g. the /suggested-price messages) to an existing config.
+        getConfig().options().copyDefaults(true);
+        saveConfig();
         config.set(new MarketConfig(getConfig()));
 
         MarketLayout layout;
@@ -34,6 +40,12 @@ public final class MarketPlugin extends JavaPlugin {
         }
         market = new Market(layout, config::get, this::period, new SecureRandom(),
                 new File(getDataFolder(), "state.yml"), getLogger());
+        PriceCommand price;
+        try (InputStream stream = Objects.requireNonNull(getResource("prices.yml"), "prices.yml missing from the jar")) {
+            price = new PriceCommand(PriceBook.load(stream), config::get, ItemStack::effectiveName);
+        } catch (Exception e) {
+            throw new IllegalStateException("Could not load prices.yml", e);
+        }
 
         // Signs are rewritten on every start too, in case the spawn-market datapack rebuilt the stalls.
         market.refresh();
@@ -46,8 +58,15 @@ public final class MarketPlugin extends JavaPlugin {
             }
         }, CHECK_TICKS, CHECK_TICKS);
 
-        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
-                event.registrar().register(Commands.literal("market")
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
+            event.registrar().register(Commands.literal("suggested-price")
+                    .requires(src -> src.getExecutor() instanceof Player && src.getSender().hasPermission("market.price"))
+                    .executes(ctx -> {
+                        price.run((Player) ctx.getSource().getExecutor());
+                        return Command.SINGLE_SUCCESS;
+                    })
+                    .build(), "Suggests a price for the item in your hand", List.of("price"));
+            event.registrar().register(Commands.literal("market")
                         .requires(src -> src.getSender().hasPermission("market.admin"))
                         .then(Commands.literal("rotate")
                                 .executes(ctx -> {
@@ -56,7 +75,8 @@ public final class MarketPlugin extends JavaPlugin {
                                     config.get().messages().send(ctx.getSource().getSender(), "rotate-success");
                                     return Command.SINGLE_SUCCESS;
                                 }))
-                        .build(), "Spawn market admin"));
+                        .build(), "Spawn market admin");
+        });
     }
 
     private String period() {

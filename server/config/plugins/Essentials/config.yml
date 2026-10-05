@@ -201,6 +201,10 @@ disabled-commands:
   - warps
   - setwarp
   - delwarp
+  # The Market plugin's /suggested-price uses /price as its alias, which /worth would otherwise take.
+  # Disabling worth alone leaves its price alias registered.
+  - worth
+  - price
 
 # Whether Essentials should show detailed command usages.
 # If set to false, Essentials will collapse all usages in to one single usage message.

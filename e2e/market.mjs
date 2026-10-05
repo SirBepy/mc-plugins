@@ -89,6 +89,20 @@ try {
     assert((await signData('color')) === '"yellow"', 'the stall spot still holds a dyed sign after the rotation');
   });
 
+  await step('/suggested-price and /price quote the held item', async () => {
+    const [bot] = bots;
+    await rcon.command(`minecraft:clear ${SELLER}`);
+    await rcon.command(`minecraft:give ${SELLER} minecraft:diamond 1`);
+    await waitFor(() => bot.inventory.items().some((i) => i.name === 'diamond'), `${SELLER} holds a diamond`, 5_000);
+    await bot.equip(bot.inventory.items().find((i) => i.name === 'diamond'), 'hand');
+    let since = bot.lines.length;
+    bot.chat('/suggested-price');
+    await waitForLine(bot, /Suggested price for Diamond: \$16\.00 each, \$1024\.00 for a stack of 64/, 5_000, since);
+    since = bot.lines.length;
+    bot.chat('/price');
+    await waitForLine(bot, /Suggested price for Diamond: \$16\.00/, 5_000, since);
+  });
+
   console.log(`\nMarket e2e: ${results.length} passed`);
 } catch (error) {
   console.error(`FAIL after ${results.length} passed: ${error.message}`);
