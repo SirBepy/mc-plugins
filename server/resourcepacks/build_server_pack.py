@@ -1,8 +1,9 @@
-"""Builds the one resource pack the server offers on join: Backpacks! textures + the RMF 26.3 fix.
+"""Builds the one resource pack the server offers on join: Backpacks! textures, the RMF 26.3 fix
+and the server's own custom item looks.
 
-Merges server/resourcepacks/eclipse-backpacks/ and client/resourcepack/rmf-26.3-fix/ (their only
-shared path is pack.mcmeta, replaced by PACK_META below) into
-server/resourcepacks/dist/ClaudeSMP-server-pack-26.3.zip and prints its sha1.
+Merges server/resourcepacks/eclipse-backpacks/, client/resourcepack/rmf-26.3-fix/ and
+server/resourcepacks/claudesmp-items/ (their only shared path is pack.mcmeta, replaced by PACK_META
+below) into server/resourcepacks/dist/ClaudeSMP-server-pack-26.3.zip and prints its sha1.
 
 Every entry gets a fixed timestamp, so an unchanged source tree always rebuilds to the same sha1
 and server.properties' resource-pack-sha1 only has to change when the pack really changes.
@@ -23,6 +24,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCES = [
     ROOT / "server" / "resourcepacks" / "eclipse-backpacks",
     ROOT / "client" / "resourcepack" / "rmf-26.3-fix",
+    ROOT / "server" / "resourcepacks" / "claudesmp-items",
 ]
 OUT = ROOT / "server" / "resourcepacks" / "dist" / "ClaudeSMP-server-pack-26.3.zip"
 SKIP = {"pack.mcmeta", "README.md", "PORTED.md"}
@@ -49,7 +51,7 @@ def add(zf, arcname, data):
     zf.writestr(info, data)
 
 
-def main():
+def build(out):
     files = {}
     for src in SOURCES:
         for path in sorted(src.rglob("*")):
@@ -58,13 +60,18 @@ def main():
                 if arcname in files:
                     raise SystemExit(f"both packs ship {arcname}; merge it by hand first")
                 files[arcname] = path
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(OUT, "w") as zf:
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(out, "w") as zf:
         add(zf, "pack.mcmeta", json.dumps(PACK_META, indent=2) + "\n")
         for arcname in sorted(files):
             add(zf, arcname, files[arcname].read_bytes())
+    return len(files) + 1
+
+
+def main():
+    count = build(OUT)
     sha1 = hashlib.sha1(OUT.read_bytes()).hexdigest()
-    print(f"wrote {OUT} ({len(files) + 1} files)")
+    print(f"wrote {OUT} ({count} files)")
     print(f"sha1 {sha1}")
 
 
