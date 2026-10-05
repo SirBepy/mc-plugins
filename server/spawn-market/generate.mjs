@@ -184,7 +184,7 @@ function sign(block, lines, { color, back = false } = {}) {
 // few of each stall's `buys` and writes them onto the stall's sign spots. This script only says
 // where those spots are and what each stall might buy, in market/src/main/resources/stalls.yml.
 // Prices from Joe's 2026-10-05 table: AFK-farmable items are cheap, items only gathered by hand
-// (logs, raw ores, diamond, ancient debris, leather, rabbit hide) keep a real price.
+// (logs, coal, raw ores, diamond, ancient debris, netherite scrap, leather, rabbit hide) keep a real price.
 // Amount 64 except stack-of-16 and rare items.
 const buy = (amount, item, each) => ({ item, amount, price: +(amount * each).toFixed(2) });
 // Props: [state, a, d, dy]. The 5x3 stalls have no spare floor, so props stand outside the side
@@ -214,9 +214,10 @@ const STALLS = [
   },
   {
     id: 'smith', side: 'east', a0: 4, name: 'Smith', wool: 'gray',
-    // Raw ore only comes from mining; iron and gold farms drop ingots and nuggets.
-    buys: [buy(64, 'raw_iron', 0.5), buy(64, 'raw_gold', 1), buy(64, 'raw_copper', 0.1), buy(64, 'iron_ingot', 0.25),
-      buy(64, 'gold_ingot', 0.25)],
+    // Mined things only, never ingots: iron and gold farms drop ingots and nuggets, raw ore only
+    // comes from mining.
+    buys: [buy(64, 'coal', 0.05), buy(64, 'raw_iron', 0.5), buy(64, 'raw_gold', 1), buy(64, 'raw_copper', 0.1),
+      buy(16, 'diamond', 8), buy(16, 'ancient_debris', 25), buy(16, 'netherite_scrap', 26)],
     props: [['blast_furnace[facing=INWARD]', -1, 1], ['smoker[facing=INWARD]', -1, 2], ['anvil[facing=AXISFACE]', 5, 1],
       ['lantern[hanging=false]', -1, 1, 1]],
   },
@@ -231,8 +232,7 @@ const STALLS = [
   {
     id: 'rare_goods', side: 'south', a0: 4, name: 'Rare goods', wool: 'purple',
     // 'membrane' is Essentials' alias for phantom_membrane, whose 16 characters overflow a sign line.
-    buys: [buy(16, 'diamond', 8), buy(16, 'ancient_debris', 25), buy(16, 'blaze_rod', 1), buy(16, 'membrane', 2),
-      buy(16, 'ghast_tear', 10), buy(16, 'ender_pearl', 0.25)],
+    buys: [buy(16, 'blaze_rod', 1), buy(16, 'membrane', 2), buy(16, 'ghast_tear', 10), buy(16, 'ender_pearl', 0.25)],
     props: [['crying_obsidian', -1, 1], ['amethyst_block', -1, 2], ['purple_candle[candles=3,lit=true]', -1, 1, 1],
       ['obsidian', 5, 1], ['end_rod[facing=up]', 5, 1, 1]],
   },

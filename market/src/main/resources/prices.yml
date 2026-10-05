@@ -8,7 +8,7 @@ items:
   acacia_door: 0.5
   acacia_fence: 0.36
   acacia_fence_gate: 0.66
-  acacia_hanging_sign: 1.2037
+  acacia_hanging_sign: 1.4125
   acacia_leaves: 0.02
   acacia_log: 1
   acacia_planks: 0.25
@@ -20,7 +20,7 @@ items:
   acacia_stairs: 0.375
   acacia_trapdoor: 0.75
   acacia_wood: 1.3333
-  activator_rail: 0.5367
+  activator_rail: 1.0492
   allium: 0.05
   amethyst_block: 0.8
   amethyst_cluster: 0.5
@@ -31,14 +31,14 @@ items:
   andesite_stairs: 0.01
   andesite_wall: 0.01
   angler_pottery_sherd: 2
-  anvil: 15.5
+  anvil: 31.3875
   apple: 0.1
   archer_pottery_sherd: 2
   armadillo_scute: 0.5
   armor_stand: 0.2575
   arms_up_pottery_sherd: 2
   arrow: 0.0475
-  axolotl_bucket: 6.5
+  axolotl_bucket: 8.0375
   azalea: 0.2
   azalea_leaves: 0.03
   azure_bluet: 0.05
@@ -50,7 +50,7 @@ items:
   bamboo_door: 0.18
   bamboo_fence: 0.1467
   bamboo_fence_gate: 0.34
-  bamboo_hanging_sign: 0.3837
+  bamboo_hanging_sign: 0.5925
   bamboo_mosaic: 0.09
   bamboo_mosaic_slab: 0.045
   bamboo_mosaic_stairs: 0.135
@@ -79,7 +79,7 @@ items:
   birch_door: 0.5
   birch_fence: 0.36
   birch_fence_gate: 0.66
-  birch_hanging_sign: 1.2037
+  birch_hanging_sign: 1.4125
   birch_leaves: 0.02
   birch_log: 1
   birch_planks: 0.25
@@ -116,7 +116,7 @@ items:
   blackstone_stairs: 0.02
   blackstone_wall: 0.02
   blade_pottery_sherd: 2
-  blast_furnace: 2.685
+  blast_furnace: 5.2475
   blaze_powder: 1
   blaze_rod: 2
   blue_banner: 2.74
@@ -190,7 +190,7 @@ items:
   bubble_coral: 0.2
   bubble_coral_block: 0.2
   bubble_coral_fan: 0.2
-  bucket: 1.5
+  bucket: 3.0375
   bundle: 1.1
   buried_ancient_city_map: 3
   buried_mineshaft_map: 3
@@ -200,7 +200,7 @@ items:
   bush: 0.01
   cactus: 0.02
   cactus_flower: 0.05
-  cake: 5.2
+  cake: 9.8125
   calcite: 0.05
   calibrated_sculk_sensor: 4
   campfire: 3.22
@@ -209,7 +209,7 @@ items:
   carrot_on_a_stick: 0.42
   cartography_table: 0.44
   carved_pumpkin: 0.3
-  cauldron: 3.5
+  cauldron: 7.0875
   chainmail_boots: 2
   chainmail_chestplate: 5
   chainmail_helmet: 3
@@ -221,7 +221,7 @@ items:
   cherry_door: 0.5
   cherry_fence: 0.36
   cherry_fence_gate: 0.66
-  cherry_hanging_sign: 1.2037
+  cherry_hanging_sign: 1.4125
   cherry_leaves: 0.02
   cherry_log: 1
   cherry_planks: 0.25
@@ -234,7 +234,7 @@ items:
   cherry_trapdoor: 0.75
   cherry_wood: 1.3333
   chest: 0.72
-  chest_minecart: 3.22
+  chest_minecart: 5.7825
   chicken: 0.1
   chipped_anvil: 10
   chiseled_bookshelf: 0.675
@@ -263,7 +263,7 @@ items:
   cinnabar_wall: 0.02
   clay: 0.2
   clay_ball: 0.05
-  clock: 2.1
+  clock: 2.15
   closed_eyeblossom: 0.05
   coal: 0.1
   coal_block: 0.9
@@ -281,9 +281,9 @@ items:
   cobweb: 0.2
   cocoa_beans: 0.05
   cod: 0.5
-  cod_bucket: 2
+  cod_bucket: 3.5375
   comparator: 0.6875
-  compass: 2.1
+  compass: 4.15
   composter: 0.315
   conduit: 54
   cooked_beef: 0.1
@@ -326,7 +326,7 @@ items:
   cracked_nether_bricks: 0.1025
   cracked_polished_blackstone_bricks: 0.0325
   cracked_stone_bricks: 0.035
-  crafter: 3.23
+  crafter: 5.7925
   crafting_table: 0.36
   creaking_heart: 3
   creeper_banner_pattern: 5.04
@@ -336,7 +336,7 @@ items:
   crimson_fence: 0.36
   crimson_fence_gate: 0.66
   crimson_fungus: 0.1
-  crimson_hanging_sign: 1.2037
+  crimson_hanging_sign: 1.4125
   crimson_hyphae: 1.3333
   crimson_nylium: 0.05
   crimson_planks: 0.25
@@ -348,7 +348,7 @@ items:
   crimson_stairs: 0.375
   crimson_stem: 1
   crimson_trapdoor: 0.75
-  crossbow: 1.135
+  crossbow: 1.9038
   crying_obsidian: 1
   cut_copper: 0.4781
   cut_copper_slab: 0.2391
@@ -386,7 +386,7 @@ items:
   dark_oak_door: 0.5
   dark_oak_fence: 0.36
   dark_oak_fence_gate: 0.66
-  dark_oak_hanging_sign: 1.2037
+  dark_oak_hanging_sign: 1.4125
   dark_oak_leaves: 0.02
   dark_oak_log: 1
   dark_oak_planks: 0.25
@@ -438,7 +438,7 @@ items:
   deepslate_tiles: 0.01
   desert_pyramid_map: 3
   desert_village_map: 3
-  detector_rail: 0.5242
+  detector_rail: 1.0367
   diamond: 16
   diamond_axe: 48.08
   diamond_block: 144
@@ -522,7 +522,7 @@ items:
   fishing_rod: 0.32
   fletching_table: 0.46
   flint: 0.05
-  flint_and_steel: 0.55
+  flint_and_steel: 1.0625
   flow_armor_trim_smithing_template: 10
   flow_banner_pattern: 5
   flow_pottery_sherd: 2
@@ -532,13 +532,13 @@ items:
   flowering_azalea_leaves: 0.03
   friend_pottery_sherd: 2
   furnace: 0.08
-  furnace_minecart: 2.58
+  furnace_minecart: 5.1425
   ghast_tear: 20
   gilded_blackstone: 0.5
   glass: 0.0325
   glass_bottle: 0.0325
   glass_pane: 0.0122
-  glistering_melon_slice: 0.4844
+  glistering_melon_slice: 0.4956
   globe_banner_pattern: 3
   glow_berries: 0.05
   glow_ink_sac: 0.3
@@ -547,25 +547,25 @@ items:
   glowstone: 0.6
   glowstone_dust: 0.15
   goat_horn: 5
-  gold_block: 4.5
-  gold_ingot: 0.5
-  gold_nugget: 0.0556
+  gold_block: 4.6125
+  gold_ingot: 0.5125
+  gold_nugget: 0.0569
   gold_ore: 2.2
-  golden_apple: 4.1
-  golden_axe: 1.58
-  golden_boots: 2
-  golden_carrot: 0.5444
-  golden_chestplate: 4
+  golden_apple: 4.2
+  golden_axe: 1.6175
+  golden_boots: 2.05
+  golden_carrot: 0.5556
+  golden_chestplate: 4.1
   golden_dandelion: 0.05
-  golden_helmet: 2.5
-  golden_hoe: 1.08
+  golden_helmet: 2.5625
+  golden_hoe: 1.105
   golden_horse_armor: 5
-  golden_leggings: 3.5
+  golden_leggings: 3.5875
   golden_nautilus_armor: 5
-  golden_pickaxe: 1.58
-  golden_shovel: 0.58
-  golden_spear: 0.58
-  golden_sword: 1.04
+  golden_pickaxe: 1.6175
+  golden_shovel: 0.5925
+  golden_spear: 0.5925
+  golden_sword: 1.065
   granite: 0.01
   granite_slab: 0.005
   granite_stairs: 0.01
@@ -622,13 +622,13 @@ items:
   heart_pottery_sherd: 2
   heartbreak_pottery_sherd: 2
   heavy_core: 30
-  heavy_weighted_pressure_plate: 1
+  heavy_weighted_pressure_plate: 2.025
   honey_block: 1.2
   honey_bottle: 0.3
   honeycomb: 0.2
   honeycomb_block: 0.8
-  hopper: 3.22
-  hopper_minecart: 5.72
+  hopper: 5.7825
+  hopper_minecart: 10.845
   horn_coral: 0.2
   horn_coral_block: 0.2
   horn_coral_fan: 0.2
@@ -636,26 +636,26 @@ items:
   howl_pottery_sherd: 2
   ice: 0.05
   ink_sac: 0.2
-  iron_axe: 1.58
-  iron_bars: 0.1875
-  iron_block: 4.5
-  iron_boots: 2
-  iron_chain: 0.6111
-  iron_chestplate: 4
-  iron_door: 1
-  iron_helmet: 2.5
-  iron_hoe: 1.08
+  iron_axe: 3.1175
+  iron_bars: 0.3797
+  iron_block: 9.1125
+  iron_boots: 4.05
+  iron_chain: 1.2375
+  iron_chestplate: 8.1
+  iron_door: 2.025
+  iron_helmet: 5.0625
+  iron_hoe: 2.105
   iron_horse_armor: 3
-  iron_ingot: 0.5
-  iron_leggings: 3.5
+  iron_ingot: 1.0125
+  iron_leggings: 7.0875
   iron_nautilus_armor: 3
-  iron_nugget: 0.0556
+  iron_nugget: 0.1125
   iron_ore: 1.2
-  iron_pickaxe: 1.58
-  iron_shovel: 0.58
-  iron_spear: 0.58
-  iron_sword: 1.04
-  iron_trapdoor: 2
+  iron_pickaxe: 3.1175
+  iron_shovel: 1.0925
+  iron_spear: 1.0925
+  iron_sword: 2.065
+  iron_trapdoor: 4.05
   item_frame: 1.32
   jack_o_lantern: 0.335
   jukebox: 16.72
@@ -665,7 +665,7 @@ items:
   jungle_door: 0.5
   jungle_fence: 0.36
   jungle_fence_gate: 0.66
-  jungle_hanging_sign: 1.2037
+  jungle_hanging_sign: 1.4125
   jungle_leaves: 0.02
   jungle_log: 1
   jungle_planks: 0.25
@@ -680,13 +680,13 @@ items:
   jungle_wood: 1.3333
   kelp: 0.01
   ladder: 0.0933
-  lantern: 0.4794
+  lantern: 0.935
   lapis_block: 1.8
   lapis_lazuli: 0.2
   lapis_ore: 1.5
   large_amethyst_bud: 0.2
   large_fern: 0.01
-  lava_bucket: 2
+  lava_bucket: 3.5375
   lead: 0.25
   leaf_litter: 0.01
   leather: 1
@@ -737,7 +737,7 @@ items:
   light_gray_wool: 0.435
   light_gray_wool_slab: 0.2175
   light_gray_wool_stairs: 0.635
-  light_weighted_pressure_plate: 1
+  light_weighted_pressure_plate: 1.025
   lightning_rod: 0.6375
   lilac: 0.1
   lily_of_the_valley: 0.05
@@ -763,7 +763,7 @@ items:
   lime_wool_slab: 0.2156
   lime_wool_stairs: 0.6312
   lingering_potion: 0.5
-  lodestone: 0.68
+  lodestone: 1.1925
   loom: 0.38
   mace: 31
   magenta_banner: 2.71
@@ -794,7 +794,7 @@ items:
   mangrove_door: 0.5
   mangrove_fence: 0.36
   mangrove_fence_gate: 0.66
-  mangrove_hanging_sign: 1.2037
+  mangrove_hanging_sign: 1.4125
   mangrove_leaves: 0.02
   mangrove_log: 1
   mangrove_planks: 0.25
@@ -807,13 +807,13 @@ items:
   mangrove_stairs: 0.375
   mangrove_trapdoor: 0.75
   mangrove_wood: 1.3333
-  map: 2.42
+  map: 4.47
   medium_amethyst_bud: 0.15
   melon: 0.36
   melon_seeds: 0.04
   melon_slice: 0.04
-  milk_bucket: 1.6
-  minecart: 2.5
+  milk_bucket: 3.1375
+  minecart: 5.0625
   miner_pottery_sherd: 2
   mojang_banner_pattern: 50.04
   moss_block: 0.05
@@ -873,21 +873,21 @@ items:
   nether_star: 100
   nether_wart: 0.1
   nether_wart_block: 0.9
-  netherite_axe: 270.13
-  netherite_block: 1818.45
-  netherite_boots: 286.05
-  netherite_chestplate: 350.05
-  netherite_helmet: 302.05
-  netherite_hoe: 254.13
+  netherite_axe: 278.13
+  netherite_block: 1890.45
+  netherite_boots: 294.05
+  netherite_chestplate: 358.05
+  netherite_helmet: 310.05
+  netherite_hoe: 262.13
   netherite_horse_armor: 60
-  netherite_ingot: 202.05
-  netherite_leggings: 334.05
+  netherite_ingot: 210.05
+  netherite_leggings: 342.05
   netherite_nautilus_armor: 60
-  netherite_pickaxe: 270.13
-  netherite_scrap: 50.0125
-  netherite_shovel: 238.13
-  netherite_spear: 238.13
-  netherite_sword: 254.09
+  netherite_pickaxe: 278.13
+  netherite_scrap: 52
+  netherite_shovel: 246.13
+  netherite_spear: 246.13
+  netherite_sword: 262.09
   netherite_upgrade_smithing_template: 20
   netherrack: 0.01
   note_block: 0.82
@@ -897,7 +897,7 @@ items:
   oak_door: 0.5
   oak_fence: 0.36
   oak_fence_gate: 0.66
-  oak_hanging_sign: 1.2037
+  oak_hanging_sign: 1.4125
   oak_leaves: 0.02
   oak_log: 1
   oak_planks: 0.25
@@ -966,7 +966,7 @@ items:
   pale_oak_door: 0.5
   pale_oak_fence: 0.36
   pale_oak_fence_gate: 0.66
-  pale_oak_hanging_sign: 1.2037
+  pale_oak_hanging_sign: 1.4125
   pale_oak_leaves: 0.02
   pale_oak_log: 1
   pale_oak_planks: 0.25
@@ -1006,7 +1006,7 @@ items:
   pink_wool: 0.44
   pink_wool_slab: 0.22
   pink_wool_stairs: 0.64
-  piston: 0.91
+  piston: 1.4225
   pitcher_plant: 2
   pitcher_pod: 2
   plains_village_map: 3
@@ -1056,7 +1056,7 @@ items:
   poplar_door: 0.5
   poplar_fence: 0.36
   poplar_fence_gate: 0.66
-  poplar_hanging_sign: 1.2037
+  poplar_hanging_sign: 1.4125
   poplar_log: 1
   poplar_planks: 0.25
   poplar_pressure_plate: 0.5
@@ -1073,8 +1073,8 @@ items:
   potato: 0.1
   potent_sulfur: 0.5
   potion: 0.05
-  powder_snow_bucket: 1.6
-  powered_rail: 0.5233
+  powder_snow_bucket: 3.1375
+  powered_rail: 0.5358
   prismarine: 0.8
   prismarine_brick_slab: 0.9
   prismarine_brick_stairs: 1.8
@@ -1086,7 +1086,7 @@ items:
   prismarine_wall: 0.8
   prize_pottery_sherd: 2
   pufferfish: 1
-  pufferfish_bucket: 2.5
+  pufferfish_bucket: 4.0375
   pumpkin: 0.2
   pumpkin_pie: 0.26
   pumpkin_seeds: 0.05
@@ -1124,7 +1124,7 @@ items:
   rabbit_foot: 1
   rabbit_hide: 1
   rabbit_stew: 0.4175
-  rail: 0.19
+  rail: 0.3822
   raiser_armor_trim_smithing_template: 10
   raw_copper: 0.2
   raw_copper_block: 1.8
@@ -1132,7 +1132,7 @@ items:
   raw_gold_block: 18
   raw_iron: 1
   raw_iron_block: 9
-  recovery_compass: 42.1
+  recovery_compass: 44.15
   red_banner: 2.74
   red_bed: 1.52
   red_bundle: 1.15
@@ -1187,7 +1187,7 @@ items:
   rotten_flesh: 0.02
   saddle: 3
   salmon: 0.5
-  salmon_bucket: 2
+  salmon_bucket: 3.5375
   sand: 0.02
   sandstone: 0.08
   sandstone_slab: 0.04
@@ -1207,10 +1207,10 @@ items:
   sentry_armor_trim_smithing_template: 10
   shaper_armor_trim_smithing_template: 10
   sheaf_pottery_sherd: 2
-  shears: 1
+  shears: 2.025
   shelf_mushroom: 0.05
   shelter_pottery_sherd: 2
-  shield: 1.04
+  shield: 1.5525
   short_dry_grass: 0.01
   short_grass: 0.01
   shroomlight: 0.3
@@ -1224,7 +1224,7 @@ items:
   slime_block: 4.5
   small_amethyst_bud: 0.1
   small_dripleaf: 0.05
-  smithing_table: 1.36
+  smithing_table: 2.385
   smoker: 4.08
   smooth_basalt: 0.0325
   smooth_quartz: 0.8125
@@ -1246,7 +1246,7 @@ items:
   snowball: 0.01
   snowy_village_map: 3
   soul_campfire: 3.17
-  soul_lantern: 0.4919
+  soul_lantern: 0.9475
   soul_sand: 0.05
   soul_soil: 0.05
   soul_torch: 0.0475
@@ -1262,7 +1262,7 @@ items:
   spruce_door: 0.5
   spruce_fence: 0.36
   spruce_fence_gate: 0.66
-  spruce_hanging_sign: 1.2037
+  spruce_hanging_sign: 1.4125
   spruce_leaves: 0.02
   spruce_log: 1
   spruce_planks: 0.25
@@ -1276,7 +1276,7 @@ items:
   spruce_wood: 1.3333
   spyglass: 0.625
   stick: 0.04
-  sticky_piston: 1.41
+  sticky_piston: 1.9225
   stone: 0.0225
   stone_axe: 0.11
   stone_brick_slab: 0.0113
@@ -1292,7 +1292,7 @@ items:
   stone_spear: 0.09
   stone_stairs: 0.0225
   stone_sword: 0.06
-  stonecutter: 0.5675
+  stonecutter: 1.08
   straw_bed: 0.675
   string: 0.1
   stripped_acacia_log: 1
@@ -1327,7 +1327,7 @@ items:
   sulfur_brick_stairs: 0.02
   sulfur_brick_wall: 0.02
   sulfur_bricks: 0.02
-  sulfur_cube_bucket: 3.5
+  sulfur_cube_bucket: 5.0375
   sulfur_slab: 0.01
   sulfur_spike: 0.05
   sulfur_stairs: 0.02
@@ -1336,7 +1336,7 @@ items:
   suspicious_stew: 0.2175
   swamp_hut_map: 3
   sweet_berries: 0.05
-  tadpole_bucket: 2
+  tadpole_bucket: 3.5375
   taiga_village_map: 3
   tall_dry_grass: 0.01
   tall_grass: 0.01
@@ -1346,17 +1346,17 @@ items:
   tinted_glass: 0.4163
   tipped_arrow: 0.3
   tnt: 1.08
-  tnt_minecart: 3.58
+  tnt_minecart: 6.1425
   torch: 0.035
   torchflower: 2
   torchflower_seeds: 2
   totem_of_undying: 5
-  trapped_chest: 1.035
+  trapped_chest: 1.2912
   trial_key: 2
   trident: 30
-  tripwire_hook: 0.315
+  tripwire_hook: 0.5713
   tropical_fish: 1
-  tropical_fish_bucket: 2.5
+  tropical_fish_bucket: 4.0375
   tube_coral: 0.2
   tube_coral_block: 0.2
   tube_coral_fan: 0.2
@@ -1383,7 +1383,7 @@ items:
   warped_fence_gate: 0.66
   warped_fungus: 0.1
   warped_fungus_on_a_stick: 0.42
-  warped_hanging_sign: 1.2037
+  warped_hanging_sign: 1.4125
   warped_hyphae: 1.3333
   warped_nylium: 0.05
   warped_planks: 0.25
@@ -1396,7 +1396,7 @@ items:
   warped_stem: 1
   warped_trapdoor: 0.75
   warped_wart_block: 0.1
-  water_bucket: 1.5
+  water_bucket: 3.0375
   waxed_chiseled_copper: 0.5281
   waxed_copper_bars: 0.2797
   waxed_copper_block: 2.1125

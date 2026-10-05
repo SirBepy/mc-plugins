@@ -53,11 +53,13 @@ stalls:
       - {x: 441, y: 116, z: -862, facing: west}
       - {x: 441, y: 116, z: -861, facing: west}
     buys:
+      - {item: coal, amount: 64, price: 3.2}
       - {item: raw_iron, amount: 64, price: 32}
       - {item: raw_gold, amount: 64, price: 64}
       - {item: raw_copper, amount: 64, price: 6.4}
-      - {item: iron_ingot, amount: 64, price: 16}
-      - {item: gold_ingot, amount: 64, price: 16}
+      - {item: diamond, amount: 16, price: 128}
+      - {item: ancient_debris, amount: 16, price: 400}
+      - {item: netherite_scrap, amount: 16, price: 416}
   mob_drops:
     color: green
     slots:
@@ -81,8 +83,6 @@ stalls:
       - {x: 421, y: 116, z: -854, facing: north}
       - {x: 420, y: 116, z: -854, facing: north}
     buys:
-      - {item: diamond, amount: 16, price: 128}
-      - {item: ancient_debris, amount: 16, price: 400}
       - {item: blaze_rod, amount: 16, price: 16}
       - {item: membrane, amount: 16, price: 32}
       - {item: ghast_tear, amount: 16, price: 160}
