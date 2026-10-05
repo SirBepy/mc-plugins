@@ -100,3 +100,21 @@ an "old format" warning but should still render it correctly - its item textures
 post-24w `assets/<ns>/items/*.json` item model definition system that the `item_model` component
 needs, unchanged since format 84. Not modified or re-hosted per the task brief; in-client rendering
 was not verified.
+
+## spawn-market/, generated 2026-10-05
+
+A custom folder datapack holding the spawn square build: a timber-and-tuff taiga market at world
+spawn (427, -868) with six themed [Sell] stalls (Farmer, Lumberjack, Fishmonger, Smith, Mob drops,
+Rare goods), a crafting corner, one reserved stall, a rules board, a bell and a well. It does
+nothing on load: the build only happens on `/function spawn_market:build`, which **clears every
+tree and block above the new ground in a 49x49 area around spawn** and flattens the middle 37x37
+to y114. Back the area up before running it on a world that has anything there.
+
+The functions are generated, never hand-edited: change `server/spawn-market/generate.mjs` (layout,
+palette, the [Sell] price table) and rerun `node server/spawn-market/generate.mjs`;
+`node --test server/spawn-market/generate.test.mjs` checks the output. The terrain blend reads
+`server/spawn-market/terrain-snapshot.json`, the live ground heightmap taken 2026-10-05, so the
+build only fits that spot. Verified on server/local (live spawn region copied in): all 3812 blocks
+read back from the region file matched the generator's model. The [Sell] signs' first line is
+`<dark_blue>[Sell]`, Essentials' `signFormatSuccess`, since command-placed signs skip Essentials'
+own recolouring; whether Essentials then accepts a click on them needs a real player to confirm.

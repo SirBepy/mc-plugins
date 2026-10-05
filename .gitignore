@@ -25,3 +25,6 @@ client/mrpack/overrides/resourcepacks/
 
 # Zipped by server/resourcepacks/build_server_pack.py, hosted on the website.
 server/resourcepacks/dist/
+
+# Every block the spawn generator sets, rewritten on each run; only offline mockup renders read it.
+server/spawn-market/model.json
