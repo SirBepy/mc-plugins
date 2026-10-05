@@ -14,12 +14,13 @@
 //   log [n]                           last n lines of logs/latest.log (default 100)
 //   ls <dir>                          list files in a server directory
 //   prop <key> [value]                get/set one line in /server.properties (most keys need a restart)
+//   upload <local-file> <remote-dir>  upload one file into a server directory (overwrites)
 //   decompress <dir> <file>           decompress an archive already on the server
 //   delete <file...>                  delete files/dirs from server root (kept, unused today)
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PANEL = "https://kineticpanel.net";
@@ -215,6 +216,21 @@ async function cmdProp(key, value) {
   console.log(`${key}=${value}`);
 }
 
+// Pterodactyl uploads go to a short-lived signed Wings URL as multipart field "files", not
+// through the panel API itself.
+async function cmdUpload(localPath, dir) {
+  if (!localPath || !dir) throw new Error("upload requires <local-file> <remote-dir>, e.g. `upload x.jar plugins`");
+  const id = await serverIdentifier();
+  const signed = await api(`/servers/${id}/files/upload`);
+  const name = basename(localPath);
+  const form = new FormData();
+  form.append("files", new Blob([readFileSync(localPath)]), name);
+  const res = await fetch(`${signed.attributes.url}&directory=${encodeURIComponent(dir)}`, { method: "POST", body: form });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`upload ${name} -> ${res.status} ${res.statusText}: ${text.slice(0, 500)}`);
+  console.log(`uploaded ${name} to ${dir}`);
+}
+
 async function cmdDecompress(dir, file) {
   const id = await serverIdentifier();
   await api(`/servers/${id}/files/decompress`, {
@@ -270,6 +286,9 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
         break;
       case "prop":
         await cmdProp(args[0], args.length > 1 ? args.slice(1).join(" ") : undefined);
+        break;
+      case "upload":
+        await cmdUpload(args[0], args[1]);
         break;
       case "decompress":
         await cmdDecompress(args[0], args[1]);

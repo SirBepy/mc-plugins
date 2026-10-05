@@ -55,6 +55,12 @@ claude-reply.mjs's arguments.
   `kinetic.mjs power restart` to take effect. Java's `Properties` writer escapes a literal colon in
   a value as `\:`; `prop` prints that raw escaped line unchanged and writes a new value exactly as
   given (unescaped), since Paper accepts both forms on read.
+- **`upload` subcommand** puts one local file into a server directory through the panel's signed
+  upload URL, no SFTP key needed: `kinetic.mjs upload server/local/plugins/carry-0.1.0.jar plugins`
+  (overwrites a same-named file). Take plugin jars from `server/local/plugins/` after
+  `:server:assembleLocalServer`, since `build/` is unreadable here. A brand-new plugin goes straight
+  into `plugins/` (Bukkit's `plugins/update/` only replaces jars that already exist) and loads on
+  the next restart; first used for Carry on 2026-10-05.
 - **Bedrock + voice chat ports already fixed in git**, no Kinetic-side edit needed:
   - `server/config/plugins/Geyser-Spigot/config.yml` `bedrock.port` -> `25572` (allocation [42267],
     noted "geyser-bedrock"). `java.port`/`java.address` stay as-is, Geyser auto-follows Bukkit's port.
