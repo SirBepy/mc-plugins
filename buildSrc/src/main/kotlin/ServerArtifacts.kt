@@ -87,13 +87,13 @@ object ServerArtifacts {
         ),
     )
 
-    // Paper 26.3 is still beta; pin build 143 explicitly rather than tracking "latest" (resolved
-    // 2026-10-02 from https://fill.papermc.io/v3/projects/paper/versions/26.3/builds/143).
+    // Paper 26.3 is still beta; pin build 156 explicitly rather than tracking "latest" (resolved
+    // 2026-10-05 from https://fill.papermc.io/v3/projects/paper/versions/26.3/builds/156).
     const val paperVersion = "26.3"
-    const val paperBuild = 143
+    const val paperBuild = 156
     val paperDownload = PinnedJar(
-        url = "https://fill-data.papermc.io/v1/objects/32cf4a93545e218525bc4536b017c6b5d5085d27d449d64266a6b23ba4d0cbb9/paper-26.3-143.jar",
-        filename = "paper-26.3-143.jar",
-        sha256 = "32cf4a93545e218525bc4536b017c6b5d5085d27d449d64266a6b23ba4d0cbb9",
+        url = "https://fill-data.papermc.io/v1/objects/f34cf5ddc90fabda14a944446808a29eb24d39b187a1f40df9051df41f8eebad/paper-26.3-156.jar",
+        filename = "paper-26.3-156.jar",
+        sha256 = "f34cf5ddc90fabda14a944446808a29eb24d39b187a1f40df9051df41f8eebad",
     )
 }

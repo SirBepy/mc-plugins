@@ -26,7 +26,7 @@ extras) live in one place: `buildSrc/src/main/kotlin/ServerArtifacts.kt`.
 
 ## Assembling
 
-`.\gradlew.bat :server:assembleServer` writes `server/dist/`: Paper 26.3 build 143, every
+`.\gradlew.bat :server:assembleServer` writes `server/dist/`: Paper 26.3 build 156, every
 plugin jar, every datapack, config applied, `eula.txt`, and `start.sh`/`start.bat` (Aikar's flags,
 `-Xms10G -Xmx10G` for the CX43 VPS). It's idempotent and never deletes an existing `world*/` folder
 or plugin data folder; it only ever adds or overwrites files it manages (jars, datapack zips,
@@ -50,7 +50,7 @@ never applied to the real server. None of these overrides ever reach `assembleSe
 Boot it through the supervisor, never a bare background `java`:
 
 ```
-powershell -File sv.ps1 ensure -Project mc-plugins-tag -Kind ephemeral -Root server\local -Cmd "java -Xms2G -Xmx4G -Dcom.mojang.eula.agree=true -jar paper-26.3-143.jar --nogui"
+powershell -File sv.ps1 ensure -Project mc-plugins-tag -Kind ephemeral -Root server\local -Cmd "java -Xms2G -Xmx4G -Dcom.mojang.eula.agree=true -jar paper-26.3-156.jar --nogui"
 ```
 
 Watch with `sv.ps1 logs -Id local:java`, stop with an RCON `stop`, then `sv.ps1 rm -Id local:java`.
