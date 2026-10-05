@@ -87,14 +87,14 @@ try {
     assert(AfkA.lines.slice(markA).filter((l) => /idle as IT/.test(l)).length === 1, 'warning sent once');
   });
 
-  await step('an AFK player can still be tagged', async () => {
+  await step('an AFK player cannot be tagged', async () => {
     const target = AfkC.players.AfkB?.entity;
     assert(target, 'AfkC can see AfkB');
-    const mark = AfkA.lines.length;
+    const mark = AfkC.lines.length;
     await AfkC.lookAt(target.position.offset(0, 1.6, 0), true);
     AfkC.attack(target);
-    await waitForLine(AfkA, /AfkC tagged AfkB/, 5_000, mark);
-    assert((await whoIsIt()).includes('AfkB is IT'), 'AfkB is IT');
+    await waitForLine(AfkC, /AfkB is AFK and can't be tagged/, 5_000, mark);
+    assert((await whoIsIt()).includes('AfkC is IT'), 'AfkC is still IT');
   });
 
   console.log(`\nAFK e2e: ${results.length} passed`);

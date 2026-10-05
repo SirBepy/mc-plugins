@@ -56,6 +56,26 @@ afk:
   # How often (seconds) to sample player position/facing for the idle check. Seconds, not
   # minutes, so an e2e can set tiny values here and `/tag reload` to test AFK handling quickly.
   check-interval-seconds: 1
+  # AFK players can't be tagged. Sent to IT when they hit one (rate-limited by
+  # tagback.message-cooldown-seconds). Blank silences it.
+  untaggable-message: "<gray><player> is AFK and can't be tagged.</gray>"
+
+tracker:
+  # IT carries a compass that points at a chosen player (nearest by default); right-click cycles.
+  # It stays in IT's own inventory and vanishes when IT passes. Opted-out, creative and spectator
+  # players are never tracked.
+  enabled: true
+  # How often the compass re-points and the action bar refreshes. The action bar fades after ~3s,
+  # so keep this well under 60.
+  update-interval-ticks: 10
+  item-name: "<green>☣ Tag Tracker</green>"
+  item-lore: "<gray>Right-click to switch player</gray>"
+  # Action bar while the compass is in either hand. <player>, <distance> (blocks).
+  readout:
+    distance: "<white><player></white> <gray>-</gray> <yellow><distance>m</yellow>"
+    other-realm: "<white><player></white> <gray>- Not in this realm</gray>"
+    afk: "<white><player></white> <gray>- AFK, can't be tagged</gray>"
+    nobody: "<gray>No one to track</gray>"
 
 leaderboard:
   # The in-world TextDisplay placed by `/tag leaderboard place`. Distinct from the chat-only

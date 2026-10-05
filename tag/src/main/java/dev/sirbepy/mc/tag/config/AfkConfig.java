@@ -2,8 +2,14 @@ package dev.sirbepy.mc.tag.config;
 
 import org.bukkit.configuration.ConfigurationSection;
 
-/** Typed view over the `afk:` config section: idle detection, multiplier exclusion, IT auto-pass. */
+/**
+ * Typed view over the `afk:` config section: idle detection, multiplier exclusion, IT auto-pass,
+ * and the note IT gets for hitting an AFK (untaggable) player.
+ */
 public final class AfkConfig {
+
+    // Code default: a server's existing config.yml predates this key and is never overwritten.
+    private static final String DEFAULT_UNTAGGABLE_MESSAGE = "<gray><player> is AFK and can't be tagged.</gray>";
 
     public final boolean enabled;
     public final long thresholdSeconds;
@@ -12,9 +18,11 @@ public final class AfkConfig {
     public final long itPassAfterSeconds;
     public final long itPassWarningSeconds;
     public final long checkIntervalSeconds;
+    public final String untaggableMessage;
 
     private AfkConfig(boolean enabled, long thresholdSeconds, boolean excludeFromMultiplier, boolean autoPass,
-                       long itPassAfterSeconds, long itPassWarningSeconds, long checkIntervalSeconds) {
+                       long itPassAfterSeconds, long itPassWarningSeconds, long checkIntervalSeconds,
+                       String untaggableMessage) {
         this.enabled = enabled;
         this.thresholdSeconds = thresholdSeconds;
         this.excludeFromMultiplier = excludeFromMultiplier;
@@ -22,11 +30,12 @@ public final class AfkConfig {
         this.itPassAfterSeconds = itPassAfterSeconds;
         this.itPassWarningSeconds = itPassWarningSeconds;
         this.checkIntervalSeconds = checkIntervalSeconds;
+        this.untaggableMessage = untaggableMessage;
     }
 
     public static AfkConfig from(ConfigurationSection section) {
         if (section == null) {
-            return new AfkConfig(true, 300, true, true, 600, 60, 1);
+            return new AfkConfig(true, 300, true, true, 600, 60, 1, DEFAULT_UNTAGGABLE_MESSAGE);
         }
         return new AfkConfig(
                 section.getBoolean("enabled", true),
@@ -35,6 +44,7 @@ public final class AfkConfig {
                 section.getBoolean("auto-pass", true),
                 section.getLong("it-pass-after-seconds", 600),
                 section.getLong("it-pass-warning-seconds", 60),
-                section.getLong("check-interval-seconds", 1));
+                section.getLong("check-interval-seconds", 1),
+                section.getString("untaggable-message", DEFAULT_UNTAGGABLE_MESSAGE));
     }
 }

@@ -15,6 +15,8 @@ import dev.sirbepy.mc.tag.prefix.PrefixService;
 import dev.sirbepy.mc.tag.task.AfkSamplingTask;
 import dev.sirbepy.mc.tag.task.HeadWatchdogTask;
 import dev.sirbepy.mc.tag.task.PointsTask;
+import dev.sirbepy.mc.tag.task.TrackerTask;
+import dev.sirbepy.mc.tag.tracker.TrackerListener;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.ServicesManager;
@@ -36,6 +38,7 @@ public final class TagPlugin extends JavaPlugin {
     private BukkitTask pointsTask;
     private BukkitTask watchdogTask;
     private BukkitTask afkTask;
+    private BukkitTask trackerTask;
 
     @Override
     public void onLoad() {
@@ -70,6 +73,7 @@ public final class TagPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new HeadProtectionListener(heads), this);
         getServer().getPluginManager().registerEvents(new PlayerConnectionListener(service), this);
         getServer().getPluginManager().registerEvents(new AfkActivityListener(service), this);
+        getServer().getPluginManager().registerEvents(new TrackerListener(service, service.tracker()), this);
         getServer().getPluginManager().registerEvents(leaderboard, this);
 
         reapplyCurrentIt();
@@ -87,6 +91,9 @@ public final class TagPlugin extends JavaPlugin {
         }
         if (afkTask != null) {
             afkTask.cancel();
+        }
+        if (trackerTask != null) {
+            trackerTask.cancel();
         }
         if (leaderboard != null) {
             leaderboard.despawn();
@@ -113,6 +120,10 @@ public final class TagPlugin extends JavaPlugin {
             afkTask.cancel();
             afkTask = null;
         }
+        if (trackerTask != null) {
+            trackerTask.cancel();
+            trackerTask = null;
+        }
         scheduleTasks(config);
     }
 
@@ -125,6 +136,7 @@ public final class TagPlugin extends JavaPlugin {
         if (online != null) {
             prefix.apply(currentIt, service.config().prefixTemplate, service.config().prefixPriority);
             heads.ensureWorn(online, service.config().head);
+            service.syncTracker(online);
         }
     }
 
@@ -138,6 +150,11 @@ public final class TagPlugin extends JavaPlugin {
         if (config.afk.enabled) {
             long afkTicks = Math.max(1, config.afk.checkIntervalSeconds * 20L);
             afkTask = getServer().getScheduler().runTaskTimer(this, new AfkSamplingTask(service), afkTicks, afkTicks);
+        }
+
+        if (config.tracker.enabled) {
+            long trackerTicks = Math.max(1, config.tracker.updateIntervalTicks);
+            trackerTask = getServer().getScheduler().runTaskTimer(this, new TrackerTask(service), trackerTicks, trackerTicks);
         }
     }
 

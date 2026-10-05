@@ -63,7 +63,7 @@ class TagServiceQuitTest {
                 new ScoreboardService(new NoopNamesApi()), leaderboard, config);
 
         // "it" just became IT by tagging "victim", so "victim" is tagback-protected and attempting
-        // to tag them back is what drives maybeWarnTagback() / the cooldown map under test.
+        // to tag them back is what drives maybeWarn() / the cooldown map under test.
         service.state().currentIt = it.getUniqueId();
         service.state().lastTagger = victim.getUniqueId();
         service.state().tagbackExpiryMillis = System.currentTimeMillis() + 60_000L;

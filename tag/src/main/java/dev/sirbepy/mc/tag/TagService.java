@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.tag;
 
+import dev.sirbepy.mc.core.Messages;
 import dev.sirbepy.mc.tag.afk.AfkTracker;
 import dev.sirbepy.mc.tag.board.LeaderboardEntityService;
 import dev.sirbepy.mc.tag.board.ScoreboardService;
@@ -10,10 +11,12 @@ import dev.sirbepy.mc.tag.logic.AfkEligibility;
 import dev.sirbepy.mc.tag.logic.PendingAction;
 import dev.sirbepy.mc.tag.logic.PendingActions;
 import dev.sirbepy.mc.tag.logic.TagbackRule;
+import dev.sirbepy.mc.tag.logic.TrackerTargets;
 import dev.sirbepy.mc.tag.prefix.PrefixService;
 import dev.sirbepy.mc.tag.state.PlayerStats;
 import dev.sirbepy.mc.tag.state.StateRepository;
 import dev.sirbepy.mc.tag.state.TagState;
+import dev.sirbepy.mc.tag.tracker.TrackerService;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -47,8 +50,9 @@ public final class TagService {
     private TagState state;
     private TagConfig config;
     private final AfkTracker afkTracker;
+    private final TrackerService tracker;
 
-    // Not persisted: just a spam guard for the tagback-blocked message.
+    // Not persisted: just a spam guard for the tagback-blocked and AFK-untaggable messages.
     private final Map<UUID, Long> tagbackMessageCooldown = new HashMap<>();
 
     public TagService(JavaPlugin plugin, File stateFile, HeadService heads, PrefixService prefix,
@@ -69,6 +73,7 @@ public final class TagService {
         this.leaderboard = leaderboard;
         this.config = config;
         this.afkTracker = afkTracker;
+        this.tracker = new TrackerService(plugin);
         this.state = loadOrNew();
     }
 
@@ -87,6 +92,10 @@ public final class TagService {
 
     public TagConfig config() {
         return config;
+    }
+
+    public TrackerService tracker() {
+        return tracker;
     }
 
     public void setConfig(TagConfig config) {
@@ -188,6 +197,7 @@ public final class TagService {
         Player online = Bukkit.getPlayer(uuid);
         if (online != null) {
             heads.revoke(online);
+            tracker.revoke(online);
             prefix.remove(uuid);
         } else {
             state.pending.put(uuid, PendingAction.CLEAR_IT);
@@ -196,6 +206,7 @@ public final class TagService {
 
     private void crownIt(Player player) {
         heads.grant(player, config.head);
+        syncTracker(player);
         prefix.apply(player.getUniqueId(), config.prefixTemplate, config.prefixPriority);
     }
 
@@ -212,8 +223,18 @@ public final class TagService {
             return TagResult.SELF;
         }
         long now = System.currentTimeMillis();
+        if (isAfk(victim.getUniqueId())) {
+            maybeWarn(it, now, () -> {
+                if (!config.afk.untaggableMessage.isBlank()) {
+                    it.sendMessage(Messages.mini().deserialize(config.afk.untaggableMessage,
+                            Placeholder.unparsed("player", victim.getName())));
+                }
+            });
+            return TagResult.AFK;
+        }
         if (TagbackRule.isProtected(victim.getUniqueId(), state.lastTagger, state.tagbackExpiryMillis, now)) {
-            maybeWarnTagback(it, victim, now);
+            maybeWarn(it, now, () -> config.logs.toPlayer(LogService.Event.TAGBACK_BLOCKED, it,
+                    Placeholder.unparsed("player", victim.getName())));
             return TagResult.TAGBACK_BLOCKED;
         }
 
@@ -221,6 +242,7 @@ public final class TagService {
         UUID newIt = victim.getUniqueId();
 
         heads.revoke(it);
+        tracker.revoke(it);
         prefix.remove(oldIt);
 
         state.currentIt = newIt;
@@ -244,18 +266,17 @@ public final class TagService {
         return TagResult.OK;
     }
 
-    private void maybeWarnTagback(Player it, Player victim, long now) {
+    private void maybeWarn(Player it, long now, Runnable send) {
         Long last = tagbackMessageCooldown.get(it.getUniqueId());
         long cooldownMillis = config.tagbackMessageCooldownSeconds * 1000L;
         if (last != null && now - last < cooldownMillis) {
             return;
         }
         tagbackMessageCooldown.put(it.getUniqueId(), now);
-        config.logs.toPlayer(LogService.Event.TAGBACK_BLOCKED, it,
-                Placeholder.unparsed("player", victim.getName()));
+        send.run();
     }
 
-    public enum TagResult { OK, NOT_IT, OPTED_OUT, SELF, TAGBACK_BLOCKED }
+    public enum TagResult { OK, NOT_IT, OPTED_OUT, SELF, AFK, TAGBACK_BLOCKED }
 
     // --- join/quit -----------------------------------------------------------------------
 
@@ -270,6 +291,7 @@ public final class TagService {
                 crownIt(player);
             } else {
                 heads.revoke(player);
+                tracker.revoke(player);
                 prefix.remove(player.getUniqueId());
             }
             save();
@@ -278,7 +300,10 @@ public final class TagService {
         if (isIt(player.getUniqueId())) {
             prefix.apply(player.getUniqueId(), config.prefixTemplate, config.prefixPriority);
             heads.ensureWorn(player, config.head);
+            syncTracker(player);
             config.logs.fire(LogService.Event.IT_JOINED, Placeholder.unparsed("it", player.getName()));
+        } else {
+            tracker.purge(player);
         }
     }
 
@@ -291,6 +316,58 @@ public final class TagService {
         // around would leak one UUID per player forever.
         tagbackMessageCooldown.remove(player.getUniqueId());
         afkTracker.remove(player.getUniqueId());
+        tracker.forget(player.getUniqueId());
+    }
+
+    // --- tracker compass -----------------------------------------------------------------------
+
+    /** Gives IT the tracker, or takes it away when `tracker.enabled` is off (e.g. after a reload). */
+    public void syncTracker(Player it) {
+        if (config.tracker.enabled) {
+            tracker.give(it, config.tracker);
+        } else {
+            tracker.revoke(it);
+        }
+    }
+
+    /** Re-gives a tracker lost to death or {@code /clear}, re-points it and refreshes the action bar. */
+    public void trackerTick() {
+        UUID itId = state.currentIt;
+        Player it = itId == null ? null : Bukkit.getPlayer(itId);
+        if (it == null || !config.tracker.enabled) {
+            return;
+        }
+        tracker.give(it, config.tracker);
+        tracker.update(it, trackerCandidates(it), config.tracker);
+    }
+
+    public void cycleTracker(Player player) {
+        if (!isIt(player.getUniqueId()) || !config.tracker.enabled) {
+            return;
+        }
+        List<TrackerTargets.Candidate> trackable = trackerCandidates(player);
+        if (tracker.cycle(player, trackable, System.currentTimeMillis())) {
+            tracker.update(player, trackable, config.tracker);
+        }
+    }
+
+    private List<TrackerTargets.Candidate> trackerCandidates(Player it) {
+        Location here = it.getLocation();
+        return TrackerTargets.trackable(Bukkit.getOnlinePlayers().stream()
+                .filter(p -> !p.getUniqueId().equals(it.getUniqueId()))
+                // Vanished players (Essentials /vanish hides them from IT) must not leak through the tracker.
+                .filter(it::canSee)
+                .map(p -> {
+                    boolean sameWorld = p.getWorld().equals(it.getWorld());
+                    return new TrackerTargets.Candidate(p.getUniqueId(), p.getName(), sameWorld,
+                            sameWorld ? p.getLocation().distance(here) : 0.0, isAfk(p.getUniqueId()),
+                            isOptedOut(p.getUniqueId()), playable(p));
+                })
+                .toList());
+    }
+
+    private static boolean playable(Player player) {
+        return player.getGameMode() == GameMode.SURVIVAL || player.getGameMode() == GameMode.ADVENTURE;
     }
 
     // --- AFK -----------------------------------------------------------------------------------
@@ -346,8 +423,7 @@ public final class TagService {
         List<AfkEligibility.Candidate> candidates = Bukkit.getOnlinePlayers().stream()
                 .filter(p -> !p.getUniqueId().equals(it.getUniqueId()))
                 .map(p -> new AfkEligibility.Candidate(p.getUniqueId(), afkTracker.isAfk(p.getUniqueId()),
-                        isOptedOut(p.getUniqueId()),
-                        p.getGameMode() == GameMode.SURVIVAL || p.getGameMode() == GameMode.ADVENTURE))
+                        isOptedOut(p.getUniqueId()), playable(p)))
                 .toList();
         List<UUID> eligible = AfkEligibility.eligible(candidates, previous);
         if (eligible.isEmpty()) {
