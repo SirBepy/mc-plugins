@@ -23,7 +23,7 @@ test('every fill stays under the 32768-block command limit', () => {
 
 test('every [Sell] sign uses the Essentials success format and a 4-line layout', () => {
   const signs = lines('attach').filter((l) => l.includes('messages:[{text:"[Sell]"'));
-  assert.equal(signs.length, 38); // Joe's 2026-10-05 price table
+  assert.equal(signs.length, 33); // Joe's 2026-10-05 price table, after the farm rebalance
   for (const l of signs) {
     assert.match(l, /messages:\[\{text:"\[Sell\]",color:"dark_blue"\},"\d+","[a-z_]+","\$[\d.]+"\]/, l);
   }

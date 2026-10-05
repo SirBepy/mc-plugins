@@ -180,7 +180,10 @@ function sign(block, lines) {
 
 // ---- stalls ---------------------------------------------------------------------------------
 // [Sell] lines follow Essentials' sell sign: [Sell] / amount / item / price for that amount.
-// Prices from Joe's 2026-10-05 table; amount 64 except stack-of-16 and rare items.
+// Prices from Joe's 2026-10-05 table, cut the same day for automatic farms: items an AFK farm
+// produces by the thousand per hour (ender pearls, gold, rotten flesh, bamboo, cactus) aren't
+// bought at all, and the rest are priced so a farm earns about what an hour of hand-gathering does.
+// Amount 64 except stack-of-16 and rare items.
 // Line 1 must match Essentials' signFormatSuccess (<dark_blue>[Sell], from its messages.properties):
 // a player-written sign gets recoloured on placement, a command-placed one has to arrive that way.
 const sell = (amount, item, each) => [{ text: '[Sell]', color: 'dark_blue' }, String(amount), item, `$${+(amount * each).toFixed(2)}`];
@@ -189,9 +192,8 @@ const sell = (amount, item, each) => [{ text: '[Sell]', color: 'dark_blue' }, St
 const STALLS = [
   {
     side: 'north', a0: -8, name: 'Farmer', wool: 'yellow',
-    signs: [sell(64, 'wheat', 0.1), sell(64, 'carrot', 0.1), sell(64, 'potato', 0.1), sell(64, 'beetroot', 0.1),
-      sell(64, 'pumpkin', 0.5), sell(64, 'sugar_cane', 0.05), sell(64, 'cactus', 0.05), sell(64, 'bamboo', 0.05),
-      sell(64, 'melon_slice', 0.05)],
+    signs: [sell(64, 'wheat', 0.05), sell(64, 'carrot', 0.05), sell(64, 'potato', 0.05), sell(64, 'beetroot', 0.05),
+      sell(64, 'pumpkin', 0.1), sell(64, 'sugar_cane', 0.02), sell(64, 'melon_slice', 0.02)],
     props: [['hay_block[axis=y]', -1, 1], ['hay_block[axis=AXIS]', -1, 2], ['composter', 5, 1], ['pumpkin', 5, 2],
       ['carved_pumpkin[facing=INWARD]', 5, 2, 1]],
   },
@@ -204,29 +206,28 @@ const STALLS = [
   },
   {
     side: 'east', a0: -8, name: 'Fishmonger', wool: 'light_blue',
-    signs: [sell(64, 'cod', 0.75), sell(64, 'salmon', 0.75), sell(16, 'pufferfish', 2), sell(16, 'tropical_fish', 2),
-      sell(64, 'ink_sac', 1)],
+    signs: [sell(64, 'cod', 0.25), sell(64, 'salmon', 0.25), sell(16, 'pufferfish', 0.5), sell(16, 'tropical_fish', 0.5),
+      sell(64, 'ink_sac', 0.1)],
     props: [['barrel[facing=up]', -1, 1], ['barrel[facing=up]', -1, 2], ['water_cauldron[level=3]', 5, 1],
       ['barrel[facing=up]', 5, 2], ['dried_kelp_block', -1, 1, 1]],
   },
   {
     side: 'east', a0: 4, name: 'Smith', wool: 'gray',
-    signs: [sell(64, 'iron_ingot', 1), sell(64, 'gold_ingot', 2)],
+    signs: [sell(64, 'iron_ingot', 0.25)],
     props: [['blast_furnace[facing=INWARD]', -1, 1], ['smoker[facing=INWARD]', -1, 2], ['anvil[facing=AXISFACE]', 5, 1],
       ['lantern[hanging=false]', -1, 1, 1]],
   },
   {
     side: 'south', a0: -8, name: 'Mob drops', wool: 'green',
-    signs: [sell(64, 'rotten_flesh', 0.25), sell(64, 'bone', 0.25), sell(64, 'string', 0.25), sell(64, 'feather', 0.25),
-      sell(64, 'leather', 1), sell(64, 'rabbit_hide', 1), sell(64, 'gunpowder', 1.5), sell(64, 'spider_eye', 1.5),
-      sell(64, 'slime_ball', 1.5)],
+    signs: [sell(64, 'bone', 0.05), sell(64, 'string', 0.05), sell(64, 'feather', 0.05), sell(64, 'leather', 0.5),
+      sell(64, 'rabbit_hide', 0.5), sell(64, 'gunpowder', 0.1), sell(64, 'spider_eye', 0.25), sell(64, 'slime_ball', 0.25)],
     props: [['bone_block[axis=y]', -1, 1], ['bone_block[axis=AXIS]', -1, 2], ['skeleton_skull[rotation=0]', -1, 1, 1],
       ['barrel[facing=up]', 5, 1]],
   },
   {
     side: 'south', a0: 4, name: 'Rare goods', wool: 'purple',
     // 'membrane' is Essentials' alias for phantom_membrane, whose 16 characters overflow a sign line.
-    signs: [sell(16, 'ender_pearl', 8), sell(16, 'blaze_rod', 10), sell(16, 'membrane', 5), sell(16, 'ghast_tear', 25)],
+    signs: [sell(16, 'blaze_rod', 1), sell(16, 'membrane', 2), sell(16, 'ghast_tear', 10)],
     props: [['crying_obsidian', -1, 1], ['amethyst_block', -1, 2], ['purple_candle[candles=3,lit=true]', -1, 1, 1],
       ['obsidian', 5, 1], ['end_rod[facing=up]', 5, 1, 1]],
   },

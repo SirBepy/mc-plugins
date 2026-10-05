@@ -123,3 +123,8 @@ read back from the region file matched the generator's model. The [Sell] signs' 
 `<dark_blue>[Sell]`, Essentials' `signFormatSuccess`, since command-placed signs skip Essentials'
 own recolouring. That was not enough: on live a player reported (2026-10-05) that clicking them
 does nothing, so the [Sell] signs need writing by hand in-game until the cause is found.
+
+To put a price change on live without rebuilding, `data merge block <x y z> {front_text:{messages:[...]}}`
+each changed sign with its line from the regenerated `attach.mcfunction`, and `setblock <x y z> air`
+any slot the new table no longer fills. That keeps the existing sign blocks in place; the
+2026-10-05 farm rebalance went live this way.
