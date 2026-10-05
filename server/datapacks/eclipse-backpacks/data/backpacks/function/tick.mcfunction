@@ -1,3 +1,11 @@
+# Mirror the menu/timer tags into scores for the tick advancements: an nbt={Tags:[...]} predicate
+# serializes the whole player (backpack contents included) every tick, a score check is free.
+# Runs before players tick, so the advancements always see this tick's tags:
+scoreboard players set @a[tag=backpacks.backpack_menu_summoned] backpacks.summoned 1
+scoreboard players set @a[tag=!backpacks.backpack_menu_summoned] backpacks.summoned 0
+scoreboard players set @a[tag=backpacks.give_back_timer] backpacks.give_back 1
+scoreboard players set @a[tag=!backpacks.give_back_timer] backpacks.give_back 0
+
 # Set up the model for non-invisible minecarts:
 execute as @e[type=#backpacks:minecarts,tag=!backpacks.invisible_minecart,tag=!backpacks.not_this_minecart] run function backpacks:minecarts/invisible_minecarts
 execute as @e[type=#backpacks:custom_minecarts,tag=!backpacks.invisible_minecart,tag=!backpacks.not_this_minecart] at @s run function backpacks:minecarts/invisible_custom_minecarts
@@ -16,12 +24,13 @@ kill @e[tag=backpacks.custom_minecart_mounted,predicate=!backpacks:has_vehicle]
 execute as @e[tag=backpacks.invisible_custom_minecart] on passengers unless data entity @s {item:{components:{"minecraft:item_model":"invminecarts:minecart"}}} run data modify entity @s item.components."minecraft:item_model" set value "invminecarts:minecart"
 
 # Account for droppped items in menus:
-execute as @e[type=item,nbt={Item:{components:{"minecraft:custom_data":{menu_backpack:{}}}}}] at @s run function backpacks:bp/container/interaction/dropped/main with entity @s Item.components."minecraft:custom_data".menu_backpack
+# (item checks use `if items`, not nbt=, which would serialize every dropped item each tick)
+execute as @e[type=item] if items entity @s contents *[custom_data~{menu_backpack:{}}] at @s run function backpacks:bp/container/interaction/dropped/main with entity @s Item.components."minecraft:custom_data".menu_backpack
 
 # Upgrade backpacks if thrown (using advancements to check for the recipe is too fast):
-execute as @e[type=item,nbt={Item:{id:"minecraft:chain_command_block",components:{"minecraft:custom_data":{backpacks:{real_backpack:1b,tier:0}}}}}] run function backpacks:bp/upgrade/to_2/item
-execute as @e[type=item,nbt={Item:{id:"minecraft:repeating_command_block",components:{"minecraft:custom_data":{backpacks:{real_backpack:1b,tier:1}}}}}] run function backpacks:bp/upgrade/to_3/item
-execute as @e[type=item,nbt={Item:{id:"minecraft:structure_block",components:{"minecraft:custom_data":{backpacks:{real_backpack:1b,tier:2}}}}}] run function backpacks:bp/upgrade/to_4/item
+execute as @e[type=item] if items entity @s contents minecraft:chain_command_block[custom_data~{backpacks:{real_backpack:1b,tier:0}}] run function backpacks:bp/upgrade/to_2/item
+execute as @e[type=item] if items entity @s contents minecraft:repeating_command_block[custom_data~{backpacks:{real_backpack:1b,tier:1}}] run function backpacks:bp/upgrade/to_3/item
+execute as @e[type=item] if items entity @s contents minecraft:structure_block[custom_data~{backpacks:{real_backpack:1b,tier:2}}] run function backpacks:bp/upgrade/to_4/item
 
 # On join:
 scoreboard players add @a[scores={backpacks.join=1..}] backpacks.join 1

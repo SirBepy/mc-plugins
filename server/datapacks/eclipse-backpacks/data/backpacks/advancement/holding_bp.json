@@ -5,10 +5,10 @@
       "conditions": {
         "player": {
           "entity": "this",
-          "predicate": {
-            "nbt": "{Tags:[backpacks.backpack_menu_summoned]}"
+          "scores": {
+            "backpacks.summoned": 1
           },
-          "type": "minecraft:entity_properties"
+          "type": "minecraft:entity_scores"
         }
       }
     }

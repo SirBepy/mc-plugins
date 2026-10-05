@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Rcon } from './lib.mjs';
+import { Rcon, sleep } from './lib.mjs';
 
 // One-shot post-boot sanity check for the real server assembly (server/local), run manually after
 // `:server:assembleLocalServer` + a boot through the supervisor. Not part of e2e/run-all.mjs: this
@@ -150,6 +150,47 @@ report(
   enabledCount >= expectedPacks.length + 1,
   datapackList,
 );
+
+// Per-tick NBT reads serialize the whole entity (a player's full inventory, backpack contents
+// included) and were ~65% of the live server's tick on 2026-10-05. Tick-trigger advancements in
+// our folder datapacks must not use nbt predicates, and eclipse-backpacks' tick must not select
+// dropped items by nbt.
+const packsDir = path.join(localDir, 'world/datapacks');
+const nbtTickAdvancements = [];
+for (const pack of fs.readdirSync(packsDir, { withFileTypes: true }).filter((d) => d.isDirectory())) {
+  const files = fs.readdirSync(path.join(packsDir, pack.name), { recursive: true })
+    .filter((f) => /[\\/]advancements?[\\/].*\.json$/.test(f));
+  for (const file of files) {
+    const text = fs.readFileSync(path.join(packsDir, pack.name, file), 'utf8');
+    if (text.includes('"minecraft:tick"') && /"(minecraft:)?nbt"/.test(text)) nbtTickAdvancements.push(`${pack.name}/${file}`);
+  }
+}
+report('no tick-trigger advancement checks player NBT', nbtTickAdvancements.length === 0, nbtTickAdvancements.join(', '));
+const backpacksTick = fs.readFileSync(path.join(packsDir, 'eclipse-backpacks/data/backpacks/function/tick.mcfunction'), 'utf8');
+report('eclipse-backpacks tick selects dropped items without nbt=', !/@e\[type=item,[^\]]*nbt=/.test(backpacksTick));
+
+// `scoreboard objectives list` is truncated past ~200 objectives, so probe each one directly.
+for (const objective of ['backpacks.summoned', 'backpacks.give_back']) {
+  const res = await rcon.command(`scoreboard players set #check ${objective} 0`);
+  report(`eclipse-backpacks objective ${objective} exists`, res.startsWith('Set '), res);
+  await rcon.command(`scoreboard players reset #check ${objective}`);
+}
+
+// A thrown tier-0 small backpack (chain command block) upgrades to tier 1; a repeating command block
+// at tier 0 matches no upgrade rule and must stay untouched.
+const bpItem = (id, tier, tag) => `summon item 8 200 8 {NoGravity:1b,PickupDelay:32767,Tags:["${tag}"],Item:{id:"minecraft:${id}",count:1,components:{"minecraft:custom_data":{backpacks:{real_backpack:1b,tier:${tier},contents:{slots:3}}}}}}`;
+const tierOf = (tag) => rcon.command(`data get entity @n[tag=${tag}] Item.components."minecraft:custom_data".backpacks.tier`);
+await rcon.command('forceload add 0 0');
+await rcon.command(bpItem('chain_command_block', 0, 'check.bp_upgrade'));
+await rcon.command(bpItem('repeating_command_block', 0, 'check.bp_control'));
+await sleep(1000);
+const upgradedTier = await tierOf('check.bp_upgrade');
+const controlTier = await tierOf('check.bp_control');
+report('thrown tier-0 backpack upgrades to tier 1', /: 1$/.test(upgradedTier), upgradedTier);
+report('non-matching thrown item is left alone', /: 0$/.test(controlTier), controlTier);
+await rcon.command('kill @e[tag=check.bp_upgrade]');
+await rcon.command('kill @e[tag=check.bp_control]');
+await rcon.command('forceload remove 0 0');
 
 // Chunky: confirm the dimension names it actually accepts (a bogus name gets the generic usage
 // string back instead of "[Chunky] World changed to ...", so that's the accept/reject signal).

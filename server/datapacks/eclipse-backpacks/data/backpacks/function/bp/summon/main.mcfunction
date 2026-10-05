@@ -9,6 +9,7 @@ function backpacks:bp/summon/summon
 
 # Tags:
 tag @s add backpacks.backpack_menu_summoned
+scoreboard players set @s backpacks.summoned 1
 
 # Reset advancement:
 advancement revoke @s only backpacks:summon_bp

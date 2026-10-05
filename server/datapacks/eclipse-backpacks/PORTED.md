@@ -135,6 +135,30 @@ movement packets on 26.3), which is why the bot e2e suite runs against a separat
 as a follow-up todo for the orchestrating session. Verified instead via RCON-only checks (above):
 the `DisplayState` fix itself, and an idle multi-minute error-free run.
 
+## Performance fix: no per-tick NBT reads (2026-10-05)
+
+A spark profile of the live server (6 players) showed this pack's per-tick work at ~27% of the
+main thread: every `nbt=` / `"nbt"` check serializes the whole entity first, and a player carrying
+backpacks has very large NBT. Behavior is unchanged; only how the same conditions are tested:
+
+- `advancement/holding_bp.json`, `not_holding_bp.json`, `summon_bp.json`: the
+  `{Tags:[backpacks.backpack_menu_summoned]}` and `{Tags:[backpacks.give_back_timer]}` nbt
+  predicates became `minecraft:entity_scores` checks on two new dummy objectives,
+  `backpacks.summoned` and `backpacks.give_back` (1 = tag present). A missing score fails the
+  check, which matches "tag absent".
+- `function/tick.mcfunction`: mirrors both tags into those scores for every player at the start of
+  each tick (functions run before players tick, so the advancements see the current tags), and the
+  four dropped-item scans (`menu_backpack` items and the three thrown-upgrade rules) use
+  `if items entity @s contents <item>[custom_data~{...}]` instead of `@e[type=item,nbt=...]`.
+  `custom_data~` is the same partial NBT match the selector did.
+- `bp/summon/main`, `bp/control/kill_continue`, `bp/join/main`, `bp/control/check_inside/cancel`,
+  `bp/control/crouch_timer`: set the matching score right where the tag is added/removed, so a
+  later check in the same tick sees the change too.
+- `load.mcfunction` / `cmd/uninstall_confirmed.mcfunction`: create / remove the two objectives.
+
+Guarded by `e2e/server-check.mjs` (no tick-trigger advancement with an nbt predicate, no
+`nbt=` item selector in this tick function, thrown-upgrade still works).
+
 ## Verified
 
 - `:server:assembleLocalServer` copies this folder into `world/datapacks/eclipse-backpacks`

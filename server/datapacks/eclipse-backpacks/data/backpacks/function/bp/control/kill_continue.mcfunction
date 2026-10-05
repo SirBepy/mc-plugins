@@ -12,4 +12,5 @@ team leave @s
 tag @s remove backpacks.offhand
 tag @s remove backpacks.mainhand
 tag @s remove backpacks.backpack_menu_summoned
+scoreboard players set @s backpacks.summoned 0
 advancement revoke @s only backpacks:not_holding_bp
