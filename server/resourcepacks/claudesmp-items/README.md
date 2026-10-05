@@ -11,14 +11,19 @@ does the same for netherite swords.
 
 ## Looks
 
-- `pollos_gun` (crossbow): "Los Pollos Hermanos Certified", a gold pistol. One-off for
-  Archontopouloi, approved by Joe on 2026-10-05 with vanilla crossbow stats. The barrel points where
-  the bolt points in `crossbow_arrow.png` and the model inherits `minecraft:item/crossbow`'s display,
-  so it aims like a crossbow. It has one frame, so it looks the same while loading and when charged.
-  Given from the console:
+- `pollos_gun` (crossbow): "Los Pollos Hermanos Certified", a gold pistol drawn side-on, barrel to
+  the right. One-off for Archontopouloi, approved by Joe on 2026-10-05 with vanilla crossbow stats.
+  It has four looks, picked by the crossbow's state: `pollos_gun` (unloaded), `pollos_gun_loading`
+  (while drawing), and `pollos_gun_arrow` / `pollos_gun_rocket` (loaded, an arrowhead or a firework
+  tip poking out of the barrel; both inherit `pollos_gun_charged`'s display). Each state puts the
+  arm in a different pose (26.3 `AvatarRenderer.getArmPose`: unloaded `ITEM`, drawing
+  `CROSSBOW_CHARGE`, loaded `CROSSBOW_HOLD`, and first person adds its own crossbow-only offsets),
+  so each has its own display, solved from the 26.3 hand transform chain so the gun stays upright
+  with the barrel forward and the grip in the fist in third person, and sits in the same spot on
+  screen in first person in every state. Given from the console (Essentials owns `/give`):
 
   ```
-  give Archontopouloi crossbow[custom_name={text:"Los Pollos Hermanos Certified",color:"gold",italic:false},custom_model_data={strings:["pollos_gun"]}]
+  minecraft:give Archontopouloi crossbow[custom_name={text:"Los Pollos Hermanos Certified",color:"gold",italic:false},custom_model_data={strings:["pollos_gun"]}]
   ```
 
 - `katana` (netherite sword): "Katana", a thin steel blade with a gold guard and red-black wrapped

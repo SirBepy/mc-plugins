@@ -1,0 +1,6 @@
+{
+  "parent": "claudesmp:item/pollos_gun_charged",
+  "textures": {
+    "layer0": "claudesmp:item/pollos_gun_rocket"
+  }
+}
