@@ -188,8 +188,9 @@ const upgradedTier = await tierOf('check.bp_upgrade');
 const controlTier = await tierOf('check.bp_control');
 report('thrown tier-0 backpack upgrades to tier 1', /: 1$/.test(upgradedTier), upgradedTier);
 report('non-matching thrown item is left alone', /: 0$/.test(controlTier), controlTier);
-await rcon.command('kill @e[tag=check.bp_upgrade]');
-await rcon.command('kill @e[tag=check.bp_control]');
+// minecraft:kill, since Essentials' /kill only targets players.
+await rcon.command('minecraft:kill @e[tag=check.bp_upgrade]');
+await rcon.command('minecraft:kill @e[tag=check.bp_control]');
 await rcon.command('forceload remove 0 0');
 
 // Chunky: confirm the dimension names it actually accepts (a bogus name gets the generic usage
