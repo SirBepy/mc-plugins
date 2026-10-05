@@ -121,8 +121,8 @@ rerun `node server/spawn-market/generate.mjs`;
 build only fits that spot. Verified on server/local (live spawn region copied in): all 3812 blocks
 read back from the region file matched the generator's model.
 
-The datapack places no [Sell] signs. The Market plugin (`market/`) owns them: every day at midnight
-(Europe/Zagreb) it picks 2-3 items from each selling stall's pool, rolls each price up to 20% either
+The datapack places no [Sell] signs. The Market plugin (`market/`) owns them: every in-game day, at
+sunrise, it picks 2-3 items from each selling stall's pool, rolls each price up to 20% either
 side of its base, and writes them onto the stall's
 three eye-level sign spots, from `market/src/main/resources/stalls.yml`, which the generator writes
 too. So a pool or price change needs the generator run and a new Market jar. The signs' first line

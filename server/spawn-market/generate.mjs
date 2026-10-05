@@ -180,7 +180,7 @@ function sign(block, lines, { color, back = false } = {}) {
 }
 
 // ---- stalls ---------------------------------------------------------------------------------
-// The selling stalls' [Sell] signs belong to the Market plugin (market/), which every day picks a
+// The selling stalls' [Sell] signs belong to the Market plugin (market/), which every in-game day picks a
 // few of each stall's `buys` and writes them onto the stall's sign spots. This script only says
 // where those spots are and what each stall might buy, in market/src/main/resources/stalls.yml.
 // Prices from Joe's 2026-10-05 table: AFK-farmable items are cheap, items only gathered by hand

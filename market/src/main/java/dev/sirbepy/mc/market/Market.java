@@ -9,8 +9,6 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -23,9 +21,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Today's buyers per stall, each at a price rolled around its base. Picks and prices are random and
- * saved to {@code state.yml}, so a restart keeps the day's market and nothing about tomorrow's can be
- * worked out in advance.
+ * The current market day's buyers per stall, each at a price rolled around its base. A market day is
+ * whatever the {@code period} supplier says (an in-game day by default). Picks and prices are random
+ * and saved to {@code state.yml}, so a restart keeps the day's market and nothing about the next one
+ * can be worked out in advance.
  */
 public final class Market {
 
@@ -33,19 +32,19 @@ public final class Market {
 
     private final MarketLayout layout;
     private final Supplier<MarketConfig> config;
-    private final Supplier<LocalDate> today;
+    private final Supplier<String> period;
     private final Random random;
     private final File stateFile;
     private final Logger logger;
 
-    private LocalDate day;
+    private String day;
     private Map<String, List<Offer>> picks = Map.of();
 
-    public Market(MarketLayout layout, Supplier<MarketConfig> config, Supplier<LocalDate> today, Random random,
+    public Market(MarketLayout layout, Supplier<MarketConfig> config, Supplier<String> period, Random random,
                   File stateFile, Logger logger) {
         this.layout = layout;
         this.config = config;
-        this.today = today;
+        this.period = period;
         this.random = random;
         this.stateFile = stateFile;
         this.logger = logger;
@@ -54,7 +53,7 @@ public final class Market {
 
     /** Picks new buyers if the day has changed since the last pick. Returns whether it did. */
     public boolean refresh() {
-        if (today.get().equals(day)) {
+        if (period.get().equals(day)) {
             return false;
         }
         rotate();
@@ -75,7 +74,7 @@ public final class Market {
             chosen.sort(Comparator.comparingInt(stall.buys()::indexOf));
             next.put(stall.id(), chosen.stream().map(o -> roll(o, cfg.priceSpread())).toList());
         }
-        day = today.get();
+        day = period.get();
         picks = next;
         save();
     }
@@ -98,7 +97,7 @@ public final class Market {
         return picks.getOrDefault(stallId, List.of());
     }
 
-    public LocalDate day() {
+    public String day() {
         return day;
     }
 
@@ -110,13 +109,7 @@ public final class Market {
             logger.log(Level.WARNING, "Could not read " + stateFile + ", picking new buyers", e);
             return;
         }
-        try {
-            String date = yaml.getString("day");
-            day = date == null ? null : LocalDate.parse(date);
-        } catch (DateTimeParseException e) {
-            logger.warning("Bad day in " + stateFile + ", picking new buyers");
-            return;
-        }
+        day = yaml.getString("day");
         Map<String, List<Offer>> loaded = new LinkedHashMap<>();
         ConfigurationSection section = yaml.getConfigurationSection("buying");
         for (Stall stall : layout.stalls()) {
@@ -141,7 +134,7 @@ public final class Market {
 
     private void save() {
         YamlConfiguration yaml = new YamlConfiguration();
-        yaml.set("day", day.toString());
+        yaml.set("day", day);
         for (Map.Entry<String, List<Offer>> entry : picks.entrySet()) {
             for (Offer offer : entry.getValue()) {
                 yaml.set("buying." + entry.getKey() + "." + offer.item(), offer.price().toPlainString());
@@ -150,7 +143,7 @@ public final class Market {
         try {
             YamlFiles.saveAtomically(yaml, stateFile);
         } catch (IOException e) {
-            logger.log(Level.WARNING, "Could not save " + stateFile + "; a restart today would pick again", e);
+            logger.log(Level.WARNING, "Could not save " + stateFile + "; a restart would pick again", e);
         }
     }
 }

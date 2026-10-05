@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -44,7 +44,7 @@ class MarketTest {
     File dir;
 
     private ServerMock server;
-    private final AtomicReference<LocalDate> today = new AtomicReference<>(LocalDate.of(2026, 10, 5));
+    private final AtomicReference<String> period = new AtomicReference<>("minecraft-day-100");
     private MarketLayout layout;
     private MarketConfig config;
 
@@ -62,7 +62,7 @@ class MarketTest {
     }
 
     private Market market(long seed) {
-        return new Market(layout, () -> config, today::get, new Random(seed), new File(dir, "state.yml"), LOG);
+        return new Market(layout, () -> config, period::get, new Random(seed), new File(dir, "state.yml"), LOG);
     }
 
     @Test
@@ -124,8 +124,8 @@ class MarketTest {
         market.refresh();
         var first = layout.stalls().stream().map(s -> market.buying(s.id())).toList();
         boolean changed = false;
-        for (int day = 1; day <= 10 && !changed; day++) {
-            today.set(today.get().plusDays(1));
+        for (int day = 101; day <= 110 && !changed; day++) {
+            period.set("minecraft-day-" + day);
             market.refresh();
             changed = !first.equals(layout.stalls().stream().map(s -> market.buying(s.id())).toList());
         }
@@ -137,9 +137,9 @@ class MarketTest {
         Market market = market(7);
         assertTrue(market.refresh(), "first start has no picks yet");
         assertFalse(market.refresh());
-        today.set(today.get().plusDays(1));
+        period.set("minecraft-day-101");
         assertTrue(market.refresh());
-        assertEquals(today.get(), market.day());
+        assertEquals("minecraft-day-101", market.day());
         assertFalse(market.refresh());
     }
 
@@ -158,7 +158,7 @@ class MarketTest {
     @Test
     void itemDroppedFromThePoolDisappearsFromSavedPicks() throws Exception {
         YamlConfiguration state = new YamlConfiguration();
-        state.set("day", today.get().toString());
+        state.set("day", period.get());
         state.set("buying.farmer.wheat", "2.91");
         state.set("buying.farmer.no_longer_bought", "5");
         state.save(new File(dir, "state.yml"));
@@ -166,6 +166,25 @@ class MarketTest {
         Market market = market(0);
         assertFalse(market.refresh());
         assertEquals(List.of(new Offer("wheat", 64, new BigDecimal("2.91"))), market.buying("farmer"));
+    }
+
+    @Test
+    void marketDayIsTheInGameDayByDefault() {
+        Instant now = Instant.parse("2026-10-05T21:30:00Z");
+        assertEquals("minecraft-day-0", config.period(0, now));
+        assertEquals("minecraft-day-0", config.period(23_999, now), "still the same day just before sunrise");
+        assertEquals("minecraft-day-1", config.period(24_000, now), "sunrise starts a new market day");
+        assertEquals("minecraft-day-42", config.period(42 * 24_000L + 13_000, now), "night belongs to its day");
+    }
+
+    @Test
+    void realDayModeUsesTheCalendarDateInTheZone() {
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("rotate-on", "real-day");
+        yaml.set("zone", "Europe/Zagreb");
+        MarketConfig real = new MarketConfig(yaml);
+        assertEquals("2026-10-05", real.period(0, Instant.parse("2026-10-05T21:30:00Z")));
+        assertEquals("2026-10-06", real.period(0, Instant.parse("2026-10-05T22:30:00Z")), "past midnight in Zagreb (UTC+2)");
     }
 
     @Test

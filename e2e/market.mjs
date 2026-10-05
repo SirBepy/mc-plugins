@@ -1,9 +1,9 @@
 import { Vec3 } from 'vec3';
-import { Rcon, assert, createBot, quit, sleep, teleport, waitFor } from './lib.mjs';
+import { Rcon, assert, createBot, quit, sleep, teleport, waitFor, waitForLine } from './lib.mjs';
 
 // Market: the plugin writes a dyed, glowing Essentials [Sell] sign on the Farmer stall's first spot
-// (coordinates from market/src/main/resources/stalls.yml), and a bot selling to it gets paid the
-// sign's price. The e2e world has no spawn market, so a floor and a back wall are built around the spot.
+// (coordinates from market/src/main/resources/stalls.yml), a bot selling to it gets paid the
+// sign's price, and the next in-game day rotates the market. The e2e world has no spawn market, so a floor and a back wall are built around the spot.
 const SIGN = { x: 420, y: 116, z: -882 };
 const SELLER = 'MarketSeller';
 
@@ -77,6 +77,16 @@ try {
     assert(Math.abs(paid - price) < 0.001, `paid the sign's $${price} (got $${paid})`);
     await sleep(300);
     assert(!bot.inventory.items().some((i) => i.name === item), `the ${amount} ${item} were taken`);
+  });
+
+  await step('the next in-game sunrise brings new buyers and tells players', async () => {
+    const [bot] = bots;
+    const since = bot.lines.length;
+    await rcon.command('minecraft:time add 24000');
+    // The plugin checks every 10 s.
+    // Any rotation announcement: a run dir keeps whatever Market config.yml it first got.
+    await waitForLine(bot, /spawn market/i, 15_000, since);
+    assert((await signData('color')) === '"yellow"', 'the stall spot still holds a dyed sign after the rotation');
   });
 
   console.log(`\nMarket e2e: ${results.length} passed`);

@@ -9,14 +9,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.InputStream;
 import java.security.SecureRandom;
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class MarketPlugin extends JavaPlugin {
 
-    // Once a minute is plenty to notice midnight, and survives the server clock jumping.
-    private static final long CHECK_TICKS = 20L * 60;
+    // Every 10 s: an in-game day is 20 minutes, so the signs change within moments of sunrise.
+    private static final long CHECK_TICKS = 20L * 10;
 
     private final AtomicReference<MarketConfig> config = new AtomicReference<>();
     private Market market;
@@ -32,7 +32,7 @@ public final class MarketPlugin extends JavaPlugin {
         } catch (Exception e) {
             throw new IllegalStateException("Could not load stalls.yml", e);
         }
-        market = new Market(layout, config::get, () -> LocalDate.now(config.get().zone()), new SecureRandom(),
+        market = new Market(layout, config::get, this::period, new SecureRandom(),
                 new File(getDataFolder(), "state.yml"), getLogger());
 
         // Signs are rewritten on every start too, in case the spawn-market datapack rebuilt the stalls.
@@ -57,6 +57,12 @@ public final class MarketPlugin extends JavaPlugin {
                                     return Command.SINGLE_SUCCESS;
                                 }))
                         .build(), "Spawn market admin"));
+    }
+
+    private String period() {
+        World world = getServer().getWorld(config.get().world());
+        // An unloaded world keeps the current market rather than rotating on a made-up time.
+        return world == null ? market.day() : config.get().period(world.getFullTime(), Instant.now());
     }
 
     private void applyIfWorldLoaded() {
