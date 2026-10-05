@@ -1,0 +1,6 @@
+{
+  "pollos_gun.shot": {
+    "subtitle": "subtitles.claudesmp.pollos_gun.shot",
+    "sounds": ["claudesmp:pollos_gun/shot"]
+  }
+}
