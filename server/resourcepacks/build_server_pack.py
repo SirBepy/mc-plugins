@@ -2,7 +2,7 @@
 
 Merges server/resourcepacks/eclipse-backpacks/ and client/resourcepack/rmf-26.3-fix/ (their only
 shared path is pack.mcmeta, replaced by PACK_META below) into
-server/resourcepacks/dist/LosPollos-server-pack-26.3.zip and prints its sha1.
+server/resourcepacks/dist/ClaudeSMP-server-pack-26.3.zip and prints its sha1.
 
 Every entry gets a fixed timestamp, so an unchanged source tree always rebuilds to the same sha1
 and server.properties' resource-pack-sha1 only has to change when the pack really changes.
@@ -24,7 +24,7 @@ SOURCES = [
     ROOT / "server" / "resourcepacks" / "eclipse-backpacks",
     ROOT / "client" / "resourcepack" / "rmf-26.3-fix",
 ]
-OUT = ROOT / "server" / "resourcepacks" / "dist" / "LosPollos-server-pack-26.3.zip"
+OUT = ROOT / "server" / "resourcepacks" / "dist" / "ClaudeSMP-server-pack-26.3.zip"
 SKIP = {"pack.mcmeta", "README.md", "PORTED.md"}
 FIXED_TIME = (1980, 1, 1, 0, 0, 0)
 
@@ -36,7 +36,7 @@ PACK_META = {
         "max_format": [100, 0],
         "pack_format": 97,
         "description": [
-            {"text": "Los Pollos MineHermanos ", "color": "gold", "italic": False},
+            {"text": "The Claude SMP ", "color": "gold", "italic": False},
             {"text": "- backpacks + food fixes", "color": "gray", "italic": False},
         ],
     }

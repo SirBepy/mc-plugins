@@ -38,7 +38,7 @@ runs 2.6.24). Pick ONE way to install it:
      food/dungeon textures from section 3)
      1. Install the Modrinth App (https://modrinth.com/app) or Prism Launcher
         (https://prismlauncher.org). Both are free.
-     2. Get the file "Los-Pollos-MineHermanos-26.3.mrpack" from Joe.
+     2. Get the file "Claude-SMP-26.3.mrpack" from Joe.
      3. Modrinth App: click "+" (Create instance) > "From file" > pick the .mrpack.
         Prism Launcher: Add Instance > Import > pick the .mrpack.
      4. Sign in with your Microsoft account in the launcher, then launch the new instance.

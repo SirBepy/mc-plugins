@@ -1,11 +1,11 @@
 # client/
 
 Everything a player needs to join the friends server. Hand players `SETUP.txt` (plain text, no
-markdown) and, for voice chat, `Los-Pollos-MineHermanos-26.3.mrpack`.
+markdown) and, for voice chat, `Claude-SMP-26.3.mrpack`.
 
 - `SETUP.txt`: joining, optional voice chat, datapack textures, optional shaders, dynamic
   lights, optional Sodium, Bedrock, troubleshooting.
-- `Los-Pollos-MineHermanos-26.3.mrpack`: Modrinth modpack (Modrinth App or Prism Launcher import).
+- `Claude-SMP-26.3.mrpack`: Modrinth modpack (Modrinth App or Prism Launcher import).
   Contains `modrinth.index.json` plus an `overrides/` folder (`config/iris.properties`,
   `config/inventoryprofilesnext/inventoryprofiles.json`,
   `resourcepacks/rmf-26.3-fix.zip` and `resourcepacks/Eclipse-Backpacks-textures-26.3.zip`); the launcher downloads the jars/shaderpack from Modrinth's

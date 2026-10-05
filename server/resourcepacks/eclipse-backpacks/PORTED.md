@@ -6,7 +6,7 @@ datapack in `server/datapacks/eclipse-backpacks/`.
 
 Served to players as half of the server's join resource pack, merged with
 `client/resourcepack/rmf-26.3-fix/` by `server/resourcepacks/build_server_pack.py` into
-`LosPollos-server-pack-26.3.zip`, hosted from the website repo (`sirbepys-minecraft-server`,
+`ClaudeSMP-server-pack-26.3.zip`, hosted from the website repo (`sirbepys-minecraft-server`,
 `site/downloads/`) because Modrinth only hosts the original. After a change: rerun that script,
 re-host the zip, then update `resource-pack-sha1` in `server/config/server.properties` and on the
 live server.

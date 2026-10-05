@@ -1,4 +1,4 @@
-"""Builds client/Los-Pollos-MineHermanos-26.3.mrpack from modrinth.index.json.
+"""Builds client/Claude-SMP-26.3.mrpack from modrinth.index.json.
 
 Downloads every pinned file first and checks its size, sha1 and sha512 against the index, so a
 pack never ships with a hash the Modrinth App or Prism would reject at import time.
@@ -24,7 +24,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 INDEX = HERE / "modrinth.index.json"
 OVERRIDES = HERE / "overrides"
-OUT = HERE.parent / "Los-Pollos-MineHermanos-26.3.mrpack"
+OUT = HERE.parent / "Claude-SMP-26.3.mrpack"
 # The backpack zip name matches the copy the server offers on join (resource-pack= in
 # server.properties), so a player who has both sees one recognisable name.
 RESOURCEPACKS = [

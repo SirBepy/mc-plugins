@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "1.8.0",
-  "name": "SirBepy Los Pollos MineHermanos (26.3)",
+  "versionId": "1.8.1",
+  "name": "The Claude SMP (26.3)",
   "summary": "Fabric 26.3 with Simple Voice Chat (proximity voice), Sodium + Lithium + FerriteCore + Entity Culling + ImmediatelyFast (FPS/memory), Continuity (connected textures), Iris + Complementary Reimagined (shaders, off by default), LambDynamicLights, Mod Menu, AppleSkin, Mouse Tweaks, Jade, Inventory Profiles Next (inventory auto-sort), Roughly Enough Items (recipe viewer), Controlify (controller support) and the textures for the server's More Foods, Dungeons and Taverns and Backpacks! datapacks.",
   "files": [
     {
