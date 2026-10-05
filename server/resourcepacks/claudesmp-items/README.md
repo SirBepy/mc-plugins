@@ -42,7 +42,11 @@ does the same for netherite swords.
 - `katana` (netherite sword): "Katana", a thin steel blade with a gold guard and red-black wrapped
   hilt. One-off for ImMijo's Japanese-style base, approved by Joe on 2026-10-05. Applied to ImMijo's
   own enchanted netherite sword instead of giving a new one, so it adds no gear to the economy. The
-  model inherits `minecraft:item/handheld` like every vanilla sword. Applied from the console
+  model inherits `minecraft:item/handheld` like every vanilla sword. The texture is 32x32 so the
+  blade could run longer (ImMijo asked, Joe approved, 2026-10-05) while the hilt keeps its first
+  16x16 pixels: handheld's in-hand scales are doubled so a pixel stays the size it was, the
+  translations keep the grip in the fist, and `gui`/`fixed` scale the sword's 22 px bounding box up
+  to fill the slot. Applied from the console
   (`hotbar.3` was the sword's slot, Slot 3b in `data get entity ImMijo Inventory`). It needs the
   `minecraft:` prefix because Essentials owns `/item`, and 26.3 inline modifiers take `type`, not
   `function`:

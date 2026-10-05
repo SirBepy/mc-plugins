@@ -120,6 +120,15 @@ class BuiltPackTest(unittest.TestCase):
     def test_katana_resolves_to_its_texture(self):
         self.assert_look_resolves("netherite_sword", "katana")
 
+    def test_katana_blade_is_longer_at_the_same_pixel_size(self):
+        model = self.json("assets/claudesmp/models/item/katana.json")
+        png = self.entries["assets/claudesmp/textures/item/katana.png"]
+        width = int.from_bytes(png[16:20], "big")
+        self.assertEqual(width, 32)
+        # Twice vanilla item/handheld's in-hand scale, so a 32 px texel is as big as a 16 px one.
+        self.assertEqual(model["display"]["thirdperson_righthand"]["scale"], [1.7, 1.7, 1.7])
+        self.assertEqual(model["display"]["firstperson_righthand"]["scale"], [1.36, 1.36, 1.36])
+
     def test_other_netherite_swords_stay_vanilla(self):
         sword = self.json("assets/minecraft/items/netherite_sword.json")["model"]
         self.assertEqual(sword["fallback"], VANILLA_NETHERITE_SWORD)
