@@ -1,16 +1,20 @@
 """Checks the built join pack: the Pollos gun and katana looks resolve to a model and texture inside
-the zip, and every other crossbow and netherite sword still uses the vanilla 26.3 definition.
+the zip, the gunshot Tweaks plays resolves to an .ogg inside it, and every other crossbow, netherite
+sword and vanilla sound still uses the vanilla 26.3 definition.
 
 Run from server/resourcepacks/: python -m unittest test_build_server_pack
 """
 
 import json
+import re
 import tempfile
 import unittest
 import zipfile
 from pathlib import Path
 
 import build_server_pack
+
+ROOT = build_server_pack.ROOT
 
 # The 26.3 client jar's own assets/minecraft/items/crossbow.json model.
 VANILLA_CROSSBOW = {
@@ -81,17 +85,33 @@ class BuiltPackTest(unittest.TestCase):
         gun = next(c for c in definition["cases"] if c["when"] == "pollos_gun")["model"]
         self.assertEqual(gun["property"], "minecraft:charge_type")
         states = {c["when"]: c["model"]["model"] for c in gun["cases"]}
-        states["loading"] = gun["fallback"]["on_true"]["model"]
-        states["unloaded"] = gun["fallback"]["on_false"]["model"]
-        self.assertEqual(set(states), {"arrow", "rocket", "loading", "unloaded"})
-        textures = {}
+        states["unloaded"] = gun["fallback"]["model"]
+        self.assertEqual(set(states), {"arrow", "rocket", "unloaded"})
+        textures, displays = {}, {}
         for state, ref in states.items():
             texture, display = self.resolved(ref)
             self.assertIn(asset(texture, "textures", "png"), self.entries, state)
             for context in ("thirdperson_righthand", "firstperson_righthand"):
                 self.assertIn(context, display, state)
-            textures[state] = texture
-        self.assertEqual(len({textures["arrow"], textures["rocket"], textures["unloaded"]}), 3)
+            textures[state], displays[state] = texture, display
+        self.assertEqual(len(set(textures.values())), 3)
+        # Unloaded lies flat like a vanilla crossbow; loaded is held upright.
+        self.assertEqual(displays["arrow"], displays["rocket"])
+        self.assertNotEqual(displays["unloaded"]["thirdperson_righthand"], displays["arrow"]["thirdperson_righthand"])
+
+    def test_pollos_gunshot_is_the_sound_tweaks_plays(self):
+        listener = (ROOT / "tweaks/src/main/java/dev/sirbepy/mc/tweaks/listener/PollosGunListener.java").read_text()
+        played = re.search(r'SHOT_SOUND = "([^"]+)"', listener).group(1)
+        namespace, event = played.split(":", 1)
+        sounds = self.json(f"assets/{namespace}/sounds.json")
+        for sound in sounds[event]["sounds"]:
+            self.assertIn(asset(sound, "sounds", "ogg"), self.entries)
+        subtitles = self.json(f"assets/{namespace}/lang/en_us.json")
+        self.assertIn(sounds[event]["subtitle"], subtitles)
+
+    def test_vanilla_sounds_are_untouched(self):
+        self.assertNotIn("assets/minecraft/sounds.json", self.entries)
+        self.assertFalse(any(name.startswith("assets/minecraft/sounds/") for name in self.entries))
 
     def test_other_crossbows_stay_vanilla(self):
         crossbow = self.json("assets/minecraft/items/crossbow.json")["model"]
