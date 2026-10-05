@@ -543,7 +543,7 @@ new_world_settings:
       enabled: 'true'
   
       # The list of entities whose explosions should be reverted.
-      entities: CREEPER,END_CRYSTAL,ENDER_DRAGON,FIREBALL,SMALL_FIREBALL,TNT,TNT_MINECART,WITHER,WITHER_SKULL,SULFUR_CUBE
+      entities: CREEPER,END_CRYSTAL,ENDER_DRAGON,FIREBALL,SMALL_FIREBALL,WITHER,WITHER_SKULL,SULFUR_CUBE
   
       # How long before an entity-caused explosion begins reverting.
       delay: 20s

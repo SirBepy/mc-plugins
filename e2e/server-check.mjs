@@ -227,6 +227,13 @@ const closedWilderness = ['build', 'destroy', 'item_use', 'switch']
   .filter((what) => !new RegExp(`^\\s+unclaimed_zone_${what}: 'true'`, 'm').test(townyConfig));
 report('Towny wilderness stays open (build, destroy, item use, switch)', closedWilderness.length === 0,
   closedWilderness.join(', ') || 'all open');
+// Player TNT stays blown up; only mob/natural explosions (creepers, withers...) heal in the wild.
+// The config line seeds new worlds, the per-world file is what an existing world actually uses.
+const regenEntities = townyConfig.match(/wild_revert_on_mob_explosion:[\s\S]*?entities: (.*)/)?.[1] ?? '';
+report('Towny default wild regen excludes TNT', !/\bTNT(_MINECART)?\b/.test(regenEntities), regenEntities);
+const worldRegen = fs.readFileSync(path.join(localDir, 'plugins/Towny/data/worlds/world.txt'), 'utf8')
+  .match(/^PlotManagementWildRegenEntities=(.*)$/m)?.[1] ?? '';
+report('Towny world wild regen excludes TNT', !/\btnt(_minecart)?\b/i.test(worldRegen), worldRegen);
 
 await rcon.command('stop');
 rcon.close();
