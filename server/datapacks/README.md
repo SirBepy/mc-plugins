@@ -105,13 +105,17 @@ was not verified.
 
 A custom folder datapack holding the spawn square build: a timber-and-tuff taiga market at world
 spawn (427, -868) with six themed [Sell] stalls (Farmer, Lumberjack, Fishmonger, Smith, Mob drops,
-Rare goods), a crafting corner, one reserved stall, a rules board, a bell and a well. It does
-nothing on load: the build only happens on `/function spawn_market:build`, which **clears every
-tree and block above the new ground in a 49x49 area around spawn** and flattens the middle 37x37
-to y114. Back the area up before running it on a world that has anything there.
+Rare goods), a crafting corner, a Guide stall of lecterns holding how-to books, a welcome and
+rules board, a bell and a well. It does nothing on load: the build only happens on
+`/function spawn_market:build`, which **clears every tree and block above the new ground in a
+49x49 area around spawn** and flattens the middle 37x37 to y114. Back the area up before running
+it on a world that has anything there. To refresh only the stalls, signs and books on a world
+that already has the square, `forceload` the area and run `spawn_market:structure` then
+`spawn_market:attach`, which leaves the cleared terrain and anything placed since alone.
 
 The functions are generated, never hand-edited: change `server/spawn-market/generate.mjs` (layout,
-palette, the [Sell] price table) and rerun `node server/spawn-market/generate.mjs`;
+palette, the [Sell] price table) or `server/spawn-market/guide.mjs` (the guide books) and rerun
+`node server/spawn-market/generate.mjs`;
 `node --test server/spawn-market/generate.test.mjs` checks the output. The terrain blend reads
 `server/spawn-market/terrain-snapshot.json`, the live ground heightmap taken 2026-10-05, so the
 build only fits that spot. Verified on server/local (live spawn region copied in): all 3812 blocks

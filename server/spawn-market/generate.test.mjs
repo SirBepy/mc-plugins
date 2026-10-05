@@ -22,10 +22,18 @@ test('every fill stays under the 32768-block command limit', () => {
 });
 
 test('every [Sell] sign uses the Essentials success format and a 4-line layout', () => {
-  const signs = lines('attach').filter((l) => l.includes('[Sell]'));
+  const signs = lines('attach').filter((l) => l.includes('messages:[{text:"[Sell]"'));
   assert.equal(signs.length, 38); // Joe's 2026-10-05 price table
   for (const l of signs) {
     assert.match(l, /messages:\[\{text:"\[Sell\]",color:"dark_blue"\},"\d+","[a-z_]+","\$[\d.]+"\]/, l);
+  }
+});
+
+test('every sign line fits on the sign', () => {
+  for (const l of lines('attach').filter((l) => l.includes('_sign'))) {
+    const max = l.includes('hanging_sign') ? 10 : 15; // hanging signs are narrower
+    const msgs = l.slice(l.indexOf('messages:[')).match(/"((?:[^"\\]|\\.)*)"/g).filter((m) => !['"dark_blue"'].includes(m));
+    for (const m of msgs) assert.ok(JSON.parse(m).length <= max, `${JSON.parse(m)} > ${max}: ${l}`);
   }
 });
 

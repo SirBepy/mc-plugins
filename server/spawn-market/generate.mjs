@@ -14,6 +14,7 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { GUIDES, SERVER_NAME, lecternState } from './guide.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const PACK = join(here, '..', 'datapacks', 'spawn-market');
@@ -68,6 +69,7 @@ const fill = (u0, y0, v0, u1, y1, v1, state, phase = 'build') => {
 };
 
 const OPPOSITE = { north: 'south', south: 'north', east: 'west', west: 'east' };
+const ROTATION = { south: 0, west: 4, north: 8, east: 12 }; // standing/hanging sign rotation per facing
 
 // A side of the square, as a frame: `a` runs along the side, `d` is distance from the plaza edge
 // (0 = stall front). `inward` is the direction facing the plaza centre.
@@ -157,15 +159,16 @@ for (let u = -3; u <= 3; u++) {
   set(u, Y + 4, 4, `${P.roof}_stairs[facing=south,half=bottom]`);
   set(u, Y + 4, 6, `${P.roof}_stairs[facing=north,half=bottom]`);
 }
-// Rules text is a placeholder: Joe edits these signs in-game.
-const RULES = [
-  // The board faces north, so +u reads on the viewer's left.
-  [1, Y + 2, ['', 'Server rules', '(edit me)', '']],
-  [0, Y + 2, ['Welcome to', 'Los Pollos', 'MineHermanos', '']],
-  [-1, Y + 2, ['', 'Commands', '(edit me)', '']],
-  [0, Y + 1, ['Sell items at', 'the stalls', 'around the', 'square']],
+// Welcome and rules only; everything else is explained by the Guide stall's lecterns (guide.mjs).
+// The board faces north, so +u reads on the viewer's left.
+const BOARD = [
+  [1, Y + 2, ['RULES', 'No griefing', 'No stealing', "Don't be an ass"]],
+  [0, Y + 2, ['Welcome to', SERVER_NAME, '', '']],
+  [-1, Y + 2, ['NEW HERE?', 'Read the books', 'at the Guide', 'stall (west)']],
+  [1, Y + 1, ['MORE INFO', 'on the website,', 'link in the', 'Start here book']],
+  [0, Y + 1, ['SELL STUFF', 'Right-click', '[Sell] signs', 'at the stalls']],
 ];
-for (const [u, y, lines] of RULES) set(u, y, 4, sign('spruce_wall_sign[facing=north]', lines), 'attach');
+for (const [u, y, lines] of BOARD) set(u, y, 4, sign('spruce_wall_sign[facing=north]', lines), 'attach');
 set(-3, Y + 1, 4, `${P.light}[hanging=false]`, 'attach');
 set(3, Y + 1, 4, `${P.light}[hanging=false]`, 'attach');
 
@@ -222,7 +225,8 @@ const STALLS = [
   },
   {
     side: 'south', a0: 4, name: 'Rare goods', wool: 'purple',
-    signs: [sell(16, 'ender_pearl', 8), sell(16, 'blaze_rod', 10), sell(16, 'phantom_membrane', 5), sell(16, 'ghast_tear', 25)],
+    // 'membrane' is Essentials' alias for phantom_membrane, whose 16 characters overflow a sign line.
+    signs: [sell(16, 'ender_pearl', 8), sell(16, 'blaze_rod', 10), sell(16, 'membrane', 5), sell(16, 'ghast_tear', 25)],
     props: [['crying_obsidian', -1, 1], ['amethyst_block', -1, 2], ['purple_candle[candles=3,lit=true]', -1, 1, 1],
       ['obsidian', 5, 1], ['end_rod[facing=up]', 5, 1, 1]],
   },
@@ -234,14 +238,17 @@ const STALLS = [
       ['cartography_table', 5, 1], ['loom[facing=INWARD]', 5, 2]],
   },
   {
-    side: 'west', a0: -8, name: 'Reserved', wool: 'white',
-    props: [['barrel[facing=up]', -1, 1], ['barrel[facing=up]', 5, 1]],
+    side: 'west', a0: -8, name: 'Guide', wool: 'white',
+    // [book, a, d]: three against the back wall, four under the eaves either side.
+    guides: [['start', 2, 2], ['homes', 1, 2], ['money', 3, 2], ['towns', -1, 1], ['chests', -1, 2],
+      ['tag', 5, 1], ['more', 5, 2]],
+    props: [],
   },
 ];
 
 // A 5-wide, 3-deep open-front stall: a (0..4) along the side, d (0..3) away from the plaza,
 // back wall at d = 3 carrying a 3x3 sign wall on its inner face.
-function stall({ side: sideName, a0, name, wool, signs = [], props, stations = [] }) {
+function stall({ side: sideName, a0, name, wool, signs = [], props, stations = [], guides = [] }) {
   const S = side(sideName);
   const at = (a, d, y, state, phase) => { const [u, v] = S.at(a0 + a, d); set(u, y, v, state, phase); };
   const inward = S.inward;
@@ -278,6 +285,16 @@ function stall({ side: sideName, a0, name, wool, signs = [], props, stations = [
   at(-1, -1, Y + 3, `${P.light}[hanging=true]`, 'attach');
   at(5, -1, Y + 3, `${P.light}[hanging=true]`, 'attach');
   for (const [state, a] of stations) at(a, 2, Y + 1, resolve(state));
+  // Lecterns face their reader: the plaza for the back-wall ones, sideways for the eaves ones,
+  // each labelled by a sign above it (wall sign inside, hanging sign under the eaves).
+  for (const [key, a, d] of guides) {
+    const eaves = a < 0 || a > 4;
+    const facing = a < 0 ? minusA : a > 4 ? S.plusA : inward;
+    const label = ['', GUIDES[key].title, '', ''];
+    at(a, d, Y + 1, lecternState(facing, key), 'attach');
+    if (eaves) at(a, d, Y + 3, sign(`spruce_hanging_sign[attached=false,rotation=${ROTATION[facing]}]`, label), 'attach');
+    else at(a, d, Y + 2, sign(`spruce_wall_sign[facing=${inward}]`, label), 'attach');
+  }
   signs.forEach((lines, i) => {
     at(1 + (i % 3), 2, Y + 3 - Math.floor(i / 3), sign(`spruce_wall_sign[facing=${inward}]`, lines), 'attach');
   });

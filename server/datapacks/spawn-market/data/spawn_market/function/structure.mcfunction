@@ -121,7 +121,6 @@ setblock 411 115 -851 spruce_leaves[persistent=true]
 setblock 444 115 -851 spruce_leaves[persistent=true]
 setblock 416 115 -866 tuff_brick_wall
 setblock 438 115 -866 tuff_brick_wall
-setblock 414 115 -865 barrel[facing=up]
 setblock 440 115 -865 blast_furnace[facing=west]
 setblock 441 115 -865 smoker[facing=west]
 setblock 412 115 -864 spruce_log
@@ -145,7 +144,6 @@ setblock 415 115 -860 spruce_log
 setblock 439 115 -860 spruce_log
 fill 440 115 -860 441 115 -860 spruce_planks
 setblock 442 115 -860 spruce_log
-setblock 414 115 -859 barrel[facing=up]
 setblock 440 115 -859 anvil[facing=south]
 setblock 417 116 -878 spruce_fence
 setblock 437 116 -878 spruce_fence
