@@ -121,4 +121,5 @@ palette, the [Sell] price table) or `server/spawn-market/guide.mjs` (the guide b
 build only fits that spot. Verified on server/local (live spawn region copied in): all 3812 blocks
 read back from the region file matched the generator's model. The [Sell] signs' first line is
 `<dark_blue>[Sell]`, Essentials' `signFormatSuccess`, since command-placed signs skip Essentials'
-own recolouring; whether Essentials then accepts a click on them needs a real player to confirm.
+own recolouring. That was not enough: on live a player reported (2026-10-05) that clicking them
+does nothing, so the [Sell] signs need writing by hand in-game until the cause is found.
