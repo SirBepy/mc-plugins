@@ -2,10 +2,6 @@
 setblock 411 115 -881 sweet_berry_bush[age=3]
 fill 412 115 -881 414 115 -881 fern
 setblock 412 115 -882 fern
-setblock 420 115 -882 spruce_wall_sign[facing=south]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","melon_slice","$1.28"]}}
-setblock 432 115 -882 spruce_wall_sign[facing=south]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","mangrove_log","$32"]}}
-setblock 433 115 -882 spruce_wall_sign[facing=south]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","cherry_log","$32"]}}
-setblock 434 115 -882 spruce_wall_sign[facing=south]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","pale_oak_log","$32"]}}
 setblock 410 115 -883 sweet_berry_bush[age=3]
 setblock 410 115 -884 fern
 setblock 410 115 -885 sweet_berry_bush[age=3]
@@ -13,8 +9,6 @@ fill 411 115 -885 412 115 -885 fern
 setblock 414 115 -855 fern
 setblock 412 115 -854 fern
 setblock 413 115 -854 sweet_berry_bush[age=3]
-setblock 433 115 -854 spruce_wall_sign[facing=north]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","slime_ball","$16"]}}
-setblock 434 115 -854 spruce_wall_sign[facing=north]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","spider_eye","$16"]}}
 setblock 440 115 -854 sweet_berry_bush[age=3]
 setblock 443 115 -854 sweet_berry_bush[age=3]
 setblock 410 115 -853 sweet_berry_bush[age=3]
@@ -28,38 +22,27 @@ setblock 443 115 -851 sweet_berry_bush[age=3]
 setblock 413 115 -865 lectern[facing=north,has_book=true]{Book:{id:"minecraft:written_book",count:1,components:{"minecraft:written_book_content":{title:"More",author:"the Claude SMP",pages:["Skills level up as you play.\n/skills shows them.\n\n/color\npicks a colour for your name.\n\n/pvp\nturns PvP on or off for you.","Carry mobs:\nsneak + right-click a passive mob with an empty hand. Right-click a block to put it down, sneak + left-click to throw.","When you die your items wait in a grave where you died.\n\nVoice chat works for Java players using the server modpack."]}}}}
 setblock 414 115 -865 lectern[facing=north,has_book=true]{Book:{id:"minecraft:written_book",count:1,components:{"minecraft:written_book_content":{title:"Tag game",author:"the Claude SMP",pages:["A game of tag runs all the time. Whoever is IT wears a sheep head.\n\nHit a player to tag them, even with PvP off. No damage is done.","Being IT costs points every minute, and getting tagged costs 10.\nLowest score wins.\n\nIT gets a compass that points at players. Right-click to switch target.","/tag optout\nsits the game out.\n/tag optin\njoins back in.\n\n/tag stats\n/tag top\n/tag who\n/tag board"]}}}}
 setblock 424 115 -864 lantern[hanging=false]
-setblock 427 115 -864 spruce_wall_sign[facing=north]{front_text:{messages:["SELL STUFF","Right-click","[Sell] signs","at the stalls"]}}
-setblock 428 115 -864 spruce_wall_sign[facing=north]{front_text:{messages:["MORE INFO","on the website,","link in the","Start here book"]}}
+setblock 427 115 -864 spruce_wall_sign[facing=north]{front_text:{color:"orange",has_glowing_text:1b,messages:["SELL STUFF","[Sell] signs at","the stalls, new","buyers each day"]}}
+setblock 428 115 -864 spruce_wall_sign[facing=north]{front_text:{color:"light_blue",has_glowing_text:1b,messages:["MORE INFO","on the website,","link in the","Start here book"]}}
 setblock 430 115 -864 lantern[hanging=false]
-setblock 413 115 -863 lectern[facing=east,has_book=true]{Book:{id:"minecraft:written_book",count:1,components:{"minecraft:written_book_content":{title:"Money",author:"the Claude SMP",pages:["The stalls around this square buy items from you.\n\nHold the items and right-click a [Sell] sign: it takes the amount on the sign and pays you the price.","/balance\nshows your money.\n\n/pay <player> <amount>\nsends money.\n\n/baltop\nshows the richest players.","Your own shop:\nput a chest down, hold the item you want to sell and left-click the chest, then type the price in chat."]}}}}
+setblock 413 115 -863 lectern[facing=east,has_book=true]{Book:{id:"minecraft:written_book",count:1,components:{"minecraft:written_book_content":{title:"Money",author:"the Claude SMP",pages:["The stalls around this square buy items from you. What they buy changes every day.\n\nHold the items and right-click a [Sell] sign: it takes the amount on the sign and pays you the price.","/balance\nshows your money.\n\n/pay <player> <amount>\nsends money.\n\n/baltop\nshows the richest players.","Your own shop:\nput a chest down, hold the item you want to sell and left-click the chest, then type the price in chat."]}}}}
 setblock 413 115 -862 lectern[facing=east,has_book=true]{Book:{id:"minecraft:written_book",count:1,components:{"minecraft:written_book_content":{title:"Start here",author:"the Claude SMP",pages:["Welcome to\nthe Claude SMP!\n\nThree rules:\n- No griefing\n- No stealing\n- Don't be an ass\n\nEach lectern here explains one part of the server.",["Missing something? The website has the full feature list, the world map and how to join:\n\n",{text:"Open the website",color:"blue",underlined:true,click_event:{action:"open_url",url:"https://sirbepy.github.io/sirbepys-minecraft-server/"}}]]}}}}
 setblock 413 115 -861 lectern[facing=east,has_book=true]{Book:{id:"minecraft:written_book",count:1,components:{"minecraft:written_book_content":{title:"Homes",author:"the Claude SMP",pages:["You can save up to 3 homes.\n\n/sethome <name>\nsaves where you stand.\n\n/home <name>\ntakes you back.\n\n/delhome <name>\nfrees a slot.","/tpa <player>\nasks to teleport to someone.\n\n/tpaccept or\n/tpdeny answers a request.\n\n/back returns to where you last were.\n\n/spawn brings you back here."]}}}}
 setblock 413 115 -859 lectern[facing=south,has_book=true]{Book:{id:"minecraft:written_book",count:1,components:{"minecraft:written_book_content":{title:"Chests",author:"the Claude SMP",pages:["Chests lock to you the moment you place them.\n\n/bolt trust <player>\nlets a friend into your chests.\n\n/unlock\nremoves the lock from one.","Locked out of someone's chest? Click [Request access] in chat. The owner can let you in once, for 5 minutes, or for good.\n\nOwners answer with /safe-chests-pending."]}}}}
 setblock 414 115 -859 lectern[facing=south,has_book=true]{Book:{id:"minecraft:written_book",count:1,components:{"minecraft:written_book_content":{title:"Towns",author:"the Claude SMP",pages:["Towns protect your builds. Everything is free: making a town, claiming land, outposts.\n\n/town new <name>\nstarts a town where you stand.","/town join <name>\njoins an open town.\n\n/plot claim\nclaims a plot inside your town.\n\nLand outside towns stays open to everyone."]}}}}
 setblock 430 116 -881 spruce_log[axis=z]
-setblock 420 116 -882 spruce_wall_sign[facing=south]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","beetroot","$3.2"]}}
-setblock 421 116 -882 spruce_wall_sign[facing=south]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","pumpkin","$6.4"]}}
-setblock 422 116 -882 spruce_wall_sign[facing=south]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","sugar_cane","$1.28"]}}
 setblock 424 116 -882 carved_pumpkin[facing=south]
-setblock 432 116 -882 spruce_wall_sign[facing=south]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","jungle_log","$32"]}}
-setblock 433 116 -882 spruce_wall_sign[facing=south]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","acacia_log","$32"]}}
-setblock 434 116 -882 spruce_wall_sign[facing=south]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","dark_oak_log","$32"]}}
-setblock 441 116 -874 spruce_wall_sign[facing=west]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","ink_sac","$6.4"]}}
-setblock 441 116 -875 spruce_wall_sign[facing=west]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"16","tropical_fish","$8"]}}
 setblock 440 116 -877 dried_kelp_block
 setblock 418 116 -855 end_rod[facing=up]
 setblock 424 116 -855 purple_candle[candles=3,lit=true]
 setblock 436 116 -855 skeleton_skull[rotation=0]
-setblock 432 116 -854 spruce_wall_sign[facing=north]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","gunpowder","$6.4"]}}
-setblock 433 116 -854 spruce_wall_sign[facing=north]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","rabbit_hide","$32"]}}
-setblock 434 116 -854 spruce_wall_sign[facing=north]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","leather","$32"]}}
 setblock 440 116 -865 lantern[hanging=false]
-setblock 426 116 -864 spruce_wall_sign[facing=north]{front_text:{messages:["NEW HERE?","Read the books","at the Guide","stall (west)"]}}
-setblock 427 116 -864 spruce_wall_sign[facing=north]{front_text:{messages:["Welcome to","the Claude SMP","",""]}}
-setblock 428 116 -864 spruce_wall_sign[facing=north]{front_text:{messages:["RULES","No griefing","No stealing","Don't be an ass"]}}
-setblock 413 116 -863 spruce_wall_sign[facing=east]{front_text:{messages:["","Money","",""]}}
-setblock 413 116 -862 spruce_wall_sign[facing=east]{front_text:{messages:["","Start here","",""]}}
-setblock 413 116 -861 spruce_wall_sign[facing=east]{front_text:{messages:["","Homes","",""]}}
+setblock 426 116 -864 spruce_wall_sign[facing=north]{front_text:{color:"lime",has_glowing_text:1b,messages:["NEW HERE?","Read the books","at the Guide","stall (west)"]}}
+setblock 427 116 -864 spruce_wall_sign[facing=north]{front_text:{color:"yellow",has_glowing_text:1b,messages:["Welcome to","the Claude SMP","",""]}}
+setblock 428 116 -864 spruce_wall_sign[facing=north]{front_text:{color:"red",has_glowing_text:1b,messages:["RULES","No griefing","No stealing","Don't be an ass"]}}
+setblock 413 116 -863 spruce_wall_sign[facing=east]{front_text:{color:"white",has_glowing_text:1b,messages:["","Money","",""]}}
+setblock 413 116 -862 spruce_wall_sign[facing=east]{front_text:{color:"white",has_glowing_text:1b,messages:["","Start here","",""]}}
+setblock 413 116 -861 spruce_wall_sign[facing=east]{front_text:{color:"white",has_glowing_text:1b,messages:["","Homes","",""]}}
 setblock 417 117 -878 lantern[hanging=false]
 setblock 437 117 -878 lantern[hanging=false]
 setblock 418 117 -879 lantern[hanging=true]
@@ -68,20 +51,15 @@ setblock 425 117 -879 lantern[hanging=false]
 setblock 429 117 -879 lantern[hanging=false]
 setblock 430 117 -879 lantern[hanging=true]
 setblock 436 117 -879 lantern[hanging=true]
-setblock 420 117 -882 spruce_wall_sign[facing=south]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","wheat","$3.2"]}}
-setblock 421 117 -882 spruce_wall_sign[facing=south]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","carrot","$3.2"]}}
-setblock 422 117 -882 spruce_wall_sign[facing=south]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","potato","$3.2"]}}
-setblock 432 117 -882 spruce_wall_sign[facing=south]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","oak_log","$32"]}}
-setblock 433 117 -882 spruce_wall_sign[facing=south]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","spruce_log","$32"]}}
-setblock 434 117 -882 spruce_wall_sign[facing=south]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","birch_log","$32"]}}
+setblock 421 117 -880 spruce_hanging_sign[attached=false,rotation=0]{front_text:{color:"yellow",has_glowing_text:1b,messages:["","Farmer","",""]},back_text:{color:"yellow",has_glowing_text:1b,messages:["","Farmer","",""]}}
+setblock 433 117 -880 spruce_hanging_sign[attached=false,rotation=0]{front_text:{color:"brown",has_glowing_text:1b,messages:["","Lumberjack","",""]},back_text:{color:"brown",has_glowing_text:1b,messages:["","Lumberjack","",""]}}
 setblock 416 117 -870 lantern[hanging=false]
 setblock 438 117 -870 lantern[hanging=false]
 setblock 416 117 -871 lantern[hanging=true]
 setblock 438 117 -871 lantern[hanging=true]
 setblock 427 117 -873 bell[attachment=ceiling,facing=north]
-setblock 441 117 -873 spruce_wall_sign[facing=west]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"16","pufferfish","$8"]}}
-setblock 441 117 -874 spruce_wall_sign[facing=west]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","salmon","$16"]}}
-setblock 441 117 -875 spruce_wall_sign[facing=west]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","cod","$16"]}}
+setblock 415 117 -874 spruce_hanging_sign[attached=false,rotation=12]{front_text:{color:"orange",has_glowing_text:1b,messages:["","Crafting","",""]},back_text:{color:"orange",has_glowing_text:1b,messages:["","Crafting","",""]}}
+setblock 439 117 -874 spruce_hanging_sign[attached=false,rotation=4]{front_text:{color:"light_blue",has_glowing_text:1b,messages:["","Fishmonger","",""]},back_text:{color:"light_blue",has_glowing_text:1b,messages:["","Fishmonger","",""]}}
 setblock 416 117 -877 lantern[hanging=true]
 setblock 438 117 -877 lantern[hanging=true]
 setblock 417 117 -858 lantern[hanging=false]
@@ -92,29 +70,18 @@ setblock 425 117 -857 lantern[hanging=false]
 setblock 429 117 -857 lantern[hanging=false]
 setblock 430 117 -857 lantern[hanging=true]
 setblock 436 117 -857 lantern[hanging=true]
-setblock 420 117 -854 spruce_wall_sign[facing=north]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"16","ghast_tear","$160"]}}
-setblock 421 117 -854 spruce_wall_sign[facing=north]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"16","membrane","$32"]}}
-setblock 422 117 -854 spruce_wall_sign[facing=north]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"16","blaze_rod","$16"]}}
-setblock 432 117 -854 spruce_wall_sign[facing=north]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","feather","$3.2"]}}
-setblock 433 117 -854 spruce_wall_sign[facing=north]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","string","$3.2"]}}
-setblock 434 117 -854 spruce_wall_sign[facing=north]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","bone","$3.2"]}}
+setblock 421 117 -856 spruce_hanging_sign[attached=false,rotation=8]{front_text:{color:"purple",has_glowing_text:1b,messages:["","Rare goods","",""]},back_text:{color:"purple",has_glowing_text:1b,messages:["","Rare goods","",""]}}
+setblock 433 117 -856 spruce_hanging_sign[attached=false,rotation=8]{front_text:{color:"green",has_glowing_text:1b,messages:["","Mob drops","",""]},back_text:{color:"green",has_glowing_text:1b,messages:["","Mob drops","",""]}}
 setblock 416 117 -866 lantern[hanging=false]
 setblock 438 117 -866 lantern[hanging=false]
-setblock 413 117 -865 spruce_hanging_sign[attached=false,rotation=8]{front_text:{messages:["","More","",""]}}
-setblock 414 117 -865 spruce_hanging_sign[attached=false,rotation=8]{front_text:{messages:["","Tag game","",""]}}
+setblock 413 117 -865 spruce_hanging_sign[attached=false,rotation=8]{front_text:{color:"white",has_glowing_text:1b,messages:["","More","",""]}}
+setblock 414 117 -865 spruce_hanging_sign[attached=false,rotation=8]{front_text:{color:"white",has_glowing_text:1b,messages:["","Tag game","",""]}}
 setblock 416 117 -865 lantern[hanging=true]
 setblock 438 117 -865 lantern[hanging=true]
-setblock 441 117 -863 spruce_wall_sign[facing=west]{front_text:{messages:[{text:"[Sell]",color:"dark_blue"},"64","iron_ingot","$16"]}}
-setblock 413 117 -859 spruce_hanging_sign[attached=false,rotation=0]{front_text:{messages:["","Chests","",""]}}
-setblock 414 117 -859 spruce_hanging_sign[attached=false,rotation=0]{front_text:{messages:["","Towns","",""]}}
+setblock 415 117 -862 spruce_hanging_sign[attached=false,rotation=12]{front_text:{color:"white",has_glowing_text:1b,messages:["","Guide","",""]},back_text:{color:"white",has_glowing_text:1b,messages:["","Guide","",""]}}
+setblock 439 117 -862 spruce_hanging_sign[attached=false,rotation=4]{front_text:{color:"gray",has_glowing_text:1b,messages:["","Smith","",""]},back_text:{color:"gray",has_glowing_text:1b,messages:["","Smith","",""]}}
+setblock 413 117 -859 spruce_hanging_sign[attached=false,rotation=0]{front_text:{color:"white",has_glowing_text:1b,messages:["","Chests","",""]}}
+setblock 414 117 -859 spruce_hanging_sign[attached=false,rotation=0]{front_text:{color:"white",has_glowing_text:1b,messages:["","Towns","",""]}}
 setblock 416 117 -859 lantern[hanging=true]
 setblock 438 117 -859 lantern[hanging=true]
 setblock 442 118 -883 lantern[hanging=true]
-setblock 421 119 -879 spruce_wall_sign[facing=south]{front_text:{messages:["","Farmer","",""]}}
-setblock 433 119 -879 spruce_wall_sign[facing=south]{front_text:{messages:["","Lumberjack","",""]}}
-setblock 416 119 -874 spruce_wall_sign[facing=east]{front_text:{messages:["","Crafting","",""]}}
-setblock 438 119 -874 spruce_wall_sign[facing=west]{front_text:{messages:["","Fishmonger","",""]}}
-setblock 421 119 -857 spruce_wall_sign[facing=north]{front_text:{messages:["","Rare goods","",""]}}
-setblock 433 119 -857 spruce_wall_sign[facing=north]{front_text:{messages:["","Mob drops","",""]}}
-setblock 416 119 -862 spruce_wall_sign[facing=east]{front_text:{messages:["","Guide","",""]}}
-setblock 438 119 -862 spruce_wall_sign[facing=west]{front_text:{messages:["","Smith","",""]}}

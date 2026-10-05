@@ -27,7 +27,7 @@ export const GUIDES = {
   money: {
     title: 'Money',
     pages: [
-      'The stalls around this square buy items from you.\n\nHold the items and right-click a [Sell] sign: it takes the amount on the sign and pays you the price.',
+      'The stalls around this square buy items from you. What they buy changes every day.\n\nHold the items and right-click a [Sell] sign: it takes the amount on the sign and pays you the price.',
       '/balance\nshows your money.\n\n/pay <player> <amount>\nsends money.\n\n/baltop\nshows the richest players.',
       'Your own shop:\nput a chest down, hold the item you want to sell and left-click the chest, then type the price in chat.',
     ],

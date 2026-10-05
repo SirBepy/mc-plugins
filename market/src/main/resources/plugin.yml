@@ -1,0 +1,10 @@
+name: Market
+version: ${version}
+main: dev.sirbepy.mc.market.MarketPlugin
+api-version: "26.2"
+author: sirbepy
+
+permissions:
+  market.admin:
+    description: Force a new set of buyers at the spawn market.
+    default: op

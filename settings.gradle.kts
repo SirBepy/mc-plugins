@@ -4,4 +4,4 @@ plugins {
 
 rootProject.name = "mc-plugins"
 
-include("core", "names", "safechests", "tag", "claudebridge", "tweaks", "carry", "testserver", "server")
+include("core", "names", "safechests", "tag", "claudebridge", "tweaks", "carry", "market", "testserver", "server")

@@ -162,72 +162,77 @@ for (let u = -3; u <= 3; u++) {
 // Welcome and rules only; everything else is explained by the Guide stall's lecterns (guide.mjs).
 // The board faces north, so +u reads on the viewer's left.
 const BOARD = [
-  [1, Y + 2, ['RULES', 'No griefing', 'No stealing', "Don't be an ass"]],
-  [0, Y + 2, ['Welcome to', SERVER_NAME, '', '']],
-  [-1, Y + 2, ['NEW HERE?', 'Read the books', 'at the Guide', 'stall (west)']],
-  [1, Y + 1, ['MORE INFO', 'on the website,', 'link in the', 'Start here book']],
-  [0, Y + 1, ['SELL STUFF', 'Right-click', '[Sell] signs', 'at the stalls']],
+  [1, Y + 2, 'red', ['RULES', 'No griefing', 'No stealing', "Don't be an ass"]],
+  [0, Y + 2, 'yellow', ['Welcome to', SERVER_NAME, '', '']],
+  [-1, Y + 2, 'lime', ['NEW HERE?', 'Read the books', 'at the Guide', 'stall (west)']],
+  [1, Y + 1, 'light_blue', ['MORE INFO', 'on the website,', 'link in the', 'Start here book']],
+  [0, Y + 1, 'orange', ['SELL STUFF', '[Sell] signs at', 'the stalls, new', 'buyers each day']],
 ];
-for (const [u, y, lines] of BOARD) set(u, y, 4, sign('spruce_wall_sign[facing=north]', lines), 'attach');
+for (const [u, y, color, lines] of BOARD) set(u, y, 4, sign('spruce_wall_sign[facing=north]', lines, { color }), 'attach');
 set(-3, Y + 1, 4, `${P.light}[hanging=false]`, 'attach');
 set(3, Y + 1, 4, `${P.light}[hanging=false]`, 'attach');
 
-// Lines are plain strings or { text, color } components.
-function sign(block, lines) {
+// Lines are plain strings or { text, color } components. A dye colour also makes the text glow.
+function sign(block, lines, { color, back = false } = {}) {
   const component = (l) => (typeof l === 'string' ? JSON.stringify(l) : `{text:${JSON.stringify(l.text)},color:"${l.color}"}`);
-  return `${block}{front_text:{messages:[${lines.map(component).join(',')}]}}`;
+  const text = `{${color ? `color:"${color}",has_glowing_text:1b,` : ''}messages:[${lines.map(component).join(',')}]}`;
+  return `${block}{front_text:${text}${back ? `,back_text:${text}` : ''}}`;
 }
 
 // ---- stalls ---------------------------------------------------------------------------------
-// [Sell] lines follow Essentials' sell sign: [Sell] / amount / item / price for that amount.
-// Prices from Joe's 2026-10-05 table, cut the same day for automatic farms: items an AFK farm
-// produces by the thousand per hour (ender pearls, gold, rotten flesh, bamboo, cactus) aren't
-// bought at all, and the rest are priced so a farm earns about what an hour of hand-gathering does.
+// The selling stalls' [Sell] signs belong to the Market plugin (market/), which every day picks a
+// few of each stall's `buys` and writes them onto the stall's sign spots. This script only says
+// where those spots are and what each stall might buy, in market/src/main/resources/stalls.yml.
+// Prices from Joe's 2026-10-05 table: AFK-farmable items are cheap, items only gathered by hand
+// (logs, raw ores, diamond, ancient debris, leather, rabbit hide) keep a real price.
 // Amount 64 except stack-of-16 and rare items.
-// Line 1 must match Essentials' signFormatSuccess (<dark_blue>[Sell], from its messages.properties):
-// a player-written sign gets recoloured on placement, a command-placed one has to arrive that way.
-const sell = (amount, item, each) => [{ text: '[Sell]', color: 'dark_blue' }, String(amount), item, `$${+(amount * each).toFixed(2)}`];
+const buy = (amount, item, each) => ({ item, amount, price: +(amount * each).toFixed(2) });
 // Props: [state, a, d, dy]. The 5x3 stalls have no spare floor, so props stand outside the side
 // walls under the eaves (a = -1 or 5).
 const STALLS = [
   {
-    side: 'north', a0: -8, name: 'Farmer', wool: 'yellow',
-    signs: [sell(64, 'wheat', 0.05), sell(64, 'carrot', 0.05), sell(64, 'potato', 0.05), sell(64, 'beetroot', 0.05),
-      sell(64, 'pumpkin', 0.1), sell(64, 'sugar_cane', 0.02), sell(64, 'melon_slice', 0.02)],
+    id: 'farmer', side: 'north', a0: -8, name: 'Farmer', wool: 'yellow',
+    buys: [buy(64, 'wheat', 0.05), buy(64, 'carrot', 0.05), buy(64, 'potato', 0.05), buy(64, 'beetroot', 0.05),
+      buy(64, 'pumpkin', 0.1), buy(64, 'sugar_cane', 0.02), buy(64, 'melon_slice', 0.02), buy(64, 'cactus', 0.01),
+      buy(64, 'bamboo', 0.01)],
     props: [['hay_block[axis=y]', -1, 1], ['hay_block[axis=AXIS]', -1, 2], ['composter', 5, 1], ['pumpkin', 5, 2],
       ['carved_pumpkin[facing=INWARD]', 5, 2, 1]],
   },
   {
-    side: 'north', a0: 4, name: 'Lumberjack', wool: 'brown',
-    signs: ['oak', 'spruce', 'birch', 'jungle', 'acacia', 'dark_oak', 'mangrove', 'cherry', 'pale_oak']
-      .map((w) => sell(64, `${w}_log`, 0.5)),
+    id: 'lumberjack', side: 'north', a0: 4, name: 'Lumberjack', wool: 'brown',
+    buys: ['oak', 'spruce', 'birch', 'jungle', 'acacia', 'dark_oak', 'mangrove', 'cherry', 'pale_oak']
+      .map((w) => buy(64, `${w}_log`, 0.5)),
     props: [['oak_log[axis=AXIS]', -1, 1], ['birch_log[axis=AXIS]', -1, 2], ['spruce_log[axis=AXIS]', -1, 1, 1],
       ['stripped_oak_log[axis=y]', 5, 1], ['dark_oak_log[axis=AXIS]', 5, 2]],
   },
   {
-    side: 'east', a0: -8, name: 'Fishmonger', wool: 'light_blue',
-    signs: [sell(64, 'cod', 0.25), sell(64, 'salmon', 0.25), sell(16, 'pufferfish', 0.5), sell(16, 'tropical_fish', 0.5),
-      sell(64, 'ink_sac', 0.1)],
+    id: 'fishmonger', side: 'east', a0: -8, name: 'Fishmonger', wool: 'light_blue',
+    buys: [buy(64, 'cod', 0.25), buy(64, 'salmon', 0.25), buy(16, 'pufferfish', 0.5), buy(16, 'tropical_fish', 0.5),
+      buy(64, 'ink_sac', 0.1)],
     props: [['barrel[facing=up]', -1, 1], ['barrel[facing=up]', -1, 2], ['water_cauldron[level=3]', 5, 1],
       ['barrel[facing=up]', 5, 2], ['dried_kelp_block', -1, 1, 1]],
   },
   {
-    side: 'east', a0: 4, name: 'Smith', wool: 'gray',
-    signs: [sell(64, 'iron_ingot', 0.25)],
+    id: 'smith', side: 'east', a0: 4, name: 'Smith', wool: 'gray',
+    // Raw ore only comes from mining; iron and gold farms drop ingots and nuggets.
+    buys: [buy(64, 'raw_iron', 0.5), buy(64, 'raw_gold', 1), buy(64, 'raw_copper', 0.1), buy(64, 'iron_ingot', 0.25),
+      buy(64, 'gold_ingot', 0.25)],
     props: [['blast_furnace[facing=INWARD]', -1, 1], ['smoker[facing=INWARD]', -1, 2], ['anvil[facing=AXISFACE]', 5, 1],
       ['lantern[hanging=false]', -1, 1, 1]],
   },
   {
-    side: 'south', a0: -8, name: 'Mob drops', wool: 'green',
-    signs: [sell(64, 'bone', 0.05), sell(64, 'string', 0.05), sell(64, 'feather', 0.05), sell(64, 'leather', 0.5),
-      sell(64, 'rabbit_hide', 0.5), sell(64, 'gunpowder', 0.1), sell(64, 'spider_eye', 0.25), sell(64, 'slime_ball', 0.25)],
+    id: 'mob_drops', side: 'south', a0: -8, name: 'Mob drops', wool: 'green',
+    buys: [buy(64, 'rotten_flesh', 0.01), buy(64, 'bone', 0.05), buy(64, 'string', 0.05), buy(64, 'feather', 0.05),
+      buy(64, 'leather', 0.5), buy(64, 'rabbit_hide', 0.5), buy(64, 'gunpowder', 0.1), buy(64, 'spider_eye', 0.25),
+      buy(64, 'slime_ball', 0.25)],
     props: [['bone_block[axis=y]', -1, 1], ['bone_block[axis=AXIS]', -1, 2], ['skeleton_skull[rotation=0]', -1, 1, 1],
       ['barrel[facing=up]', 5, 1]],
   },
   {
-    side: 'south', a0: 4, name: 'Rare goods', wool: 'purple',
+    id: 'rare_goods', side: 'south', a0: 4, name: 'Rare goods', wool: 'purple',
     // 'membrane' is Essentials' alias for phantom_membrane, whose 16 characters overflow a sign line.
-    signs: [sell(16, 'blaze_rod', 1), sell(16, 'membrane', 2), sell(16, 'ghast_tear', 10)],
+    buys: [buy(16, 'diamond', 8), buy(16, 'ancient_debris', 25), buy(16, 'blaze_rod', 1), buy(16, 'membrane', 2),
+      buy(16, 'ghast_tear', 10), buy(16, 'ender_pearl', 0.25)],
     props: [['crying_obsidian', -1, 1], ['amethyst_block', -1, 2], ['purple_candle[candles=3,lit=true]', -1, 1, 1],
       ['obsidian', 5, 1], ['end_rod[facing=up]', 5, 1, 1]],
   },
@@ -247,9 +252,12 @@ const STALLS = [
   },
 ];
 
+// Market plugin sign spots per selling stall, in absolute coordinates.
+const MARKET = [];
+
 // A 5-wide, 3-deep open-front stall: a (0..4) along the side, d (0..3) away from the plaza,
-// back wall at d = 3 carrying a 3x3 sign wall on its inner face.
-function stall({ side: sideName, a0, name, wool, signs = [], props, stations = [], guides = [] }) {
+// back wall at d = 3.
+function stall({ id, side: sideName, a0, name, wool, buys = [], props, stations = [], guides = [] }) {
   const S = side(sideName);
   const at = (a, d, y, state, phase) => { const [u, v] = S.at(a0 + a, d); set(u, y, v, state, phase); };
   const inward = S.inward;
@@ -281,8 +289,10 @@ function stall({ side: sideName, a0, name, wool, signs = [], props, stations = [
   for (const [d, state] of [[0, `${wool}_wool`], [3, P.wall]]) {
     for (let a = 1; a <= 3; a++) for (let y = Y + 5; y < Y + 5 + Math.min(a, 4 - a); y++) at(a, d, y, state);
   }
-  // Name sign on the gable, above the opening, so it never hides the top row of [Sell] signs.
-  at(2, -1, Y + 5, sign(`spruce_wall_sign[facing=${inward}]`, ['', name, '', '']), 'attach');
+  // Name sign hangs from the front beam, readable from inside too. It sits a block above the
+  // eye-level row the [Sell] signs use, so a player looking at them sees under it.
+  at(2, 0, Y + 3, sign(`spruce_hanging_sign[attached=false,rotation=${ROTATION[inward]}]`, ['', name, '', ''],
+    { color: wool, back: true }), 'attach');
   at(-1, -1, Y + 3, `${P.light}[hanging=true]`, 'attach');
   at(5, -1, Y + 3, `${P.light}[hanging=true]`, 'attach');
   for (const [state, a] of stations) at(a, 2, Y + 1, resolve(state));
@@ -293,12 +303,16 @@ function stall({ side: sideName, a0, name, wool, signs = [], props, stations = [
     const facing = a < 0 ? minusA : a > 4 ? S.plusA : inward;
     const label = ['', GUIDES[key].title, '', ''];
     at(a, d, Y + 1, lecternState(facing, key), 'attach');
-    if (eaves) at(a, d, Y + 3, sign(`spruce_hanging_sign[attached=false,rotation=${ROTATION[facing]}]`, label), 'attach');
-    else at(a, d, Y + 2, sign(`spruce_wall_sign[facing=${inward}]`, label), 'attach');
+    if (eaves) at(a, d, Y + 3, sign(`spruce_hanging_sign[attached=false,rotation=${ROTATION[facing]}]`, label, { color: wool }), 'attach');
+    else at(a, d, Y + 2, sign(`spruce_wall_sign[facing=${inward}]`, label, { color: wool }), 'attach');
   }
-  signs.forEach((lines, i) => {
-    at(1 + (i % 3), 2, Y + 3 - Math.floor(i / 3), sign(`spruce_wall_sign[facing=${inward}]`, lines), 'attach');
-  });
+  if (buys.length) {
+    const slots = [1, 2, 3].map((a) => {
+      const [u, v] = S.at(a0 + a, 2);
+      return { x: CX + u, y: Y + 2, z: CZ + v, facing: inward };
+    });
+    MARKET.push({ id, color: wool, slots, buys });
+  }
   for (const [state, a, d, dy = 0] of props) at(a, d, Y + 1 + dy, resolve(state), dy ? 'attach' : 'build');
 }
 STALLS.forEach(stall);
@@ -441,6 +455,23 @@ write('clear', [...header('Clears trees and cuts the hill.'), ...clear]);
 write('terrain', [...header('Fills, paving, paths.'), ...emit(phases.terrain)]);
 write('structure', [...header('Stalls, well, bell frame, posts.'), ...emit(phases.build)]);
 write('attach', [...header('Blocks that need support: signs, lanterns, bell, plants.'), ...emit(phases.attach)]);
+
+// Item names are Essentials' (its items.json); a sign line fits 15 characters.
+const stallsYml = [
+  '# Generated by server/spawn-market/generate.mjs - do not edit by hand.',
+  '# The Market plugin picks a few of each stall\'s buys every day and writes them onto its slots.',
+  'sign-block: spruce_wall_sign',
+  'stalls:',
+  ...MARKET.flatMap(({ id, color, slots, buys }) => [
+    `  ${id}:`,
+    `    color: ${color}`,
+    '    slots:',
+    ...slots.map((s) => `      - {x: ${s.x}, y: ${s.y}, z: ${s.z}, facing: ${s.facing}}`),
+    '    buys:',
+    ...buys.map((b) => `      - {item: ${b.item}, amount: ${b.amount}, price: ${b.price}}`),
+  ]),
+];
+writeFileSync(join(here, '..', '..', 'market', 'src', 'main', 'resources', 'stalls.yml'), stallsYml.join('\n') + '\n');
 
 const modelOut = { origin: [CX, CZ], y: Y, outer: OUTER, clearTop: CLEAR_TOP, surface: Object.fromEntries(surfaceY), blocks: {} };
 for (const [k, s] of model) {

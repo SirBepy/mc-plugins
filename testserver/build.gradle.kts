@@ -5,7 +5,7 @@ plugins {
     id("xyz.jpenilla.run-paper") version "3.1.0"
 }
 
-val ourPlugins = listOf(":names", ":safechests", ":tag", ":claudebridge", ":tweaks", ":carry")
+val ourPlugins = listOf(":names", ":safechests", ":tag", ":claudebridge", ":tweaks", ":carry", ":market")
 
 // Pinned artifact URLs live in buildSrc/src/main/kotlin/ServerArtifacts.kt, shared with server/.
 val thirdPartyPlugins = ServerArtifacts.thirdPartyPlugins
@@ -43,6 +43,9 @@ fun registerPrepare(name: String, dir: java.io.File, withDatapacks: Boolean, mot
             // mean anything. Towny copies them into each world's own file only when it first sees the
             // world, so an older run dir needs its plugins/Towny/data/worlds/ deleted once.
             serverTownyConfig.copyTo(dir.resolve("plugins/Towny/settings/config.yml"), overwrite = true)
+            // Same for Essentials: its default config has every sign type switched off, so the spawn
+            // market's [Sell] signs only work with the real server's enabledSigns.
+            serverEssentialsConfig.copyTo(dir.resolve("plugins/Essentials/config.yml"), overwrite = true)
             // Offline mode lets the e2e bots join and RCON lets them run admin commands; this is a
             // local-only test server, so the RCON password is random per checkout and never committed.
             val props = dir.resolve("server.properties")
@@ -82,6 +85,7 @@ fun RunServer.configureCommon() {
 }
 
 val serverTownyConfig = rootProject.layout.projectDirectory.file("server/config/plugins/Towny/settings/config.yml").asFile
+val serverEssentialsConfig = rootProject.layout.projectDirectory.file("server/config/plugins/Essentials/config.yml").asFile
 val runDir = layout.projectDirectory.dir("run").asFile
 val e2eDir = layout.projectDirectory.dir("run-e2e").asFile
 val e2eDatapacksDir = layout.projectDirectory.dir("e2e-datapacks").asFile

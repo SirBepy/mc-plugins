@@ -114,17 +114,17 @@ that already has the square, `forceload` the area and run `spawn_market:structur
 `spawn_market:attach`, which leaves the cleared terrain and anything placed since alone.
 
 The functions are generated, never hand-edited: change `server/spawn-market/generate.mjs` (layout,
-palette, the [Sell] price table) or `server/spawn-market/guide.mjs` (the guide books) and rerun
-`node server/spawn-market/generate.mjs`;
+palette, each stall's buy pool and prices) or `server/spawn-market/guide.mjs` (the guide books) and
+rerun `node server/spawn-market/generate.mjs`;
 `node --test server/spawn-market/generate.test.mjs` checks the output. The terrain blend reads
 `server/spawn-market/terrain-snapshot.json`, the live ground heightmap taken 2026-10-05, so the
 build only fits that spot. Verified on server/local (live spawn region copied in): all 3812 blocks
-read back from the region file matched the generator's model. The [Sell] signs' first line is
-`<dark_blue>[Sell]`, Essentials' `signFormatSuccess`, since command-placed signs skip Essentials'
-own recolouring. That was not enough: on live a player reported (2026-10-05) that clicking them
-does nothing, so the [Sell] signs need writing by hand in-game until the cause is found.
+read back from the region file matched the generator's model.
 
-To put a price change on live without rebuilding, `data merge block <x y z> {front_text:{messages:[...]}}`
-each changed sign with its line from the regenerated `attach.mcfunction`, and `setblock <x y z> air`
-any slot the new table no longer fills. That keeps the existing sign blocks in place; the
-2026-10-05 farm rebalance went live this way.
+The datapack places no [Sell] signs. The Market plugin (`market/`) owns them: every day at midnight
+(Europe/Zagreb) it picks 2-3 items from each selling stall's pool, rolls each price up to 20% either
+side of its base, and writes them onto the stall's
+three eye-level sign spots, from `market/src/main/resources/stalls.yml`, which the generator writes
+too. So a pool or price change needs the generator run and a new Market jar. The signs' first line
+is `<dark_blue>[Sell]`, Essentials' `signFormatSuccess`; command- and plugin-placed signs with it
+pay out on live (balances rose after players used them, 2026-10-05).
