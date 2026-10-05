@@ -1,6 +1,5 @@
 package dev.sirbepy.mc.tag;
 
-import dev.sirbepy.mc.names.api.NamesApi;
 import dev.sirbepy.mc.tag.afk.AfkTracker;
 import dev.sirbepy.mc.tag.board.LeaderboardEntityService;
 import dev.sirbepy.mc.tag.board.ScoreboardService;
@@ -8,10 +7,7 @@ import dev.sirbepy.mc.tag.config.TagConfig;
 import dev.sirbepy.mc.tag.head.HeadService;
 import dev.sirbepy.mc.tag.log.LogService;
 import dev.sirbepy.mc.tag.prefix.PrefixService;
-import net.kyori.adventure.text.Component;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
-import org.bukkit.scoreboard.Scoreboard;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -196,38 +192,5 @@ class TagServiceAfkTest {
                 "auto-pass must not award the usual +10 for becoming IT");
         assertEquals(0L, service.state().tagbackExpiryMillis, "auto-pass must not apply a tagback cooldown");
         assertNull(service.state().lastTagger, "auto-pass must not set a tagback-protected lastTagger");
-    }
-
-    /** Bare no-op stand-in: these tests only exercise TagService's own AFK bookkeeping. */
-    private static final class NoopNamesApi implements NamesApi {
-        @Override
-        public void setPrefix(UUID player, String key, Component prefix, int priority) {
-        }
-
-        @Override
-        public void removePrefix(UUID player, String key) {
-        }
-
-        @Override
-        public Component nameComponent(Player player) {
-            return Component.text(player.getName());
-        }
-
-        @Override
-        public Component plainName(Player player) {
-            return Component.text(player.getName());
-        }
-
-        @Override
-        public void registerScoreboard(Scoreboard scoreboard) {
-        }
-
-        @Override
-        public void unregisterScoreboard(Scoreboard scoreboard) {
-        }
-
-        @Override
-        public void refresh(Player player) {
-        }
     }
 }

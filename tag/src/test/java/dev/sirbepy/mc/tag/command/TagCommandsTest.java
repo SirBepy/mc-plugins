@@ -1,7 +1,7 @@
 package dev.sirbepy.mc.tag.command;
 
 import dev.sirbepy.mc.core.Messages;
-import dev.sirbepy.mc.names.api.NamesApi;
+import dev.sirbepy.mc.tag.NoopNamesApi;
 import dev.sirbepy.mc.tag.TagService;
 import dev.sirbepy.mc.tag.board.LeaderboardEntityService;
 import dev.sirbepy.mc.tag.board.ScoreboardService;
@@ -13,8 +13,6 @@ import dev.sirbepy.mc.tag.prefix.PrefixService;
 import dev.sirbepy.mc.tag.state.PlayerStats;
 import net.kyori.adventure.text.Component;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
-import org.bukkit.scoreboard.Scoreboard;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -129,38 +127,5 @@ class TagCommandsTest {
 
     private static String plainText(net.kyori.adventure.text.Component component) {
         return net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(component);
-    }
-
-    /** Bare no-op stand-in: this test only exercises TagCommands' console-vs-player branching. */
-    private static final class NoopNamesApi implements NamesApi {
-        @Override
-        public void setPrefix(UUID player, String key, Component prefix, int priority) {
-        }
-
-        @Override
-        public void removePrefix(UUID player, String key) {
-        }
-
-        @Override
-        public Component nameComponent(Player player) {
-            return Component.text(player.getName());
-        }
-
-        @Override
-        public Component plainName(Player player) {
-            return Component.text(player.getName());
-        }
-
-        @Override
-        public void registerScoreboard(Scoreboard scoreboard) {
-        }
-
-        @Override
-        public void unregisterScoreboard(Scoreboard scoreboard) {
-        }
-
-        @Override
-        public void refresh(Player player) {
-        }
     }
 }
