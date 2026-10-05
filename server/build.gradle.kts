@@ -8,7 +8,7 @@ import java.security.MessageDigest
 // Gradle's Copy/Sync tasks, because a Sync would delete files it doesn't know about
 // (world saves, plugin data) and that is explicitly forbidden here.
 
-val ourPluginProjects = listOf(":names", ":safechests", ":tag", ":claudebridge", ":tweaks")
+val ourPluginProjects = listOf(":names", ":safechests", ":tag", ":claudebridge", ":tweaks", ":carry")
 
 fun sha256(file: File): String {
     val digest = MessageDigest.getInstance("SHA-256")

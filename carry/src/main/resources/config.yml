@@ -1,0 +1,57 @@
+# Carry: sneak + right-click a mob with an empty hand to pick it up, right-click a block to put it
+# down, sneak + left-click to throw it.
+
+# Entity type ids (minecraft namespace). Players and the Ender Dragon/Wither are never carryable,
+# even if listed. Unknown ids are skipped with a warning, so ids from a newer Minecraft are safe.
+carryable:
+  - allay
+  - armadillo
+  - axolotl
+  - bee
+  - camel
+  - cat
+  - chicken
+  - copper_golem
+  - cow
+  - donkey
+  - fox
+  - frog
+  - goat
+  - happy_ghast
+  - horse
+  - iron_golem
+  - llama
+  - mooshroom
+  - mule
+  - ocelot
+  - panda
+  - parrot
+  - pig
+  - polar_bear
+  - rabbit
+  - sheep
+  - sniffer
+  - snow_golem
+  - strider
+  - trader_llama
+  - turtle
+  - villager
+  - wandering_trader
+  - wolf
+
+# Velocity of a thrown mob, in blocks per tick (1.0 lands roughly 5 blocks away on flat ground).
+throw-strength: 1.0
+
+# Fraction of walking speed lost while carrying. 0.15 matches Slowness I.
+speed-penalty: 0.15
+
+# Shown in the action bar. An empty string silences a message.
+messages:
+  picked-up: "<gray>Right-click a block to put it down, or sneak + left-click to throw it."
+  denied-claim: "<red>You can't pick up mobs here."
+  denied-place: "<red>You can't put mobs down here."
+  denied-locked: "<red>That mob is locked."
+  denied-pet: "<red>That pet belongs to someone else."
+  denied-leashed: "<red>Unleash it first."
+  denied-busy: "<red>That mob can't be picked up right now."
+  reload-success: "<green>Carry config reloaded."

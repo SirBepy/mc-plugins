@@ -1,0 +1,14 @@
+name: Carry
+version: ${version}
+main: dev.sirbepy.mc.carry.CarryPlugin
+api-version: "26.2"
+softdepend: [Towny, Bolt]
+author: sirbepy
+
+permissions:
+  carry.use:
+    description: Pick up and carry mobs.
+    default: true
+  carry.admin:
+    description: Reload Carry's config.
+    default: op

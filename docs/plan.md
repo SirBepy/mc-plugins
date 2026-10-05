@@ -134,6 +134,18 @@ Per-event config: `enabled`, `broadcast` (all players), `console`, `format` (Min
 
 `/tag reload`.
 
+## Carry plugin
+
+Carry On style mob carrying, fully server-side so vanilla Java and Bedrock (Geyser) clients both work with no mod. Towny and Bolt are soft dependencies.
+
+- **Pick up:** sneak + right-click a carryable mob with an empty main hand. The mob rides the player's head as a real passenger (exact visuals on both editions; a crash leaves it a normal entity in the world, so nothing can be lost or duplicated). The carrier walks 15% slower (Slowness I), through a transient attribute modifier that is never saved.
+- **Carryable:** passive and friendly mobs listed in `config.yml` (animals, villagers, wandering traders, iron/snow/copper golems, allays). Players, the Ender Dragon and the Wither never, even if listed. A tamed pet only by its owner. Leashed, ridden, riding or trading mobs are refused.
+- **Hands locked while carrying:** no slot switching, item use, attacking, block breaking/placing, or inventory clicks. Nobody can interact with or damage the carried mob (void and `/kill` still work).
+- **Put down:** right-click a block, the mob lands on the clicked face. **Throw:** sneak + left-click launches it along the view (vanilla fall damage applies).
+- **Teleport, logout, death:** the mob is put down where the player was. Paper refuses a cross-world player teleport while the player has a passenger, before any event fires; HuskHomes ejects passengers itself before every teleport, and any dismount the plugin didn't make counts as a put-down there. An admin's cross-world Essentials `/tp` while carrying still fails.
+- **Protections:** picking up needs Towny destroy permission at the mob, putting down or throwing needs Towny build permission at the spot. A Bolt-locked mob needs Bolt destroy access, which SafeChests grants also satisfy.
+- `/carry reload`.
+
 ## Testing
 
 1. **Unit tests** (JUnit 5, plain logic wherever possible: points math, cooldowns, duration parsing, grant expiry, name validation). MockBukkit for listener/command behavior where it supports the API used.
