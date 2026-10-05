@@ -76,13 +76,13 @@ class MarketTest {
     }
 
     @Test
-    void eachStallBuysTwoOrThreeDistinctItemsInPoolOrder() {
+    void eachStallBuysThreeDistinctItemsInPoolOrder() {
         for (long seed = 0; seed < 200; seed++) {
             Market market = market(seed);
             market.rotate();
             for (Stall stall : layout.stalls()) {
                 List<Offer> buying = market.buying(stall.id());
-                assertTrue(buying.size() >= 2 && buying.size() <= 3, stall.id() + " buys " + buying.size());
+                assertEquals(3, buying.size(), stall.id() + " buys " + buying.size());
                 List<String> items = buying.stream().map(Offer::item).toList();
                 assertEquals(items.size(), new HashSet<>(items).size(), "duplicate offer at " + stall.id());
                 List<String> poolItems = stall.buys().stream().map(Offer::item).toList();

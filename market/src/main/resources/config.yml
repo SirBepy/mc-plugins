@@ -12,7 +12,7 @@ zone: Europe/Zagreb
 
 # How many items each stall buys per day (capped by its pool and its sign spots).
 items-per-stall:
-  min: 2
+  min: 3
   max: 3
 
 # Each day's price is the stalls.yml price times a random factor between 1 - spread and
