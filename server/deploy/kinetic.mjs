@@ -14,6 +14,7 @@
 //   log [n]                           last n lines of logs/latest.log (default 100)
 //   ls <dir>                          list files in a server directory
 //   prop <key> [value]                get/set one line in /server.properties (most keys need a restart)
+//   replace <file> <old> <new>        swap one exact, unique piece of text in a server file (e.g. a plugin config line)
 //   upload <local-file> <remote-dir>  upload one file into a server directory (overwrites)
 //   decompress <dir> <file>           decompress an archive already on the server
 //   delete <file...>                  delete files/dirs from server root (kept, unused today)
@@ -216,6 +217,16 @@ async function cmdProp(key, value) {
   console.log(`${key}=${value}`);
 }
 
+async function cmdReplace(file, oldText, newText) {
+  if (!file || !oldText || newText === undefined) throw new Error("replace requires <file> <old> <new>");
+  const id = await serverIdentifier();
+  const text = await filesContents(id, file);
+  const count = text.split(oldText).length - 1;
+  if (count !== 1) throw new Error(`"${oldText}" occurs ${count} times in ${file}, refusing to replace`);
+  await filesWrite(id, file, text.replace(oldText, () => newText));
+  console.log(`${file}: replaced 1 occurrence`);
+}
+
 // Pterodactyl uploads go to a short-lived signed Wings URL as multipart field "files", not
 // through the panel API itself.
 async function cmdUpload(localPath, dir) {
@@ -286,6 +297,9 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
         break;
       case "prop":
         await cmdProp(args[0], args.length > 1 ? args.slice(1).join(" ") : undefined);
+        break;
+      case "replace":
+        await cmdReplace(args[0], args[1], args[2]);
         break;
       case "upload":
         await cmdUpload(args[0], args[1]);

@@ -55,6 +55,10 @@ claude-reply.mjs's arguments.
   `kinetic.mjs power restart` to take effect. Java's `Properties` writer escapes a literal colon in
   a value as `\:`; `prop` prints that raw escaped line unchanged and writes a new value exactly as
   given (unescaped), since Paper accepts both forms on read.
+- **`replace` subcommand** edits any other live file in place: `kinetic.mjs replace <file> <old> <new>`
+  swaps one exact piece of text and refuses unless it occurs exactly once. From Git Bash, prefix
+  `MSYS_NO_PATHCONV=1` so a `/plugins/...` path isn't rewritten to the Git install folder. First
+  used 2026-10-06 for Towny's `town_mob_removal_ignored_spawn_causes` (cartel phone).
 - **`upload` subcommand** puts one local file into a server directory through the panel's signed
   upload URL, no SFTP key needed: `kinetic.mjs upload server/local/plugins/carry-0.1.0.jar plugins`
   (overwrites a same-named file). Take plugin jars from `server/local/plugins/` after
