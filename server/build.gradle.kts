@@ -2,13 +2,20 @@ import java.io.File
 import java.net.URI
 import java.security.MessageDigest
 
+plugins {
+    id("mc.server-deploy-bundle")
+    id("mc.server-seed-players")
+}
+
 // Assembles the real friends-server folder: our plugins + the pinned third-party list +
 // worldgen/committed datapacks + owner config, ready to copy to the Hetzner VPS later.
 // Mirrors testserver's imperative-task style (see testserver/build.gradle.kts) rather than
 // Gradle's Copy/Sync tasks, because a Sync would delete files it doesn't know about
-// (world saves, plugin data) and that is explicitly forbidden here.
+// (world saves, plugin data) and that is explicitly forbidden here. deployBundle (packaging the
+// VPS upload) and seedPlayers (Mojang UUID resolution) are separate convention plugins, applied
+// above, so this file stays to the assemble-mode task factory.
 
-val ourPluginProjects = listOf(":names", ":safechests", ":tag", ":claudebridge", ":tweaks", ":carry", ":market", ":dragonballs")
+val ourPluginProjects = ServerArtifacts.ourPluginProjects
 
 fun sha256(file: File): String {
     val digest = MessageDigest.getInstance("SHA-256")
@@ -49,15 +56,6 @@ fun downloadPinned(pinned: ServerArtifacts.PinnedJar, target: File) {
     check(actual == pinned.sha256) { "sha256 mismatch for ${pinned.filename}: expected ${pinned.sha256}, got $actual" }
 }
 
-fun copyTree(src: File, destRoot: File, exclude: (File) -> Boolean = { false }) {
-    if (!src.exists()) return
-    src.walkTopDown().filter { it.isFile && !exclude(it) }.forEach { file ->
-        val target = destRoot.resolve(file.relativeTo(src).path)
-        target.parentFile.mkdirs()
-        file.copyTo(target, overwrite = true)
-    }
-}
-
 // Seed data becomes the live server's own after first boot (e.g. LuckPerms data), so a target
 // file that already exists in the dist dir (ours or the running server's) is left alone.
 fun copyTreeIfAbsent(src: File, destRoot: File, exclude: (File) -> Boolean = { false }) {
@@ -70,8 +68,6 @@ fun copyTreeIfAbsent(src: File, destRoot: File, exclude: (File) -> Boolean = { f
         }
     }
 }
-
-val isReadmeFile: (File) -> Boolean = { it.name == "README.md" }
 
 // Minimal hand-rolled JSON: these filenames never contain a quote or backslash (Modrinth slugs and
 // the committed datapacks/ entries), so a full JSON writer dependency isn't worth adding for this.
@@ -157,44 +153,33 @@ fun applyPropertyOverrides(propsFile: File, overrides: Map<String, String>) {
 // whatever RCON already authenticates with so a booted server's console doesn't get locked out.
 fun rconPasswordOrGenerate(previous: String?) = previous?.takeIf { it.isNotBlank() } ?: java.util.UUID.randomUUID().toString()
 
+// Shared by applyLocalOverrides/applyPregenOverrides below: both are disposable, local-only boots
+// needing the same 8 keys, differing only in which port pair they bind.
+fun disposableBootOverrides(port: String, rconPort: String, previousRconPassword: String?) = linkedMapOf(
+    "online-mode" to "false",
+    "white-list" to "false",
+    "enforce-whitelist" to "false",
+    "server-ip" to "127.0.0.1",
+    "server-port" to port,
+    "enable-rcon" to "true",
+    "rcon.port" to rconPort,
+    "rcon.password" to rconPasswordOrGenerate(previousRconPassword),
+)
+
 // Local-smoke-test-only overrides, applied after the real server.properties is copied in. Never
 // called by assembleServer, only assembleLocalServer, so these never reach the real server.
 fun applyLocalOverrides(propsFile: File, previousRconPassword: String?) {
-    applyPropertyOverrides(
-        propsFile,
-        linkedMapOf(
-            "online-mode" to "false",
-            "white-list" to "false",
-            "enforce-whitelist" to "false",
-            "server-ip" to "127.0.0.1",
-            // 25566/25576 (not the real server's 25565/25575): so this local smoke server can run
-            // alongside testserver's bot e2e server, which owns 25565/25575.
-            "server-port" to "25566",
-            "enable-rcon" to "true",
-            "rcon.port" to "25576",
-            "rcon.password" to rconPasswordOrGenerate(previousRconPassword),
-        ),
-    )
+    // 25566/25576 (not the real server's 25565/25575): so this local smoke server can run
+    // alongside testserver's bot e2e server, which owns 25565/25575.
+    applyPropertyOverrides(propsFile, disposableBootOverrides("25566", "25576", previousRconPassword))
 }
 
 // Terrain-pregeneration-only overrides: a disposable, Chunky-driven boot used once to generate the
 // world before it's uploaded to the host, never touched by assembleServer or assembleLocalServer.
 fun applyPregenOverrides(propsFile: File, previousRconPassword: String?) {
-    applyPropertyOverrides(
-        propsFile,
-        linkedMapOf(
-            "online-mode" to "false",
-            "white-list" to "false",
-            "enforce-whitelist" to "false",
-            "server-ip" to "127.0.0.1",
-            // 25567/25577: distinct from the real server (25565/25575), server/local (25566/25576)
-            // and testserver's e2e server (25565/25575), so all four can run at once if needed.
-            "server-port" to "25567",
-            "enable-rcon" to "true",
-            "rcon.port" to "25577",
-            "rcon.password" to rconPasswordOrGenerate(previousRconPassword),
-        ),
-    )
+    // 25567/25577: distinct from the real server (25565/25575), server/local (25566/25576)
+    // and testserver's e2e server (25565/25575), so all four can run at once if needed.
+    applyPropertyOverrides(propsFile, disposableBootOverrides("25567", "25577", previousRconPassword))
 }
 
 // Local-smoke-test-only: Geyser's own Bedrock login validation checks a real Xbox Live JWT chain,
@@ -301,182 +286,6 @@ fun registerAssemble(name: String, distDirPath: String, mode: AssembleMode) = ta
 registerAssemble("assembleServer", "dist", AssembleMode.REAL)
 registerAssemble("assembleLocalServer", "local", AssembleMode.LOCAL)
 registerAssemble("assemblePregenServer", "pregen", AssembleMode.PREGEN)
-
-fun gitShortSha(): String {
-    val process = ProcessBuilder("git", "rev-parse", "--short", "HEAD")
-        .directory(rootDir)
-        .redirectErrorStream(true)
-        .start()
-    val output = process.inputStream.bufferedReader().readText().trim()
-    process.waitFor()
-    return output.ifBlank { "unknown" }
-}
-
-// server/dist/ should never contain these (nothing in assembleServer writes them), but this is a
-// defensive check so a future change to this file can't accidentally tar up a booted server's
-// world saves, logs, or Floodgate's key.pem into something that gets uploaded to the VPS.
-fun isForbiddenInBundle(relPath: String): Boolean {
-    val normalized = relPath.replace('\\', '/')
-    return (normalized.startsWith("world/") && !normalized.startsWith("world/datapacks/")) ||
-        normalized == "logs" || normalized.startsWith("logs/") || normalized.contains("/logs/") ||
-        normalized.endsWith("key.pem")
-}
-
-tasks.register("deployBundle") {
-    group = "server"
-    description = "Packages server/dist into server/bundle/mc-server-bundle.tar.gz for upload to the VPS."
-    outputs.upToDateWhen { false }
-    dependsOn("assembleServer")
-    doLast {
-        val distDir = layout.projectDirectory.dir("dist").asFile
-        val seedDir = layout.projectDirectory.dir("seed").asFile
-        // Lives under build/ (unlike dist/local): bundle staging is fully regenerated every run,
-        // is never booted, and holds no world/plugin data worth protecting from `gradlew clean`.
-        val stagingDir = layout.buildDirectory.dir("bundle-staging").get().asFile
-        stagingDir.deleteRecursively()
-        stagingDir.mkdirs()
-
-        // Seed-originated files (e.g. the committed LuckPerms starting groups) land in dist at the
-        // same relative path assembleServer wrote them to (copyTreeIfAbsent), since nothing else in
-        // a fresh assemble creates those paths. Excluding them from the bulk copy below and copying
-        // server/seed/ separately into a top-level seed/ dir is what lets apply-bundle.sh apply the
-        // two trees with different overwrite rules on the remote end.
-        val seedRelativePaths = seedDir.walkTopDown()
-            .filter { it.isFile && it.name != "README.md" }
-            .map { it.relativeTo(seedDir).path }
-            .toSet()
-
-        distDir.walkTopDown().filter { it.isFile }.forEach { file ->
-            val rel = file.relativeTo(distDir).path
-            if (rel in seedRelativePaths) return@forEach
-            if (isForbiddenInBundle(rel)) {
-                logger.warn("deployBundle: skipping unexpected file in dist (should never be there): $rel")
-                return@forEach
-            }
-            val target = stagingDir.resolve(rel)
-            target.parentFile.mkdirs()
-            file.copyTo(target, overwrite = true)
-        }
-        copyTree(seedDir, stagingDir.resolve("seed"), exclude = isReadmeFile)
-
-        // Rename the version-pinned jar to a stable name so the deploy scripts and apply-bundle.sh
-        // never need to know the exact Paper build; bump ServerArtifacts.kt's pin, nothing else.
-        val pinnedJarName = ServerArtifacts.paperDownload.filename
-        val pinnedJar = stagingDir.resolve(pinnedJarName)
-        check(pinnedJar.exists()) { "expected $pinnedJarName in server/dist; run :server:assembleServer first" }
-        pinnedJar.copyTo(stagingDir.resolve("paper.jar"), overwrite = true)
-        pinnedJar.delete()
-        // start.sh/start.bat already reference the pinned jar name; rewrite just that one line
-        // rather than regenerating the file, so Aikar's flags stay defined in exactly one place.
-        val startSh = stagingDir.resolve("start.sh")
-        startSh.writeText(startSh.readText().replace(pinnedJarName, "paper.jar"))
-        val startBat = stagingDir.resolve("start.bat")
-        if (startBat.exists()) startBat.writeText(startBat.readText().replace(pinnedJarName, "paper.jar"))
-
-        stagingDir.resolve("BUNDLE_VERSION").writeText("${gitShortSha()} ${java.time.LocalDate.now()}\n")
-
-        val bundleDir = layout.projectDirectory.dir("bundle").asFile.apply { mkdirs() }
-        val tarFile = bundleDir.resolve("mc-server-bundle.tar.gz")
-        tarFile.delete()
-        val topLevelEntries = stagingDir.listFiles()!!.map { it.name }.sorted()
-        val tarCommand = listOf("tar", "czf", tarFile.absolutePath, "-C", stagingDir.absolutePath) + topLevelEntries
-        val tarProcess = ProcessBuilder(tarCommand).redirectErrorStream(true).start()
-        val tarOutput = tarProcess.inputStream.bufferedReader().readText()
-        check(tarProcess.waitFor() == 0) { "tar failed: $tarOutput" }
-
-        logger.lifecycle("Wrote $tarFile")
-    }
-}
-
-// Generates the first-boot op/whitelist/LuckPerms-admin seed data from server/players.properties,
-// since RCON is off on the real server and there's no console to run `/op`/`/whitelist add` by hand
-// after the very first boot. Writes into server/seed/, so a value already set by the live server
-// (e.g. the owner editing ops.json directly) is never overwritten on a later re-seed.
-data class SeedPlayer(val name: String, val isAdmin: Boolean)
-data class ResolvedSeedPlayer(val name: String, val uuid: String, val isAdmin: Boolean)
-
-fun readSeedPlayers(): List<SeedPlayer> {
-    val file = layout.projectDirectory.file("players.properties").asFile
-    if (!file.exists()) return emptyList()
-    val props = java.util.Properties().apply { file.inputStream().use { load(it) } }
-    fun names(key: String) = props.getProperty(key, "").split(",").map { it.trim() }.filter { it.isNotEmpty() }
-    return names("admins").map { SeedPlayer(it, isAdmin = true) } + names("players").map { SeedPlayer(it, isAdmin = false) }
-}
-
-fun dashedUuid(hex32: String): String {
-    check(hex32.length == 32) { "expected a 32-char hex UUID, got '$hex32'" }
-    return "${hex32.substring(0, 8)}-${hex32.substring(8, 12)}-${hex32.substring(12, 16)}-" +
-        "${hex32.substring(16, 20)}-${hex32.substring(20)}"
-}
-
-// Mojang's public read-only profile lookup; no auth needed. Returns null if the name doesn't
-// resolve to a Java account (typo, Bedrock-only via Floodgate, etc).
-fun resolveMojangUuid(name: String): String? {
-    val connection = URI("https://api.mojang.com/users/profiles/minecraft/$name").toURL()
-        .openConnection() as java.net.HttpURLConnection
-    connection.connectTimeout = 10_000
-    connection.readTimeout = 10_000
-    return try {
-        if (connection.responseCode != 200) return null
-        val body = connection.inputStream.bufferedReader().readText()
-        Regex(""""id"\s*:\s*"([0-9a-fA-F]{32})"""").find(body)?.groupValues?.get(1)?.let { dashedUuid(it) }
-    } finally {
-        connection.disconnect()
-    }
-}
-
-tasks.register("seedPlayers") {
-    group = "server"
-    description = "Reads server/players.properties and writes server/seed/{ops.json,whitelist.json,LuckPerms admin users}."
-    outputs.upToDateWhen { false }
-    doLast {
-        val wanted = readSeedPlayers()
-        if (wanted.isEmpty()) {
-            logger.lifecycle("seedPlayers: server/players.properties has no admins/players configured yet, nothing to do.")
-            return@doLast
-        }
-        val resolved = wanted.mapNotNull { p ->
-            val uuid = resolveMojangUuid(p.name)
-            if (uuid == null) {
-                logger.warn("seedPlayers: could not resolve a Mojang UUID for '${p.name}' (typo, or not a Java account?), skipping")
-                null
-            } else {
-                ResolvedSeedPlayer(p.name, uuid, p.isAdmin)
-            }
-        }
-        if (resolved.isEmpty()) return@doLast
-
-        val seedDir = layout.projectDirectory.dir("seed").asFile
-
-        fun jsonArray(entries: List<ResolvedSeedPlayer>, fields: (ResolvedSeedPlayer) -> String) =
-            if (entries.isEmpty()) "[]\n" else "[\n" + entries.joinToString(",\n") { "  {\n${fields(it)}\n  }" } + "\n]\n"
-
-        seedDir.resolve("ops.json").apply {
-            parentFile.mkdirs()
-            writeText(
-                jsonArray(resolved.filter { it.isAdmin }) { r ->
-                    "    \"uuid\": \"${r.uuid}\",\n    \"name\": \"${r.name}\",\n    \"level\": 4,\n    \"bypassesPlayerLimit\": false"
-                }
-            )
-        }
-        seedDir.resolve("whitelist.json").apply {
-            parentFile.mkdirs()
-            writeText(jsonArray(resolved) { r -> "    \"uuid\": \"${r.uuid}\",\n    \"name\": \"${r.name}\"" })
-        }
-
-        // Format matches LuckPerms' own YamlUser output: a bare group name under "parents:" (the
-        // per-user file's own inheritance key), unlike a group file's "permissions:" list, which
-        // expresses inheriting ANOTHER group as a "group.<name>" permission node instead.
-        val usersDir = seedDir.resolve("plugins/LuckPerms/yaml-storage/users").apply { mkdirs() }
-        resolved.filter { it.isAdmin }.forEach { r ->
-            usersDir.resolve("${r.uuid}.yml").writeText(
-                "uuid: ${r.uuid}\nname: ${r.name}\nprimary-group: admin\nparents:\n- admin\n"
-            )
-        }
-
-        logger.lifecycle("seedPlayers: wrote seed files for ${resolved.size} player(s), ${resolved.count { it.isAdmin }} admin.")
-    }
-}
 
 // No build/compile plugin is applied to this module (it only assembles files), so there's no
 // `clean` task by default; added for the one-time migration off the old server/build/{dist,local}
