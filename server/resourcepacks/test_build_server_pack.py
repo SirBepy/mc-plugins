@@ -1,7 +1,7 @@
 """Checks the built join pack: the Pollos gun and katana looks resolve to a model and texture inside
 the zip, the gunshot Tweaks plays resolves to an .ogg inside it, the Dragon Radar and Shenron looks
-are wired up and have the expected pixels, and every other crossbow, netherite sword, compass and
-vanilla sound still uses the vanilla 26.3 definition.
+are wired up and have the expected pixels, phantom sounds carry 32 blocks, and every other crossbow,
+netherite sword, compass and vanilla sound still uses the vanilla 26.3 definition.
 
 Run from server/resourcepacks/: python -m unittest test_build_server_pack
 """
@@ -149,8 +149,19 @@ class BuiltPackTest(unittest.TestCase):
         subtitles = self.json(f"assets/{namespace}/lang/en_us.json")
         self.assertIn(sounds[event]["subtitle"], subtitles)
 
-    def test_vanilla_sounds_are_untouched(self):
-        self.assertNotIn("assets/minecraft/sounds.json", self.entries)
+    def test_phantom_sounds_carry_32_blocks_and_the_rest_stay_vanilla(self):
+        # The Tweaks phantom buff replays the screech for players 16-32 blocks out; these entries
+        # are vanilla 26.3's phantom sounds with only the attenuation stretched from 16 to 32.
+        listener = (ROOT / "tweaks/src/main/java/dev/sirbepy/mc/tweaks/listener/PhantomBuffListener.java").read_text()
+        pack_range = float(re.search(r"PACK_SOUND_RANGE = ([\d.]+);", listener).group(1))
+        sounds = self.json("assets/minecraft/sounds.json")
+        self.assertEqual(set(sounds), {f"entity.phantom.{e}" for e in ("ambient", "bite", "death", "flap", "hurt", "swoop")})
+        for event, entry in sounds.items():
+            self.assertTrue(entry["replace"], event)
+            self.assertEqual(entry["subtitle"], f"subtitles.{event}")
+            for sound in entry["sounds"]:
+                self.assertTrue(sound["name"].startswith("mob/phantom/"), event)
+                self.assertEqual(sound["attenuation_distance"], pack_range, event)
         self.assertFalse(any(name.startswith("assets/minecraft/sounds/") for name in self.entries))
 
     def test_other_crossbows_stay_vanilla(self):
@@ -181,15 +192,30 @@ class BuiltPackTest(unittest.TestCase):
 
     def test_dragon_radar_has_32_frames_with_a_texture_each(self):
         compass = self.json("assets/minecraft/items/compass.json")["model"]
-        radar = next(c for c in compass["cases"] if c["when"] == "dragon_radar")["model"]
-        self.assertEqual(radar["property"], "minecraft:compass")
-        self.assertEqual(radar["target"], "spawn")
-        self.assertEqual(radar["scale"], 32.0)
-        refs = {e["model"]["model"] for e in radar["entries"]}
-        self.assertEqual(len(refs), 32)
-        for ref in refs:
-            model = self.json(asset(ref, "models", "json"))
-            self.assertIn(asset(model["textures"]["layer0"], "textures", "png"), self.entries, ref)
+        for when in ("dragon_radar", "dragon_radar_nether", "dragon_radar_end"):
+            radar = next(c for c in compass["cases"] if c["when"] == when)["model"]
+            self.assertEqual(radar["property"], "minecraft:compass")
+            self.assertEqual(radar["target"], "spawn")
+            self.assertEqual(radar["scale"], 32.0)
+            refs = {e["model"]["model"] for e in radar["entries"]}
+            self.assertEqual(len(refs), 32, when)
+            for ref in refs:
+                model = self.json(asset(ref, "models", "json"))
+                self.assertIn(asset(model["textures"]["layer0"], "textures", "png"), self.entries, ref)
+
+    def test_nether_and_end_radars_have_their_own_idle_look(self):
+        self.assert_look_resolves("compass", "dragon_radar_nether_idle")
+        self.assert_look_resolves("compass", "dragon_radar_end_idle")
+
+    def test_nether_radar_casing_is_red_and_end_radar_casing_is_purple(self):
+        def casing(name):
+            png = Image.open(io.BytesIO(self.entries[f"assets/claudesmp/textures/item/{name}.png"]))
+            return png.convert("RGBA").load()[12, 1]
+        r, g, b, _a = casing("dragon_radar_nether_idle")
+        self.assertGreater(r, 2 * g)
+        r, g, b, _a = casing("dragon_radar_end_idle")
+        self.assertGreater(b, g)
+        self.assertGreater(r, g)
 
     def test_other_compasses_stay_vanilla(self):
         compass = self.json("assets/minecraft/items/compass.json")["model"]
