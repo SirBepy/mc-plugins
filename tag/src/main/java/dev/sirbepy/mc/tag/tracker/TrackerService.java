@@ -10,6 +10,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -25,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 /**
  * IT's tracker compass: a PDC-marked compass {@link TrackerListener} keeps inside IT's own
@@ -130,6 +132,53 @@ public final class TrackerService {
     public void forget(UUID it) {
         targets.remove(it);
         lastCycle.remove(it);
+    }
+
+    /**
+     * Every trackable candidate for IT's compass: Bukkit-side wiring only (who's online, nearby,
+     * vanished, AFK, opted-out). The ordering/eligibility rules stay in {@link TrackerTargets},
+     * same split as {@code AfkService}'s own candidate gathering for the idle-pass check.
+     */
+    public List<Candidate> candidatesFor(Player it, Predicate<UUID> isAfk, Predicate<UUID> isOptedOut) {
+        Location here = it.getLocation();
+        return TrackerTargets.trackable(Bukkit.getOnlinePlayers().stream()
+                .filter(p -> !p.getUniqueId().equals(it.getUniqueId()))
+                // Vanished players (Essentials /vanish hides them from IT) must not leak through the tracker.
+                .filter(it::canSee)
+                .map(p -> {
+                    boolean sameWorld = p.getWorld().equals(it.getWorld());
+                    return new Candidate(p.getUniqueId(), p.getName(), sameWorld,
+                            sameWorld ? p.getLocation().distance(here) : 0.0, isAfk.test(p.getUniqueId()),
+                            isOptedOut.test(p.getUniqueId()), playable(p));
+                })
+                .toList());
+    }
+
+    private static boolean playable(Player player) {
+        return player.getGameMode() == GameMode.SURVIVAL || player.getGameMode() == GameMode.ADVENTURE;
+    }
+
+    /** Gives IT the tracker, or takes it away when {@code config.enabled} is off (e.g. after a reload). */
+    public void sync(Player it, TrackerConfig config) {
+        if (config.enabled) {
+            give(it, config);
+        } else {
+            revoke(it);
+        }
+    }
+
+    /** Re-gives a tracker lost to death or {@code /clear}, re-points it and refreshes the action bar. */
+    public void tick(Player it, TrackerConfig config, Predicate<UUID> isAfk, Predicate<UUID> isOptedOut) {
+        give(it, config);
+        update(it, candidatesFor(it, isAfk, isOptedOut), config);
+    }
+
+    /** Right-click handling: moves to the next candidate and refreshes the action bar when it moved. */
+    public void cycleAndUpdate(Player it, TrackerConfig config, Predicate<UUID> isAfk, Predicate<UUID> isOptedOut) {
+        List<Candidate> trackable = candidatesFor(it, isAfk, isOptedOut);
+        if (cycle(it, trackable, System.currentTimeMillis())) {
+            update(it, trackable, config);
+        }
     }
 
     /** Right-click: moves to the next trackable player. Returns false when debounced. */
