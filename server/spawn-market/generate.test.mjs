@@ -84,9 +84,14 @@ test('the old crafting_table/smithing_table/stonecutter/grindstone/cartography_t
 
 const station = JSON.parse(readFileSync(join(here, 'dragonballs-station.json'), 'utf8'));
 
-test('dragonballs-station.json exports the radar sign and 7 head-pedestal coordinates', () => {
-  assert.equal(station.radarSign.world, 'world');
-  for (const k of ['x', 'y', 'z']) assert.equal(typeof station.radarSign[k], 'number');
+const SETS = ['overworld', 'nether', 'end'];
+
+test('dragonballs-station.json exports one radar sign per ball set and 7 head-pedestal coordinates', () => {
+  assert.deepEqual(Object.keys(station.radarSigns), SETS);
+  for (const s of SETS) {
+    assert.equal(station.radarSigns[s].world, 'world');
+    for (const k of ['x', 'y', 'z']) assert.equal(typeof station.radarSigns[s][k], 'number');
+  }
   assert.equal(station.displayHeads.length, 7);
   for (const h of station.displayHeads) {
     assert.equal(h.world, 'world');
@@ -94,15 +99,23 @@ test('dragonballs-station.json exports the radar sign and 7 head-pedestal coordi
   }
 });
 
-test('the radar sign is a real sign at the exported coordinates, with the exact 4 lines, not an Essentials shop sign', () => {
-  const { x, y, z } = station.radarSign;
-  const radarLine = lines('attach').find((l) => l.startsWith(`setblock ${x} ${y} ${z} `) && l.includes('_sign'));
-  assert.ok(radarLine, `no sign setblock at ${x} ${y} ${z}`);
-  assert.ok(!radarLine.includes('{text:"[Sell]"') && !radarLine.includes('{text:"[Buy]"'));
-  const msgs = radarLine.slice(radarLine.indexOf('_text:')).replace(/color:"[a-z_]+"/g, '')
-    .match(/"((?:[^"\\]|\\.)*)"/g).map((m) => JSON.parse(m));
-  assert.deepEqual(msgs, ['[Dragon Radar]', 'Points at the', 'nearest ball', '1000 coins']);
-  assert.match(radarLine, /text:"\[Dragon Radar\]",color:"gold",bold:true/);
+const RADAR_SIGNS = {
+  overworld: { lines: ['[Dragon Radar]', 'Points at the', 'nearest ball', '1000 coins'], title: /text:"\[Dragon Radar\]",color:"gold",bold:true/ },
+  nether: { lines: ['[Nether Radar]', 'Finds Nether', 'balls only', '5000 coins'], title: /text:"\[Nether Radar\]",color:"red",bold:true/ },
+  end: { lines: ['[End Radar]', 'Finds End', 'balls only', '20000 coins'], title: /text:"\[End Radar\]",color:"light_purple",bold:true/ },
+};
+
+test('each radar sign is a real sign at its exported coordinates, with the exact 4 lines, not an Essentials shop sign', () => {
+  for (const [set, want] of Object.entries(RADAR_SIGNS)) {
+    const { x, y, z } = station.radarSigns[set];
+    const radarLine = lines('attach').find((l) => l.startsWith(`setblock ${x} ${y} ${z} `) && l.includes('_sign'));
+    assert.ok(radarLine, `no ${set} sign setblock at ${x} ${y} ${z}`);
+    assert.ok(!radarLine.includes('{text:"[Sell]"') && !radarLine.includes('{text:"[Buy]"'));
+    const msgs = radarLine.slice(radarLine.indexOf('_text:')).replace(/color:"[a-z_]+"/g, '')
+      .match(/"((?:[^"\\]|\\.)*)"/g).map((m) => JSON.parse(m));
+    assert.deepEqual(msgs, want.lines);
+    assert.match(radarLine, want.title);
+  }
 });
 
 // Adjacent pedestals of the same state fold into one `fill` command (emit()'s row-merging), so
@@ -134,9 +147,14 @@ const model = JSON.parse(readFileSync(join(here, 'model.json'), 'utf8'));
 const lecternKey = Object.entries(model.blocks).find(([, s]) => s.includes('lectern[') && s.includes('title:"Dragon Balls"'))[0];
 const [lecternX, lecternY, lecternZ] = lecternKey.split(',').map(Number);
 
-test('the radar sign, the lectern and all 7 display-head spots sit at distinct coordinates', () => {
+test('the radar signs, the lectern and all 7 display-head spots sit at distinct coordinates', () => {
   const keyOf = ({ x, y, z }) => `${x},${y},${z}`;
-  const seen = new Set([keyOf(station.radarSign), `${lecternX},${lecternY},${lecternZ}`]);
+  const seen = new Set([`${lecternX},${lecternY},${lecternZ}`]);
+  for (const s of SETS) {
+    const k = keyOf(station.radarSigns[s]);
+    assert.ok(!seen.has(k), `${s} radar sign shares ${k}`);
+    seen.add(k);
+  }
   for (const h of station.displayHeads) {
     const k = keyOf(h);
     assert.ok(!seen.has(k), `${k} is shared between the radar sign/lectern and a display-head spot`);
@@ -145,7 +163,7 @@ test('the radar sign, the lectern and all 7 display-head spots sit at distinct c
   // Also distinct in plan view (x,z), regardless of y: a head one block above or below the sign
   // or lectern would still visually block it.
   const planOf = ({ x, z }) => `${x},${z}`;
-  const plans = new Set([planOf(station.radarSign), `${lecternX},${lecternZ}`]);
+  const plans = new Set([...SETS.map((s) => planOf(station.radarSigns[s])), `${lecternX},${lecternZ}`]);
   for (const h of station.displayHeads) {
     const p = planOf(h);
     assert.ok(!plans.has(p), `${p} (x,z) is shared between the radar sign/lectern and a display-head spot`);

@@ -99,6 +99,16 @@ export function buildStalls(model, { GUIDES, lecternState }) {
           { text: '[Dragon Radar]', color: 'gold', bold: true },
           'Points at the', 'nearest ball', '1000 coins',
         ]), 1, 2, 1],
+        // One radar per ball set (Joe, 2026-10-07): Nether mirrors the Overworld sign across the
+        // lectern, End sits on top, above the guide book's label sign. Same coordinate rule as above.
+        [sign('spruce_wall_sign[facing=INWARD]', [
+          { text: '[Nether Radar]', color: 'red', bold: true },
+          'Finds Nether', 'balls only', '5000 coins',
+        ]), 3, 2, 1],
+        [sign('spruce_wall_sign[facing=INWARD]', [
+          { text: '[End Radar]', color: 'light_purple', bold: true },
+          'Finds End', 'balls only', '20000 coins',
+        ]), 2, 2, 2],
       ],
     },
     {
@@ -175,15 +185,15 @@ export function buildStalls(model, { GUIDES, lecternState }) {
   }
   STALLS.forEach(stall);
 
-  // Dragon Balls station: export the radar sign and the 7 head-pedestal spots for the
-  // dragonballs plugin, which places decorative heads on them and recognises the radar sign by
+  // Dragon Balls station: export the 3 radar signs and the 7 head-pedestal spots for the
+  // dragonballs plugin, which places decorative heads on them and recognises each radar sign by
   // these exact coordinates, not by its text. Mirrors the (a, d) pairs used in the stall above.
   {
     const S = side('west');
     const at = (a, d, y) => { const [u, v] = S.at(DB_A0 + a, d); return { world: 'world', x: CX + u, y, z: CZ + v }; };
     const PEDESTALS = [[1, 0], [2, 0], [3, 0], [-1, 0], [-1, 1], [5, 0], [5, 1]];
     writeFileSync(join(here, 'dragonballs-station.json'), JSON.stringify({
-      radarSign: at(1, 2, Y + 2),
+      radarSigns: { overworld: at(1, 2, Y + 2), nether: at(3, 2, Y + 2), end: at(2, 2, Y + 3) },
       displayHeads: PEDESTALS.map(([a, d]) => at(a, d, Y + 2)),
     }, null, 2) + '\n');
   }
