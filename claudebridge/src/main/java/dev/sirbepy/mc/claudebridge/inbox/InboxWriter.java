@@ -1,5 +1,7 @@
 package dev.sirbepy.mc.claudebridge.inbox;
 
+import dev.sirbepy.mc.core.Json;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -21,10 +23,10 @@ public final class InboxWriter {
     }
 
     public static void append(File inboxFile, String player, UUID uuid, String message, Instant time) throws IOException {
-        String line = "{\"time\":\"" + jsonEscape(time.toString())
-                + "\",\"player\":\"" + jsonEscape(player)
-                + "\",\"uuid\":\"" + jsonEscape(uuid.toString())
-                + "\",\"message\":\"" + jsonEscape(message)
+        String line = "{\"time\":\"" + Json.escape(time.toString())
+                + "\",\"player\":\"" + Json.escape(player)
+                + "\",\"uuid\":\"" + Json.escape(uuid.toString())
+                + "\",\"message\":\"" + Json.escape(message)
                 + "\"}\n";
         File parent = inboxFile.getParentFile();
         if (parent != null) {
@@ -32,27 +34,5 @@ public final class InboxWriter {
         }
         Files.write(inboxFile.toPath(), line.getBytes(StandardCharsets.UTF_8),
                 StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-    }
-
-    static String jsonEscape(String value) {
-        StringBuilder out = new StringBuilder(value.length());
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            switch (c) {
-                case '"' -> out.append("\\\"");
-                case '\\' -> out.append("\\\\");
-                case '\n' -> out.append("\\n");
-                case '\r' -> out.append("\\r");
-                case '\t' -> out.append("\\t");
-                default -> {
-                    if (c < 0x20) {
-                        out.append(String.format("\\u%04x", (int) c));
-                    } else {
-                        out.append(c);
-                    }
-                }
-            }
-        }
-        return out.toString();
     }
 }

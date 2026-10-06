@@ -1,5 +1,7 @@
 package dev.sirbepy.mc.dragonballs.summon.wish;
 
+import dev.sirbepy.mc.core.Json;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,22 +26,22 @@ public final class WishJsonWriter {
 
     public static String wishLine(Instant time, String session, String dragon, int wishesLeft,
                                    String player, UUID uuid, String message) {
-        return "{\"time\":\"" + jsonEscape(time.toString())
-                + "\",\"session\":\"" + jsonEscape(session)
-                + "\",\"dragon\":\"" + jsonEscape(dragon)
+        return "{\"time\":\"" + Json.escape(time.toString())
+                + "\",\"session\":\"" + Json.escape(session)
+                + "\",\"dragon\":\"" + Json.escape(dragon)
                 + "\",\"wishesLeft\":" + wishesLeft
-                + ",\"player\":\"" + jsonEscape(player)
-                + "\",\"uuid\":\"" + jsonEscape(uuid.toString())
-                + "\",\"message\":\"" + jsonEscape(message)
+                + ",\"player\":\"" + Json.escape(player)
+                + "\",\"uuid\":\"" + Json.escape(uuid.toString())
+                + "\",\"message\":\"" + Json.escape(message)
                 + "\"}";
     }
 
     public static String grantedLine(Instant time, String session, int count, String note) {
-        return "{\"time\":\"" + jsonEscape(time.toString())
-                + "\",\"session\":\"" + jsonEscape(session)
+        return "{\"time\":\"" + Json.escape(time.toString())
+                + "\",\"session\":\"" + Json.escape(session)
                 + "\",\"type\":\"grant\""
                 + ",\"count\":" + count
-                + ",\"note\":\"" + jsonEscape(note == null ? "" : note)
+                + ",\"note\":\"" + Json.escape(note == null ? "" : note)
                 + "\"}";
     }
 
@@ -50,27 +52,5 @@ public final class WishJsonWriter {
         }
         Files.write(file.toPath(), (line + "\n").getBytes(StandardCharsets.UTF_8),
                 StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-    }
-
-    static String jsonEscape(String value) {
-        StringBuilder out = new StringBuilder(value.length());
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            switch (c) {
-                case '"' -> out.append("\\\"");
-                case '\\' -> out.append("\\\\");
-                case '\n' -> out.append("\\n");
-                case '\r' -> out.append("\\r");
-                case '\t' -> out.append("\\t");
-                default -> {
-                    if (c < 0x20) {
-                        out.append(String.format("\\u%04x", (int) c));
-                    } else {
-                        out.append(c);
-                    }
-                }
-            }
-        }
-        return out.toString();
     }
 }
