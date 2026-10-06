@@ -26,8 +26,16 @@
             }
           ],
           "fallback": {
-            "type": "minecraft:model",
-            "model": "claudesmp:item/pollos_gun"
+            "type": "minecraft:condition",
+            "property": "minecraft:using_item",
+            "on_true": {
+              "type": "minecraft:model",
+              "model": "claudesmp:item/pollos_gun"
+            },
+            "on_false": {
+              "type": "minecraft:model",
+              "model": "claudesmp:item/pollos_gun_unloaded"
+            }
           }
         }
       }

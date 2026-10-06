@@ -118,8 +118,9 @@ class BuiltPackTest(unittest.TestCase):
         gun = next(c for c in definition["cases"] if c["when"] == "pollos_gun")["model"]
         self.assertEqual(gun["property"], "minecraft:charge_type")
         states = {c["when"]: c["model"]["model"] for c in gun["cases"]}
-        states["unloaded"] = gun["fallback"]["model"]
-        self.assertEqual(set(states), {"arrow", "rocket", "unloaded"})
+        self.assertEqual(gun["fallback"]["property"], "minecraft:using_item")
+        states["drawing"] = gun["fallback"]["on_true"]["model"]
+        self.assertEqual(set(states), {"arrow", "rocket", "drawing"})
         textures, displays = {}, {}
         for state, ref in states.items():
             texture, display = self.resolved(ref)
@@ -127,10 +128,16 @@ class BuiltPackTest(unittest.TestCase):
             for context in ("thirdperson_righthand", "firstperson_righthand"):
                 self.assertIn(context, display, state)
             textures[state], displays[state] = texture, display
-        self.assertEqual(len(set(textures.values())), 3)
-        # Unloaded lies flat like a vanilla crossbow; loaded is held upright.
+        # Drawing lies flat like a vanilla crossbow; loaded is held upright.
         self.assertEqual(displays["arrow"], displays["rocket"])
-        self.assertNotEqual(displays["unloaded"]["thirdperson_righthand"], displays["arrow"]["thirdperson_righthand"])
+        self.assertNotEqual(displays["drawing"]["thirdperson_righthand"], displays["arrow"]["thirdperson_righthand"])
+        # Unloaded is the first version: the original gold pistol on the vanilla crossbow display.
+        unloaded = self.json(asset(gun["fallback"]["on_false"]["model"], "models", "json"))
+        self.assertEqual(unloaded["parent"], "minecraft:item/crossbow")
+        self.assertNotIn("display", unloaded)
+        textures["unloaded"] = unloaded["textures"]["layer0"]
+        self.assertIn(asset(textures["unloaded"], "textures", "png"), self.entries)
+        self.assertEqual(len(set(textures.values())), 4)
 
     def test_pollos_gunshot_is_the_sound_tweaks_plays(self):
         listener = (ROOT / "tweaks/src/main/java/dev/sirbepy/mc/tweaks/listener/PollosGunListener.java").read_text()

@@ -14,12 +14,14 @@ compasses (Dragon Radar, below).
 
 - `pollos_gun` (crossbow): "Los Pollos Hermanos Certified", a gold pistol drawn side-on, barrel to
   the right. One-off for Archontopouloi, approved by Joe on 2026-10-05 with vanilla crossbow stats.
-  It has three looks, picked by the crossbow's state: `pollos_gun` (unloaded and while drawing) and
-  `pollos_gun_arrow` / `pollos_gun_rocket` (loaded, an arrowhead or a firework tip poking out of the
-  barrel; both inherit `pollos_gun_charged`'s display). Unloaded it lies flat at the hip like a
-  vanilla crossbow: its display is the vanilla crossbow display composed with the in-plane turn that
-  lays this side-on art where the first, diagonal Pollos texture sat (Archontopouloi asked for that
-  pose back, Joe approved, 2026-10-05). Loaded, the arm is in 26.3's `CROSSBOW_HOLD` pose (and first
+  It has four looks, picked by the crossbow's state: `pollos_gun_unloaded` (not loaded and not being
+  drawn), `pollos_gun` (while drawing) and `pollos_gun_arrow` / `pollos_gun_rocket` (loaded, an
+  arrowhead or a firework tip poking out of the barrel; both inherit `pollos_gun_charged`'s display).
+  Unloaded it is the first version exactly: the original diagonal gold pistol texture (restored from
+  commit c560eea) on the vanilla crossbow model, so it lies flat at the hip (Archontopouloi asked for
+  the old texture there, Joe approved, 2026-10-06). While drawing, the side-on art also lies flat:
+  its display is the vanilla crossbow display composed with the in-plane turn that lays the side-on
+  art where the diagonal texture sits (2026-10-05). Loaded, the arm is in 26.3's `CROSSBOW_HOLD` pose (and first
   person adds its own crossbow-only offsets), so `pollos_gun_charged`'s display is solved from the
   26.3 hand transform chain to hold the gun upright with the barrel forward and the grip in the fist.
   Given from the console (Essentials owns `/give`):
