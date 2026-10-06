@@ -3,7 +3,9 @@ package dev.sirbepy.mc.dragonballs.summon;
 import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.config.StoneMode;
+import dev.sirbepy.mc.dragonballs.effects.DragonType;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
+import dev.sirbepy.mc.dragonballs.radar.RadarItems;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
 import dev.sirbepy.mc.dragonballs.registry.BallScatterer;
 import dev.sirbepy.mc.dragonballs.summon.curse.CurseStore;
@@ -16,6 +18,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,13 +34,14 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Random;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Covers the two refusal branches, which never touch the (untestable in MockBukkit) choice-of-
- * dragon UI: dormant and an incomplete set. The READY branch is exercised instead through {@link
- * SummonSessionManager#tryStart} directly, in {@code SummonSessionManagerTest}.
+ * Covers the refusal branches, which never touch the (untestable in MockBukkit) choice-of-dragon UI:
+ * dormant, an incomplete set, and a ready set without a Dragon Radar in hand. A chosen dragon is
+ * exercised through {@link SummonTriggerListener#startWithRadar}, the callback every UI path ends in.
  */
 class SummonTriggerListenerTest {
 
@@ -49,6 +53,7 @@ class SummonTriggerListenerTest {
     private SummonSessionManager sessions;
     private SummonTriggerListener listener;
     private PlayerMock player;
+    private RadarItems radars;
 
     @BeforeEach
     void setUp(@TempDir Path tempDir) {
@@ -72,7 +77,8 @@ class SummonTriggerListenerTest {
                 new CurseStore(new File(tempDir.toFile(), "curses.yml"), plugin.getLogger()),
                 new File(tempDir.toFile(), "wishes.jsonl"), System::currentTimeMillis, new Random(1));
         BedrockForms bedrockForms = BedrockForms.create(plugin);
-        listener = new SummonTriggerListener(plugin, registry, sessions, bedrockForms);
+        radars = new RadarItems(plugin);
+        listener = new SummonTriggerListener(plugin, registry, sessions, bedrockForms, radars);
         player = server.addPlayer();
     }
 
@@ -95,6 +101,107 @@ class SummonTriggerListenerTest {
 
     private PlayerInteractEvent rightClick(Block block) {
         return new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null, block, BlockFace.UP, EquipmentSlot.HAND);
+    }
+
+    private PlayerInteractEvent hit(Block block) {
+        return new PlayerInteractEvent(player, Action.LEFT_CLICK_BLOCK, player.getInventory().getItemInMainHand(),
+                block, BlockFace.UP, EquipmentSlot.HAND);
+    }
+
+    /** All 7 placed side by side, awake: a set that is READY for a summon. */
+    private Block placeReadySet() {
+        for (int star = 1; star <= 7; star++) {
+            placeHead(star, 100 + (star - 1) % 3, 64, 100 + (star - 1) / 3, false);
+        }
+        return world.getBlockAt(100, 64, 100);
+    }
+
+    @Test
+    void aReadySetWithoutARadarInHandCancelsAndHintsWithoutStartingASession() {
+        Block clicked = placeReadySet();
+        assertEquals(SummonTrigger.Readiness.READY, sessions.evaluate(player.getUniqueId(), clicked.getLocation()));
+
+        PlayerInteractEvent event = rightClick(clicked);
+        listener.onInteract(event);
+
+        assertTrue(event.isCancelled());
+        assertFalse(sessions.hasActiveSession());
+    }
+
+    @Test
+    void choosingADragonWithoutARadarInHandDoesNotSummon() {
+        Block clicked = placeReadySet();
+        player.getInventory().addItem(radars.create());
+        player.getInventory().setHeldItemSlot(5);
+
+        assertFalse(listener.startWithRadar(player, DragonType.SHENRON, clicked.getLocation()));
+
+        assertFalse(sessions.hasActiveSession());
+        assertTrue(player.getInventory().contains(Material.COMPASS), "a radar elsewhere in the inventory is not spent");
+    }
+
+    @Test
+    void choosingADragonWithARadarInHandSummonsAndShattersTheRadar() {
+        Block clicked = placeReadySet();
+        player.getInventory().setItemInMainHand(radars.create());
+
+        assertTrue(listener.startWithRadar(player, DragonType.SHENRON, clicked.getLocation()));
+
+        assertTrue(sessions.hasActiveSession());
+        assertEquals(player.getUniqueId(), sessions.activeSummoner());
+        assertTrue(player.getInventory().getItemInMainHand().isEmpty(), "the radar is used up by the summon");
+        assertFalse(player.getInventory().contains(Material.COMPASS));
+    }
+
+    @Test
+    void onlyOneOfAStackOfRadarsIsSpent() {
+        Block clicked = placeReadySet();
+        ItemStack two = radars.create();
+        two.setAmount(2);
+        player.getInventory().setItemInMainHand(two);
+
+        assertTrue(listener.startWithRadar(player, DragonType.PORUNGA, clicked.getLocation()));
+
+        ItemStack left = player.getInventory().getItemInMainHand();
+        assertTrue(radars.isRadar(left));
+        assertEquals(1, left.getAmount());
+    }
+
+    @Test
+    void aRefusedSummonKeepsTheRadar() {
+        for (int star = 1; star <= 7; star++) {
+            placeHead(star, 100, 64, 100, true);
+        }
+        registry.setStoneUntil(StoneMode.MINECRAFT_DAYS, 999);
+        player.getInventory().setItemInMainHand(radars.create());
+
+        assertFalse(listener.startWithRadar(player, DragonType.SHENRON, world.getBlockAt(100, 64, 100).getLocation()));
+
+        assertFalse(sessions.hasActiveSession());
+        assertTrue(radars.isRadar(player.getInventory().getItemInMainHand()));
+    }
+
+    @Test
+    void hittingABallWithoutARadarLeavesItBreakable() {
+        Block clicked = placeReadySet();
+
+        PlayerInteractEvent event = hit(clicked);
+        listener.onInteract(event);
+
+        assertFalse(event.isCancelled(), "a plain hit is how a ball gets broken and carried");
+        assertFalse(sessions.hasActiveSession());
+    }
+
+    @Test
+    void hittingAnIncompleteSetWithARadarLeavesItBreakable() {
+        Block clicked = placeHead(1, 50, 64, 50, false);
+        player.getInventory().setItemInMainHand(radars.create());
+
+        PlayerInteractEvent event = hit(clicked);
+        listener.onInteract(event);
+
+        assertFalse(event.isCancelled());
+        assertTrue(radars.isRadar(player.getInventory().getItemInMainHand()));
     }
 
     @Test

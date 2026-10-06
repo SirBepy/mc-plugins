@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { Vec3 } from 'vec3';
-import { assert, sleep, teleport, waitFor, waitForLine } from './lib.mjs';
+import { assert, nbtText, sleep, teleport, waitFor, waitForLine } from './lib.mjs';
 import {
   HUNTER, PLATFORM_Y, SIGN, WITNESS, configPath, logPath, openSuite, wishesPath,
 } from './dragonballs-lib.mjs';
@@ -108,6 +108,26 @@ try {
     await sleep(300);
     const placed = await status();
     assert(Object.values(placed).every((v) => v.state === 'placed'), `all 7 placed before summon (got ${JSON.stringify(placed)})`);
+
+    // A ready set only stirs without a Dragon Radar in the main hand.
+    const ballSpot = Object.values(placed)[0];
+    const ballBlock = hunter.blockAt(new Vec3(ballSpot.x, ballSpot.y, ballSpot.z));
+    const emptySlot = hunter.inventory.slots.findIndex((s, i) => i >= 36 && i <= 44 && !s);
+    assert(emptySlot >= 0, 'DBHunter has an empty hotbar slot');
+    hunter.setQuickBarSlot(emptySlot - 36);
+    const hintSince = hunter.lines.length;
+    // Mineflayer's own actionBar event never fires for ViaBackwards' NBT action bar (see tracker.mjs).
+    const recordActionBar = (packet) => {
+      if (packet.isActionBar !== false) hunter.lines.push(nbtText(packet.text ?? packet.content));
+    };
+    hunter._client.on('action_bar', recordActionBar);
+    hunter._client.on('system_chat', recordActionBar);
+    await hunter.activateBlock(ballBlock);
+    await waitForLine(hunter, /The balls stir\.\.\. but need a Dragon Radar/, 5_000, hintSince);
+    hunter._client.removeListener('action_bar', recordActionBar);
+    hunter._client.removeListener('system_chat', recordActionBar);
+    assert(!/passed/i.test(await rcon.command('execute if entity @e[type=ender_dragon,tag=dragonballs.shenron]')),
+      'no dragon without a radar');
 
     const since = witness.lines.length;
     const reply = plain(await rcon.command(`shenron summon ${HUNTER} porunga`));

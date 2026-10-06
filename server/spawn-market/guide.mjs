@@ -71,7 +71,7 @@ export const GUIDES = {
       "Carrying rules:\nEach ball slows you 5% (all 7: 35%).\n\nNo chests, ender chests, shulkers, bundles, hoppers or item frames - and you can't wear one.",
       'Die and your balls drop where you fell, never your grave.\n\nLog off and they wait, but 24h offline (or a trip into lava or the void) sends them flying off again.',
       'The Dragon Radar\n1000 coins, right here.\n\nPoints at the nearest awake ball, even one a player is carrying. Never shows how far.',
-      'Summoning:\nPlace all 7 within 2 blocks of each other, then right-click one.\n\nChoose your dragon.',
+      'Summoning:\nPlace all 7 within 2 blocks of each other. Hold a Dragon Radar and right-click or hit one.\n\nChoose your dragon. The radar shatters.',
       'Shenron grants 1 great wish.\n\nPorunga grants 3, each about half as strong.\n\nOnly the summoner wishes - everyone reads the answer.',
       'Good wishes: real money, gear with max enchants, named pets, XP, a build, server effects, time or weather, a chat title, a villager trade.',
       'Never, curse or not: hurting, robbing or finding another player, fly/op/creative, extra wishes, bans - or anything about the balls themselves.',

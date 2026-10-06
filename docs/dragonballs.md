@@ -20,7 +20,11 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
 - Picking up a ball is announced to the whole server.
 - The **Dragon Radar** (1000 coins, Dragon Ball station at spawn) points at the nearest awake
   ball, including balls someone is carrying. It never shows how far.
-- Place all 7 next to each other (within 2 blocks), right-click one, and choose your dragon.
+- Place all 7 next to each other (within 2 blocks), then, **holding a Dragon Radar in your main
+  hand**, right-click or hit one and choose your dragon. Without a radar in hand the balls only
+  stir ("The balls stir... but need a Dragon Radar"). The radar shatters when the dragon appears,
+  so every summon costs one (Joe, 2026-10-06). A hit without a radar, or on a set that isn't
+  ready, still just breaks the ball so it can be carried.
 
 ## After a wish
 
@@ -90,6 +94,10 @@ needs no question for either step.
   moving them.
 - Bans, unbans, or anything moderation.
 
+One exception so far, by Joe's explicit call: Archontopouloi's cartel flip phone (2026-10-06), whose
+Assassinate Mode sends the Salamanca cousins after another player (`docs/cartel.md`). It does not
+make similar wishes grantable; ask Joe.
+
 ### Judging
 
 - Lean towards yes. Joe can always have a wish reverted.
@@ -137,7 +145,8 @@ Answer only through console commands (`node server/deploy/kinetic.mjs cmd "<comm
 Admin and testing commands (ops, console or RCON): `dragonballs status` (where each ball is),
 `dragonballs give <player> <star>`, `dragonballs scatter [stone]`, `dragonballs wake` (ends the stone
 cooldown early), `dragonballs reload`, and `shenron summon <player> <shenron|porunga>` (summons for a
-player whose 7 balls are already placed together, same checks as right-clicking).
+player whose 7 balls are already placed together, same checks as right-clicking except the radar:
+it neither needs nor uses one).
 
 Granting a wish: run the vanilla commands that deliver it (`minecraft:give`, `minecraft:item modify`,
 `minecraft:attribute`, `minecraft:xp`, `eco give` for money, and so on; `minecraft:` prefixes because

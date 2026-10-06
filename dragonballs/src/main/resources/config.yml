@@ -1,5 +1,5 @@
 # Dragon Balls: 7 scattered PLAYER_HEAD items, star 1..7. Collect all 7, place them together and
-# right-click one to summon a dragon. Player rules and the dragon's rulebook: docs/dragonballs.md.
+# right-click or hit one while holding a Dragon Radar (used up) to summon a dragon. Player rules and the dragon's rulebook: docs/dragonballs.md.
 
 # Base64 "textures" ProfileProperty values, one per star plus the stone (cooling-down) variant.
 # Swappable here without a rebuild.
