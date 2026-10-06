@@ -30,14 +30,18 @@ compasses (Dragon Radar, below).
 
   It fires with a gunshot, `claudesmp:pollos_gun.shot` in `assets/claudesmp/sounds.json`, played by
   the Tweaks plugin (`PollosGunListener`) at volume 3 so it carries 48 blocks; the plugin also cuts
-  the vanilla crossbow twang a tick in. Approved by Joe on 2026-10-05. `sounds/pollos_gun/shot.ogg`
-  is the fourth of the five shots in "22 Pistol.wav" from "Gunshots" by kurt,
+  the vanilla crossbow twang (Paper 26.3 sends the twang before `EntityShootBowEvent`, so the stop
+  goes out in the same tick, right behind it). Approved by Joe on 2026-10-05. `sounds/pollos_gun/shot.ogg`
+  is the shot at 3.67 s in "Unkown.wav" (sic) from "Gunshots" by kurt,
   https://opengameart.org/content/gunshots, licensed CC0
-  (http://creativecommons.org/publicdomain/zero/1.0/), cut to 1.37-1.72 s, mono 48 kHz, faded out
-  over its last 0.13 s and raised 1.2 dB to peak at -1 dB:
+  (http://creativecommons.org/publicdomain/zero/1.0/): left channel, cut to 3.67-4.50 s, mono
+  48 kHz, raised 12 dB into a limiter at 0.8 and faded out over its last 0.43 s. It replaced a 0.35 s
+  .22 pistol pop that the twang drowned out (Archontopouloi heard only a crossbow, 2026-10-06); this
+  one is 0.83 s and averages -16.6 dB over its first 0.3 s, against -17.9 dB for vanilla's
+  `crossbow/shoot1.ogg` and -27.5 dB for the old pop, peaking at -1 dB:
 
   ```
-  ffmpeg -i "22 Pistol.wav" -ac 1 -af "atrim=start=1.37:end=1.72,asetpts=PTS-STARTPTS,afade=t=out:st=0.22:d=0.13,aresample=48000,volume=1.2dB" -c:a libvorbis -q:a 6 shot.ogg
+  ffmpeg -i Unkown.wav -af "atrim=start=3.67:end=4.50,asetpts=PTS-STARTPTS,pan=mono|c0=c0,aresample=48000,volume=12dB,alimiter=limit=0.8:attack=1:release=60:level=false,afade=t=out:st=0.40:d=0.43" -c:a libvorbis -q:a 6 shot.ogg
   ```
 
 - `katana` (netherite sword): "Katana", a thin steel blade with a gold guard and red-black wrapped

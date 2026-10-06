@@ -3,10 +3,10 @@ import {
 } from './lib.mjs';
 
 // Tweaks gives the "pollos_gun" crossbow a gunshot (claudesmp:pollos_gun.shot from the server pack)
-// at volume 3, then stops the vanilla crossbow shoot sound a tick later. The bots hear raw packets,
+// at volume 3 and stops the vanilla crossbow shoot sound in the same tick. The bots hear raw packets,
 // not audio, so this checks what the server sends: the shooter and a bot 30 blocks off (past
-// vanilla's 16-block range, inside the gun's 48) both get the gunshot and a stop_sound, and a plain
-// crossbow gets neither.
+// vanilla's 16-block range, inside the gun's 48) both get the gunshot and a stop_sound, the shooter
+// gets the stop before the gunshot (both go out in the same tick), and a plain crossbow gets neither.
 const PLATFORM_Y = 200;
 const { bx: BX, bz: BZ } = randomOrigin();
 const LISTENER_X = BX + 30;
@@ -28,7 +28,8 @@ function recordSounds(bot) {
   });
 }
 
-const heard = (bot, kind, name) => bot.sounds.some((s) => s.startsWith(kind) && s.includes(name));
+const heardAt = (bot, kind, name) => bot.sounds.findIndex((s) => s.startsWith(kind) && s.includes(name));
+const heard = (bot, kind, name) => heardAt(bot, kind, name) >= 0;
 
 async function fire(components) {
   await rcon.command('minecraft:clear PollosA');
@@ -68,6 +69,8 @@ try {
   await waitFor(() => heard(listener, 'sound_effect', SHOT), `bot 30 blocks away hears ${SHOT}`, 5_000);
   assert(heard(shooter, 'stop_sound', TWANG), `shooter's vanilla twang is stopped (got ${shooter.sounds.join(' | ')})`);
   assert(heard(listener, 'stop_sound', TWANG), 'far bot gets the stop_sound too');
+  assert(heardAt(shooter, 'stop_sound', TWANG) < heardAt(shooter, 'sound_effect', SHOT),
+    `the twang is stopped before the gunshot plays, not a tick later (got ${shooter.sounds.join(' | ')})`);
   console.log('PASS the pollos gun sends a gunshot 30 blocks out and cuts the twang');
 } finally {
   await rcon.command(`minecraft:kill @e[type=minecraft:arrow,x=${BX},y=${PLATFORM_Y},z=${BZ},distance=..80]`).catch(() => {});

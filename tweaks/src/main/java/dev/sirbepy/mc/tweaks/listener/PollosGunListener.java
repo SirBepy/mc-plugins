@@ -44,21 +44,19 @@ public final class PollosGunListener implements Listener {
     public void onShoot(EntityShootBowEvent event) {
         if (!isPollosGun(event.getBow())) return;
         LivingEntity shooter = event.getEntity();
-        if (!firedThisTick.add(shooter.getUniqueId())) return;
-
         Location at = shooter.getLocation();
         List<Player> listeners = listenersNear(at);
+        // Paper 26.3's ProjectileWeaponItem.shoot broadcasts each bolt's twang (CrossbowItem.shootProjectile)
+        // before firing this event, so a stop sent now lands right behind it in the same packet flush.
+        for (Player player : listeners) {
+            player.stopSound(Sound.ITEM_CROSSBOW_SHOOT);
+        }
+        if (!firedThisTick.add(shooter.getUniqueId())) return;
+
         for (Player player : listeners) {
             player.playSound(at, SHOT_SOUND, SoundCategory.PLAYERS, VOLUME, 1.0f);
         }
-        // Paper has no hook to drop the vanilla shoot sound for one shot, and it is played after
-        // this event, so the earliest it can be stopped is next tick: ~50 ms of twang under the bang.
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
-            firedThisTick.remove(shooter.getUniqueId());
-            for (Player player : listeners) {
-                if (player.isOnline()) player.stopSound(Sound.ITEM_CROSSBOW_SHOOT);
-            }
-        });
+        plugin.getServer().getScheduler().runTask(plugin, () -> firedThisTick.remove(shooter.getUniqueId()));
     }
 
     private static List<Player> listenersNear(Location at) {

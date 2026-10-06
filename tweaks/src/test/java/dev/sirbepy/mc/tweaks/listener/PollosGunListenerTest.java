@@ -2,6 +2,7 @@ package dev.sirbepy.mc.tweaks.listener;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -15,6 +16,7 @@ import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 import org.mockbukkit.mockbukkit.world.WorldMock;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -91,6 +93,26 @@ class PollosGunListenerTest {
         assertEquals(3.0f, shooter.getHeardSounds().getFirst().getVolume());
         assertEquals(1, shots(near));
         assertEquals(0, shots(far));
+    }
+
+    @Test
+    void eachBoltsTwangIsStoppedInTheSameTick() {
+        List<Sound> stopped = new ArrayList<>();
+        PlayerMock near = new PlayerMock(server, "Near") {
+            @Override
+            public void stopSound(Sound sound) {
+                stopped.add(sound);
+            }
+        };
+        server.addPlayer(near);
+        near.teleport(new Location(world, 10, 64, 0));
+
+        ItemStack gun = crossbow("pollos_gun");
+        shoot(gun);
+        shoot(gun);
+
+        assertEquals(List.of(Sound.ITEM_CROSSBOW_SHOOT, Sound.ITEM_CROSSBOW_SHOOT), stopped);
+        assertEquals(1, shots(near));
     }
 
     @Test
