@@ -156,7 +156,7 @@ public final class Goods {
         return item;
     }
 
-    static String textureValue(String textureHash) {
+    public static String textureValue(String textureHash) {
         String json = "{\"textures\":{\"SKIN\":{\"url\":\"http://textures.minecraft.net/texture/" + textureHash + "\"}}}";
         return Base64.getEncoder().encodeToString(json.getBytes(StandardCharsets.UTF_8));
     }

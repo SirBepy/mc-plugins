@@ -47,7 +47,8 @@ public abstract class HaruTestBase {
         owner = server.addPlayer("ImMijo");
         owner.teleport(new Location(world, 0, 64, 0));
         clock = new FakeClock();
-        config = new AtomicReference<>(new HaruConfig(owner.getUniqueId(), ZoneId.of("UTC"), "world", 3, 0.15));
+        config = new AtomicReference<>(new HaruConfig(owner.getUniqueId(), ZoneId.of("UTC"), "world", 3, 0.15,
+                HaruConfig.Skin.NONE));
         store = new HaruStore(new File(dataDir.toFile(), "data.yml"), plugin.getLogger());
         ctx = new HaruContext(plugin, config::get, clock, store, celebrated::add);
     }

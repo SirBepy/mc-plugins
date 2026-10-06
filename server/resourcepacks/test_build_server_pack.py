@@ -232,6 +232,13 @@ class BuiltPackTest(unittest.TestCase):
         self.assertGreater(r, b, "eyes should be re-hued red, not vanilla's blue-leaning purple")
         self.assertGreater(r, g)
 
+    def test_haru_skin_and_cape_are_in_the_pack(self):
+        # The haru plugin's config.yml points its Mannequin at claudesmp:entity/haru and haru_cape.
+        skin = Image.open(io.BytesIO(self.entries[asset("claudesmp:entity/haru", "textures", "png")]))
+        self.assertEqual(skin.size, (64, 64))
+        cape = Image.open(io.BytesIO(self.entries[asset("claudesmp:entity/haru_cape", "textures", "png")]))
+        self.assertEqual(cape.size, (64, 32))
+
 
 if __name__ == "__main__":
     unittest.main()

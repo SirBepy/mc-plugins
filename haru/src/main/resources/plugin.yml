@@ -3,6 +3,7 @@ version: ${version}
 main: dev.sirbepy.mc.haru.HaruPlugin
 api-version: "26.2"
 author: sirbepy
+softdepend: [floodgate]
 
 permissions:
   haru.admin:

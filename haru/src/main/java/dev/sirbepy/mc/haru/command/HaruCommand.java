@@ -98,7 +98,8 @@ public final class HaruCommand {
     private int status(CommandContext<CommandSourceStack> c) {
         OwnerState state = ctx.ownerState();
         send(c, "Anchor: " + (ctx.store().anchor() == null ? "not placed" : describe(ctx.store().anchor()))
-                + ", entity " + (ctx.npc().villager() == null ? "not loaded" : "present"));
+                + ", villager " + (ctx.npc().villager() == null ? "not loaded" : "present")
+                + ", mannequin " + (ctx.npc().mannequin() == null ? "not loaded" : "present"));
         send(c, "Owner: " + ctx.ownerName() + " (" + ctx.config().owner() + ")");
         send(c, "Petals " + state.petals() + ", reputation " + state.reputation() + " (" + state.tier().title()
                 + "), requests done " + state.questsCompleted());

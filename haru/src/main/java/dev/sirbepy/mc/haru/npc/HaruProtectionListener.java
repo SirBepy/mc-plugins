@@ -10,6 +10,9 @@ import org.bukkit.event.entity.PlayerLeashEntityEvent;
 import org.bukkit.event.entity.VillagerAcquireTradeEvent;
 import org.bukkit.event.entity.VillagerCareerChangeEvent;
 import org.bukkit.event.entity.VillagerReplenishTradeEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 import org.bukkit.event.world.EntitiesLoadEvent;
 
 /**
@@ -76,5 +79,31 @@ public final class HaruProtectionListener implements Listener {
     @EventHandler
     public void onEntitiesLoad(EntitiesLoadEvent event) {
         npc.removeStrayCopies(event.getEntities());
+        if (event.getEntities().stream().anyMatch(npc::isHaru)) {
+            npc.applyVisibilityToAll();
+        }
+    }
+
+    /** Hiding an entity from a player lasts only for their session, so it is set again on every join. */
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        npc.applyVisibility(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onPackStatus(PlayerResourcePackStatusEvent event) {
+        switch (event.getStatus()) {
+            case SUCCESSFULLY_LOADED -> npc.setPackLoaded(event.getPlayer(), true);
+            case DECLINED, FAILED_DOWNLOAD, INVALID_URL, FAILED_RELOAD, DISCARDED ->
+                    npc.setPackLoaded(event.getPlayer(), false);
+            default -> {
+                // ACCEPTED and DOWNLOADED are in-between states; wait for the result.
+            }
+        }
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        npc.setPackLoaded(event.getPlayer(), false);
     }
 }

@@ -1,12 +1,14 @@
 package dev.sirbepy.mc.haru.npc;
 
 import dev.sirbepy.mc.haru.HaruTestBase;
+import dev.sirbepy.mc.haru.config.HaruConfig;
 import dev.sirbepy.mc.haru.gui.HaruMenus;
 import dev.sirbepy.mc.haru.gui.Menu;
 import dev.sirbepy.mc.haru.gui.MenuListener;
 import dev.sirbepy.mc.haru.item.BoundListener;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.entity.Mannequin;
 import org.bukkit.entity.Villager;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.inventory.ClickType;
@@ -38,21 +40,74 @@ class HaruNpcTest extends HaruTestBase {
     void setUp() {
         menus = new HaruMenus(ctx);
         interact = new HaruInteractListener(ctx, menus, new BoundListener(ctx));
-        ctx.npc().setTitleStyle(display -> { });
-        haru = ctx.npc().place(new Location(world, 10, 64, 10, 90, 0));
+        ctx.npc().setLooks(mannequin -> { }, display -> { });
+        ctx.npc().place(new Location(world, 10, 64, 10, 90, 0));
+        haru = ctx.npc().villager();
         // MockBukkit only counts a chunk as loaded once something asks for it.
         world.getChunkAt(0, 0);
     }
 
     @Test
     void placedHaruIsAnUnkillableAiLessClericThatStays() {
-        assertTrue(ctx.npc().isHaruVillager(haru));
+        assertTrue(ctx.npc().isHaru(haru));
         assertFalse(haru.hasAI());
         assertTrue(haru.isInvulnerable());
         assertTrue(haru.isPersistent());
         assertEquals(Villager.Profession.CLERIC, haru.getProfession());
         assertEquals(haru.getUniqueId(), store.npcId());
         assertEquals(10.5, store.anchor().x());
+    }
+
+    @Test
+    void javaPlayersGetTheMannequinAndBedrockPlayersTheVillager() {
+        Mannequin mannequin = ctx.npc().mannequin();
+        assertNotNull(mannequin);
+        assertTrue(ctx.npc().isHaru(mannequin));
+        assertTrue(mannequin.isInvulnerable());
+        assertTrue(mannequin.isImmovable());
+
+        PlayerMock bedrockPlayer = server.addPlayer(".Pocket");
+        HaruNpc npc = new HaruNpc(plugin, store, id -> id.equals(bedrockPlayer.getUniqueId()), new HaruLook(config::get));
+        npc.applyVisibility(owner);
+        npc.applyVisibility(bedrockPlayer);
+
+        assertTrue(owner.canSee(mannequin));
+        assertFalse(owner.canSee(haru));
+        assertFalse(bedrockPlayer.canSee(mannequin));
+        assertTrue(bedrockPlayer.canSee(haru));
+    }
+
+    @Test
+    void aPackSkinIsOnlyShownToPlayersWhosePackLoaded() {
+        config.set(new HaruConfig(owner.getUniqueId(), config.get().zone(), "world", 3, 0.2,
+                new HaruConfig.Skin("", "claudesmp:entity/haru", "", false)));
+        ctx.npc().applyVisibility(owner);
+        assertFalse(owner.canSee(ctx.npc().mannequin()), "no pack yet: villager");
+        assertTrue(owner.canSee(haru));
+
+        ctx.npc().setPackLoaded(owner, true);
+        assertTrue(owner.canSee(ctx.npc().mannequin()));
+        assertFalse(owner.canSee(haru));
+
+        ctx.npc().setPackLoaded(owner, false);
+        assertFalse(owner.canSee(ctx.npc().mannequin()));
+    }
+
+    @Test
+    void rightClickingTheMannequinAlsoOpensTheMenu() {
+        PlayerInteractEntityEvent event = new PlayerInteractEntityEvent(owner, ctx.npc().mannequin(), EquipmentSlot.HAND);
+        interact.onInteract(event);
+        assertTrue(event.isCancelled());
+        assertInstanceOf(Menu.class, owner.getOpenInventory().getTopInventory().getHolder());
+    }
+
+    @Test
+    void anOldVillagerOnlyHaruGetsHisMannequinOnTheNextGuardTick() {
+        ctx.npc().mannequin().remove();
+        store.setMannequinId(null);
+        ctx.npc().ensure();
+        assertNotNull(ctx.npc().mannequin());
+        assertEquals(haru.getUniqueId(), ctx.npc().villager().getUniqueId());
     }
 
     @Test

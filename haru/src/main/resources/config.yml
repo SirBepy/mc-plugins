@@ -13,3 +13,14 @@ rotation-days: 3
 
 # Chance that a rotation also brings a Legendary Trade (Joe: about 1 rotation in 5).
 legendary-chance: 0.2
+
+# Java players see Haru as a player-shaped Mannequin wearing this skin (Bedrock players see a cleric
+# villager). texture: the hash from http://textures.minecraft.net/texture/<hash>, visible to every Java
+# client. pack-texture / pack-cape: textures in the server resource pack, drawn instead; with these set,
+# only players whose pack loaded see the Mannequin (others see the villager). model: wide or slim.
+# Applied by /haru reload.
+skin:
+  texture: ""
+  pack-texture: claudesmp:entity/haru
+  pack-cape: claudesmp:entity/haru_cape
+  model: wide

@@ -31,6 +31,9 @@ public final class HaruPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        // Adds keys new jars bring (like skin) to an existing config.yml without touching set values.
+        getConfig().options().copyDefaults(true);
+        saveConfig();
         config.set(HaruConfig.from(getConfig()));
 
         HaruStore store = new HaruStore(new File(getDataFolder(), "data.yml"), getLogger());
@@ -91,6 +94,7 @@ public final class HaruPlugin extends JavaPlugin {
     private void reload() {
         reloadConfig();
         config.set(HaruConfig.from(getConfig()));
+        ctx.npc().redress();
     }
 
     private static void celebrate(Player player) {

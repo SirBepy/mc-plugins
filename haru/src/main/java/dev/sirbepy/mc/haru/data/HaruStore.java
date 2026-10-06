@@ -16,7 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * {@code plugins/Haru/data.yml}: Haru's spot and entity ids, plus one {@link OwnerState} per owner
+ * {@code plugins/Haru/data.yml}: Haru's spot and the ids of his villager, Mannequin and title, plus one {@link OwnerState} per owner
  * UUID (normally just ImMijo; the e2e bot gets its own). Saved atomically after every change.
  */
 public final class HaruStore {
@@ -27,6 +27,7 @@ public final class HaruStore {
     private NpcAnchor anchor;
     private UUID npcId;
     private UUID titleId;
+    private UUID mannequinId;
     private boolean dirty;
 
     public HaruStore(File file, Logger logger) {
@@ -55,6 +56,14 @@ public final class HaruStore {
         this.npcId = npcId;
     }
 
+    public UUID mannequinId() {
+        return mannequinId;
+    }
+
+    public void setMannequinId(UUID mannequinId) {
+        this.mannequinId = mannequinId;
+    }
+
     public UUID titleId() {
         return titleId;
     }
@@ -80,6 +89,7 @@ public final class HaruStore {
             }
             npcId = parseUuid(npc.getString("entity"));
             titleId = parseUuid(npc.getString("title"));
+            mannequinId = parseUuid(npc.getString("mannequin"));
         }
         ConfigurationSection ownersSection = yaml.getConfigurationSection("owners");
         if (ownersSection != null) {
@@ -165,6 +175,9 @@ public final class HaruStore {
         }
         if (titleId != null) {
             yaml.set("npc.title", titleId.toString());
+        }
+        if (mannequinId != null) {
+            yaml.set("npc.mannequin", mannequinId.toString());
         }
         for (Map.Entry<UUID, OwnerState> entry : owners.entrySet()) {
             writeState(yaml.createSection("owners." + entry.getKey()), entry.getValue());

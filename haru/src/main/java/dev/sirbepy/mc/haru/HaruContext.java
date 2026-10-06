@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.haru;
 
+import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.haru.config.HaruConfig;
 import dev.sirbepy.mc.haru.curio.MysteryCurios;
 import dev.sirbepy.mc.haru.data.HaruStore;
@@ -7,6 +8,7 @@ import dev.sirbepy.mc.haru.data.OwnerState;
 import dev.sirbepy.mc.haru.effect.Blessings;
 import dev.sirbepy.mc.haru.item.Bound;
 import dev.sirbepy.mc.haru.item.HaruItems;
+import dev.sirbepy.mc.haru.npc.HaruLook;
 import dev.sirbepy.mc.haru.npc.HaruNpc;
 import dev.sirbepy.mc.haru.quest.QuestBoard;
 import dev.sirbepy.mc.haru.rep.Progression;
@@ -54,7 +56,8 @@ public final class HaruContext {
         this.shop = new Shop(clock, config, rewards, items);
         this.board = new QuestBoard(progression);
         this.curios = new MysteryCurios(rewards);
-        this.npc = new HaruNpc(plugin, store);
+        BedrockForms bedrock = BedrockForms.create(plugin);
+        this.npc = new HaruNpc(plugin, store, bedrock::isBedrock, new HaruLook(config));
     }
 
     public boolean isOwner(Player player) {
