@@ -10,6 +10,7 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
+import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -105,6 +106,28 @@ class BallContainerGuardListenerTest {
         listener.onHopperMove(event);
 
         assertTrue(event.isCancelled(), "a hopper must never be able to move a ball");
+    }
+
+    @Test
+    void aHopperCannotSuckADroppedBallOffTheGround() {
+        Inventory hopper = server.createInventory(null, InventoryType.HOPPER);
+        org.bukkit.entity.Item dropped = player.getWorld().dropItem(player.getLocation(), ball);
+        InventoryPickupItemEvent event = new InventoryPickupItemEvent(hopper, dropped);
+
+        listener.onHopperPickup(event);
+
+        assertTrue(event.isCancelled(), "a hopper must never pick a ball up off the ground");
+    }
+
+    @Test
+    void aHopperStillPicksUpOrdinaryItems() {
+        Inventory hopper = server.createInventory(null, InventoryType.HOPPER);
+        org.bukkit.entity.Item dropped = player.getWorld().dropItem(player.getLocation(), new ItemStack(Material.DIRT));
+        InventoryPickupItemEvent event = new InventoryPickupItemEvent(hopper, dropped);
+
+        listener.onHopperPickup(event);
+
+        assertFalse(event.isCancelled());
     }
 
     @Test

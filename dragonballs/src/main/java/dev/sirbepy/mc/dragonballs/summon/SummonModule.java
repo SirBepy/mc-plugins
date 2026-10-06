@@ -51,7 +51,7 @@ public final class SummonModule {
         pm.registerEvents(curseListener, plugin);
 
         plugin.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
-                new ShenronCommand(sessions, curses, curseListener).registerInto(event.registrar()));
+                new ShenronCommand(sessions, curses, curseListener, registry).registerInto(event.registrar()));
 
         // Every 5s: cheap bookkeeping against already-stored timestamps (same spirit as
         // BallMaintenanceTask), never a per-tick scan; a no-op whenever no session is active.

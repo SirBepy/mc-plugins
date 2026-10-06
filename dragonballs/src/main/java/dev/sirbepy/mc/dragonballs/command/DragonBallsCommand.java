@@ -48,6 +48,7 @@ public final class DragonBallsCommand {
                         .then(Commands.argument("player", StringArgumentType.word())
                                 .then(Commands.argument("star", IntegerArgumentType.integer(1, 7))
                                         .executes(this::give))))
+                .then(Commands.literal("wake").executes(this::wake))
                 .then(Commands.literal("reload").executes(this::reload))
                 .build(), "Manage the Dragon Ball hunt");
     }
@@ -67,6 +68,13 @@ public final class DragonBallsCommand {
             case DROPPED -> "dropped at " + view.worldName() + " " + (int) view.x() + "," + (int) view.y() + "," + (int) view.z();
         };
         return view.star() + "-star: " + where + (view.stone() ? " (stone)" : "");
+    }
+
+    /** Ends the stone cooldown early, e.g. after a test summon on a live world. */
+    private int wake(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) {
+        registry.clearStone();
+        ctx.getSource().getSender().sendMessage(Component.text("The Dragon Balls are awake."));
+        return Command.SINGLE_SUCCESS;
     }
 
     private int scatter(CommandSourceStack source, boolean stone) {

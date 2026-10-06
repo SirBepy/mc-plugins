@@ -23,9 +23,10 @@ public final class BallItemLifecycleListener implements Listener {
     // graves-v4.1.2's own pickup selector requires the EXACT vanilla death-drop NBT
     // ({Age:0s,PickupDelay:40s} or {Age:1s,PickupDelay:39s} - see
     // data/graves/function/creation/items/pick_up_items_with_age_0.mcfunction and
-    // .../pick_up_items.mcfunction in server/datapacks/graves-v4.1.2.zip). A pickup delay of 0 never
-    // matches either, so graves leaves every ball drop alone, death-drop or not.
-    private static final int PICKUP_DELAY = 0;
+    // .../pick_up_items.mcfunction in server/datapacks/graves-v4.1.2.zip). 30 never matches either, so
+    // graves leaves every ball drop alone, death-drop or not. It must stay above 0: at 0 the player who
+    // pressed Q picks the ball straight back up the same tick, so a ball could never be dropped.
+    static final int PICKUP_DELAY = 30;
 
     // Causes that are a normal, already-handled part of a ball's life, not a loss worth reacting to.
     private static final Set<EntityRemoveEvent.Cause> IGNORED_REMOVALS = EnumSet.of(

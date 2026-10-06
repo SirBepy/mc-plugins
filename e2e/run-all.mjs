@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 
 // Needs the e2e server running: ./gradlew :testserver:runE2eServer (Paper 26.2, see testserver/build.gradle.kts).
 // persistence.mjs is not in this list: it needs a server restart between its setup and verify phases.
-const suites = ['smoke.mjs', 'safechests.mjs', 'tag.mjs', 'afk.mjs', 'tracker.mjs', 'leaderboard.mjs', 'names.mjs', 'graves.mjs', 'towny.mjs', 'minecart-speed.mjs', 'copper-golem.mjs', 'carry.mjs', 'market.mjs', 'pollos-gun.mjs'];
+const suites = ['smoke.mjs', 'safechests.mjs', 'tag.mjs', 'afk.mjs', 'tracker.mjs', 'leaderboard.mjs', 'names.mjs', 'graves.mjs', 'towny.mjs', 'minecart-speed.mjs', 'copper-golem.mjs', 'carry.mjs', 'market.mjs', 'pollos-gun.mjs', 'dragonballs.mjs'];
 let failed = 0;
 for (const suite of suites) {
   console.log(`\n=== ${suite} ===`);

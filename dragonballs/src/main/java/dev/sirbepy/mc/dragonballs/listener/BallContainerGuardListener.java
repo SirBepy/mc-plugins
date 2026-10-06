@@ -12,6 +12,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
+import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -82,6 +83,14 @@ public final class BallContainerGuardListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onHopperMove(InventoryMoveItemEvent event) {
         if (registry.isBall(event.getItem())) {
+            event.setCancelled(true);
+        }
+    }
+
+    /** A hopper (or hopper minecart) sucking a dropped ball off the ground. */
+    @EventHandler(ignoreCancelled = true)
+    public void onHopperPickup(InventoryPickupItemEvent event) {
+        if (registry.isBall(event.getItem().getItemStack())) {
             event.setCancelled(true);
         }
     }
