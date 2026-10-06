@@ -45,8 +45,13 @@ async function graveExists(pos) {
   return !reply.includes('No entity was found');
 }
 
-async function nearestItemEntityDump(pos) {
-  return rcon.command(`execute positioned ${pos.x} ${pos.y} ${pos.z} run data get entity @e[type=minecraft:item,distance=..20,sort=nearest,limit=1]`);
+// Only GraveA's own items count: a mob's arrow or rotten flesh landing near the random death spot
+// is not a grave leak and used to fail this check intermittently.
+const CARRIED_ITEMS = ['minecraft:player_head', 'minecraft:iron_helmet', 'minecraft:diamond'];
+
+async function droppedItemDump(pos, id) {
+  return rcon.command(`execute positioned ${pos.x} ${pos.y} ${pos.z} run data get entity `
+    + `@e[type=minecraft:item,distance=..20,nbt={Item:{id:"${id}"}},sort=nearest,limit=1]`);
 }
 
 try {
@@ -84,8 +89,10 @@ try {
   await sleep(2000);
 
   await step('the sheep head is never dropped and never enters the grave', async () => {
-    const dump = await nearestItemEntityDump(deathPos);
-    assert(dump.includes('No entity was found'), `no stray dropped item near death: ${dump}`);
+    for (const id of CARRIED_ITEMS) {
+      const dump = await droppedItemDump(deathPos, id);
+      assert(dump.includes('No entity was found'), `no stray dropped ${id} near death: ${dump}`);
+    }
     assert(!(await bundleContains(deathPos, 'minecraft:player_head')), 'grave bundle has no player_head');
   });
 
