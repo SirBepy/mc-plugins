@@ -78,19 +78,19 @@ class HaruNpcTest extends HaruTestBase {
     }
 
     @Test
-    void aPackSkinIsOnlyShownToPlayersWhosePackLoaded() {
+    void aPackSkinIsHiddenOnlyFromPlayersWhosePackFailed() {
         config.set(new HaruConfig(owner.getUniqueId(), config.get().zone(), "world", 3, 0.2,
                 new HaruConfig.Skin("", "claudesmp:entity/haru", "", false)));
         ctx.npc().applyVisibility(owner);
-        assertFalse(owner.canSee(ctx.npc().mannequin()), "no pack yet: villager");
-        assertTrue(owner.canSee(haru));
-
-        ctx.npc().setPackLoaded(owner, true);
-        assertTrue(owner.canSee(ctx.npc().mannequin()));
+        assertTrue(owner.canSee(ctx.npc().mannequin()), "status unknown (cached pack): Mannequin");
         assertFalse(owner.canSee(haru));
 
-        ctx.npc().setPackLoaded(owner, false);
-        assertFalse(owner.canSee(ctx.npc().mannequin()));
+        ctx.npc().setPackFailed(owner, true);
+        assertFalse(owner.canSee(ctx.npc().mannequin()), "declined or failed: villager");
+        assertTrue(owner.canSee(haru));
+
+        ctx.npc().setPackFailed(owner, false);
+        assertTrue(owner.canSee(ctx.npc().mannequin()));
     }
 
     @Test

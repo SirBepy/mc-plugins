@@ -33,10 +33,12 @@ no curse, so the balance lives inside Haru:
 
 ## How it plays
 
-- **Haru himself:** two bodies on one spot, each player shown only one. Java players whose server pack
-  loaded see a player-shaped Mannequin in Haru's own skin and sakura cape (drawn for him, in the pack;
-  Joe's call 2026-10-06), with "Keeper of the Sakura Sanctuary" under his name. Bedrock players and
-  anyone without the pack see an AI-less cleric villager named "✿ Haru ✿" with a floating title. Both
+- **Haru himself:** two bodies on one spot, each player shown only one. Java players see a
+  player-shaped Mannequin in Haru's own skin and sakura cape (drawn for him, in the pack; Joe's call
+  2026-10-06), with "Keeper of the Sakura Sanctuary" under his name. Bedrock players and Java players
+  whose pack declined or failed see an AI-less cleric villager named "✿ Haru ✿" with a floating title.
+  (A cached pack is answered before the player fully joins, with no status event, so "unknown" counts
+  as loaded.) Both
   turn to face the nearest player, with cherry petals falling around them. Damage, fire, lightning/zombie conversion, leashing and re-skilling are cancelled.
   A guard tick every 5 s re-creates him (or snaps him back) whenever his chunk is loaded and he's
   missing or moved, so even `/kill` only costs 5 seconds. Placed with `/haru place`; the spot lives in

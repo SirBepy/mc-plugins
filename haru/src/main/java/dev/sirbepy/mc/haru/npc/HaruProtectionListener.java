@@ -87,23 +87,28 @@ public final class HaruProtectionListener implements Listener {
     /** Hiding an entity from a player lasts only for their session, so it is set again on every join. */
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        npc.applyVisibility(event.getPlayer());
+        PlayerResourcePackStatusEvent.Status status = event.getPlayer().getResourcePackStatus();
+        npc.setPackFailed(event.getPlayer(), status != null && failed(status));
     }
 
     @EventHandler
     public void onPackStatus(PlayerResourcePackStatusEvent event) {
-        switch (event.getStatus()) {
-            case SUCCESSFULLY_LOADED -> npc.setPackLoaded(event.getPlayer(), true);
-            case DECLINED, FAILED_DOWNLOAD, INVALID_URL, FAILED_RELOAD, DISCARDED ->
-                    npc.setPackLoaded(event.getPlayer(), false);
-            default -> {
-                // ACCEPTED and DOWNLOADED are in-between states; wait for the result.
-            }
+        if (event.getStatus() == PlayerResourcePackStatusEvent.Status.SUCCESSFULLY_LOADED) {
+            npc.setPackFailed(event.getPlayer(), false);
+        } else if (failed(event.getStatus())) {
+            npc.setPackFailed(event.getPlayer(), true);
         }
+    }
+
+    private static boolean failed(PlayerResourcePackStatusEvent.Status status) {
+        return switch (status) {
+            case DECLINED, FAILED_DOWNLOAD, INVALID_URL, FAILED_RELOAD, DISCARDED -> true;
+            default -> false;
+        };
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        npc.setPackLoaded(event.getPlayer(), false);
+        npc.setPackFailed(event.getPlayer(), false);
     }
 }

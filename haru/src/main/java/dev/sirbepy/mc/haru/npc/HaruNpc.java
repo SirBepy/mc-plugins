@@ -46,7 +46,7 @@ public final class HaruNpc {
     private final NamespacedKey marker;
     private final Predicate<UUID> bedrock;
     private final HaruLook look;
-    private final Set<UUID> packLoaded = new HashSet<>();
+    private final Set<UUID> packFailed = new HashSet<>();
     private Consumer<Mannequin> mannequinLook;
     private Consumer<TextDisplay> titleLook;
 
@@ -168,23 +168,25 @@ public final class HaruNpc {
 
     /**
      * Java players see the skinned Mannequin; Bedrock players see the villager and its floating title.
-     * When the skin comes from the server pack, a Java player who hasn't loaded the pack would see a
-     * missing-texture Mannequin, so they get the villager too until the pack reports loaded.
+     * When the skin comes from the server pack, a Java player whose pack declined or failed would see a
+     * missing-texture Mannequin, so they get the villager instead. Unknown counts as loaded: a cached
+     * pack is answered during the configuration phase, before any play-phase status event, so waiting
+     * for a "loaded" event hid the Mannequin from ImMijo after a rejoin (2026-10-06).
      */
     public void applyVisibility(Player player) {
         boolean mannequin = !bedrock.test(player.getUniqueId())
-                && (!look.needsPack() || packLoaded.contains(player.getUniqueId()));
+                && (!look.needsPack() || !packFailed.contains(player.getUniqueId()));
         show(player, entity(store.mannequinId()), mannequin);
         show(player, entity(store.npcId()), !mannequin);
         show(player, entity(store.titleId()), !mannequin);
     }
 
-    /** Called from the resource-pack status event; {@code loaded} only once the client applied it. */
-    public void setPackLoaded(Player player, boolean loaded) {
-        if (loaded) {
-            packLoaded.add(player.getUniqueId());
+    /** Records whether the player's client failed or declined the server pack, then updates their view. */
+    public void setPackFailed(Player player, boolean failed) {
+        if (failed) {
+            packFailed.add(player.getUniqueId());
         } else {
-            packLoaded.remove(player.getUniqueId());
+            packFailed.remove(player.getUniqueId());
         }
         applyVisibility(player);
     }
