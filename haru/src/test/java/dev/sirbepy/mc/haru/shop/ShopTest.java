@@ -151,6 +151,36 @@ class ShopTest extends HaruTestBase {
     }
 
     @Test
+    void haruNeverSellsNetheriteExceptTheOneKatana() {
+        List<Offer> all = new ArrayList<>(ctx.shop().everyday(Tier.SAKURA_BOUND));
+        all.addAll(ctx.shop().petalExchange(Tier.SAKURA_BOUND));
+        all.addAll(ctx.shop().secretStock(Tier.SAKURA_BOUND));
+        all.addAll(dev.sirbepy.mc.haru.shop.catalog.WanderingWares.pool());
+        all.addAll(dev.sirbepy.mc.haru.shop.catalog.WanderingWares.legendaries());
+        for (Offer offer : all) {
+            if (offer.id().equals("leg_katana")) {
+                assertEquals(Restock.ONCE, offer.restock());
+                assertEquals(1, offer.stock());
+                continue;
+            }
+            assertFalse(offer.icon().get().getType().name().contains("NETHERITE"), offer.id());
+        }
+    }
+
+    @Test
+    void strongWaresAreCappedWeeklyNotPerRotation() {
+        for (Offer legendary : dev.sirbepy.mc.haru.shop.catalog.WanderingWares.legendaries()) {
+            assertTrue(legendary.restock() == Restock.REAL_WEEK || legendary.restock() == Restock.ONCE, legendary.id());
+        }
+        for (String id : List.of("rot_totem", "rot_enchanted_apple", "rot_heavy_core", "rot_trident")) {
+            Offer offer = dev.sirbepy.mc.haru.shop.catalog.WanderingWares.pool().stream()
+                    .filter(o -> o.id().equals(id)).findFirst().orElseThrow();
+            assertEquals(Restock.REAL_WEEK, offer.restock(), id);
+            assertEquals(1, offer.stock(), id);
+        }
+    }
+
+    @Test
     void secretStockOnlyAtMaxTrust() {
         assertTrue(ctx.shop().secretStock(Tier.KINDRED).isEmpty());
         assertFalse(ctx.shop().secretStock(Tier.SAKURA_BOUND).isEmpty());

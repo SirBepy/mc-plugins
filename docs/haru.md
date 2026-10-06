@@ -65,15 +65,23 @@ deeper shelves and a further discount (2/4/6/8/10%, rounded up so nothing passes
 Six wares drawn from a pool for each 3-MC-day rotation (deterministic per rotation, so a restart shows
 the same shelf), one of each per rotation: armor trims, heart of the sea, a nautilus shell, music
 discs (Pigstep, Otherside, Relic, Creator, Precipice), sniffer egg, a blue axolotl, echo shards, heavy
-core, breeze rods, trident, turtle helmet, scutes, glow ink, sea lanterns, pink petals, spore blossoms, flowering azalea and rare books (Soul
+core, breeze rods, trident, turtle helmet, a totem of undying (Friend, 24E), an enchanted golden
+apple (Trusted, 40E), an ominous bottle, an ominous trial key, a wither skeleton skull, scutes, glow ink, sea lanterns, pink petals, spore blossoms, flowering azalea and rare books (Soul
 Speed, Swift Sneak, Frost Walker, Riptide, Channeling, Wind Burst, Density, Breach, Depth Strider,
 Thorns). Higher trust widens the pool.
 
-**Legendary Trade** (20% of rotations, single use, emeralds + petals), all at vanilla's own max
-enchantments: Blossom Blade (netherite sword), Pick of the Mountain Spirit, Crown of the Sanctuary
-(netherite helmet, amethyst Silence trim) and Fujin's Mace at 64E + 60 petals, Raijin's Trident 56E +
-50, Bow of the Moon Rabbit 40E + 30, Koi King's Rod 24E + 20, one enchanted golden apple 40E + 30.
-Priced after Joe's "make sure it's not too OP" (2026-10-06): no beacon, no netherite templates.
+A rotation lasts about an hour of real play, so the strong wares (totem, enchanted golden apple, heavy
+core, trident, heart of the sea, trial key, wither skull) are capped at one a week each, whichever
+rotations they appear in (Joe, 2026-10-06: OP items in low stock).
+
+**Legendary Trade** (20% of rotations, each legendary at most once a week, emeralds + petals), all at vanilla's own max
+enchantments and never netherite (Joe, 2026-10-06: Haru never sells netherite in any form): Blossom
+Blade (diamond sword), Pick of the Mountain Spirit (diamond pickaxe) and Crown of the Sanctuary (diamond
+helmet, amethyst Silence trim) at 48E + 50 petals, Fujin's Mace 64E + 60, Raijin's Trident 56E + 50,
+Bow of the Moon Rabbit 40E + 30, Koi King's Rod 24E + 20, two enchanted golden apples 56E + 50, Twin
+Totems (two totems of undying) 48E + 40, and the one netherite exception Joe asked for: a second
+**Katana** (the server pack's katana look on a netherite sword, Sharpness V, Sweeping Edge III,
+Unbreaking III, Mending) at 64E + 60, sold once ever. No beacon, no netherite templates.
 
 ### Spirit Requests (ImMijo)
 
@@ -106,9 +114,8 @@ Mojang's CDN 2026-10-06).
 
 One sealed box a day, at most 3 opened: Lacquered Puzzle Box (10 petals), Kitsune's Gift Box (15),
 Koi Pond Box (12), and from Trusted the Dragon-Scale Casket (30). Rolled on opening. Long shots
-(1-5%) include a netherite ingot or scrap, an enchanted golden apple, a totem, heart of the sea, trident
-and a blue axolotl. No
-emeralds or coins come out of a curio.
+(the "jackpots", 2-10% each) include an enchanted golden apple, a totem, heart of the sea, trident and
+a blue axolotl. No netherite and no emeralds or coins come out of a curio.
 
 ### Secret Stock (Sakura Bound only, one tier, weekly)
 

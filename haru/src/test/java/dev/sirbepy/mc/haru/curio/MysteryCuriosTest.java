@@ -34,6 +34,18 @@ class MysteryCuriosTest extends HaruTestBase {
     }
 
     @Test
+    void noCurioEverHoldsNetherite() {
+        for (MysteryCurios.Curio curio : ctx.curios().all()) {
+            OwnerState state = new OwnerState();
+            for (var reward : curio.contents().values()) {
+                for (String given : ctx.rewards().grant(owner, state, reward, false)) {
+                    assertFalse(given.toLowerCase().contains("netherite"), curio.id() + ": " + given);
+                }
+            }
+        }
+    }
+
+    @Test
     void curioWithoutPetalsTakesNothing() {
         OwnerState state = state();
         assertEquals(MysteryCurios.Result.NO_PETALS, ctx.curios().open(owner, state, clock.today, new Random(1), new ArrayList<>()));

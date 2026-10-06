@@ -44,8 +44,7 @@ public final class MysteryCurios {
                         .add(10, Reward.item(Material.DIAMOND, 3))
                         .add(10, Reward.item(Material.GOLDEN_APPLE, 2))
                         .add(8, Reward.bundle(Reward.item(Material.NAME_TAG, 1), Reward.item(Material.SADDLE, 1)))
-                        .add(1, Reward.item(Material.NETHERITE_SCRAP, 1))
-                        .add(1, Reward.item(Material.ENCHANTED_GOLDEN_APPLE, 1))
+                        .add(2, Reward.item(Material.ENCHANTED_GOLDEN_APPLE, 1))
                         .add(2, Reward.item(Material.TOTEM_OF_UNDYING, 1))),
                 new Curio("kitsune", "Kitsune's Gift Box", "Tied with a red cord. Foxes love a prank.", 15,
                         Tier.STRANGER, new WeightedTable<Reward>()
@@ -69,10 +68,9 @@ public final class MysteryCurios {
                 new Curio("dragon", "Dragon-Scale Casket", "Warm to the touch. Heavier than it looks.", 30,
                         Tier.TRUSTED, new WeightedTable<Reward>()
                         .add(25, Reward.item(Material.DIAMOND, 4))
-                        .add(15, Reward.item(Material.NETHERITE_SCRAP, 2))
-                        .add(5, Reward.item(Material.TOTEM_OF_UNDYING, 1))
-                        .add(3, Reward.item(Material.ENCHANTED_GOLDEN_APPLE, 1))
-                        .add(2, Reward.item(Material.NETHERITE_INGOT, 1))
+                        .add(15, Reward.item(Material.GOLDEN_APPLE, 4))
+                        .add(8, Reward.item(Material.TOTEM_OF_UNDYING, 1))
+                        .add(5, Reward.item(Material.ENCHANTED_GOLDEN_APPLE, 1))
                         .add(2, Reward.item(Material.SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE, 1))
                         .add(4, Reward.item(Material.HEART_OF_THE_SEA, 1))));
     }
