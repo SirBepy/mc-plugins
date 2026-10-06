@@ -1,0 +1,61 @@
+{
+  "entity.phantom.ambient": {
+    "replace": true,
+    "sounds": [
+      {"name": "mob/phantom/idle1", "volume": 0.8, "attenuation_distance": 32},
+      {"name": "mob/phantom/idle2", "volume": 0.8, "attenuation_distance": 32},
+      {"name": "mob/phantom/idle3", "volume": 0.8, "attenuation_distance": 32},
+      {"name": "mob/phantom/idle4", "volume": 0.8, "attenuation_distance": 32},
+      {"name": "mob/phantom/idle5", "volume": 0.8, "attenuation_distance": 32}
+    ],
+    "subtitle": "subtitles.entity.phantom.ambient"
+  },
+  "entity.phantom.bite": {
+    "replace": true,
+    "sounds": [
+      {"name": "mob/phantom/bite1", "attenuation_distance": 32},
+      {"name": "mob/phantom/bite2", "attenuation_distance": 32}
+    ],
+    "subtitle": "subtitles.entity.phantom.bite"
+  },
+  "entity.phantom.death": {
+    "replace": true,
+    "sounds": [
+      {"name": "mob/phantom/death1", "attenuation_distance": 32},
+      {"name": "mob/phantom/death2", "attenuation_distance": 32},
+      {"name": "mob/phantom/death3", "attenuation_distance": 32}
+    ],
+    "subtitle": "subtitles.entity.phantom.death"
+  },
+  "entity.phantom.flap": {
+    "replace": true,
+    "sounds": [
+      {"name": "mob/phantom/flap1", "volume": 0.9, "attenuation_distance": 32},
+      {"name": "mob/phantom/flap2", "volume": 0.9, "attenuation_distance": 32},
+      {"name": "mob/phantom/flap3", "volume": 0.9, "attenuation_distance": 32},
+      {"name": "mob/phantom/flap4", "volume": 0.9, "attenuation_distance": 32},
+      {"name": "mob/phantom/flap5", "volume": 0.9, "attenuation_distance": 32},
+      {"name": "mob/phantom/flap6", "volume": 0.9, "attenuation_distance": 32}
+    ],
+    "subtitle": "subtitles.entity.phantom.flap"
+  },
+  "entity.phantom.hurt": {
+    "replace": true,
+    "sounds": [
+      {"name": "mob/phantom/hurt1", "volume": 0.75, "attenuation_distance": 32},
+      {"name": "mob/phantom/hurt2", "volume": 0.75, "attenuation_distance": 32},
+      {"name": "mob/phantom/hurt3", "volume": 0.75, "attenuation_distance": 32}
+    ],
+    "subtitle": "subtitles.entity.phantom.hurt"
+  },
+  "entity.phantom.swoop": {
+    "replace": true,
+    "sounds": [
+      {"name": "mob/phantom/swoop1", "volume": 0.7, "attenuation_distance": 32},
+      {"name": "mob/phantom/swoop2", "volume": 0.7, "attenuation_distance": 32},
+      {"name": "mob/phantom/swoop3", "volume": 0.7, "attenuation_distance": 32},
+      {"name": "mob/phantom/swoop4", "volume": 0.7, "attenuation_distance": 32}
+    ],
+    "subtitle": "subtitles.entity.phantom.swoop"
+  }
+}

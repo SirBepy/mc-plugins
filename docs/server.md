@@ -193,3 +193,31 @@ voice chat bound 25604, all 16 datapacks + vanilla + paper loaded with no errors
 (Java via `minecraft-protocol`, Bedrock via `bedrock-protocol`) both succeeded from this PC.
 Overworld/Nether pregen (`chunky`, square, center 0 0, radius 5000/1250) started via console
 commands; nether finished in 8:40 (25,281 chunks), overworld left running.
+
+## Phantoms (CoffiebagSupreme's Shenron wish, 2026-10-07)
+
+Granted by a 4-1 council vote in a toned-down, server-wide form, then extended by Joe the same night.
+
+- **Trigger: 2 sleepless nights** instead of vanilla's 3: `player-insomnia-start-ticks: 48000` (was
+  72000) in `server/config/config/paper-world-defaults.yml`. As in vanilla it is a chance that grows
+  with the time since the player last slept, so they can come any time after that.
+- **Spawn rate 2x**: `phantoms-spawn-attempt-min-seconds: 30` / `max-seconds: 59` (vanilla 60/119),
+  so each player gets a spawn attempt twice as often.
+- **Tweaks plugin, `PhantomBuffListener`** (switch: `phantoms.enabled` in Tweaks' `config.yml`):
+  - Every phantom is **size 3** (drawn 1.45x larger), with its bite kept at vanilla's 6 damage (size
+    alone would make it 9), **fireproof** (no burning in daylight, infinite hidden Fire Resistance).
+  - Half are **venomous**: a hit gives **Poison I for 5 s** (about 2 hearts; poison can't kill), and
+    they trail dark purple swirls from an infinite Nausea effect, which does nothing to a mob. 26.3
+    has no per-mob texture, so the swirls are the only way to tell them apart, on Bedrock too.
+  - The other half are **tough**: 30 HP instead of 20, no poison.
+  - **Faster**: phantom speed is hardcoded in its move controller (no attribute changes it), so a
+    1-tick task recovers the controller's target velocity from the last tick and adds a quarter of
+    it, which doubles the target. Measured on server/local (6 circling phantoms, 20 s): average
+    5.6 -> 7.9 blocks/s, top 0.5 s speed about 10 -> 14-18. The controller only speeds up while it
+    faces its target, so circling stays under 2x; a straight dive should get closer to 2x but needs a
+    real player to measure.
+  - **Heard from 32 blocks** instead of 16: the server pack stretches every phantom sound's range
+    (`server/resourcepacks/claudesmp-items/README.md`, "Phantom sounds"), and the plugin replays the
+    screech for players 16-32 blocks away, since the server only sends it within 16.
+  - Cost per tick: one velocity read and write per loaded phantom; the screech check runs once a
+    second.

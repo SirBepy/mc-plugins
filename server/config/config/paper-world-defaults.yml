@@ -110,8 +110,8 @@ entities:
     parrots-are-unaffected-by-player-movement: false
     phantoms-do-not-spawn-on-creative-players: true
     phantoms-only-attack-insomniacs: true
-    phantoms-spawn-attempt-max-seconds: 119
-    phantoms-spawn-attempt-min-seconds: 60
+    phantoms-spawn-attempt-max-seconds: 59
+    phantoms-spawn-attempt-min-seconds: 30
     piglins-guard-chests: true
     pillager-patrols:
       disable: false
@@ -122,7 +122,7 @@ entities:
       start:
         day: 5
         per-player: false
-    player-insomnia-start-ticks: 72000
+    player-insomnia-start-ticks: 48000
     should-remove-dragon: false
     spawner-nerfed-mobs-should-jump: false
     stuck-entity-poi-retry-delay: 200

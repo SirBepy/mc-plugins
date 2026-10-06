@@ -17,3 +17,9 @@ motd:
     - "Los pollos minehermanos"
     - "BepyCraft"
     - "Bepy-Craft"
+
+# CoffiebagSupreme's Shenron wish (2026-10-07): fireproof, bigger, faster phantoms, half of them
+# venomous and half tougher (PhantomBuffListener). Off = vanilla phantoms after the next restart.
+# The 2-night trigger and doubled spawn rate live in config/paper-world-defaults.yml, not here.
+phantoms:
+  enabled: true
