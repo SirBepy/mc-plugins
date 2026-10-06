@@ -1,6 +1,6 @@
 import { Vec3 } from 'vec3';
 import {
-  Rcon, assert, buildPlatform, createBot, quit, randomOrigin, sleep, teleport,
+  Rcon, assert, buildPlatform, createBot, quit, randomOrigin, releasePlatform, sleep, teleport,
 } from './lib.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -153,6 +153,7 @@ export async function openSuite(suiteName) {
     await rcon.command(`minecraft:clear ${HUNTER}`).catch(() => {});
     await rcon.command(`minecraft:clear ${WITNESS}`).catch(() => {});
     await quit(...Object.values(bots));
+    await releasePlatform(rcon, BX, BZ);
     rcon.close();
   }
 
