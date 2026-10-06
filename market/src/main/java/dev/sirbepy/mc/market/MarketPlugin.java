@@ -75,8 +75,20 @@ public final class MarketPlugin extends JavaPlugin {
                                     config.get().messages().send(ctx.getSource().getSender(), "rotate-success");
                                     return Command.SINGLE_SUCCESS;
                                 }))
+                        .then(Commands.literal("reload")
+                                .executes(ctx -> {
+                                    reload();
+                                    config.get().messages().send(ctx.getSource().getSender(), "reload-success");
+                                    return Command.SINGLE_SUCCESS;
+                                }))
                         .build(), "Spawn market admin");
         });
+    }
+
+    // stalls.yml and prices.yml ship inside the jar, so only config.yml can change without a restart.
+    private void reload() {
+        reloadConfig();
+        config.set(new MarketConfig(getConfig()));
     }
 
     private String period() {

@@ -23,6 +23,7 @@ price-spread: 0.2
 messages:
   rotated: "<gold>A new day at the spawn market: the stalls are buying different things. Check the [Sell] signs at spawn."
   rotate-success: "<green>The spawn market picked new buyers."
+  reload-success: "<green>Market config reloaded. Item counts and prices apply from the next rotation (/market rotate)."
   price-hold: "<gray>Hold the item you want priced in your main hand."
   price-untradeable: "<gray><item> can't be traded."
   price-unknown: "<gray>No suggested price for <item> yet."

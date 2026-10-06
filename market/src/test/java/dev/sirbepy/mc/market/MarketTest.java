@@ -94,6 +94,34 @@ class MarketTest {
     }
 
     @Test
+    void reloadedConfigAppliesFromTheNextRotation() {
+        Market market = market(5);
+        market.rotate();
+        assertEquals(3, market.buying("farmer").size());
+
+        // What /market reload does: a fresh MarketConfig swapped into the supplier the Market reads.
+        YamlConfiguration edited = YamlConfiguration.loadConfiguration(new InputStreamReader(
+                Objects.requireNonNull(getClass().getResourceAsStream("/config.yml")), StandardCharsets.UTF_8));
+        edited.set("items-per-stall.min", 1);
+        edited.set("items-per-stall.max", 1);
+        config = new MarketConfig(edited);
+
+        assertEquals(3, market.buying("farmer").size(), "today's picks stay until the market rotates");
+        market.rotate();
+        for (Stall stall : layout.stalls()) {
+            assertEquals(1, market.buying(stall.id()).size(), stall.id());
+        }
+    }
+
+    @Test
+    void shippedConfigHasAReloadMessage() {
+        var stream = Objects.requireNonNull(getClass().getResourceAsStream("/config.yml"));
+        String message = YamlConfiguration.loadConfiguration(new InputStreamReader(stream, StandardCharsets.UTF_8))
+                .getString("messages.reload-success", "");
+        assertFalse(message.isBlank(), "/market reload confirms with messages.reload-success");
+    }
+
+    @Test
     void pricesRollWithinTwentyPercentOfBaseToTheCent() {
         boolean cheaper = false;
         boolean dearer = false;
