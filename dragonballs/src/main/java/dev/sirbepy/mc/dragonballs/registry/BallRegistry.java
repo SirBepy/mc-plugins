@@ -1,11 +1,9 @@
 package dev.sirbepy.mc.dragonballs.registry;
 
-import dev.sirbepy.mc.core.YamlFiles;
 import dev.sirbepy.mc.dragonballs.config.StoneMode;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -14,7 +12,6 @@ import org.bukkit.entity.Entity;
 import org.bukkit.inventory.PlayerInventory;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -22,20 +19,18 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * The persistent source of truth for all 7 balls (saved to {@code balls.yml}), plus the small item
  * helpers phase 2 needs. Every ball has exactly one state at a time (invariant enforced by the
  * mark* methods always clearing the other states' fields); never block the main thread here, this
- * class performs no I/O except its own atomic save.
+ * class performs no I/O except its own atomic save through {@link BallRegistryStore}.
  */
 public final class BallRegistry {
 
     private final TreeMap<Integer, Ball> balls = new TreeMap<>();
-    private final File file;
-    private final Logger logger;
+    private final BallRegistryStore store;
     private final BallItems items;
 
     private String lastSummonWorld;
@@ -49,8 +44,7 @@ public final class BallRegistry {
     private BallScatterer scatterer;
 
     public BallRegistry(File file, Logger logger, BallItems items) {
-        this.file = file;
-        this.logger = logger;
+        this.store = new BallRegistryStore(file, logger);
         this.items = items;
         for (int star = 1; star <= 7; star++) {
             balls.put(star, new Ball(star));
@@ -64,7 +58,7 @@ public final class BallRegistry {
     }
 
     public boolean hasSavedState() {
-        return file.exists();
+        return store.exists();
     }
 
     // ---- phase 2 public API ----
@@ -393,77 +387,18 @@ public final class BallRegistry {
     }
 
     private void load() {
-        YamlConfiguration yaml;
-        try {
-            yaml = YamlFiles.load(file);
-        } catch (IOException e) {
-            logger.log(Level.WARNING, "Could not read " + file + "; starting with an empty registry", e);
-            return;
-        }
-        for (int star = 1; star <= 7; star++) {
-            var section = yaml.getConfigurationSection("balls." + star);
-            Ball ball = balls.get(star);
-            if (section == null) {
-                continue;
-            }
-            ball.state = BallState.valueOf(section.getString("state", "PLACED"));
-            ball.stone = section.getBoolean("stone", false);
-            ball.worldName = section.getString("world");
-            ball.x = section.getDouble("x");
-            ball.y = section.getDouble("y");
-            ball.z = section.getDouble("z");
-            String holder = section.getString("holderId");
-            ball.holderId = holder == null ? null : UUID.fromString(holder);
-            ball.holderName = section.getString("holderName");
-            ball.heldSinceMillis = section.getLong("heldSince", 0);
-            ball.lastSeenMillis = section.getLong("lastSeen", 0);
-            String entity = section.getString("entityId");
-            ball.entityId = entity == null ? null : UUID.fromString(entity);
-        }
-        var global = yaml.getConfigurationSection("global");
-        if (global != null) {
-            lastSummonWorld = global.getString("lastSummon.world");
-            lastSummonX = global.getDouble("lastSummon.x");
-            lastSummonY = global.getDouble("lastSummon.y");
-            lastSummonZ = global.getDouble("lastSummon.z");
-            String mode = global.getString("stoneUntilMode");
-            stoneUntilMode = mode == null ? null : StoneMode.valueOf(mode);
-            stoneUntilValue = global.getLong("stoneUntilValue", 0);
-            wishCount = global.getLong("wishCount", 0);
-        }
+        BallRegistryStore.GlobalState global = store.load(balls);
+        lastSummonWorld = global.lastSummonWorld();
+        lastSummonX = global.lastSummonX();
+        lastSummonY = global.lastSummonY();
+        lastSummonZ = global.lastSummonZ();
+        stoneUntilMode = global.stoneUntilMode();
+        stoneUntilValue = global.stoneUntilValue();
+        wishCount = global.wishCount();
     }
 
     private void save() {
-        YamlConfiguration yaml = new YamlConfiguration();
-        for (Ball ball : balls.values()) {
-            String path = "balls." + ball.star;
-            yaml.set(path + ".state", ball.state.name());
-            yaml.set(path + ".stone", ball.stone);
-            yaml.set(path + ".world", ball.worldName);
-            yaml.set(path + ".x", ball.x);
-            yaml.set(path + ".y", ball.y);
-            yaml.set(path + ".z", ball.z);
-            yaml.set(path + ".holderId", ball.holderId == null ? null : ball.holderId.toString());
-            yaml.set(path + ".holderName", ball.holderName);
-            yaml.set(path + ".heldSince", ball.heldSinceMillis);
-            yaml.set(path + ".lastSeen", ball.lastSeenMillis);
-            yaml.set(path + ".entityId", ball.entityId == null ? null : ball.entityId.toString());
-        }
-        if (lastSummonWorld != null) {
-            yaml.set("global.lastSummon.world", lastSummonWorld);
-            yaml.set("global.lastSummon.x", lastSummonX);
-            yaml.set("global.lastSummon.y", lastSummonY);
-            yaml.set("global.lastSummon.z", lastSummonZ);
-        }
-        if (stoneUntilMode != null) {
-            yaml.set("global.stoneUntilMode", stoneUntilMode.name());
-            yaml.set("global.stoneUntilValue", stoneUntilValue);
-        }
-        yaml.set("global.wishCount", wishCount);
-        try {
-            YamlFiles.saveAtomically(yaml, file);
-        } catch (IOException e) {
-            logger.log(Level.WARNING, "Could not save " + file + "; a restart could lose recent ball state", e);
-        }
+        store.save(balls.values(), new BallRegistryStore.GlobalState(lastSummonWorld, lastSummonX, lastSummonY,
+                lastSummonZ, stoneUntilMode, stoneUntilValue, wishCount));
     }
 }

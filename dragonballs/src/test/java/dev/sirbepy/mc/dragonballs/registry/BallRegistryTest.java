@@ -181,6 +181,17 @@ class BallRegistryTest {
     }
 
     @Test
+    void stoneCooldownPersistsAcrossReload() {
+        newRegistry().setStoneUntil(StoneMode.REAL_HOURS, 5_000);
+
+        BallRegistry reloaded = newRegistry();
+        assertTrue(reloaded.isDormant());
+        assertTrue(reloaded.isStone(3));
+        assertFalse(reloaded.isStoneExpired(0, 4_999));
+        assertTrue(reloaded.isStoneExpired(0, 5_000));
+    }
+
+    @Test
     void noStoneUntilSetMeansAlreadyExpired() {
         BallRegistry registry = newRegistry();
         assertFalse(registry.isDormant());
