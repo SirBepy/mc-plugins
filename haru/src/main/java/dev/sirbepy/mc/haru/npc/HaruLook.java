@@ -39,6 +39,11 @@ public final class HaruLook {
         return !skin.packTexture().isBlank() || !skin.packCape().isBlank();
     }
 
+    /** True when a pack skin is configured but the Mannequin's profile lost its patch. */
+    public boolean undressed(Mannequin mannequin) {
+        return needsPack() && mannequin.getProfile().skinPatch().isEmpty();
+    }
+
     public void dress(Mannequin mannequin) {
         mannequin.setDescription(Component.text(HaruNpc.TITLE, Speech.HARU));
         mannequin.setProfile(profile(config.get().skin()));
@@ -48,9 +53,13 @@ public final class HaruLook {
         if (skin.texture().isBlank() && skin.packTexture().isBlank()) {
             return Mannequin.defaultProfile();
         }
-        ResolvableProfile.Builder builder = ResolvableProfile.resolvableProfile().name(HaruNpc.NAME).uuid(PROFILE_ID);
+        // No name or id unless a texture property comes with them: a profile with only a name/id is
+        // "dynamic", and an online-mode server resolves it against Mojang and replaces it, which wiped
+        // the skin patch on live (2026-10-06, the Mannequin's profile came back as {}).
+        ResolvableProfile.Builder builder = ResolvableProfile.resolvableProfile();
         if (!skin.texture().isBlank()) {
-            builder.addProperty(new ProfileProperty("textures", Goods.textureValue(skin.texture())));
+            builder.name(HaruNpc.NAME).uuid(PROFILE_ID)
+                    .addProperty(new ProfileProperty("textures", Goods.textureValue(skin.texture())));
         }
         if (!skin.packTexture().isBlank() || !skin.packCape().isBlank() || skin.slim()) {
             builder.skinPatch(patch -> {

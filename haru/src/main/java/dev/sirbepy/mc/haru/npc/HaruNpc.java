@@ -129,6 +129,9 @@ public final class HaruNpc {
             changed = true;
         } else {
             snapBack(mannequin, home);
+            if (look.undressed((Mannequin) mannequin)) {
+                mannequinLook.accept((Mannequin) mannequin);
+            }
         }
         Location titleSpot = home.clone().add(0, TITLE_HEIGHT, 0);
         Entity title = entity(store.titleId());
