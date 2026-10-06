@@ -1,5 +1,5 @@
 import {
-  Rcon, assert, buildPlatform, createBot, nbtText, quit, randomOrigin, releasePlatform, sleep, teleport,
+  Rcon, assert, buildPlatform, createBot, quit, randomOrigin, releasePlatform, sleep, teleport, textDisplays,
   waitFor, waitForLine,
 } from './lib.mjs';
 
@@ -21,11 +21,7 @@ function tabJson(viewer, name) {
 }
 
 function labelText(viewer, target) {
-  const label = Object.values(viewer.entities).find((e) => e.name === 'text_display'
-    && e.position.distanceTo(target.entity.position) < 4);
-  if (!label) return undefined;
-  return label.metadata.map((value) => (value && typeof value === 'object' ? nbtText(value) : ''))
-    .join(' ');
+  return textDisplays(viewer).find((d) => d.entity.position.distanceTo(target.entity.position) < 4)?.text;
 }
 
 async function openWindow(bot, command) {
