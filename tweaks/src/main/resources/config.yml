@@ -1,0 +1,19 @@
+# Server-list MOTD. Line 1 is fixed so the server stays recognisable in the list; line 2 is one
+# entry of `daily-lines`, the same all day (server's local date) and the next entry the day after,
+# wrapping around. Edits apply on the next restart. Lines from Joe's player-suggestion form.
+motd:
+  enabled: true
+  first-line: "The Claude SMP"
+  daily-lines:
+    - "Sirepy"
+    - "BOMBORASCLARTPUSSIBOMBOBLOODCLART EGG"
+    - "Lovrinac, HEP, HDZ, ZDP, Metkovic, Judini sinovi, Daleko iza devet sela"
+    - "PeePeeLooPooPoo"
+    - "Danko"
+    - "sirbepys sigma kingdom"
+    - "the uhh sirbepsters.. or something idk man"
+    - "wedge stinks"
+    - "shroomsift"
+    - "Los pollos minehermanos"
+    - "BepyCraft"
+    - "Bepy-Craft"
