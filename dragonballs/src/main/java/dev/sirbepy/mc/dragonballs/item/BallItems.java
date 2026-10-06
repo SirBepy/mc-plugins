@@ -138,20 +138,21 @@ public final class BallItems {
     public void applyBlockTexture(Skull skull, int star, boolean stone) {
         String texture = stone ? config.get().stoneTexture() : config.get().texture(star);
         UUID profileId = stone ? STONE_PROFILE_ID : PROFILE_IDS[star - 1];
-        PlayerProfile profile = applyProfileTexture(profileId, texture);
+        PlayerProfile profile = texturedProfile(profileId, texture);
         if (profile != null) {
             skull.setPlayerProfile(profile);
         }
     }
 
     private void applyProfile(SkullMeta meta, UUID profileId, String texture) {
-        PlayerProfile profile = applyProfileTexture(profileId, texture);
+        PlayerProfile profile = texturedProfile(profileId, texture);
         if (profile != null) {
             meta.setPlayerProfile(profile);
         }
     }
 
-    private PlayerProfile applyProfileTexture(UUID profileId, String texture) {
+    /** A profile carrying {@code texture} as its skin, or null when the texture is blank (plain head). */
+    public static PlayerProfile texturedProfile(UUID profileId, String texture) {
         if (texture == null || texture.isBlank()) {
             return null;
         }

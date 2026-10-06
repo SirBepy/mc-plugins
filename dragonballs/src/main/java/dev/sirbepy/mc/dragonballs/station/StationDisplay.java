@@ -1,8 +1,8 @@
 package dev.sirbepy.mc.dragonballs.station;
 
 import com.destroystokyo.paper.profile.PlayerProfile;
-import com.destroystokyo.paper.profile.ProfileProperty;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
+import dev.sirbepy.mc.dragonballs.item.BallItems;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -92,12 +92,9 @@ public final class StationDisplay implements Listener {
     }
 
     private void applyDecorProfile(Skull skull) {
-        String texture = config.get().stoneTexture();
-        if (texture == null || texture.isBlank()) {
-            return;
+        PlayerProfile profile = BallItems.texturedProfile(DECOR_PROFILE_ID, config.get().stoneTexture());
+        if (profile != null) {
+            skull.setPlayerProfile(profile);
         }
-        PlayerProfile profile = Bukkit.createProfile(DECOR_PROFILE_ID);
-        profile.setProperty(new ProfileProperty("textures", texture));
-        skull.setPlayerProfile(profile);
     }
 }

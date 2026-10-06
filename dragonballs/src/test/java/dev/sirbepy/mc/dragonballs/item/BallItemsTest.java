@@ -11,16 +11,17 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.plugin.PluginMock;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Balls are identified ONLY by the {@code dragonballs:star} PDC marker (never name/texture); this
- * covers that identification plus the stone-variant PDC flag and item text. Texture/profile
- * application itself isn't asserted on: MockBukkit has no real Mojang session, so a profile is
- * best-effort there (see BallItems.applyProfileTexture's null-safe guard) and the PDC marker is
- * what every other listener actually keys off of.
+ * covers that identification plus the stone-variant PDC flag and item text, and the shared
+ * {@link BallItems#texturedProfile} helper that both ball heads and the station decor heads use.
  */
 class BallItemsTest {
 
@@ -80,5 +81,21 @@ class BallItemsTest {
         meta.displayName(net.kyori.adventure.text.Component.text("4-Star Dragon Ball"));
         lookalike.setItemMeta(meta);
         assertFalse(items.isBall(lookalike));
+    }
+
+    @Test
+    void texturedProfileCarriesTheTextureUnderItsId() {
+        UUID id = UUID.fromString("6d1e7a3b-0000-4000-8000-000000000001");
+        var profile = BallItems.texturedProfile(id, "deadbeef");
+        assertEquals(id, profile.getId());
+        assertTrue(profile.getProperties().stream()
+                .anyMatch(p -> p.getName().equals("textures") && p.getValue().equals("deadbeef")));
+    }
+
+    @Test
+    void texturedProfileIsNullForABlankTexture() {
+        UUID id = UUID.randomUUID();
+        assertNull(BallItems.texturedProfile(id, ""));
+        assertNull(BallItems.texturedProfile(id, null));
     }
 }
