@@ -1,10 +1,12 @@
 package dev.sirbepy.mc.dragonballs.summon;
 
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.effects.DragonType;
 import dev.sirbepy.mc.dragonballs.effects.SummonEffects;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
+import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import io.papermc.paper.chat.ChatRenderer;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
@@ -45,8 +47,7 @@ class SummonChatListenerTest {
         WorldMock world = server.addSimpleWorld("world");
         plugin = MockBukkit.createMockPlugin();
         BallItems items = new BallItems(plugin, () -> new DragonBallsConfig(new YamlConfiguration()));
-        BallRegistry registry = new BallRegistry(new File(tempDir.toFile(), "balls.yml"), plugin.getLogger(), items);
-        registry.setScatterer(new dev.sirbepy.mc.dragonballs.registry.BallScatterer() {
+        dev.sirbepy.mc.dragonballs.registry.BallScatterer noopScatterer = new dev.sirbepy.mc.dragonballs.registry.BallScatterer() {
             @Override
             public java.util.Map<Integer, Location> scatterAll(Location center, boolean stone, BallRegistry r) {
                 return java.util.Map.of();
@@ -55,17 +56,27 @@ class SummonChatListenerTest {
             @Override
             public void scatterOne(int star, Location center, boolean stone, BallRegistry r) {
             }
-        });
+        };
+        BallRegistry registry = new BallRegistry(new File(tempDir.toFile(), "balls.yml"), plugin.getLogger(), items,
+                BallSet.OVERWORLD);
+        registry.setScatterer(noopScatterer);
+        BallRegistry netherRegistry = new BallRegistry(new File(tempDir.toFile(), "balls-nether.yml"), plugin.getLogger(), items,
+                BallSet.NETHER);
+        netherRegistry.setScatterer(noopScatterer);
+        BallRegistry endRegistry = new BallRegistry(new File(tempDir.toFile(), "balls-end.yml"), plugin.getLogger(), items,
+                BallSet.END);
+        endRegistry.setScatterer(noopScatterer);
+        BallSets sets = new BallSets(registry, netherRegistry, endRegistry, items, () -> new DragonBallsConfig(new YamlConfiguration()));
         for (int star = 1; star <= 7; star++) {
             registry.markPlaced(star, new Location(world, 100 + (star % 2), 64, 100 + (star % 2)), false);
         }
-        sessions = new SummonSessionManager(plugin.getLogger(), registry, () -> new DragonBallsConfig(new YamlConfiguration()),
+        sessions = new SummonSessionManager(plugin.getLogger(), sets, () -> new DragonBallsConfig(new YamlConfiguration()),
                 () -> new SummonConfig(2, 600, 180), SummonEffects.NONE,
                 new dev.sirbepy.mc.dragonballs.summon.curse.CurseStore(new File(tempDir.toFile(), "curses.yml"), plugin.getLogger()),
                 new File(tempDir.toFile(), "wishes.jsonl"), System::currentTimeMillis, new Random(1));
         summoner = server.addPlayer("Goku");
         bystander = server.addPlayer("Krillin");
-        sessions.tryStart(summoner, DragonType.SHENRON, new Location(world, 100, 64, 100));
+        sessions.tryStart(summoner, DragonType.SHENRON, new Location(world, 100, 64, 100), BallSet.OVERWORLD);
 
         listener = new SummonChatListener(plugin, sessions);
     }

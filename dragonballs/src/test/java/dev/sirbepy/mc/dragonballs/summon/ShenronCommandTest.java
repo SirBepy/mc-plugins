@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.dragonballs.summon;
 
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.config.StoneMode;
 import dev.sirbepy.mc.dragonballs.effects.DragonType;
@@ -7,6 +8,7 @@ import dev.sirbepy.mc.dragonballs.effects.SummonEffects;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
 import dev.sirbepy.mc.dragonballs.registry.BallScatterer;
+import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import dev.sirbepy.mc.dragonballs.summon.curse.CurseListener;
 import dev.sirbepy.mc.dragonballs.summon.curse.CurseStore;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -46,8 +48,11 @@ class ShenronCommandTest {
 
     private ServerMock server;
     private WorldMock world;
+    private WorldMock netherWorld;
     private PluginMock plugin;
     private BallRegistry registry;
+    private BallRegistry netherRegistry;
+    private BallSets sets;
     private SummonSessionManager sessions;
     private ShenronCommand command;
     private ConsoleCommandSenderMock console;
@@ -56,10 +61,10 @@ class ShenronCommandTest {
     void setUp(@TempDir Path tempDir) {
         server = MockBukkit.mock();
         world = server.addSimpleWorld("world");
+        netherWorld = server.addSimpleWorld("world_nether");
         plugin = MockBukkit.createMockPlugin();
         BallItems items = new BallItems(plugin, () -> new DragonBallsConfig(new YamlConfiguration()));
-        registry = new BallRegistry(new File(tempDir.toFile(), "balls.yml"), plugin.getLogger(), items);
-        registry.setScatterer(new BallScatterer() {
+        BallScatterer noopScatterer = new BallScatterer() {
             @Override
             public Map<Integer, Location> scatterAll(Location center, boolean stone, BallRegistry r) {
                 return Map.of();
@@ -68,14 +73,24 @@ class ShenronCommandTest {
             @Override
             public void scatterOne(int star, Location center, boolean stone, BallRegistry r) {
             }
-        });
-        sessions = new SummonSessionManager(plugin.getLogger(), registry, () -> new DragonBallsConfig(new YamlConfiguration()),
+        };
+        registry = new BallRegistry(new File(tempDir.toFile(), "balls.yml"), plugin.getLogger(), items,
+                BallSet.OVERWORLD);
+        registry.setScatterer(noopScatterer);
+        netherRegistry = new BallRegistry(new File(tempDir.toFile(), "balls-nether.yml"), plugin.getLogger(), items,
+                BallSet.NETHER);
+        netherRegistry.setScatterer(noopScatterer);
+        BallRegistry endRegistry = new BallRegistry(new File(tempDir.toFile(), "balls-end.yml"), plugin.getLogger(), items,
+                BallSet.END);
+        endRegistry.setScatterer(noopScatterer);
+        sets = new BallSets(registry, netherRegistry, endRegistry, items, () -> new DragonBallsConfig(new YamlConfiguration()));
+        sessions = new SummonSessionManager(plugin.getLogger(), sets, () -> new DragonBallsConfig(new YamlConfiguration()),
                 () -> new SummonConfig(2, 600, 180), SummonEffects.NONE,
                 new CurseStore(new File(tempDir.toFile(), "curses.yml"), plugin.getLogger()),
                 new File(tempDir.toFile(), "wishes.jsonl"), System::currentTimeMillis, new Random(1));
         CurseStore curses = new CurseStore(new File(tempDir.toFile(), "curses2.yml"), plugin.getLogger());
         CurseListener curseListener = new CurseListener(curses, System::currentTimeMillis);
-        command = new ShenronCommand(sessions, curses, curseListener, registry);
+        command = new ShenronCommand(sessions, curses, curseListener, sets);
         console = new ConsoleCommandSenderMock();
     }
 
@@ -198,12 +213,61 @@ class ShenronCommandTest {
     void summonRefusesWhileASessionIsAlreadyActive() {
         placeAllSevenTogether();
         PlayerMock first = server.addPlayer("Goku");
-        sessions.tryStart(first, DragonType.SHENRON, new Location(world, 100, 64, 100));
+        sessions.tryStart(first, DragonType.SHENRON, new Location(world, 100, 64, 100), BallSet.OVERWORLD);
         server.addPlayer("Vegeta");
 
         command.summon(console, "Vegeta", "porunga");
 
         assertEquals(DragonType.SHENRON, sessions.activeDragon(), "the first session must stay active, untouched");
         assertEquals(first.getUniqueId(), sessions.activeSummoner());
+    }
+
+    @Test
+    void summonWithAnExplicitSetUsesThatSetsOwnBalls() {
+        placeAllSevenNetherTogether();
+        PlayerMock player = server.addPlayer("Goku");
+
+        command.summon(console, "Goku", "shenron", "nether");
+
+        assertTrue(sessions.hasActiveSession());
+        assertEquals(player.getUniqueId(), sessions.activeSummoner());
+    }
+
+    @Test
+    void summonWithNoSetPicksTheFirstReadySetWhenOverworldIsIncomplete() {
+        // Overworld stays incomplete; only the Nether set is fully placed together.
+        placeAllSevenNetherTogether();
+        server.addPlayer("Goku");
+
+        command.summon(console, "Goku", "shenron");
+
+        assertTrue(sessions.hasActiveSession());
+    }
+
+    @Test
+    void summonRejectsAnUnknownSetNameAndStartsNoSession() {
+        placeAllSevenTogether();
+        server.addPlayer("Goku");
+
+        command.summon(console, "Goku", "shenron", "moon");
+
+        assertFalse(sessions.hasActiveSession());
+        assertTrue(nextConsoleMessage().contains("Unknown set"));
+    }
+
+    @Test
+    void statusTextNamesTheActiveSessionsSet() {
+        placeAllSevenNetherTogether();
+        PlayerMock player = server.addPlayer("Goku");
+        sessions.tryStart(player, DragonType.SHENRON, new Location(netherWorld, 100, 64, 100), BallSet.NETHER);
+
+        assertTrue(sessions.statusText().contains("set=nether"));
+    }
+
+    /** Places all 7 together, PLACED, non-stone, within radius 2 of {@code (100,64,100)} in the Nether. */
+    private void placeAllSevenNetherTogether() {
+        for (int star = 1; star <= 7; star++) {
+            netherRegistry.markPlaced(star, new Location(netherWorld, 100 + (star % 2), 64, 100 + (star % 2)), false);
+        }
     }
 }

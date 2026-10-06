@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.dragonballs.summon;
 
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.effects.DragonType;
 import dev.sirbepy.mc.dragonballs.effects.SummonEffects;
@@ -7,6 +8,7 @@ import dev.sirbepy.mc.dragonballs.effects.SummonScene;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
 import dev.sirbepy.mc.dragonballs.registry.BallScatterer;
+import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import dev.sirbepy.mc.dragonballs.summon.curse.CurseStore;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -32,15 +34,19 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * MockBukkit coverage for the session orchestration: starting (and refusing to start), the judge's
- * grant/dismiss ending a session through the exact {@code scatterAll(center, true)} +
- * {@code effects.onEnd} path, and the idle timeout firing through a real scheduled task.
+ * MockBukkit coverage for the session orchestration: starting (and refusing to start) each of the 3
+ * sets, the judge's grant/dismiss ending a session through the exact {@code scatterAll(center,
+ * true)} + {@code effects.onEnd} path (scoped to that session's own set only), and the idle timeout
+ * firing through a real scheduled task.
  */
 class SummonSessionManagerTest {
 
     private ServerMock server;
     private WorldMock world;
+    private WorldMock netherWorld;
+    private BallSets sets;
     private BallRegistry registry;
+    private BallRegistry netherRegistry;
     private FakeEffects effects;
     private FakeScatterer scatterer;
     private CurseStore curses;
@@ -52,11 +58,20 @@ class SummonSessionManagerTest {
     void setUp(@TempDir Path tempDir) {
         server = MockBukkit.mock();
         world = server.addSimpleWorld("world");
+        netherWorld = server.addSimpleWorld("world_nether");
         plugin = MockBukkit.createMockPlugin();
         BallItems items = new BallItems(plugin, () -> new DragonBallsConfig(new YamlConfiguration()));
-        registry = new BallRegistry(new File(tempDir.toFile(), "balls.yml"), plugin.getLogger(), items);
+        registry = new BallRegistry(new File(tempDir.toFile(), "balls.yml"), plugin.getLogger(), items,
+                dev.sirbepy.mc.dragonballs.ball.BallSet.OVERWORLD);
+        netherRegistry = new BallRegistry(new File(tempDir.toFile(), "balls-nether.yml"), plugin.getLogger(), items,
+                BallSet.NETHER);
+        BallRegistry endRegistry = new BallRegistry(new File(tempDir.toFile(), "balls-end.yml"), plugin.getLogger(), items,
+                BallSet.END);
         scatterer = new FakeScatterer();
         registry.setScatterer(scatterer);
+        netherRegistry.setScatterer(scatterer);
+        endRegistry.setScatterer(scatterer);
+        sets = new BallSets(registry, netherRegistry, endRegistry, items, () -> new DragonBallsConfig(new YamlConfiguration()));
         effects = new FakeEffects();
         curses = new CurseStore(new File(tempDir.toFile(), "curses.yml"), plugin.getLogger());
         wishesFile = new File(tempDir.toFile(), "wishes.jsonl");
@@ -69,7 +84,7 @@ class SummonSessionManagerTest {
     }
 
     private SummonSessionManager newManager() {
-        return new SummonSessionManager(plugin.getLogger(), registry, () -> new DragonBallsConfig(new YamlConfiguration()),
+        return new SummonSessionManager(plugin.getLogger(), sets, () -> new DragonBallsConfig(new YamlConfiguration()),
                 () -> new SummonConfig(2, 600, 180), effects, curses, wishesFile, () -> clockBox[0], new Random(1));
     }
 
@@ -77,6 +92,12 @@ class SummonSessionManagerTest {
     private void placeAllSevenTogether() {
         for (int star = 1; star <= 7; star++) {
             registry.markPlaced(star, new Location(world, 100 + (star % 2), 64, 100 + (star % 2)), false);
+        }
+    }
+
+    private void placeAllSevenNetherTogether() {
+        for (int star = 1; star <= 7; star++) {
+            netherRegistry.markPlaced(star, new Location(netherWorld, 100 + (star % 2), 64, 100 + (star % 2)), false);
         }
     }
 
@@ -90,7 +111,7 @@ class SummonSessionManagerTest {
         SummonSessionManager sessions = newManager();
         PlayerMock player = server.addPlayer();
 
-        boolean started = sessions.tryStart(player, DragonType.SHENRON, new Location(world, 100, 64, 100));
+        boolean started = sessions.tryStart(player, DragonType.SHENRON, new Location(world, 100, 64, 100), BallSet.OVERWORLD);
 
         assertFalse(started);
         assertFalse(sessions.hasActiveSession());
@@ -103,7 +124,7 @@ class SummonSessionManagerTest {
         SummonSessionManager sessions = newManager();
         PlayerMock player = server.addPlayer();
 
-        boolean started = sessions.tryStart(player, DragonType.SHENRON, new Location(world, 100, 64, 100));
+        boolean started = sessions.tryStart(player, DragonType.SHENRON, new Location(world, 100, 64, 100), BallSet.OVERWORLD);
 
         assertFalse(started);
         assertFalse(sessions.hasActiveSession());
@@ -115,7 +136,7 @@ class SummonSessionManagerTest {
         SummonSessionManager sessions = newManager();
         PlayerMock player = server.addPlayer("Goku");
 
-        boolean started = sessions.tryStart(player, DragonType.PORUNGA, new Location(world, 100, 64, 100));
+        boolean started = sessions.tryStart(player, DragonType.PORUNGA, new Location(world, 100, 64, 100), BallSet.OVERWORLD);
 
         assertTrue(started);
         assertTrue(sessions.hasActiveSession());
@@ -126,11 +147,38 @@ class SummonSessionManagerTest {
     }
 
     @Test
+    void tryStartWorksForTheNetherSetIndependentlyOfTheOverworldOne() {
+        placeAllSevenNetherTogether();
+        SummonSessionManager sessions = newManager();
+        PlayerMock player = server.addPlayer("Goku");
+
+        boolean started = sessions.tryStart(player, DragonType.SHENRON, new Location(netherWorld, 100, 64, 100), BallSet.NETHER);
+
+        assertTrue(started);
+        assertEquals(BallSet.NETHER, effects.lastSummonScene.set());
+    }
+
+    @Test
+    void aSecondSetIsRefusedWhileASessionIsAlreadyActive() {
+        placeAllSevenTogether();
+        placeAllSevenNetherTogether();
+        SummonSessionManager sessions = newManager();
+        PlayerMock first = server.addPlayer("Goku");
+        PlayerMock second = server.addPlayer("Vegeta");
+        sessions.tryStart(first, DragonType.SHENRON, new Location(world, 100, 64, 100), BallSet.OVERWORLD);
+
+        boolean secondStarted = sessions.tryStart(second, DragonType.SHENRON, new Location(netherWorld, 100, 64, 100), BallSet.NETHER);
+
+        assertFalse(secondStarted, "only one session may run server-wide, regardless of which set it tries to use");
+        assertEquals(BallSet.OVERWORLD, effects.lastSummonScene.set(), "the active session must stay the overworld one");
+    }
+
+    @Test
     void grantingTheLastWishEndsTheSessionAndScattersWithStoneTrue() {
         placeAllSevenTogether();
         SummonSessionManager sessions = newManager();
         PlayerMock player = server.addPlayer("Goku");
-        sessions.tryStart(player, DragonType.SHENRON, new Location(world, 100, 64, 100));
+        sessions.tryStart(player, DragonType.SHENRON, new Location(world, 100, 64, 100), BallSet.OVERWORLD);
 
         String error = sessions.grant(1, "granted the one wish");
 
@@ -143,11 +191,24 @@ class SummonSessionManagerTest {
     }
 
     @Test
+    void endingANetherSessionBumpsOnlyTheNetherWishCountNotTheOverworldOne() {
+        placeAllSevenNetherTogether();
+        SummonSessionManager sessions = newManager();
+        PlayerMock player = server.addPlayer("Goku");
+        sessions.tryStart(player, DragonType.SHENRON, new Location(netherWorld, 100, 64, 100), BallSet.NETHER);
+
+        sessions.grant(1, "granted");
+
+        assertEquals(1, netherRegistry.wishCount());
+        assertEquals(0, registry.wishCount(), "an unrelated set's wish count must never move");
+    }
+
+    @Test
     void overGrantingIsRejectedAndTheSessionStaysOpen() {
         placeAllSevenTogether();
         SummonSessionManager sessions = newManager();
         PlayerMock player = server.addPlayer("Goku");
-        sessions.tryStart(player, DragonType.PORUNGA, new Location(world, 100, 64, 100));
+        sessions.tryStart(player, DragonType.PORUNGA, new Location(world, 100, 64, 100), BallSet.OVERWORLD);
 
         String error = sessions.grant(5, "too many");
 
@@ -161,7 +222,7 @@ class SummonSessionManagerTest {
         placeAllSevenTogether();
         SummonSessionManager sessions = newManager();
         PlayerMock player = server.addPlayer("Goku");
-        sessions.tryStart(player, DragonType.PORUNGA, new Location(world, 100, 64, 100));
+        sessions.tryStart(player, DragonType.PORUNGA, new Location(world, 100, 64, 100), BallSet.OVERWORLD);
 
         String error = sessions.dismiss("Begone.");
 
@@ -183,7 +244,7 @@ class SummonSessionManagerTest {
         placeAllSevenTogether();
         SummonSessionManager sessions = newManager();
         PlayerMock player = server.addPlayer("Goku");
-        sessions.tryStart(player, DragonType.SHENRON, new Location(world, 100, 64, 100));
+        sessions.tryStart(player, DragonType.SHENRON, new Location(world, 100, 64, 100), BallSet.OVERWORLD);
 
         sessions.dismiss(null);
 
@@ -195,7 +256,7 @@ class SummonSessionManagerTest {
         placeAllSevenTogether();
         SummonSessionManager sessions = newManager();
         PlayerMock player = server.addPlayer("Goku");
-        sessions.tryStart(player, DragonType.SHENRON, new Location(world, 100, 64, 100));
+        sessions.tryStart(player, DragonType.SHENRON, new Location(world, 100, 64, 100), BallSet.OVERWORLD);
         assertTrue(sessions.hasActiveSession());
 
         // The idle timeout is configured at 600s; jump the injected clock far past it, then let a

@@ -15,28 +15,37 @@ class WishJsonWriterTest {
 
     @Test
     void wishLineEscapesQuotesAndBackslashes() {
-        String line = WishJsonWriter.wishLine(TIME, "abc123", "Shenron", 1, "Go\"ku", UUID_VALUE, "give me \\gold\\");
+        String line = WishJsonWriter.wishLine(TIME, "abc123", "Shenron", 1, "Go\"ku", UUID_VALUE, "give me \\gold\\",
+                "overworld");
         assertEquals("{\"time\":\"2026-10-06T12:00:00Z\",\"session\":\"abc123\",\"dragon\":\"Shenron\","
                 + "\"wishesLeft\":1,\"player\":\"Go\\\"ku\",\"uuid\":\"00000000-0000-0000-0000-000000000001\","
-                + "\"message\":\"give me \\\\gold\\\\\"}", line);
+                + "\"message\":\"give me \\\\gold\\\\\",\"set\":\"overworld\"}", line);
     }
 
     @Test
     void wishLineEscapesNewlinesAndControlChars() {
-        String line = WishJsonWriter.wishLine(TIME, "abc123", "Porunga", 3, "Vegeta", UUID_VALUE, "line one\nline two\t!");
+        String line = WishJsonWriter.wishLine(TIME, "abc123", "Porunga", 3, "Vegeta", UUID_VALUE,
+                "line one\nline two\t!", "nether");
         assertTrue(line.contains("line one\\nline two\\t!"));
     }
 
     @Test
+    void wishLineIncludesTheSet() {
+        String line = WishJsonWriter.wishLine(TIME, "abc123", "Shenron", 1, "Goku", UUID_VALUE, "hi", "end");
+        assertTrue(line.endsWith("\"set\":\"end\"}"));
+    }
+
+    @Test
     void grantedLineIncludesCountAndNote() {
-        String line = WishJsonWriter.grantedLine(TIME, "abc123", 2, "half-wish deal");
+        String line = WishJsonWriter.grantedLine(TIME, "abc123", 2, "half-wish deal", "overworld");
         assertEquals("{\"time\":\"2026-10-06T12:00:00Z\",\"session\":\"abc123\",\"type\":\"grant\","
-                + "\"count\":2,\"note\":\"half-wish deal\"}", line);
+                + "\"count\":2,\"note\":\"half-wish deal\",\"set\":\"overworld\"}", line);
     }
 
     @Test
     void grantedLineToleratesANullNote() {
-        String line = WishJsonWriter.grantedLine(TIME, "abc123", 1, null);
-        assertTrue(line.endsWith("\"note\":\"\"}"));
+        String line = WishJsonWriter.grantedLine(TIME, "abc123", 1, null, "nether");
+        assertTrue(line.contains("\"note\":\"\""));
+        assertTrue(line.endsWith("\"set\":\"nether\"}"));
     }
 }

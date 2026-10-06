@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.dragonballs.summon;
 
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.effects.DragonType;
 import dev.sirbepy.mc.dragonballs.effects.SummonScene;
 
@@ -17,6 +18,10 @@ final class SummonSession {
     final UUID summonerId;
     final String summonerName;
     final DragonType dragon;
+    /** Which of the 3 sets this session summoned; ending it only ever touches this one set's
+     * registry (scatter, wish count, stone cooldown) - only one session runs at a time, but it must
+     * still know which set it owns. */
+    final BallSet set;
     final SummonScene scene;
     final long startMillis;
 
@@ -29,11 +34,13 @@ final class SummonSession {
      * offline-grace window is measured from when they left, not from session start. */
     long offlineSinceMillis;
 
-    SummonSession(String id, UUID summonerId, String summonerName, DragonType dragon, SummonScene scene, long nowMillis) {
+    SummonSession(String id, UUID summonerId, String summonerName, DragonType dragon, BallSet set, SummonScene scene,
+                  long nowMillis) {
         this.id = id;
         this.summonerId = summonerId;
         this.summonerName = summonerName;
         this.dragon = dragon;
+        this.set = set;
         this.scene = scene;
         this.startMillis = nowMillis;
         this.wishesLeft = dragon.wishes();

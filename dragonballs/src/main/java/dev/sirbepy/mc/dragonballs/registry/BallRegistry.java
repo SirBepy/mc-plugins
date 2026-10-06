@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.dragonballs.registry;
 
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.StoneMode;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
 import org.bukkit.Bukkit;
@@ -32,6 +33,7 @@ public final class BallRegistry {
     private final TreeMap<Integer, Ball> balls = new TreeMap<>();
     private final BallRegistryStore store;
     private final BallItems items;
+    private final BallSet set;
 
     private String lastSummonWorld;
     private double lastSummonX;
@@ -43,13 +45,20 @@ public final class BallRegistry {
 
     private BallScatterer scatterer;
 
-    public BallRegistry(File file, Logger logger, BallItems items) {
+    public BallRegistry(File file, Logger logger, BallItems items, BallSet set) {
         this.store = new BallRegistryStore(file, logger);
         this.items = items;
+        this.set = set;
         for (int star = 1; star <= 7; star++) {
             balls.put(star, new Ball(star));
         }
         load();
+    }
+
+    /** Which of the 3 sets this registry tracks; every item/block it creates and recognizes carries
+     * this set's PDC marker. */
+    public BallSet set() {
+        return set;
     }
 
     /** Set once at startup; late-bound so {@code ScatterService} can depend on this registry too. */
@@ -114,7 +123,7 @@ public final class BallRegistry {
     }
 
     public ItemStack createItem(int star) {
-        return items.createItem(star);
+        return items.createItem(set, star);
     }
 
     public BallItems items() {
@@ -325,7 +334,7 @@ public final class BallRegistry {
         var block = world.getBlockAt(bx, (int) Math.floor(ball.y), bz);
         if (block.getState() instanceof org.bukkit.block.Skull skull && items.isBallBlock(skull)
                 && items.starOfBlock(skull).orElse(-1) == ball.star) {
-            items.applyBlockTexture(skull, ball.star, false);
+            items.applyBlockTexture(skull, set, ball.star, false);
             skull.update(true);
         }
     }
@@ -336,22 +345,24 @@ public final class BallRegistry {
         }
         Entity entity = Bukkit.getEntity(ball.entityId);
         if (entity instanceof Item item && item.isValid()) {
-            item.setItemStack(items.createItem(ball.star));
+            item.setItemStack(items.createItem(set, ball.star));
         }
     }
 
     // Armor slots are skipped: a ball can never be equipped as a helmet (blocked elsewhere), so they
-    // can never hold one. The cursor (mid-click) is left to the container guard's own checks.
+    // can never hold one. The cursor (mid-click) is left to the container guard's own checks. Scoped
+    // to this registry's own set: a player can carry a stone ball of another set whose own cooldown
+    // hasn't ended yet, and that one must be left alone.
     private void sweepInventory(PlayerInventory inventory) {
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             ItemStack current = inventory.getItem(slot);
-            if (items.isStoneItem(current) && items.starOf(current).isPresent()) {
-                inventory.setItem(slot, items.createItem(items.starOf(current).getAsInt()));
+            if (items.isStoneItem(current) && items.setOf(current) == set && items.starOf(current).isPresent()) {
+                inventory.setItem(slot, items.createItem(set, items.starOf(current).getAsInt()));
             }
         }
         ItemStack offHand = inventory.getItemInOffHand();
-        if (items.isStoneItem(offHand)) {
-            items.starOf(offHand).ifPresent(star -> inventory.setItemInOffHand(items.createItem(star)));
+        if (items.isStoneItem(offHand) && items.setOf(offHand) == set) {
+            items.starOf(offHand).ifPresent(star -> inventory.setItemInOffHand(items.createItem(set, star)));
         }
     }
 

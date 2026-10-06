@@ -1,8 +1,9 @@
 # Dragon Balls
 
-The `dragonballs` plugin runs a server-wide hunt: 7 Dragon Balls lie scattered across the world.
-Whoever brings all 7 together summons a dragon and makes a wish. The balls then fly off to new
-spots, harder to reach each time, and stay stone for a while.
+The `dragonballs` plugin runs a server-wide hunt: three sets of 7 Dragon Balls, one set per
+dimension (Joe, 2026-10-07). Whoever brings all 7 of one set together summons a dragon and makes a
+wish. That set then flies off to new spots in its own dimension, harder to reach each time, and
+stays stone for a while.
 
 This file is two things: the player-facing rules (the guide book at spawn is written from it),
 and the **dragon's rulebook**, which Player Claude follows when it speaks as the dragon and judges
@@ -10,39 +11,61 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
 
 ## The hunt
 
-- 7 balls, 1 to 7 stars, sit on the ground as heads. Walk up, break one, pick it up.
-- Each ball you carry slows you 5% (all 7: 35%).
+- Three sets, each of 7 balls with 1 to 7 stars:
+
+  | Set | Lives in | Looks | Its radar |
+  | --- | --- | --- | --- |
+  | Overworld | the overworld | orange | Dragon Radar, 1000 coins |
+  | Nether | the Nether | red | Nether Radar, 5000 coins |
+  | End | the End | purple | End Radar, 20000 coins |
+
+  Every set has the same dragons and wishes; only the hunt and the radar price differ. The End set
+  sleeps (no balls, no radar sales) until the End opens; it scatters the first time the server
+  starts with the End open.
+- Balls sit on the ground as heads. In the overworld, 1-2 of each scatter land at the bottom of a
+  rough shaft 10-30 blocks down (as if they punched through the ground) and 1-2 near a village,
+  pillager outpost, ruined portal, temple, igloo or swamp hut. In the Nether, 1-2 land at a fortress
+  or bastion. No ball ever lands inside a Towny town. Walk up, break one, pick it up.
+- A ball never leaves its own dimension: go through a portal, `/home`, `/spawn` or any other
+  cross-dimension teleport and it drops where you left (e.g. at the Nether portal). Dropped balls
+  can't be carried through a portal either.
+- Each ball you carry slows you 5% (all 7: 35%), whatever its set.
 - Balls never go into chests, ender chests, shulkers, bundles, hoppers, item frames or any other
   container, and can't be worn.
 - Die and your balls drop on the ground where you fell (never into your grave). Log out and they
   stay with you, but after 24 h offline they fly away again. A ball lost to lava, the void or
   anything else flies away too.
 - Picking up a ball is announced to the whole server.
-- The **Dragon Radar** (1000 coins, Dragon Ball station at spawn) points at the nearest awake
-  ball, including balls someone is carrying. It never shows how far.
-- Place all 7 next to each other (within 2 blocks), then, **holding a Dragon Radar in your main
-  hand**, right-click or hit one and choose your dragon. Without a radar in hand the balls only
-  stir ("The balls stir... but need a Dragon Radar"). The radar shatters when the dragon appears,
-  so every summon costs one (Joe, 2026-10-06). A hit without a radar, or on a set that isn't
-  ready, still just breaks the ball so it can be carried.
+- Each **radar** (sold at the Dragon Ball station at spawn) points at the nearest awake ball of its
+  own set, including balls someone is carrying, and only works in that set's dimension (elsewhere
+  it shows no signal). It never shows how far.
+- Place all 7 of one set next to each other (within 2 blocks), then, **holding that set's radar in
+  your main hand**, right-click or hit one and choose your dragon. Without the matching radar in
+  hand the balls only stir ("The balls stir... but need a Dragon Radar", or a Nether / End Dragon
+  Radar). The radar shatters when the dragon appears, so every summon costs one (Joe, 2026-10-06);
+  a radar of the wrong set is never used up. A hit without a radar, or on a set that isn't ready,
+  still just breaks the ball so it can be carried.
+- Only one dragon at a time: while one is summoned, no other set can summon.
 
 ## After a wish
 
-- The balls shoot into the sky and fly off. Watch where they go.
-- They land 1000+ blocks from where the dragon was summoned, further every wish:
+- The set's balls shoot into the sky and fly off, always within their own dimension. Watch where
+  they go.
+- They land 1000+ blocks from where the dragon was summoned, further with every wish of that set
+  (each set counts its own wishes; Joe raised the first band from 2000 to 3000 on 2026-10-07):
 
-  | Wishes so far | Overworld distance | Nether | End |
-  | --- | --- | --- | --- |
-  | 0 | 1000-2000 | 0 | 0 |
-  | 1 | 1000-3000 | 0 | 0 |
-  | 2 | 1500-4000 | 0 | 0 |
-  | 3 | 1500-4000 | 1 | 0 |
-  | 4 | 2000-4500 | 2 | 0 |
-  | 5+ | 2000-4500 | 2 | 1 |
+  | Wishes so far (this set) | Overworld distance | Nether distance |
+  | --- | --- | --- |
+  | 0 | 1000-3000 | 125-375 |
+  | 1 | 1500-3500 | 187-437 |
+  | 2 | 1500-4000 | 187-500 |
+  | 3+ | 2000-4500 | 250-562 |
 
-  While the End is closed, the End ball lands in the overworld instead.
-- For 3 Minecraft days the balls are **stone**: you can find, break and carry them, but the radar
-  can't see them and they can't summon. Then they wake up wherever they are.
+  Nether distances are the overworld ones at the Nether's 1/8 scale. The End set always lands
+  1000-3000 blocks from the End's centre, on the outer islands.
+- For 3 Minecraft days the set's balls are **stone**: you can find, break and carry them, but the
+  radar can't see them and they can't summon. Then they wake up wherever they are. Other sets are
+  not affected.
 
 ## The dragon's rulebook
 
@@ -142,11 +165,13 @@ Answer only through console commands (`node server/deploy/kinetic.mjs cmd "<comm
 | `shenron curse nowish <player>` | The player can never summon again |
 | `shenron curse lift <player>` | Removes every curse and the wish ban |
 
-Admin and testing commands (ops, console or RCON): `dragonballs status` (where each ball is),
-`dragonballs give <player> <star>`, `dragonballs scatter [stone]`, `dragonballs wake` (ends the stone
-cooldown early), `dragonballs reload`, and `shenron summon <player> <shenron|porunga>` (summons for a
-player whose 7 balls are already placed together, same checks as right-clicking except the radar:
-it neither needs nor uses one).
+Admin and testing commands (ops, console or RCON): `dragonballs status` (where each ball of each set
+is), `dragonballs give <player> <star> [overworld|nether|end]`, `dragonballs scatter [nether|end]
+[stone]` (no set = overworld), `dragonballs wake [overworld|nether|end]` (ends the stone cooldown
+early; no set = all), `dragonballs reload`, and `shenron summon <player> <shenron|porunga>
+[overworld|nether|end]` (summons for a player whose 7 balls of a set are already placed together,
+same checks as right-clicking except the radar: it neither needs nor uses one; no set = the first
+ready set).
 
 Granting a wish: run the vanilla commands that deliver it (`minecraft:give`, `minecraft:item modify`,
 `minecraft:attribute`, `minecraft:xp`, `eco give` for money, and so on; `minecraft:` prefixes because

@@ -1,10 +1,12 @@
 package dev.sirbepy.mc.dragonballs.config;
 
 import dev.sirbepy.mc.core.Messages;
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -13,7 +15,7 @@ import java.util.Map;
 /** Snapshot of {@code config.yml}, rebuilt by {@code /dragonballs reload}. */
 public final class DragonBallsConfig {
 
-    private final Map<Integer, String> starTextures = new LinkedHashMap<>();
+    private final Map<BallSet, Map<Integer, String>> starTextures = new EnumMap<>(BallSet.class);
     private final String stoneTexture;
     private final String world;
     private final String netherWorld;
@@ -34,11 +36,8 @@ public final class DragonBallsConfig {
 
     public DragonBallsConfig(FileConfiguration config) {
         ConfigurationSection textures = config.getConfigurationSection("textures");
-        for (int star = 1; star <= 7; star++) {
-            String value = textures == null ? null : textures.getString(String.valueOf(star));
-            if (value != null) {
-                starTextures.put(star, value);
-            }
+        for (BallSet set : BallSet.values()) {
+            starTextures.put(set, parseSetTextures(textures, set));
         }
         this.stoneTexture = textures == null ? null : textures.getString("stone");
 
@@ -64,24 +63,45 @@ public final class DragonBallsConfig {
 
     // A hardcoded fallback schedule (same as config.yml's default) covers a config.yml saved by an
     // older jar version, before copyDefaults(true) has had a chance to add the new "difficulty" list.
+    // Old configs on live still carry "nether"/"end" keys per tier (the old dimension-split scheme);
+    // those are read as part of the map but simply never looked at.
     private static List<DifficultyTier> parseDifficulty(List<Map<?, ?>> maps) {
         List<DifficultyTier> tiers = new ArrayList<>();
         for (Map<?, ?> map : maps) {
             int min = asInt(map.get("min-radius"), 1000);
             int max = Math.max(min, asInt(map.get("max-radius"), min));
-            int nether = asInt(map.get("nether"), 0);
-            int end = asInt(map.get("end"), 0);
-            tiers.add(new DifficultyTier(min, max, nether, end));
+            tiers.add(new DifficultyTier(min, max));
         }
-        return tiers.isEmpty() ? List.of(new DifficultyTier(1000, 2000, 0, 0)) : List.copyOf(tiers);
+        return tiers.isEmpty() ? List.of(new DifficultyTier(1000, 3000)) : List.copyOf(tiers);
     }
 
     private static int asInt(Object value, int fallback) {
         return value instanceof Number number ? number.intValue() : fallback;
     }
 
-    public String texture(int star) {
-        return starTextures.get(star);
+    /**
+     * Overworld falls back to the legacy flat {@code textures.<n>} layout when
+     * {@code textures.overworld.<n>} is absent (a {@code config.yml} saved by a jar from before the
+     * 3-set split); nether/end have no legacy layout to fall back to, so a missing value there just
+     * resolves to the jar's own bundled default via {@code getConfigurationSection}'s defaults chain.
+     */
+    private static Map<Integer, String> parseSetTextures(ConfigurationSection textures, BallSet set) {
+        Map<Integer, String> result = new LinkedHashMap<>();
+        ConfigurationSection setSection = textures == null ? null : textures.getConfigurationSection(set.id());
+        for (int star = 1; star <= 7; star++) {
+            String value = setSection == null ? null : setSection.getString(String.valueOf(star));
+            if (value == null && set == BallSet.OVERWORLD) {
+                value = textures == null ? null : textures.getString(String.valueOf(star));
+            }
+            if (value != null) {
+                result.put(star, value);
+            }
+        }
+        return result;
+    }
+
+    public String texture(BallSet set, int star) {
+        return starTextures.get(set).get(star);
     }
 
     public String stoneTexture() {

@@ -48,7 +48,8 @@ class BallContainerGuardListenerTest {
         server = MockBukkit.mock();
         PluginMock plugin = MockBukkit.createMockPlugin();
         BallItems items = new BallItems(plugin, () -> new DragonBallsConfig(new YamlConfiguration()));
-        registry = new BallRegistry(new File(tempDir.toFile(), "balls.yml"), plugin.getLogger(), items);
+        registry = new BallRegistry(new File(tempDir.toFile(), "balls.yml"), plugin.getLogger(), items,
+                dev.sirbepy.mc.dragonballs.ball.BallSet.OVERWORLD);
         listener = new BallContainerGuardListener(registry);
         player = server.addPlayer();
         ball = registry.createItem(3);

@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.dragonballs.effects;
 
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -38,9 +39,9 @@ final class FlyingBalls {
         this.ballItems = ballItems;
     }
 
-    /** Launches every star in {@code origins}; a star with no entry (or a null value) in
-     * {@code destinations} flies the other-world/no-destination path. */
-    void launch(Map<Integer, Location> origins, Map<Integer, Location> destinations) {
+    /** Launches every star in {@code origins}, textured as {@code set}; a star with no entry (or a
+     * null value) in {@code destinations} flies the other-world/no-destination path. */
+    void launch(Map<Integer, Location> origins, Map<Integer, Location> destinations, BallSet set) {
         for (Map.Entry<Integer, Location> entry : origins.entrySet()) {
             int star = entry.getKey();
             Location ballOrigin = entry.getValue();
@@ -58,14 +59,14 @@ final class FlyingBalls {
                 dirX = dir[0];
                 dirZ = dir[1];
             }
-            ItemDisplay display = spawnDisplay(origin, star);
+            ItemDisplay display = spawnDisplay(origin, star, set);
             active.add(new Flight(display, origin, sameWorld, dirX, dirZ));
         }
         ensureTaskRunning();
     }
 
-    private ItemDisplay spawnDisplay(Location at, int star) {
-        ItemStack head = ballItems.itemFor(star, false).clone();
+    private ItemDisplay spawnDisplay(Location at, int star, BallSet set) {
+        ItemStack head = ballItems.itemFor(set, star, false).clone();
         ItemMeta meta = head.getItemMeta();
         meta.getPersistentDataContainer().remove(ballItems.starKey());
         head.setItemMeta(meta);

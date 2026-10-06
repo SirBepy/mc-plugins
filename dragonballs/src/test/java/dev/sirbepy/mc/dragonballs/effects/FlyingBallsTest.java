@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.dragonballs.effects;
 
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
 import org.bukkit.Location;
@@ -53,7 +54,7 @@ class FlyingBallsTest {
         Map<Integer, Location> origins = Map.of(3, new Location(world, 0, 70, 0));
         Map<Integer, Location> destinations = Map.of(3, new Location(world, 100, 70, 0));
 
-        flyingBalls.launch(origins, destinations);
+        flyingBalls.launch(origins, destinations, BallSet.OVERWORLD);
 
         List<ItemDisplay> displays = List.copyOf(world.getEntitiesByClass(ItemDisplay.class));
         assertEquals(1, displays.size());
@@ -64,9 +65,20 @@ class FlyingBallsTest {
     }
 
     @Test
+    void launchTexturesTheDisplayAsTheGivenSet() {
+        Map<Integer, Location> origins = Map.of(4, new Location(world, 0, 70, 0));
+
+        flyingBalls.launch(origins, Map.of(), BallSet.NETHER);
+
+        ItemDisplay display = world.getEntitiesByClass(ItemDisplay.class).iterator().next();
+        assertEquals(BallSet.NETHER, ballItems.setOf(display.getItemStack()),
+                "a Nether wish's flying balls must be textured as Nether balls, not Overworld ones");
+    }
+
+    @Test
     void theDisplayVanishesOnceItsFlightRunsOut() {
         Map<Integer, Location> origins = Map.of(5, new Location(world, 0, 70, 0));
-        flyingBalls.launch(origins, Map.of());
+        flyingBalls.launch(origins, Map.of(), BallSet.OVERWORLD);
 
         server.getScheduler().performTicks(FlightMath.TOTAL_TICKS_STRAIGHT + 10);
 
@@ -76,7 +88,7 @@ class FlyingBallsTest {
     @Test
     void removeAllImmediatelyClearsEveryInFlightDisplayRightAway() {
         Map<Integer, Location> origins = Map.of(1, new Location(world, 0, 70, 0), 2, new Location(world, 10, 70, 0));
-        flyingBalls.launch(origins, Map.of());
+        flyingBalls.launch(origins, Map.of(), BallSet.OVERWORLD);
 
         flyingBalls.removeAllImmediately();
 
@@ -86,7 +98,7 @@ class FlyingBallsTest {
     @Test
     void removeStrayDeletesAnUntrackedTaggedDisplayButKeepsAnActiveFlight() {
         Map<Integer, Location> origins = Map.of(4, new Location(world, 0, 70, 0));
-        flyingBalls.launch(origins, Map.of());
+        flyingBalls.launch(origins, Map.of(), BallSet.OVERWORLD);
         ItemDisplay stray = world.spawn(new Location(world, 50, 70, 50), ItemDisplay.class);
         stray.addScoreboardTag(EffectMarkers.BALL_DISPLAY_TAG);
 

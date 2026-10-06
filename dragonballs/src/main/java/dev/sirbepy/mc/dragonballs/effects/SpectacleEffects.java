@@ -53,7 +53,7 @@ public final class SpectacleEffects implements SummonEffects {
     public void onEnd(SummonScene scene, Map<Integer, Location> destinations) {
         dragon.despawnWithEffects();
         sky.end();
-        flyingBalls.launch(scene.ballOrigins(), destinations);
+        flyingBalls.launch(scene.ballOrigins(), destinations, scene.set());
     }
 
     @Override

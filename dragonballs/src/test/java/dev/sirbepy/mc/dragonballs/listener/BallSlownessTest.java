@@ -40,7 +40,8 @@ class BallSlownessTest {
         YamlConfiguration config = new YamlConfiguration();
         config.set("slow-per-ball", 0.05);
         items = new BallItems(plugin, () -> new DragonBallsConfig(config));
-        registry = new BallRegistry(new File(tempDir.toFile(), "balls.yml"), plugin.getLogger(), items);
+        registry = new BallRegistry(new File(tempDir.toFile(), "balls.yml"), plugin.getLogger(), items,
+                dev.sirbepy.mc.dragonballs.ball.BallSet.OVERWORLD);
         slowness = new BallSlowness(plugin, registry, () -> new DragonBallsConfig(config));
         player = server.addPlayer();
     }

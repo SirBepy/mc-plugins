@@ -3,6 +3,7 @@ version: ${version}
 main: dev.sirbepy.mc.dragonballs.DragonBallsPlugin
 api-version: "26.2"
 author: sirbepy
+softdepend: [Towny]
 
 permissions:
   dragonballs.admin:

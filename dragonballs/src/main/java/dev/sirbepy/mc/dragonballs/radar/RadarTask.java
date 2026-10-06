@@ -1,6 +1,9 @@
 package dev.sirbepy.mc.dragonballs.radar;
 
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
+import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
+import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -15,29 +18,34 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 /**
  * Runs every 20 ticks (never per-tick, never touching NBT on every pass): points each online
- * radar-holder's compass at the nearest awake ball in their own world, or shows the no-signal
- * screen when there is none. {@code Player#setCompassTarget} is only called when the target block
- * actually changed, and the item's model string is only rewritten when active/idle actually flips -
- * both to avoid redundant packets/animation replays on a quarter-second-granularity hunt.
+ * radar-holder's compass at the nearest awake ball of THEIR radar's own set, while they're standing
+ * in that set's home world; anywhere else (including a different set's home world) shows the
+ * no-signal screen, same as when there's nothing left to find. {@code Player#setCompassTarget} is
+ * only called when the target block actually changed, and the item's model string is only rewritten
+ * when active/idle actually flips - both to avoid redundant packets/animation replays on a
+ * quarter-second-granularity hunt.
  */
 public final class RadarTask implements Runnable {
 
     public static final long PERIOD_TICKS = 20L;
 
-    private final BallRegistry registry;
+    private final BallSets sets;
     private final RadarItems items;
+    private final Supplier<DragonBallsConfig> config;
 
     // Players currently tracked as "holding a radar", so a player who stops holding one gets their
     // compass target reset to world spawn exactly once, then is dropped from both maps.
     private final Set<UUID> tracked = new HashSet<>();
     private final Map<UUID, BlockKey> lastTarget = new HashMap<>();
 
-    public RadarTask(BallRegistry registry, RadarItems items) {
-        this.registry = registry;
+    public RadarTask(BallSets sets, RadarItems items, Supplier<DragonBallsConfig> config) {
+        this.sets = sets;
         this.items = items;
+        this.config = config;
     }
 
     @Override
@@ -75,7 +83,8 @@ public final class RadarTask implements Runnable {
         }
         tracked.add(id);
 
-        Location nearest = nearestTarget(player);
+        BallSet set = items.setOf(radar);
+        Location nearest = isInHomeWorld(player, set) ? nearestTarget(player, set) : null;
         boolean active = nearest != null;
         if (active != items.isShowingActive(radar)) {
             items.setActive(radar, active);
@@ -99,13 +108,21 @@ public final class RadarTask implements Runnable {
         return item != null && item.getType() == Material.COMPASS && items.isRadar(item);
     }
 
+    private boolean isInHomeWorld(Player player, BallSet set) {
+        World home = set.world(config.get());
+        return home != null && home.equals(player.getWorld());
+    }
+
     /**
      * {@code activeTargets()} returns bare locations, not ball identities (registry/ is off-limits
      * for this phase), so a ball the player is carrying themselves is excluded by matching the
      * player's own current block rather than by ball id - an exact-same-block coincidence with some
-     * other ball is the only false-negative this can produce, and is vanishingly rare.
+     * other ball is the only false-negative this can produce, and is vanishingly rare. Scoped to
+     * {@code set}'s own registry only: a Nether radar never sees an Overworld ball, even one sitting
+     * at the same coordinates in a different world.
      */
-    private Location nearestTarget(Player player) {
+    private Location nearestTarget(Player player, BallSet set) {
+        BallRegistry registry = sets.registry(set);
         boolean holdsABallThemself = registry.held().stream()
                 .anyMatch(view -> player.getUniqueId().equals(view.holderId()));
         BlockKey self = BlockKey.of(player.getLocation());

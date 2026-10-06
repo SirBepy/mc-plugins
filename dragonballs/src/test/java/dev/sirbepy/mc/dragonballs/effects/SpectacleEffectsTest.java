@@ -41,7 +41,8 @@ class SpectacleEffectsTest {
         BallItems ballItems = new BallItems(plugin, () -> new DragonBallsConfig(new YamlConfiguration()));
         effects = new SpectacleEffects(plugin, ballItems);
         Map<Integer, Location> origins = Map.of(1, new Location(world, 0, 70, 0));
-        scene = new SummonScene(UUID.randomUUID(), "Goku", DragonType.SHENRON, new Location(world, 0, 70, 0), origins);
+        scene = new SummonScene(UUID.randomUUID(), "Goku", DragonType.SHENRON, dev.sirbepy.mc.dragonballs.ball.BallSet.OVERWORLD,
+                new Location(world, 0, 70, 0), origins);
     }
 
     @AfterEach

@@ -6,6 +6,7 @@ repositories {
     // Classic VaultAPI is only published on jitpack; scoped to this module so it doesn't leak into
     // every other plugin's dependency resolution.
     maven("https://jitpack.io")
+    maven("https://repo.glaremasters.me/repository/towny/")
 }
 
 dependencies {
@@ -20,6 +21,10 @@ dependencies {
     testImplementation("com.github.MilkBowl:VaultAPI:1.7.1") {
         exclude(group = "org.bukkit")
     }
+
+    // Same coordinates/version/repository carry already pulls Towny's API from; soft-depend, only
+    // touched when Towny is actually enabled (see ScatterTownyGuard).
+    compileOnly("com.palmergames.bukkit.towny:towny:0.103.2.0")
 }
 
 // Verifying pass/skip counts via console since build/ reports aren't readable in this session.

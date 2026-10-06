@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.dragonballs;
 
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.command.DragonBallsCommand;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.effects.SpectacleEffects;
@@ -7,6 +8,7 @@ import dev.sirbepy.mc.dragonballs.item.BallItems;
 import dev.sirbepy.mc.dragonballs.listener.BallChunkLoadListener;
 import dev.sirbepy.mc.dragonballs.listener.BallContainerGuardListener;
 import dev.sirbepy.mc.dragonballs.listener.BallDeathListener;
+import dev.sirbepy.mc.dragonballs.listener.BallDimensionGuardListener;
 import dev.sirbepy.mc.dragonballs.listener.BallItemLifecycleListener;
 import dev.sirbepy.mc.dragonballs.listener.BallJoinDupeListener;
 import dev.sirbepy.mc.dragonballs.listener.BallPickupListener;
@@ -16,6 +18,7 @@ import dev.sirbepy.mc.dragonballs.listener.BallSlowness;
 import dev.sirbepy.mc.dragonballs.listener.BallSlownessListener;
 import dev.sirbepy.mc.dragonballs.radar.RadarModule;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
+import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import dev.sirbepy.mc.dragonballs.scatter.ScatterService;
 import dev.sirbepy.mc.dragonballs.station.StationModule;
 import dev.sirbepy.mc.dragonballs.summon.SummonModule;
@@ -30,7 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class DragonBallsPlugin extends JavaPlugin {
 
     private final AtomicReference<DragonBallsConfig> config = new AtomicReference<>();
-    private BallRegistry registry;
+    private BallSets sets;
     private SpectacleEffects effects;
     private SummonModule.Handle summon;
 
@@ -42,32 +45,42 @@ public final class DragonBallsPlugin extends JavaPlugin {
         config.set(new DragonBallsConfig(getConfig()));
 
         BallItems items = new BallItems(this, config::get);
-        registry = new BallRegistry(new File(getDataFolder(), "balls.yml"), getLogger(), items);
-        registry.setScatterer(new ScatterService(this, config::get, items));
+        BallRegistry overworldRegistry = new BallRegistry(new File(getDataFolder(), "balls.yml"), getLogger(), items,
+                BallSet.OVERWORLD);
+        BallRegistry netherRegistry = new BallRegistry(new File(getDataFolder(), "balls-nether.yml"), getLogger(),
+                items, BallSet.NETHER);
+        BallRegistry endRegistry = new BallRegistry(new File(getDataFolder(), "balls-end.yml"), getLogger(), items,
+                BallSet.END);
+        ScatterService scatterService = new ScatterService(this, config::get, items);
+        overworldRegistry.setScatterer(scatterService);
+        netherRegistry.setScatterer(scatterService);
+        endRegistry.setScatterer(scatterService);
+        sets = new BallSets(overworldRegistry, netherRegistry, endRegistry, items, config::get);
 
-        BallSlowness slowness = new BallSlowness(this, registry, config::get);
+        BallSlowness slowness = new BallSlowness(this, overworldRegistry, config::get);
 
         var pm = getServer().getPluginManager();
-        pm.registerEvents(new BallPickupListener(registry, config::get), this);
+        pm.registerEvents(new BallPickupListener(sets, config::get), this);
         pm.registerEvents(new BallSlownessListener(slowness), this);
-        pm.registerEvents(new BallContainerGuardListener(registry), this);
-        pm.registerEvents(new BallDeathListener(registry), this);
-        pm.registerEvents(new BallPlaceBreakListener(registry), this);
-        pm.registerEvents(new BallProtectionListener(registry), this);
-        pm.registerEvents(new BallItemLifecycleListener(registry), this);
-        pm.registerEvents(new BallChunkLoadListener(registry), this);
-        pm.registerEvents(new BallJoinDupeListener(registry), this);
+        pm.registerEvents(new BallContainerGuardListener(overworldRegistry), this);
+        pm.registerEvents(new BallDeathListener(sets), this);
+        pm.registerEvents(new BallPlaceBreakListener(sets), this);
+        pm.registerEvents(new BallProtectionListener(overworldRegistry), this);
+        pm.registerEvents(new BallItemLifecycleListener(sets), this);
+        pm.registerEvents(new BallChunkLoadListener(sets), this);
+        pm.registerEvents(new BallJoinDupeListener(sets), this);
+        pm.registerEvents(new BallDimensionGuardListener(sets, config::get, slowness), this);
 
-        getServer().getScheduler().runTaskTimer(this, new BallMaintenanceTask(registry, config::get),
+        getServer().getScheduler().runTaskTimer(this, new BallMaintenanceTask(sets, config::get),
                 BallMaintenanceTask.PERIOD_TICKS, BallMaintenanceTask.PERIOD_TICKS);
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
-                new DragonBallsCommand(registry, config::get, this::reload).registerInto(event.registrar()));
+                new DragonBallsCommand(sets, config::get, this::reload).registerInto(event.registrar()));
 
-        RadarModule.register(this, registry, config::get);
-        StationModule.register(this, registry, config::get);
+        RadarModule.register(this, sets, config::get);
+        StationModule.register(this, sets, config::get);
         effects = new SpectacleEffects(this, items);
-        summon = SummonModule.register(this, registry, config::get, effects);
+        summon = SummonModule.register(this, sets, config::get, effects);
 
         bootstrapInitialScatter();
     }
@@ -82,16 +95,30 @@ public final class DragonBallsPlugin extends JavaPlugin {
         }
     }
 
-    /** First-ever enable (no balls.yml yet): scatter all 7 around the overworld's own spawn, read
-     * live rather than hardcoded, since the owner's spawn can move. */
+    /**
+     * First-ever enable of a set (no balls file yet): scatter all 7 around that set's own home
+     * world's spawn, read live rather than hardcoded, since the owner's spawn can move. Runs for
+     * every set every enable (not just the server's first ever): the End starts out not-yet-loaded
+     * on most installs, so this is also how it gets its first scatter the moment it opens.
+     */
     private void bootstrapInitialScatter() {
-        World world = getServer().getWorld(config.get().world());
-        if (world == null) {
-            getLogger().warning("World '" + config.get().world() + "' is not loaded; initial scatter deferred");
+        for (BallSet set : BallSet.values()) {
+            bootstrapInitialScatter(set);
+        }
+    }
+
+    private void bootstrapInitialScatter(BallSet set) {
+        if (!sets.isEnabled(set)) {
             return;
         }
-        // Captured before setLastSummon below, which itself writes balls.yml and would otherwise
-        // make hasSavedState() look "already set up" even on this very first enable.
+        BallRegistry registry = sets.registry(set);
+        World world = set.world(config.get());
+        if (world == null) {
+            getLogger().warning("World for the " + set.id() + " Dragon Balls is not loaded; initial scatter deferred");
+            return;
+        }
+        // Captured before setLastSummon below, which itself writes the balls file and would
+        // otherwise make hasSavedState() look "already set up" even on this very first enable.
         boolean freshInstall = !registry.hasSavedState();
         if (registry.lastSummon() == null) {
             registry.setLastSummon(world.getSpawnLocation());

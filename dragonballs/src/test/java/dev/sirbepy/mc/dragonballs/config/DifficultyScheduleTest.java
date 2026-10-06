@@ -11,25 +11,23 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class DifficultyScheduleTest {
 
     private static final List<DifficultyTier> SCHEDULE = List.of(
-            new DifficultyTier(1000, 2000, 0, 0),
-            new DifficultyTier(1000, 3000, 0, 0),
-            new DifficultyTier(1500, 4000, 0, 0),
-            new DifficultyTier(1500, 4000, 1, 0),
-            new DifficultyTier(2000, 4500, 2, 0),
-            new DifficultyTier(2000, 4500, 2, 1)
+            new DifficultyTier(1000, 3000),
+            new DifficultyTier(1500, 3500),
+            new DifficultyTier(1500, 4000),
+            new DifficultyTier(2000, 4500)
     );
 
     @Test
     void looksUpTheTierForEachExactWishCount() {
         assertSame(SCHEDULE.get(0), DifficultySchedule.tierFor(SCHEDULE, 0));
+        assertSame(SCHEDULE.get(2), DifficultySchedule.tierFor(SCHEDULE, 2));
         assertSame(SCHEDULE.get(3), DifficultySchedule.tierFor(SCHEDULE, 3));
-        assertSame(SCHEDULE.get(5), DifficultySchedule.tierFor(SCHEDULE, 5));
     }
 
     @Test
     void clampsPastTheEndOfTheListToTheHardestTier() {
-        assertSame(SCHEDULE.get(5), DifficultySchedule.tierFor(SCHEDULE, 6));
-        assertSame(SCHEDULE.get(5), DifficultySchedule.tierFor(SCHEDULE, 1000));
+        assertSame(SCHEDULE.get(3), DifficultySchedule.tierFor(SCHEDULE, 4));
+        assertSame(SCHEDULE.get(3), DifficultySchedule.tierFor(SCHEDULE, 1000));
     }
 
     @Test
@@ -44,10 +42,8 @@ class DifficultyScheduleTest {
 
     @Test
     void tierFieldsComeThroughUnchanged() {
-        DifficultyTier tier = DifficultySchedule.tierFor(SCHEDULE, 4);
+        DifficultyTier tier = DifficultySchedule.tierFor(SCHEDULE, 3);
         assertEquals(2000, tier.minRadius());
         assertEquals(4500, tier.maxRadius());
-        assertEquals(2, tier.netherCount());
-        assertEquals(0, tier.endCount());
     }
 }

@@ -51,7 +51,7 @@ class BallRegistryTest {
     }
 
     private BallRegistry newRegistry() {
-        return new BallRegistry(file, server.getLogger(), items);
+        return new BallRegistry(file, server.getLogger(), items, dev.sirbepy.mc.dragonballs.ball.BallSet.OVERWORLD);
     }
 
     @Test
@@ -95,7 +95,7 @@ class BallRegistryTest {
     @Test
     void markDroppedThenReloadRoundTrips() {
         BallRegistry registry = newRegistry();
-        Item item = world.dropItem(new Location(world, 10, 65, 10), items.createItem(6));
+        Item item = world.dropItem(new Location(world, 10, 65, 10), registry.createItem(6));
         registry.markDropped(6, item, false);
 
         BallRegistry reloaded = newRegistry();
@@ -126,7 +126,7 @@ class BallRegistryTest {
         assertTrue(registry.isHeldBy(2, holder.getUniqueId()));
         assertFalse(registry.isHeldBy(2, impostor.getUniqueId()), "a different player's copy must not be the authoritative one");
 
-        Item droppedItem = world.dropItem(new Location(world, 5, 65, 5), items.createItem(3));
+        Item droppedItem = world.dropItem(new Location(world, 5, 65, 5), registry.createItem(3));
         assertFalse(registry.isDroppedAs(2, droppedItem.getUniqueId()), "star 2 is HELD, not DROPPED as this entity");
     }
 
@@ -218,7 +218,7 @@ class BallRegistryTest {
         BallRegistry registry = newRegistry();
         PlayerMock player = server.addPlayer();
         registry.markHeld(7, player, true);
-        player.getInventory().setItem(0, items.createStoneItem(7));
+        player.getInventory().setItem(0, items.createStoneItem(dev.sirbepy.mc.dragonballs.ball.BallSet.OVERWORLD, 7));
         registry.setStoneUntil(StoneMode.MINECRAFT_DAYS, 1);
 
         registry.clearStone();
@@ -231,7 +231,7 @@ class BallRegistryTest {
     @Test
     void clearStoneSwapsADroppedItemEntitysStackBackToActive() {
         BallRegistry registry = newRegistry();
-        Item item = world.dropItem(new Location(world, 0, 65, 0), items.createStoneItem(1));
+        Item item = world.dropItem(new Location(world, 0, 65, 0), items.createStoneItem(dev.sirbepy.mc.dragonballs.ball.BallSet.OVERWORLD, 1));
         registry.markDropped(1, item, true);
         registry.setStoneUntil(StoneMode.MINECRAFT_DAYS, 1);
 
@@ -303,5 +303,61 @@ class BallRegistryTest {
         } catch (IllegalStateException e) {
             return true;
         }
+    }
+
+    @Test
+    void registryReportsTheSetItWasConstructedWith() {
+        BallRegistry overworld = newRegistry();
+        assertEquals(dev.sirbepy.mc.dragonballs.ball.BallSet.OVERWORLD, overworld.set());
+
+        BallRegistry nether = new BallRegistry(new File(file.getParentFile(), "balls-nether.yml"), server.getLogger(),
+                items, dev.sirbepy.mc.dragonballs.ball.BallSet.NETHER);
+        assertEquals(dev.sirbepy.mc.dragonballs.ball.BallSet.NETHER, nether.set());
+    }
+
+    @Test
+    void aLegacyBallsYmlPredatingThe3SetSplitLoadsAsTheOverworldSetWithItsWishCountIntact() {
+        // Hand-written in the exact pre-split shape: no "set" concept existed in the file format at all.
+        YamlConfiguration legacy = new YamlConfiguration();
+        legacy.set("balls.1.state", "PLACED");
+        legacy.set("balls.1.world", "world");
+        legacy.set("balls.1.x", 10.0);
+        legacy.set("balls.1.y", 64.0);
+        legacy.set("balls.1.z", 10.0);
+        legacy.set("global.wishCount", 5);
+        try {
+            legacy.save(file);
+        } catch (java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        BallRegistry registry = newRegistry();
+
+        assertEquals(dev.sirbepy.mc.dragonballs.ball.BallSet.OVERWORLD, registry.set());
+        assertEquals(5, registry.wishCount());
+        assertEquals(BallState.PLACED, registry.get(1).orElseThrow().state());
+        assertEquals(10, registry.get(1).orElseThrow().x(), 0.001);
+    }
+
+    @Test
+    void eachSetPersistsToItsOwnFileWithoutCollidingWithAnother() {
+        BallRegistry overworld = newRegistry();
+        BallRegistry nether = new BallRegistry(new File(file.getParentFile(), "balls-nether.yml"), server.getLogger(),
+                items, dev.sirbepy.mc.dragonballs.ball.BallSet.NETHER);
+
+        overworld.markPlaced(1, new Location(world, 1, 64, 1), false);
+        overworld.incrementWishCount();
+        nether.markPlaced(1, new Location(world, 2, 64, 2), false);
+        nether.incrementWishCount();
+        nether.incrementWishCount();
+
+        BallRegistry reloadedOverworld = newRegistry();
+        BallRegistry reloadedNether = new BallRegistry(new File(file.getParentFile(), "balls-nether.yml"),
+                server.getLogger(), items, dev.sirbepy.mc.dragonballs.ball.BallSet.NETHER);
+
+        assertEquals(1, reloadedOverworld.wishCount());
+        assertEquals(2, reloadedNether.wishCount());
+        assertEquals(1, reloadedOverworld.get(1).orElseThrow().x(), 0.001);
+        assertEquals(2, reloadedNether.get(1).orElseThrow().x(), 0.001);
     }
 }

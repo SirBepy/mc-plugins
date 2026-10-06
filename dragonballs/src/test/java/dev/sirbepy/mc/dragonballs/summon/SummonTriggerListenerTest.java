@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.dragonballs.summon;
 
 import dev.sirbepy.mc.core.bedrock.BedrockForms;
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.config.StoneMode;
 import dev.sirbepy.mc.dragonballs.effects.DragonType;
@@ -8,7 +9,9 @@ import dev.sirbepy.mc.dragonballs.item.BallItems;
 import dev.sirbepy.mc.dragonballs.radar.RadarItems;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
 import dev.sirbepy.mc.dragonballs.registry.BallScatterer;
+import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import dev.sirbepy.mc.dragonballs.summon.curse.CurseStore;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -47,8 +50,11 @@ class SummonTriggerListenerTest {
 
     private ServerMock server;
     private WorldMock world;
+    private WorldMock netherWorld;
     private PluginMock plugin;
     private BallRegistry registry;
+    private BallRegistry netherRegistry;
+    private BallSets sets;
     private BallItems items;
     private SummonSessionManager sessions;
     private SummonTriggerListener listener;
@@ -59,10 +65,16 @@ class SummonTriggerListenerTest {
     void setUp(@TempDir Path tempDir) {
         server = MockBukkit.mock();
         world = server.addSimpleWorld("world");
+        netherWorld = server.addSimpleWorld("world_nether");
         plugin = MockBukkit.createMockPlugin();
-        items = new BallItems(plugin, () -> new DragonBallsConfig(new YamlConfiguration()));
-        registry = new BallRegistry(new File(tempDir.toFile(), "balls.yml"), plugin.getLogger(), items);
-        registry.setScatterer(new BallScatterer() {
+        // Carries the real config.yml message templates (no-radar / no-radar-nether / no-radar-end),
+        // so the set-specific hint tests check actual wording, not just the "[missing message]" stub.
+        YamlConfiguration configYaml = new YamlConfiguration();
+        configYaml.set("messages.no-radar", "<gray>The balls stir... but need a Dragon Radar.");
+        configYaml.set("messages.no-radar-nether", "<gray>The balls stir... but need a Nether Dragon Radar.");
+        configYaml.set("messages.no-radar-end", "<gray>The balls stir... but need an End Dragon Radar.");
+        items = new BallItems(plugin, () -> new DragonBallsConfig(configYaml));
+        BallScatterer noopScatterer = new BallScatterer() {
             @Override
             public Map<Integer, Location> scatterAll(Location center, boolean stone, BallRegistry r) {
                 return Map.of();
@@ -71,14 +83,25 @@ class SummonTriggerListenerTest {
             @Override
             public void scatterOne(int star, Location center, boolean stone, BallRegistry r) {
             }
-        });
-        sessions = new SummonSessionManager(plugin.getLogger(), registry, () -> new DragonBallsConfig(new YamlConfiguration()),
+        };
+        registry = new BallRegistry(new File(tempDir.toFile(), "balls.yml"), plugin.getLogger(), items,
+                BallSet.OVERWORLD);
+        registry.setScatterer(noopScatterer);
+        netherRegistry = new BallRegistry(new File(tempDir.toFile(), "balls-nether.yml"), plugin.getLogger(), items,
+                BallSet.NETHER);
+        netherRegistry.setScatterer(noopScatterer);
+        BallRegistry endRegistry = new BallRegistry(new File(tempDir.toFile(), "balls-end.yml"), plugin.getLogger(), items,
+                BallSet.END);
+        endRegistry.setScatterer(noopScatterer);
+        sets = new BallSets(registry, netherRegistry, endRegistry, items, () -> new DragonBallsConfig(configYaml));
+        sessions = new SummonSessionManager(plugin.getLogger(), sets, () -> new DragonBallsConfig(configYaml),
                 () -> new SummonConfig(2, 600, 180), dev.sirbepy.mc.dragonballs.effects.SummonEffects.NONE,
                 new CurseStore(new File(tempDir.toFile(), "curses.yml"), plugin.getLogger()),
                 new File(tempDir.toFile(), "wishes.jsonl"), System::currentTimeMillis, new Random(1));
         BedrockForms bedrockForms = BedrockForms.create(plugin);
         radars = new RadarItems(plugin);
-        listener = new SummonTriggerListener(plugin, registry, sessions, bedrockForms, radars);
+        listener = new SummonTriggerListener(plugin, sets, sessions, bedrockForms, radars,
+                () -> new DragonBallsConfig(configYaml));
         player = server.addPlayer();
     }
 
@@ -93,7 +116,7 @@ class SummonTriggerListenerTest {
         Block block = world.getBlockAt(x, y, z);
         block.setType(Material.PLAYER_HEAD);
         Skull skull = (Skull) block.getState();
-        items.markBlock(skull, star);
+        items.markBlock(skull, dev.sirbepy.mc.dragonballs.ball.BallSet.OVERWORLD, star);
         skull.update(true);
         registry.markPlaced(star, block.getLocation(), stone);
         return block;
@@ -119,7 +142,7 @@ class SummonTriggerListenerTest {
     @Test
     void aReadySetWithoutARadarInHandCancelsAndHintsWithoutStartingASession() {
         Block clicked = placeReadySet();
-        assertEquals(SummonTrigger.Readiness.READY, sessions.evaluate(player.getUniqueId(), clicked.getLocation()));
+        assertEquals(SummonTrigger.Readiness.READY, sessions.evaluate(player.getUniqueId(), clicked.getLocation(), BallSet.OVERWORLD));
 
         PlayerInteractEvent event = rightClick(clicked);
         listener.onInteract(event);
@@ -134,7 +157,7 @@ class SummonTriggerListenerTest {
         player.getInventory().addItem(radars.create());
         player.getInventory().setHeldItemSlot(5);
 
-        assertFalse(listener.startWithRadar(player, DragonType.SHENRON, clicked.getLocation()));
+        assertFalse(listener.startWithRadar(player, DragonType.SHENRON, clicked.getLocation(), BallSet.OVERWORLD));
 
         assertFalse(sessions.hasActiveSession());
         assertTrue(player.getInventory().contains(Material.COMPASS), "a radar elsewhere in the inventory is not spent");
@@ -145,7 +168,7 @@ class SummonTriggerListenerTest {
         Block clicked = placeReadySet();
         player.getInventory().setItemInMainHand(radars.create());
 
-        assertTrue(listener.startWithRadar(player, DragonType.SHENRON, clicked.getLocation()));
+        assertTrue(listener.startWithRadar(player, DragonType.SHENRON, clicked.getLocation(), BallSet.OVERWORLD));
 
         assertTrue(sessions.hasActiveSession());
         assertEquals(player.getUniqueId(), sessions.activeSummoner());
@@ -160,7 +183,7 @@ class SummonTriggerListenerTest {
         two.setAmount(2);
         player.getInventory().setItemInMainHand(two);
 
-        assertTrue(listener.startWithRadar(player, DragonType.PORUNGA, clicked.getLocation()));
+        assertTrue(listener.startWithRadar(player, DragonType.PORUNGA, clicked.getLocation(), BallSet.OVERWORLD));
 
         ItemStack left = player.getInventory().getItemInMainHand();
         assertTrue(radars.isRadar(left));
@@ -175,7 +198,7 @@ class SummonTriggerListenerTest {
         registry.setStoneUntil(StoneMode.MINECRAFT_DAYS, 999);
         player.getInventory().setItemInMainHand(radars.create());
 
-        assertFalse(listener.startWithRadar(player, DragonType.SHENRON, world.getBlockAt(100, 64, 100).getLocation()));
+        assertFalse(listener.startWithRadar(player, DragonType.SHENRON, world.getBlockAt(100, 64, 100).getLocation(), BallSet.OVERWORLD));
 
         assertFalse(sessions.hasActiveSession());
         assertTrue(radars.isRadar(player.getInventory().getItemInMainHand()));
@@ -258,5 +281,71 @@ class SummonTriggerListenerTest {
         listener.onInteract(event);
 
         assertFalse(event.isCancelled(), "only the main-hand interaction should be handled (Bukkit fires both)");
+    }
+
+    /** Places a real head block for star N of the Nether set in {@code netherWorld}. */
+    private Block placeNetherHead(int star, int x, int y, int z, boolean stone) {
+        Block block = netherWorld.getBlockAt(x, y, z);
+        block.setType(Material.PLAYER_HEAD);
+        Skull skull = (Skull) block.getState();
+        items.markBlock(skull, BallSet.NETHER, star);
+        skull.update(true);
+        netherRegistry.markPlaced(star, block.getLocation(), stone);
+        return block;
+    }
+
+    private Block placeReadyNetherSet() {
+        for (int star = 1; star <= 7; star++) {
+            placeNetherHead(star, 100 + (star - 1) % 3, 64, 100 + (star - 1) / 3, false);
+        }
+        return netherWorld.getBlockAt(100, 64, 100);
+    }
+
+    @Test
+    void anOverworldRadarNeverSummonsANetherBallAndIsNotConsumed() {
+        Block clicked = placeReadyNetherSet();
+        player.getInventory().setItemInMainHand(radars.create(BallSet.OVERWORLD));
+
+        assertFalse(listener.startWithRadar(player, DragonType.SHENRON, clicked.getLocation(), BallSet.NETHER),
+                "an Overworld radar must never match a Nether ball's own set");
+
+        assertFalse(sessions.hasActiveSession());
+        ItemStack stillHeld = player.getInventory().getItemInMainHand();
+        assertTrue(radars.isRadar(stillHeld), "the wrong-set radar must never be spent");
+        assertEquals(BallSet.OVERWORLD, radars.setOf(stillHeld));
+        assertEquals("The balls stir... but need a Nether Dragon Radar.",
+                PlainTextComponentSerializer.plainText().serialize(player.nextActionBar()));
+    }
+
+    @Test
+    void aNetherRadarSummonsAReadyNetherSetAndIsConsumed() {
+        Block clicked = placeReadyNetherSet();
+        player.getInventory().setItemInMainHand(radars.create(BallSet.NETHER));
+
+        assertTrue(listener.startWithRadar(player, DragonType.SHENRON, clicked.getLocation(), BallSet.NETHER));
+
+        assertTrue(sessions.hasActiveSession());
+        assertTrue(player.getInventory().getItemInMainHand().isEmpty(), "the matching Nether radar is used up");
+    }
+
+    @Test
+    void clickingANetherBallWhileAnOverworldSessionIsActiveIsRefused() {
+        Block overworldClicked = placeReadySet();
+        player.getInventory().setItemInMainHand(radars.create(BallSet.OVERWORLD));
+        assertTrue(listener.startWithRadar(player, DragonType.SHENRON, overworldClicked.getLocation(), BallSet.OVERWORLD));
+
+        Block netherClicked = placeReadyNetherSet();
+        player.getInventory().setItemInMainHand(radars.create(BallSet.NETHER));
+        PlayerMock secondPlayer = server.addPlayer();
+        PlayerInteractEvent event = new PlayerInteractEvent(secondPlayer, Action.RIGHT_CLICK_BLOCK, null,
+                netherClicked, BlockFace.UP, EquipmentSlot.HAND);
+        secondPlayer.getInventory().setItemInMainHand(radars.create(BallSet.NETHER));
+
+        listener.onInteract(event);
+
+        assertTrue(event.isCancelled(), "a ball click is always cancelled once its own set resolves");
+        assertEquals(player.getUniqueId(), sessions.activeSummoner(), "the active Overworld session must be untouched");
+        assertTrue(radars.isRadar(secondPlayer.getInventory().getItemInMainHand()),
+                "a session-blocked click must never spend the second player's radar");
     }
 }

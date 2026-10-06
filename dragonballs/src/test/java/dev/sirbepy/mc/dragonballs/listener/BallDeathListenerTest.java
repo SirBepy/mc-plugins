@@ -1,8 +1,10 @@
 package dev.sirbepy.mc.dragonballs.listener;
 
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
+import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import dev.sirbepy.mc.dragonballs.registry.BallState;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -33,13 +35,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * A dying player's balls never land in the normal death-drop pile (so a graveyard/no-drop plugin,
  * or the vanilla "keep inventory" gamerule's own drop suppression, can't accidentally eat one):
- * they're pulled out of {@code event.getDrops()} and dropped separately instead.
+ * they're pulled out of {@code event.getDrops()} and dropped separately instead, routed to each
+ * ball's own set's registry.
  */
 class BallDeathListenerTest {
 
     private ServerMock server;
     private WorldMock world;
-    private BallRegistry registry;
+    private BallSets sets;
+    private BallRegistry overworld;
     private BallItems items;
     private BallDeathListener listener;
     private PlayerMock player;
@@ -50,8 +54,12 @@ class BallDeathListenerTest {
         world = server.addSimpleWorld("world");
         PluginMock plugin = MockBukkit.createMockPlugin();
         items = new BallItems(plugin, () -> new DragonBallsConfig(new YamlConfiguration()));
-        registry = new BallRegistry(new File(tempDir.toFile(), "balls.yml"), plugin.getLogger(), items);
-        listener = new BallDeathListener(registry);
+        overworld = new BallRegistry(new File(tempDir.toFile(), "balls.yml"), plugin.getLogger(), items, BallSet.OVERWORLD);
+        BallRegistry nether = new BallRegistry(new File(tempDir.toFile(), "balls-nether.yml"), plugin.getLogger(), items,
+                BallSet.NETHER);
+        BallRegistry end = new BallRegistry(new File(tempDir.toFile(), "balls-end.yml"), plugin.getLogger(), items, BallSet.END);
+        sets = new BallSets(overworld, nether, end, items, () -> new DragonBallsConfig(new YamlConfiguration()));
+        listener = new BallDeathListener(sets);
         player = server.addPlayer();
         player.teleport(new Location(world, 50, 64, 50));
     }
@@ -68,8 +76,8 @@ class BallDeathListenerTest {
 
     @Test
     void ballsAreRemovedFromTheNormalDropsList() {
-        registry.markHeld(1, player, false);
-        List<ItemStack> drops = new ArrayList<>(List.of(registry.createItem(1), new ItemStack(Material.DIRT)));
+        overworld.markHeld(1, player, false);
+        List<ItemStack> drops = new ArrayList<>(List.of(overworld.createItem(1), new ItemStack(Material.DIRT)));
 
         PlayerDeathEvent event = death(drops);
         listener.onDeath(event);
@@ -80,8 +88,8 @@ class BallDeathListenerTest {
 
     @Test
     void theRemovedBallBecomesItsOwnDroppedItemAtTheDeathLocation() {
-        registry.markHeld(2, player, true);
-        List<ItemStack> drops = new ArrayList<>(List.of(registry.items().createStoneItem(2)));
+        overworld.markHeld(2, player, true);
+        List<ItemStack> drops = new ArrayList<>(List.of(items.createStoneItem(BallSet.OVERWORLD, 2)));
 
         listener.onDeath(death(drops));
 
@@ -89,8 +97,20 @@ class BallDeathListenerTest {
                 .filter(item -> items.isBall(item.getItemStack()))
                 .toList();
         assertEquals(1, balls.size(), "the ball must reappear as its own item entity");
-        assertEquals(BallState.DROPPED, registry.get(2).orElseThrow().state());
-        assertTrue(registry.isDroppedAs(2, balls.get(0).getUniqueId()));
+        assertEquals(BallState.DROPPED, overworld.get(2).orElseThrow().state());
+        assertTrue(overworld.isDroppedAs(2, balls.get(0).getUniqueId()));
+    }
+
+    @Test
+    void aNetherBallDiesIntoTheNetherRegistryNotTheOverworldOne() {
+        BallRegistry nether = sets.registry(BallSet.NETHER);
+        nether.markHeld(3, player, false);
+        List<ItemStack> drops = new ArrayList<>(List.of(items.createItem(BallSet.NETHER, 3)));
+
+        listener.onDeath(death(drops));
+
+        assertEquals(BallState.DROPPED, nether.get(3).orElseThrow().state());
+        assertEquals(BallState.PLACED, overworld.get(3).orElseThrow().state(), "the overworld star 3 must be untouched");
     }
 
     @Test
@@ -101,6 +121,6 @@ class BallDeathListenerTest {
         listener.onDeath(event);
 
         assertEquals(2, event.getDrops().size());
-        assertFalse(registry.getBalls().stream().anyMatch(b -> b.state() == BallState.DROPPED));
+        assertFalse(overworld.getBalls().stream().anyMatch(b -> b.state() == BallState.DROPPED));
     }
 }

@@ -1,11 +1,13 @@
 package dev.sirbepy.mc.dragonballs.summon;
 
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.config.StoneMode;
 import dev.sirbepy.mc.dragonballs.effects.DragonType;
 import dev.sirbepy.mc.dragonballs.effects.SummonEffects;
 import dev.sirbepy.mc.dragonballs.effects.SummonScene;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
+import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import dev.sirbepy.mc.dragonballs.registry.BallView;
 import dev.sirbepy.mc.dragonballs.summon.curse.CurseStore;
 import dev.sirbepy.mc.dragonballs.summon.wish.WishJsonWriter;
@@ -33,10 +35,11 @@ import java.util.function.Supplier;
 import java.util.logging.Logger;
 
 /**
- * Owns the single, server-wide active wish session (never more than one at a time), from the
- * moment a dragon is chosen through to the final scatter. Main-thread only throughout: the trigger
- * listener, the chat listener's scheduled hop, {@code /shenron}, and the session ticker all run on
- * the main thread, so nothing here is synchronized.
+ * Owns the single, server-wide active wish session (never more than one at a time, regardless of
+ * which of the 3 sets it summoned), from the moment a dragon is chosen through to the final
+ * scatter. Main-thread only throughout: the trigger listener, the chat listener's scheduled hop,
+ * {@code /shenron}, and the session ticker all run on the main thread, so nothing here is
+ * synchronized.
  *
  * <p>{@link #tryStart} is the single entry point that both the real choice-of-dragon UI and tests
  * call: it re-validates every trigger condition itself (the 60s dialog/form/chat choice could have
@@ -45,7 +48,7 @@ import java.util.logging.Logger;
 public final class SummonSessionManager {
 
     private final Logger logger;
-    private final BallRegistry registry;
+    private final BallSets sets;
     private final Supplier<DragonBallsConfig> config;
     private final Supplier<SummonConfig> summonConfig;
     private final SummonEffects effects;
@@ -56,18 +59,18 @@ public final class SummonSessionManager {
 
     private SummonSession session;
 
-    public SummonSessionManager(Logger logger, BallRegistry registry, Supplier<DragonBallsConfig> config,
+    public SummonSessionManager(Logger logger, BallSets sets, Supplier<DragonBallsConfig> config,
                                  Supplier<SummonConfig> summonConfig, SummonEffects effects, CurseStore curses,
                                  File wishesFile) {
-        this(logger, registry, config, summonConfig, effects, curses, wishesFile, System::currentTimeMillis, new Random());
+        this(logger, sets, config, summonConfig, effects, curses, wishesFile, System::currentTimeMillis, new Random());
     }
 
     /** Test-only constructor: injects the clock (idle/offline timeouts) and the session-id RNG. */
-    SummonSessionManager(Logger logger, BallRegistry registry, Supplier<DragonBallsConfig> config,
+    SummonSessionManager(Logger logger, BallSets sets, Supplier<DragonBallsConfig> config,
                           Supplier<SummonConfig> summonConfig, SummonEffects effects, CurseStore curses,
                           File wishesFile, LongSupplier clock, Random idRandom) {
         this.logger = logger;
-        this.registry = registry;
+        this.sets = sets;
         this.config = config;
         this.summonConfig = summonConfig;
         this.effects = effects;
@@ -87,7 +90,10 @@ public final class SummonSessionManager {
         return session != null && session.summonerId.equals(playerId);
     }
 
-    public SummonTrigger.Readiness evaluate(UUID playerId, Location clicked) {
+    /** Readiness of {@code set}'s own 7 balls; {@code SESSION_ACTIVE} fires regardless of which set
+     * is active, since only one session ever runs server-wide. */
+    public SummonTrigger.Readiness evaluate(UUID playerId, Location clicked, BallSet set) {
+        BallRegistry registry = sets.registry(set);
         return SummonTrigger.evaluate(registry.getBalls(), registry.isDormant(), session != null,
                 curses.isWishBanned(playerId), clicked, summonConfig.get().radius());
     }
@@ -110,7 +116,7 @@ public final class SummonSessionManager {
             return "No dragon is summoned.";
         }
         long idleSeconds = (clock.getAsLong() - s.lastActivityMillis) / 1000;
-        return "session=" + s.id + " summoner=" + s.summonerName + " dragon=" + s.dragon.displayName()
+        return "session=" + s.id + " set=" + s.set.id() + " summoner=" + s.summonerName + " dragon=" + s.dragon.displayName()
                 + " wishesLeft=" + s.wishesLeft + " idleSeconds=" + idleSeconds;
     }
 
@@ -118,10 +124,11 @@ public final class SummonSessionManager {
 
     /** Re-checks every trigger condition, then starts the session if they all still hold.
      * @return true if a session was started. */
-    public boolean tryStart(Player summoner, DragonType dragon, Location clicked) {
-        if (evaluate(summoner.getUniqueId(), clicked) != SummonTrigger.Readiness.READY) {
+    public boolean tryStart(Player summoner, DragonType dragon, Location clicked, BallSet set) {
+        if (evaluate(summoner.getUniqueId(), clicked, set) != SummonTrigger.Readiness.READY) {
             return false;
         }
+        BallRegistry registry = sets.registry(set);
         List<BallView> balls = registry.getBalls();
         World world = clicked.getWorld();
         Map<Integer, Location> origins = new LinkedHashMap<>();
@@ -131,8 +138,9 @@ public final class SummonSessionManager {
         double[] avg = SummonTrigger.averagePosition(balls);
         Location center = new Location(world, avg[0], avg[1], avg[2]);
 
-        SummonScene scene = new SummonScene(summoner.getUniqueId(), summoner.getName(), dragon, center, origins);
-        session = new SummonSession(randomId(), summoner.getUniqueId(), summoner.getName(), dragon, scene, clock.getAsLong());
+        SummonScene scene = new SummonScene(summoner.getUniqueId(), summoner.getName(), dragon, set, center, origins);
+        session = new SummonSession(randomId(), summoner.getUniqueId(), summoner.getName(), dragon, set, scene,
+                clock.getAsLong());
 
         effects.onSummon(scene);
         Bukkit.broadcast(Component.text(summoner.getName() + " has summoned " + dragon.displayName() + "!", NamedTextColor.GOLD)
@@ -159,7 +167,7 @@ public final class SummonSessionManager {
         logger.info("[DragonBalls] WISH " + s.id + " " + s.dragon.displayName() + " " + s.wishesLeft + " "
                 + player.getName() + " (" + player.getUniqueId() + "): " + message);
         appendLine(WishJsonWriter.wishLine(Instant.now(), s.id, s.dragon.displayName(), s.wishesLeft,
-                player.getName(), player.getUniqueId(), message));
+                player.getName(), player.getUniqueId(), message, s.set.id()));
         s.lastActivityMillis = clock.getAsLong();
     }
 
@@ -198,7 +206,7 @@ public final class SummonSessionManager {
         s.judgeActed = true;
         s.lastActivityMillis = clock.getAsLong();
         logger.info("[DragonBalls] GRANTED " + s.id + " " + count + " " + note);
-        appendLine(WishJsonWriter.grantedLine(Instant.now(), s.id, count, note));
+        appendLine(WishJsonWriter.grantedLine(Instant.now(), s.id, count, note, s.set.id()));
         if (result.sessionEnds()) {
             endSession(false);
         }
@@ -280,13 +288,14 @@ public final class SummonSessionManager {
         if (s == null) {
             return;
         }
+        BallRegistry registry = sets.registry(s.set);
         removeHeadBlocks(s.scene.ballOrigins());
         if (s.grantedAny) {
             registry.incrementWishCount();
         }
         Location center = s.scene.center();
         registry.setLastSummon(center);
-        applyStoneUntil();
+        applyStoneUntil(registry, s.set);
         Map<Integer, Location> destinations = registry.scatterAll(center, true);
         if (disabling) {
             effects.shutdown();
@@ -297,10 +306,10 @@ public final class SummonSessionManager {
         session = null;
     }
 
-    private void applyStoneUntil() {
+    private void applyStoneUntil(BallRegistry registry, BallSet set) {
         DragonBallsConfig cfg = config.get();
         if (cfg.stoneMode() == StoneMode.MINECRAFT_DAYS) {
-            World world = Bukkit.getWorld(cfg.world());
+            World world = set.world(cfg);
             long currentDay = world == null ? 0 : Math.floorDiv(world.getFullTime(), 24000L);
             registry.setStoneUntil(StoneMode.MINECRAFT_DAYS, currentDay + cfg.stoneDays());
         } else {

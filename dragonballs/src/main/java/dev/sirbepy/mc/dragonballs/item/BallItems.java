@@ -2,6 +2,7 @@ package dev.sirbepy.mc.dragonballs.item;
 
 import com.destroystokyo.paper.profile.PlayerProfile;
 import com.destroystokyo.paper.profile.ProfileProperty;
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -16,15 +17,19 @@ import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
- * Builds and identifies Dragon Ball items/blocks. Balls are identified ONLY by the
- * {@code dragonballs:star} PDC marker, never by display name or texture, so a renamed or
- * re-textured copy still counts (and a lookalike without the marker never does).
+ * Builds and identifies Dragon Ball items/blocks, across all 3 sets (overworld/nether/end). Balls
+ * are identified ONLY by the {@code dragonballs:star} PDC marker, never by display name or texture,
+ * so a renamed or re-textured copy still counts (and a lookalike without the marker never does).
+ * The companion {@code dragonballs:set} PDC marker tells WHICH of the 3 it belongs to; its absence
+ * means OVERWORLD, which is what every ball predating this 3-set split (the live balls.yml, and any
+ * carried copy of one) already is.
  */
 public final class BallItems {
 
@@ -32,8 +37,8 @@ public final class BallItems {
 
     // A fixed UUID per star (derived from the star number, not random) so the same profile is used
     // across restarts; Mojang's session server never has to resolve it since the texture property
-    // is set directly.
-    private static final UUID[] PROFILE_IDS = {
+    // is set directly. Kept exactly as before the 3-set split: overworld items must stay identical.
+    private static final UUID[] OVERWORLD_PROFILE_IDS = {
             UUID.fromString("00000000-0000-4000-8000-000000000001"),
             UUID.fromString("00000000-0000-4000-8000-000000000002"),
             UUID.fromString("00000000-0000-4000-8000-000000000003"),
@@ -42,14 +47,17 @@ public final class BallItems {
             UUID.fromString("00000000-0000-4000-8000-000000000006"),
             UUID.fromString("00000000-0000-4000-8000-000000000007"),
     };
+    // Shared across sets: the stone look is the same dormant texture regardless of which set it came from.
     private static final UUID STONE_PROFILE_ID = UUID.fromString("00000000-0000-4000-8000-00000000005e");
 
     private final NamespacedKey starKey;
+    private final NamespacedKey setKey;
     private final NamespacedKey stoneKey;
     private final Supplier<DragonBallsConfig> config;
 
     public BallItems(JavaPlugin plugin, Supplier<DragonBallsConfig> config) {
         this.starKey = new NamespacedKey(plugin, "star");
+        this.setKey = new NamespacedKey(plugin, "set");
         this.stoneKey = new NamespacedKey(plugin, "stone");
         this.config = config;
     }
@@ -58,8 +66,8 @@ public final class BallItems {
         return starKey;
     }
 
-    /** True for a ball item, stone or active: every carrying rule (containers, slowness, death
-     * drops, no despawn) applies to both the same way. */
+    /** True for a ball item, stone or active, of any set: every carrying rule (containers, slowness,
+     * death drops, no despawn) applies to all 3 the same way. */
     public boolean isBall(ItemStack item) {
         return item != null && item.hasItemMeta()
                 && item.getItemMeta().getPersistentDataContainer().has(starKey, PersistentDataType.INTEGER);
@@ -70,6 +78,15 @@ public final class BallItems {
             return OptionalInt.empty();
         }
         return OptionalInt.of(item.getItemMeta().getPersistentDataContainer().get(starKey, PersistentDataType.INTEGER));
+    }
+
+    /** Which of the 3 sets {@code item} belongs to; {@link BallSet#OVERWORLD} for a non-ball item or
+     * one with no {@code set} PDC entry (every ball that predates this split). */
+    public BallSet setOf(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) {
+            return BallSet.OVERWORLD;
+        }
+        return fromId(item.getItemMeta().getPersistentDataContainer().get(setKey, PersistentDataType.STRING));
     }
 
     /** True only for the dormant, stone-textured variant; a plain {@link #isBall} ball is active. */
@@ -89,59 +106,96 @@ public final class BallItems {
         return OptionalInt.of(skull.getPersistentDataContainer().get(starKey, PersistentDataType.INTEGER));
     }
 
-    /** The active item a player carries/finds: textured, named, marked. */
-    public ItemStack createItem(int star) {
-        return buildItem(star, false);
+    /** Which of the 3 sets a placed head block belongs to; {@link BallSet#OVERWORLD} for a non-ball
+     * block or one with no {@code set} PDC entry (every block predating this split). */
+    public BallSet setOfBlock(Skull skull) {
+        if (skull == null) {
+            return BallSet.OVERWORLD;
+        }
+        return fromId(skull.getPersistentDataContainer().get(setKey, PersistentDataType.STRING));
     }
 
-    /** The dormant look a stone ball drops as when broken; same star, carrying rules, everything -
+    private static BallSet fromId(String id) {
+        if (id == null) {
+            return BallSet.OVERWORLD;
+        }
+        BallSet set = BallSet.byId(id);
+        return set == null ? BallSet.OVERWORLD : set;
+    }
+
+    /** The active item a player carries/finds: textured, named, marked. */
+    public ItemStack createItem(BallSet set, int star) {
+        return buildItem(set, star, false);
+    }
+
+    /** The dormant look a stone ball drops as when broken; same set/star, carrying rules, everything -
      * just a different texture/name and the extra {@code dragonballs:stone} PDC flag. */
-    public ItemStack createStoneItem(int star) {
-        return buildItem(star, true);
+    public ItemStack createStoneItem(BallSet set, int star) {
+        return buildItem(set, star, true);
     }
 
     /** Picks the right variant by {@code stone}, for call sites that already have the flag at hand
      * (breaking a block, sweeping a stone-ended inventory) instead of two separate branches. */
-    public ItemStack itemFor(int star, boolean stone) {
-        return buildItem(star, stone);
+    public ItemStack itemFor(BallSet set, int star, boolean stone) {
+        return buildItem(set, star, stone);
     }
 
-    private ItemStack buildItem(int star, boolean stone) {
+    private ItemStack buildItem(BallSet set, int star, boolean stone) {
         ItemStack item = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta meta = (SkullMeta) item.getItemMeta();
-        UUID profileId = stone ? STONE_PROFILE_ID : PROFILE_IDS[star - 1];
-        String texture = stone ? config.get().stoneTexture() : config.get().texture(star);
+        UUID profileId = stone ? STONE_PROFILE_ID : profileId(set, star);
+        String texture = stone ? config.get().stoneTexture() : config.get().texture(set, star);
         applyProfile(meta, profileId, texture);
+        String name = ballName(set, star);
         if (stone) {
-            meta.displayName(Component.text(star + "-Star Dragon Ball (stone)", NamedTextColor.GRAY)
+            meta.displayName(Component.text(name + " (stone)", NamedTextColor.GRAY)
                     .decoration(TextDecoration.ITALIC, false));
             meta.lore(List.of(Component.text("Dormant. It wakes in a few days.", NamedTextColor.GRAY)
                     .decoration(TextDecoration.ITALIC, false)));
             meta.getPersistentDataContainer().set(stoneKey, PersistentDataType.BOOLEAN, true);
         } else {
-            meta.displayName(Component.text(star + "-Star Dragon Ball", NamedTextColor.GOLD)
-                    .decoration(TextDecoration.ITALIC, false));
+            meta.displayName(Component.text(name, set.color()).decoration(TextDecoration.ITALIC, false));
             meta.lore(List.of(Component.text("Carrying it slows you down.", NamedTextColor.GRAY)
                     .decoration(TextDecoration.ITALIC, false)));
         }
         meta.getPersistentDataContainer().set(starKey, PersistentDataType.INTEGER, star);
+        meta.getPersistentDataContainer().set(setKey, PersistentDataType.STRING, set.id());
         item.setItemMeta(meta);
         return item;
     }
 
-    /** Marks a placed head block as star N, so phase 2's radar/summon logic can find it by world scan. */
-    public void markBlock(Skull skull, int star) {
+    /** "<n>-Star Dragon Ball" for overworld (byte-identical to before this split), "<n>-Star Nether
+     * Dragon Ball" / "<n>-Star End Dragon Ball" otherwise. */
+    private static String ballName(BallSet set, int star) {
+        String word = set.displayWord();
+        return star + "-Star " + (word.isEmpty() ? "" : word + " ") + "Dragon Ball";
+    }
+
+    /** Marks a placed head block as star N of {@code set}, so the radar/summon logic can find it by
+     * world scan and route it to the right set's registry. */
+    public void markBlock(Skull skull, BallSet set, int star) {
         skull.getPersistentDataContainer().set(starKey, PersistentDataType.INTEGER, star);
+        skull.getPersistentDataContainer().set(setKey, PersistentDataType.STRING, set.id());
     }
 
     /** Swaps a placed block's texture between its star look and the stone (cooling-down) look. */
-    public void applyBlockTexture(Skull skull, int star, boolean stone) {
-        String texture = stone ? config.get().stoneTexture() : config.get().texture(star);
-        UUID profileId = stone ? STONE_PROFILE_ID : PROFILE_IDS[star - 1];
+    public void applyBlockTexture(Skull skull, BallSet set, int star, boolean stone) {
+        String texture = stone ? config.get().stoneTexture() : config.get().texture(set, star);
+        UUID profileId = stone ? STONE_PROFILE_ID : profileId(set, star);
         PlayerProfile profile = texturedProfile(profileId, texture);
         if (profile != null) {
             skull.setPlayerProfile(profile);
         }
+    }
+
+    /** Overworld keeps its original hardcoded UUIDs; nether/end derive a deterministic (stable
+     * across restarts), set-distinct UUID from the (set, star) pair instead - there's no need for
+     * anyone to ever type these by hand the way the overworld ones occasionally get referenced. */
+    private static UUID profileId(BallSet set, int star) {
+        if (set == BallSet.OVERWORLD) {
+            return OVERWORLD_PROFILE_IDS[star - 1];
+        }
+        return UUID.nameUUIDFromBytes(("dragonballs:" + set.id() + ":star:" + star).getBytes(StandardCharsets.UTF_8));
     }
 
     private void applyProfile(SkullMeta meta, UUID profileId, String texture) {

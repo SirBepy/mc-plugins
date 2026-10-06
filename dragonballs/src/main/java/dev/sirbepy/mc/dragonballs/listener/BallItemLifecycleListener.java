@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.dragonballs.listener;
 
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
+import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import org.bukkit.entity.Item;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -16,7 +17,7 @@ import java.util.Set;
  * A ball sitting in the world as an item entity never despawns, never merges with another stack
  * (keeping the registry's one-entity-per-star invariant simple), and is immune to fire/lava/
  * explosion/cactus damage. If it's destroyed anyway (the void, an explosion that removes it outright,
- * a plugin, whatever), it's re-scattered rather than lost for good.
+ * a plugin, whatever), it's re-scattered within its own set rather than lost for good.
  */
 public final class BallItemLifecycleListener implements Listener {
 
@@ -36,16 +37,16 @@ public final class BallItemLifecycleListener implements Listener {
             EntityRemoveEvent.Cause.DROP
     );
 
-    private final BallRegistry registry;
+    private final BallSets sets;
 
-    public BallItemLifecycleListener(BallRegistry registry) {
-        this.registry = registry;
+    public BallItemLifecycleListener(BallSets sets) {
+        this.sets = sets;
     }
 
     @EventHandler
     public void onSpawn(ItemSpawnEvent event) {
         Item item = event.getEntity();
-        if (!registry.isBall(item.getItemStack())) {
+        if (!sets.items().isBall(item.getItemStack())) {
             return;
         }
         item.setUnlimitedLifetime(true);
@@ -57,14 +58,14 @@ public final class BallItemLifecycleListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onDespawn(ItemDespawnEvent event) {
-        if (registry.isBall(event.getEntity().getItemStack())) {
+        if (sets.items().isBall(event.getEntity().getItemStack())) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onMerge(ItemMergeEvent event) {
-        if (registry.isBall(event.getEntity().getItemStack()) || registry.isBall(event.getTarget().getItemStack())) {
+        if (sets.items().isBall(event.getEntity().getItemStack()) || sets.items().isBall(event.getTarget().getItemStack())) {
             event.setCancelled(true);
         }
     }
@@ -74,7 +75,9 @@ public final class BallItemLifecycleListener implements Listener {
         if (IGNORED_REMOVALS.contains(event.getCause()) || !(event.getEntity() instanceof Item item)) {
             return;
         }
-        registry.starOf(item.getItemStack()).ifPresent(star -> {
+        var stack = item.getItemStack();
+        sets.items().starOf(stack).ifPresent(star -> {
+            BallRegistry registry = sets.registryFor(stack).orElseThrow();
             if (registry.isDroppedAs(star, item.getUniqueId())) {
                 var lastSummon = registry.lastSummon();
                 if (lastSummon != null) {

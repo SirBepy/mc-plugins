@@ -1,24 +1,33 @@
 package dev.sirbepy.mc.dragonballs.station;
 
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
+import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
+import dev.sirbepy.mc.dragonballs.item.BallItems;
 import dev.sirbepy.mc.dragonballs.radar.RadarItems;
+import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
+import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.block.Action;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.plugin.ServicePriority;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 import org.mockbukkit.mockbukkit.plugin.PluginMock;
 import org.mockbukkit.mockbukkit.world.WorldMock;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,8 +38,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Covers can't-afford / buys / inventory-full / not-the-sign / no-economy; economy itself is a tiny
- * fake registered through MockBukkit's real {@code ServicesManager}, same as a live Vault provider.
+ * Covers can't-afford / buys / inventory-full / not-the-sign / no-economy, for each of the 3 signs;
+ * economy itself is a tiny fake registered through MockBukkit's real {@code ServicesManager}, same
+ * as a live Vault provider.
  */
 class RadarShopTest {
 
@@ -38,24 +48,26 @@ class RadarShopTest {
     private WorldMock world;
     private PluginMock plugin;
     private RadarItems radarItems;
+    private BallSets sets;
     private PlayerMock player;
     private Block signBlock;
 
     @BeforeEach
-    void setUp() {
+    void setUp(@TempDir Path tempDir) {
         server = MockBukkit.mock();
         world = server.addSimpleWorld("world");
         plugin = MockBukkit.createMockPlugin();
         radarItems = new RadarItems(plugin);
+        BallItems items = new BallItems(plugin, () -> new DragonBallsConfig(new YamlConfiguration()));
+        BallRegistry overworld = new BallRegistry(new File(tempDir.toFile(), "balls.yml"), plugin.getLogger(), items, BallSet.OVERWORLD);
+        BallRegistry nether = new BallRegistry(new File(tempDir.toFile(), "balls-nether.yml"), plugin.getLogger(), items, BallSet.NETHER);
+        BallRegistry end = new BallRegistry(new File(tempDir.toFile(), "balls-end.yml"), plugin.getLogger(), items, BallSet.END);
+        sets = new BallSets(overworld, nether, end, items, () -> new DragonBallsConfig(new YamlConfiguration()));
+
         player = server.addPlayer();
         player.teleport(new Location(world, 413, 116, -873));
 
-        plugin.getConfig().set("station.radar-sign.world", "world");
-        plugin.getConfig().set("station.radar-sign.x", 413);
-        plugin.getConfig().set("station.radar-sign.y", 116);
-        plugin.getConfig().set("station.radar-sign.z", -873);
-        plugin.getConfig().set("station.radar-price", 1000.0);
-
+        // Defaults (no station.radar-signs.* set) already match the overworld sign used by most tests.
         signBlock = world.getBlockAt(413, 116, -873);
     }
 
@@ -65,7 +77,8 @@ class RadarShopTest {
     }
 
     private RadarShop shop() {
-        return new RadarShop(plugin, () -> StationConfig.from(plugin.getConfig()), radarItems);
+        return new RadarShop(plugin, () -> StationConfig.from(plugin.getConfig()),
+                () -> new DragonBallsConfig(plugin.getConfig()), radarItems, sets);
     }
 
     private void registerEconomy(FakeEconomy economy) {
@@ -131,6 +144,36 @@ class RadarShopTest {
     void noRegisteredEconomyMeansTheShopIsClosed() {
         shop().onInteract(rightClickSign());
 
+        assertEquals(0, countRadars(player));
+    }
+
+    @Test
+    void theNetherSignSellsANetherRadarAtItsOwnPrice() {
+        FakeEconomy economy = new FakeEconomy(10000);
+        registerEconomy(economy);
+        Block netherSign = world.getBlockAt(413, 116, -875);
+        player.teleport(new Location(world, 413, 116, -875));
+
+        shop().onInteract(new org.bukkit.event.player.PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null,
+                netherSign, org.bukkit.block.BlockFace.NORTH, EquipmentSlot.HAND));
+
+        assertEquals(5000, economy.getBalance(player), "the Nether sign's default price is 5000");
+        var netherRadar = player.getInventory().getContents();
+        assertTrue(java.util.Arrays.stream(netherRadar).anyMatch(item -> item != null
+                && radarItems.isRadar(item) && radarItems.setOf(item) == BallSet.NETHER));
+    }
+
+    @Test
+    void theEndSignRefusesWhileTheEndIsDisabledAndTakesNoMoney() {
+        FakeEconomy economy = new FakeEconomy(50000);
+        registerEconomy(economy);
+        Block endSign = world.getBlockAt(413, 117, -874);
+        player.teleport(new Location(world, 413, 117, -874));
+
+        shop().onInteract(new org.bukkit.event.player.PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null,
+                endSign, org.bukkit.block.BlockFace.NORTH, EquipmentSlot.HAND));
+
+        assertEquals(50000, economy.getBalance(player), "a disabled End must never charge for its radar");
         assertEquals(0, countRadars(player));
     }
 

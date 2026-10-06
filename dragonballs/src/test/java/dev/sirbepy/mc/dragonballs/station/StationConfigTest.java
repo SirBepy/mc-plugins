@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.dragonballs.station;
 
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
@@ -16,11 +17,9 @@ class StationConfigTest {
     void defaultsMatchTheExportedStationLayout() {
         StationConfig config = StationConfig.from(new YamlConfiguration());
 
-        assertEquals("world", config.signWorld());
-        assertEquals(413, config.signX());
-        assertEquals(116, config.signY());
-        assertEquals(-873, config.signZ());
-        assertEquals(1000.0, config.radarPrice());
+        assertEquals(new StationConfig.RadarSign("world", 413, 116, -873, 1000), config.radarSign(BallSet.OVERWORLD));
+        assertEquals(new StationConfig.RadarSign("world", 413, 116, -875, 5000), config.radarSign(BallSet.NETHER));
+        assertEquals(new StationConfig.RadarSign("world", 413, 117, -874, 20000), config.radarSign(BallSet.END));
         assertEquals(7, config.displayHeads().size());
         assertEquals(new StationConfig.HeadLocation("world", 415, 116, -873), config.displayHeads().get(0));
         assertEquals(new StationConfig.HeadLocation("world", 414, 116, -877), config.displayHeads().get(6));
@@ -29,20 +28,18 @@ class StationConfigTest {
     @Test
     void explicitKeysOverrideTheDefaults() {
         YamlConfiguration yaml = new YamlConfiguration();
-        yaml.set("station.radar-sign.world", "world_nether");
-        yaml.set("station.radar-sign.x", 1);
-        yaml.set("station.radar-sign.y", 2);
-        yaml.set("station.radar-sign.z", 3);
-        yaml.set("station.radar-price", 500.0);
+        yaml.set("station.radar-signs.overworld.world", "world_nether");
+        yaml.set("station.radar-signs.overworld.x", 1);
+        yaml.set("station.radar-signs.overworld.y", 2);
+        yaml.set("station.radar-signs.overworld.z", 3);
+        yaml.set("station.radar-signs.overworld.price", 500.0);
         yaml.set("station.display-heads", List.of(Map.of("world", "world_nether", "x", 10, "y", 20, "z", 30)));
 
         StationConfig config = StationConfig.from(yaml);
 
-        assertEquals("world_nether", config.signWorld());
-        assertEquals(1, config.signX());
-        assertEquals(2, config.signY());
-        assertEquals(3, config.signZ());
-        assertEquals(500.0, config.radarPrice());
+        assertEquals(new StationConfig.RadarSign("world_nether", 1, 2, 3, 500.0), config.radarSign(BallSet.OVERWORLD));
+        // An untouched set keeps its own default, independent of the overworld override above.
+        assertEquals(new StationConfig.RadarSign("world", 413, 116, -875, 5000), config.radarSign(BallSet.NETHER));
         assertEquals(List.of(new StationConfig.HeadLocation("world_nether", 10, 20, 30)), config.displayHeads());
     }
 }

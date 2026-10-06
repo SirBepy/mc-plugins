@@ -5,8 +5,9 @@ import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.effects.DragonType;
-import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
+import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import dev.sirbepy.mc.dragonballs.registry.BallState;
 import dev.sirbepy.mc.dragonballs.registry.BallView;
 import dev.sirbepy.mc.dragonballs.summon.curse.CurseListener;
@@ -51,14 +52,14 @@ public final class ShenronCommand {
     private final SummonSessionManager sessions;
     private final CurseStore curses;
     private final CurseListener curseListener;
-    private final BallRegistry registry;
+    private final BallSets sets;
 
     public ShenronCommand(SummonSessionManager sessions, CurseStore curses, CurseListener curseListener,
-                           BallRegistry registry) {
+                           BallSets sets) {
         this.sessions = sessions;
         this.curses = curses;
         this.curseListener = curseListener;
-        this.registry = registry;
+        this.sets = sets;
     }
 
     public void registerInto(Commands registrar) {
@@ -86,7 +87,9 @@ public final class ShenronCommand {
                 .then(Commands.literal("summon")
                         .then(Commands.argument("player", StringArgumentType.word())
                                 .then(Commands.argument("dragon", StringArgumentType.word())
-                                        .executes(this::summon))))
+                                        .executes(this::summon)
+                                        .then(Commands.argument("set", StringArgumentType.word())
+                                                .executes(this::summonWithSet)))))
                 .then(Commands.literal("curse")
                         .requires(this::isJudge)
                         .then(Commands.literal("effect")
@@ -197,14 +200,26 @@ public final class ShenronCommand {
                 StringArgumentType.getString(ctx, "dragon"));
     }
 
+    private int summonWithSet(CommandContext<CommandSourceStack> ctx) {
+        return summon(ctx.getSource().getSender(), StringArgumentType.getString(ctx, "player"),
+                StringArgumentType.getString(ctx, "dragon"), StringArgumentType.getString(ctx, "set"));
+    }
+
+    /** No set named: picks the first (overworld, nether, end order) whose 7 balls are ready for
+     * {@code target}, same as {@link #summon(CommandSender, String, String, String)} would validate
+     * anyway - this just chooses which one to try. */
+    int summon(CommandSender sender, String playerName, String dragonArg) {
+        return summon(sender, playerName, dragonArg, null);
+    }
+
     /**
      * Debug-only path for bots/scripts that can't answer the real right-click dialog: resolves the
-     * same inputs a dialog click would (an online player, a dragon choice, and one placed ball's
-     * location) and calls {@link SummonSessionManager#tryStart} with them, so every trigger
+     * same inputs a dialog click would (an online player, a dragon choice, a set, and one placed
+     * ball's location) and calls {@link SummonSessionManager#tryStart} with them, so every trigger
      * condition (complete set, not dormant, no active session, not wish-banned) is re-validated
      * exactly as it is for a real click - this never bypasses a rule, it only skips the UI.
      */
-    int summon(CommandSender sender, String playerName, String dragonArg) {
+    int summon(CommandSender sender, String playerName, String dragonArg, String setArg) {
         Player target = Bukkit.getPlayerExact(playerName);
         if (target == null) {
             sender.sendMessage(Component.text(playerName + " is not online."));
@@ -215,12 +230,32 @@ public final class ShenronCommand {
             sender.sendMessage(Component.text("Unknown dragon: " + dragonArg + " (use shenron or porunga)."));
             return Command.SINGLE_SUCCESS;
         }
-        Location ballLocation = anyPlacedBallLocation();
+        BallSet set;
+        if (setArg == null) {
+            // Prefer a genuinely ready set (the spec case); short of that, fall back to whichever
+            // set has anything placed at all, so the refusal below still names a real reason
+            // (dormant/incomplete/session-active) instead of a blanket "nothing is ready" - same
+            // wording this command gave before the 3-set split, when overworld was the only set.
+            set = firstReadySet(target);
+            if (set == null) {
+                set = firstSetWithAnyPlacedBall();
+            }
+            if (set == null) {
+                set = BallSet.OVERWORLD;
+            }
+        } else {
+            set = BallSet.byId(setArg.toLowerCase(Locale.ROOT));
+            if (set == null) {
+                sender.sendMessage(Component.text("Unknown set: " + setArg + " (use overworld, nether or end)."));
+                return Command.SINGLE_SUCCESS;
+            }
+        }
+        Location ballLocation = anyPlacedBallLocation(set);
         if (ballLocation == null) {
             sender.sendMessage(Component.text("No placed Dragon Ball to summon from."));
             return Command.SINGLE_SUCCESS;
         }
-        boolean started = sessions.tryStart(target, dragon, ballLocation);
+        boolean started = sessions.tryStart(target, dragon, ballLocation, set);
         if (!started) {
             sender.sendMessage(Component.text("Cannot summon: the 7 balls are not all placed together "
                     + "within range, the balls are dormant, a session is already active, or " + playerName
@@ -237,11 +272,41 @@ public final class ShenronCommand {
         };
     }
 
-    /** Any one PLACED ball's current block location, to stand in for the block a real right-click
-     * would hand {@link SummonSessionManager#tryStart}; which of the 7 doesn't matter, since
-     * readiness requires all 7 within radius of whichever one is clicked. */
-    private Location anyPlacedBallLocation() {
-        for (BallView ball : registry.getBalls()) {
+    /** The first set (declaration order: overworld, nether, end) whose 7 balls are placed together
+     * and ready for {@code target} to summon from; null if none are. */
+    private BallSet firstReadySet(Player target) {
+        for (BallSet set : BallSet.values()) {
+            if (!sets.isEnabled(set)) {
+                continue;
+            }
+            Location loc = anyPlacedBallLocation(set);
+            if (loc == null) {
+                continue;
+            }
+            if (sessions.evaluate(target.getUniqueId(), loc, set) == SummonTrigger.Readiness.READY) {
+                return set;
+            }
+        }
+        return null;
+    }
+
+    /** The first set (declaration order) with any ball at all PLACED somewhere, ready or not; used
+     * only as the fallback anchor once no set is actually ready, so the final refusal message can
+     * still name a specific reason. */
+    private BallSet firstSetWithAnyPlacedBall() {
+        for (BallSet set : BallSet.values()) {
+            if (sets.isEnabled(set) && anyPlacedBallLocation(set) != null) {
+                return set;
+            }
+        }
+        return null;
+    }
+
+    /** Any one PLACED ball's current block location for {@code set}, to stand in for the block a
+     * real right-click would hand {@link SummonSessionManager#tryStart}; which of the 7 doesn't
+     * matter, since readiness requires all 7 within radius of whichever one is clicked. */
+    private Location anyPlacedBallLocation(BallSet set) {
+        for (BallView ball : sets.registry(set).getBalls()) {
             if (ball.state() == BallState.PLACED) {
                 Location loc = ball.lastKnownLocation();
                 if (loc != null) {
