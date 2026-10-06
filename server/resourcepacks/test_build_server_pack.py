@@ -1,10 +1,12 @@
 """Checks the built join pack: the Pollos gun and katana looks resolve to a model and texture inside
-the zip, the gunshot Tweaks plays resolves to an .ogg inside it, and every other crossbow, netherite
-sword and vanilla sound still uses the vanilla 26.3 definition.
+the zip, the gunshot Tweaks plays resolves to an .ogg inside it, the Dragon Radar and Shenron looks
+are wired up and have the expected pixels, and every other crossbow, netherite sword, compass and
+vanilla sound still uses the vanilla 26.3 definition.
 
 Run from server/resourcepacks/: python -m unittest test_build_server_pack
 """
 
+import io
 import json
 import re
 import tempfile
@@ -13,6 +15,7 @@ import zipfile
 from pathlib import Path
 
 import build_server_pack
+from PIL import Image
 
 ROOT = build_server_pack.ROOT
 
@@ -42,6 +45,36 @@ VANILLA_CROSSBOW = {
 
 # The 26.3 client jar's own assets/minecraft/items/netherite_sword.json model.
 VANILLA_NETHERITE_SWORD = {"type": "minecraft:model", "model": "minecraft:item/netherite_sword"}
+
+
+def _vanilla_compass_branch(target):
+    # The 26.3 client jar's own compass.json: 33 entries, compass_16 at both ends (frames
+    # 16..31 then 00..16) so the needle loops back around to vanilla's own frame 16.
+    order = list(range(16, 32)) + list(range(0, 17))
+    entries = [
+        {
+            "model": {"type": "minecraft:model", "model": f"minecraft:item/compass_{nn:02d}"},
+            "threshold": 0.0 if i == 0 else i - 0.5,
+        }
+        for i, nn in enumerate(order)
+    ]
+    return {
+        "type": "minecraft:range_dispatch",
+        "entries": entries,
+        "property": "minecraft:compass",
+        "scale": 32.0,
+        "target": target,
+    }
+
+
+# The 26.3 client jar's own assets/minecraft/items/compass.json model.
+VANILLA_COMPASS = {
+    "type": "minecraft:condition",
+    "component": "minecraft:lodestone_tracker",
+    "on_false": _vanilla_compass_branch("spawn"),
+    "on_true": _vanilla_compass_branch("lodestone"),
+    "property": "minecraft:has_component",
+}
 
 
 def asset(ref, kind, ext):
@@ -135,6 +168,62 @@ class BuiltPackTest(unittest.TestCase):
 
     def test_bow_is_untouched(self):
         self.assertNotIn("assets/minecraft/items/bow.json", self.entries)
+
+    def test_dragon_radar_idle_resolves_to_its_texture(self):
+        self.assert_look_resolves("compass", "dragon_radar_idle")
+
+    def test_dragon_radar_has_32_frames_with_a_texture_each(self):
+        compass = self.json("assets/minecraft/items/compass.json")["model"]
+        radar = next(c for c in compass["cases"] if c["when"] == "dragon_radar")["model"]
+        self.assertEqual(radar["property"], "minecraft:compass")
+        self.assertEqual(radar["target"], "spawn")
+        self.assertEqual(radar["scale"], 32.0)
+        refs = {e["model"]["model"] for e in radar["entries"]}
+        self.assertEqual(len(refs), 32)
+        for ref in refs:
+            model = self.json(asset(ref, "models", "json"))
+            self.assertIn(asset(model["textures"]["layer0"], "textures", "png"), self.entries, ref)
+
+    def test_other_compasses_stay_vanilla(self):
+        compass = self.json("assets/minecraft/items/compass.json")["model"]
+        self.assertEqual(compass["fallback"], VANILLA_COMPASS)
+
+    def test_dragon_wings_are_transparent_and_body_is_not(self):
+        png = Image.open(io.BytesIO(self.entries["assets/minecraft/textures/entity/enderdragon/dragon.png"]))
+        px = png.convert("RGBA").load()
+        self.assertEqual(px[20, 100][3], 0, "wing membrane should be transparent")
+        self.assertEqual(px[150, 95][3], 0, "wing bone strut should be transparent")
+        self.assertGreater(px[70, 70][3], 0, "body should still be opaque")
+
+    def test_dragon_body_is_bright_green_not_near_black(self):
+        # Vanilla's body luminance sits in a narrow near-black band; the pack stretches it
+        # across a jade gradient so the scale pattern stays visible but the body reads bright.
+        png = Image.open(io.BytesIO(self.entries["assets/minecraft/textures/entity/enderdragon/dragon.png"]))
+        px = png.convert("RGBA").load()
+        r, g, b, _a = px[70, 70]
+        self.assertGreater(g, r)
+        self.assertGreater(g, b)
+        self.assertGreater(g, 120, "body should read as bright green, not near-black")
+
+    def test_dragon_png_eyes_are_red_to_match_the_glow_overlay(self):
+        # dragon.png itself bakes in a handful of non-gray eye pixels (same 4 clusters, same
+        # colours, as dragon_eyes.png's opaque pixels) that must be re-hued too, or the base
+        # skin shows vanilla's purple under the red glow overlay.
+        png = Image.open(io.BytesIO(self.entries["assets/minecraft/textures/entity/enderdragon/dragon.png"]))
+        px = png.convert("RGBA").load()
+        for x, y in [(131, 50), (208, 44), (197, 67), (133, 58)]:
+            r, g, b, _a = px[x, y]
+            self.assertGreater(r, g, f"eye pixel at {(x, y)} should be red, not green/purple")
+            self.assertGreater(r, b, f"eye pixel at {(x, y)} should be red, not green/purple")
+
+    def test_dragon_eyes_are_red_not_vanilla_purple(self):
+        png = Image.open(io.BytesIO(self.entries["assets/minecraft/textures/entity/enderdragon/dragon_eyes.png"]))
+        px = png.convert("RGBA").load()
+        opaque = [px[x, y] for x in range(png.width) for y in range(png.height) if px[x, y][3] > 0]
+        self.assertTrue(opaque)
+        r, g, b, _a = opaque[0]
+        self.assertGreater(r, b, "eyes should be re-hued red, not vanilla's blue-leaning purple")
+        self.assertGreater(r, g)
 
 
 if __name__ == "__main__":
