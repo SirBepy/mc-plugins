@@ -1,5 +1,5 @@
-# Dragon Balls: 7 scattered PLAYER_HEAD items, star 1..7. Collect all 7, place them together, then
-# phase 2 (summoning) takes over. This config only covers phase 1 (items, scatter, carry rules).
+# Dragon Balls: 7 scattered PLAYER_HEAD items, star 1..7. Collect all 7, place them together and
+# right-click one to summon a dragon. Player rules and the dragon's rulebook: docs/dragonballs.md.
 
 # Base64 "textures" ProfileProperty values, one per star plus the stone (cooling-down) variant.
 # Swappable here without a rebuild.
@@ -67,3 +67,29 @@ messages:
   reload-success: "<green>DragonBalls config reloaded."
   scatter-success: "<green>Scattered all 7 Dragon Balls."
   give-success: "<green>Gave the <star>-Star Dragon Ball to <player>."
+
+# The Dragon Ball station at spawn (built by the spawn-market datapack; coordinates come from
+# server/spawn-market/dragonballs-station.json).
+station:
+  radar-sign: { world: world, x: 413, y: 116, z: -873 }
+  radar-price: 1000
+  display-heads:
+    - { world: world, x: 415, y: 116, z: -873 }
+    - { world: world, x: 415, y: 116, z: -874 }
+    - { world: world, x: 415, y: 116, z: -875 }
+    - { world: world, x: 415, y: 116, z: -871 }
+    - { world: world, x: 414, y: 116, z: -871 }
+    - { world: world, x: 415, y: 116, z: -877 }
+    - { world: world, x: 414, y: 116, z: -877 }
+
+summon:
+  # Every ball must be within this many blocks (on each axis) of the one right-clicked.
+  radius: 2
+  # A dragon nobody talks to (no summoner chat, no /shenron command) leaves after this long.
+  idle-timeout-seconds: 600
+  summoner-offline-seconds: 180
+
+effects:
+  # Blocks above the balls' centre where the dragon hovers, and its size (1.0 = vanilla Ender Dragon).
+  dragon-height: 18.0
+  dragon-scale: 1.0

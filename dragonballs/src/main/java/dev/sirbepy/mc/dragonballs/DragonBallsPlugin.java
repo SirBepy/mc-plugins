@@ -2,6 +2,7 @@ package dev.sirbepy.mc.dragonballs;
 
 import dev.sirbepy.mc.dragonballs.command.DragonBallsCommand;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
+import dev.sirbepy.mc.dragonballs.effects.SpectacleEffects;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
 import dev.sirbepy.mc.dragonballs.listener.BallChunkLoadListener;
 import dev.sirbepy.mc.dragonballs.listener.BallContainerGuardListener;
@@ -13,8 +14,11 @@ import dev.sirbepy.mc.dragonballs.listener.BallPlaceBreakListener;
 import dev.sirbepy.mc.dragonballs.listener.BallProtectionListener;
 import dev.sirbepy.mc.dragonballs.listener.BallSlowness;
 import dev.sirbepy.mc.dragonballs.listener.BallSlownessListener;
+import dev.sirbepy.mc.dragonballs.radar.RadarModule;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
 import dev.sirbepy.mc.dragonballs.scatter.ScatterService;
+import dev.sirbepy.mc.dragonballs.station.StationModule;
+import dev.sirbepy.mc.dragonballs.summon.SummonModule;
 import dev.sirbepy.mc.dragonballs.task.BallMaintenanceTask;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.World;
@@ -27,6 +31,8 @@ public final class DragonBallsPlugin extends JavaPlugin {
 
     private final AtomicReference<DragonBallsConfig> config = new AtomicReference<>();
     private BallRegistry registry;
+    private SpectacleEffects effects;
+    private SummonModule.Handle summon;
 
     @Override
     public void onEnable() {
@@ -58,7 +64,22 @@ public final class DragonBallsPlugin extends JavaPlugin {
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 new DragonBallsCommand(registry, config::get, this::reload).registerInto(event.registrar()));
 
+        RadarModule.register(this, registry, config::get);
+        StationModule.register(this, registry, config::get);
+        effects = new SpectacleEffects(this, items);
+        summon = SummonModule.register(this, registry, config::get, effects);
+
         bootstrapInitialScatter();
+    }
+
+    @Override
+    public void onDisable() {
+        if (summon != null) {
+            summon.shutdown();
+        }
+        if (effects != null) {
+            effects.shutdown();
+        }
     }
 
     /** First-ever enable (no balls.yml yet): scatter all 7 around the overworld's own spawn, read
