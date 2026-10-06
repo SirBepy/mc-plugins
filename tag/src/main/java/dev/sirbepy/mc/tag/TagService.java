@@ -1,13 +1,13 @@
 package dev.sirbepy.mc.tag;
 
 import dev.sirbepy.mc.core.Messages;
+import dev.sirbepy.mc.tag.afk.AfkService;
 import dev.sirbepy.mc.tag.afk.AfkTracker;
 import dev.sirbepy.mc.tag.board.LeaderboardEntityService;
 import dev.sirbepy.mc.tag.board.ScoreboardService;
 import dev.sirbepy.mc.tag.config.TagConfig;
 import dev.sirbepy.mc.tag.head.HeadService;
 import dev.sirbepy.mc.tag.log.LogService;
-import dev.sirbepy.mc.tag.logic.AfkEligibility;
 import dev.sirbepy.mc.tag.logic.PendingAction;
 import dev.sirbepy.mc.tag.logic.PendingActions;
 import dev.sirbepy.mc.tag.logic.TagbackRule;
@@ -34,7 +34,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
 /** Central orchestrator: the single place that mutates {@link TagState} and keeps it persisted. */
@@ -49,7 +48,7 @@ public final class TagService {
 
     private TagState state;
     private TagConfig config;
-    private final AfkTracker afkTracker;
+    private final AfkService afkService;
     private final TrackerService tracker;
 
     // Not persisted: just a spam guard for the tagback-blocked and AFK-untaggable messages.
@@ -72,7 +71,7 @@ public final class TagService {
         this.boards = boards;
         this.leaderboard = leaderboard;
         this.config = config;
-        this.afkTracker = afkTracker;
+        this.afkService = new AfkService(afkTracker);
         this.tracker = new TrackerService(plugin);
         this.state = loadOrNew();
     }
@@ -100,7 +99,7 @@ public final class TagService {
 
     public void setConfig(TagConfig config) {
         this.config = config;
-        afkTracker.setThresholdMillis(config.afk.thresholdSeconds * 1000L);
+        afkService.setThresholdMillis(config.afk.thresholdSeconds * 1000L);
     }
 
     public void save() {
@@ -315,7 +314,7 @@ public final class TagService {
         // Spam guard, not state: nothing left to debounce once the player is gone, and keeping it
         // around would leak one UUID per player forever.
         tagbackMessageCooldown.remove(player.getUniqueId());
-        afkTracker.remove(player.getUniqueId());
+        afkService.remove(player.getUniqueId());
         tracker.forget(player.getUniqueId());
     }
 
@@ -377,17 +376,19 @@ public final class TagService {
         if (!config.afk.enabled) {
             return;
         }
-        afkTracker.markActive(uuid);
+        afkService.markActive(uuid);
     }
 
     public boolean isAfk(UUID uuid) {
-        return config.afk.enabled && afkTracker.isAfk(uuid);
+        return config.afk.enabled && afkService.isAfk(uuid);
     }
 
     /**
      * Warns and/or auto-passes IT for being idle too long. Called once per {@code
      * afk.check-interval-seconds} tick; a no-op whenever AFK handling or auto-pass is off, IT is
-     * offline (owner decision: IT who logs off stays IT), or nobody is currently IT.
+     * offline (owner decision: IT who logs off stays IT), or nobody is currently IT. The idle-time
+     * math, warning cadence and receiver selection live in {@link AfkService}; it calls back into
+     * {@link #autoPassIt} for the actual pass, since only TagService may mutate TagState.
      */
     public void checkItAfk() {
         if (!config.afk.enabled || !config.afk.autoPass) {
@@ -401,40 +402,7 @@ public final class TagService {
         if (it == null) {
             return;
         }
-
-        long idleMillis = afkTracker.idleMillis(itId);
-        long passAfterMillis = config.afk.itPassAfterSeconds * 1000L;
-        long warnSeconds = config.afk.itPassWarningSeconds;
-
-        if (warnSeconds > 0 && idleMillis < passAfterMillis) {
-            long warnAtMillis = passAfterMillis - warnSeconds * 1000L;
-            if (idleMillis >= warnAtMillis && afkTracker.warnOnceIfNotAlready(itId)) {
-                config.messages.send(it, "afk-warning", Placeholder.unparsed("seconds", String.valueOf(warnSeconds)));
-            }
-        }
-
-        if (idleMillis >= passAfterMillis) {
-            tryAutoPassIt(it);
-        }
-    }
-
-    private void tryAutoPassIt(Player it) {
-        UUID previous = state.lastTagger;
-        List<AfkEligibility.Candidate> candidates = Bukkit.getOnlinePlayers().stream()
-                .filter(p -> !p.getUniqueId().equals(it.getUniqueId()))
-                .map(p -> new AfkEligibility.Candidate(p.getUniqueId(), afkTracker.isAfk(p.getUniqueId()),
-                        isOptedOut(p.getUniqueId()), playable(p)))
-                .toList();
-        List<UUID> eligible = AfkEligibility.eligible(candidates, previous);
-        if (eligible.isEmpty()) {
-            return;
-        }
-        UUID chosenId = eligible.get(ThreadLocalRandom.current().nextInt(eligible.size()));
-        Player chosen = Bukkit.getPlayer(chosenId);
-        if (chosen == null) {
-            return;
-        }
-        autoPassIt(it, chosen);
+        afkService.checkItAfk(it, config.afk, config.messages, state.lastTagger, this::isOptedOut, this::autoPassIt);
     }
 
     /**
@@ -489,17 +457,9 @@ public final class TagService {
 
     // --- in-world leaderboard -----------------------------------------------------------------
 
-    /**
-     * Block-centered x/z so the board reads as "over this block" instead of drifting toward
-     * whichever corner the admin happened to be standing on; y + 1.5 puts the text around head
-     * height rather than at floor level.
-     */
+    /** Placement math (block-centered, head-height) lives in {@link LeaderboardEntityService#locationFor}. */
     public void placeLeaderboard(Location adminLocation) {
-        state.leaderboardLocation = new TagState.LeaderboardLocation(
-                adminLocation.getWorld().getName(),
-                Math.floor(adminLocation.getX()) + 0.5,
-                Math.floor(adminLocation.getY()) + 1.5,
-                Math.floor(adminLocation.getZ()) + 0.5);
+        state.leaderboardLocation = leaderboard.locationFor(adminLocation);
         save();
         leaderboard.ensureSpawned();
     }

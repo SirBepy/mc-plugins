@@ -59,6 +59,19 @@ public final class LeaderboardEntityService implements Listener {
     }
 
     /**
+     * Block-centered x/z so the board reads as "over this block" instead of drifting toward
+     * whichever corner the admin happened to be standing on; y + 1.5 puts the text around head
+     * height rather than at floor level.
+     */
+    public TagState.LeaderboardLocation locationFor(Location adminLocation) {
+        return new TagState.LeaderboardLocation(
+                adminLocation.getWorld().getName(),
+                Math.floor(adminLocation.getX()) + 0.5,
+                Math.floor(adminLocation.getY()) + 1.5,
+                Math.floor(adminLocation.getZ()) + 0.5);
+    }
+
+    /**
      * If a location is set, its world exists and its chunk is loaded: clears any stray entity in
      * that chunk already carrying our PDC key (crash leftovers, or a previous board before a
      * move), then spawns a fresh one. A no-op whenever any precondition isn't met.
