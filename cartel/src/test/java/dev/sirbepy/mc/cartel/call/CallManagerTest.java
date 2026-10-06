@@ -88,11 +88,71 @@ class CallManagerTest extends CartelTestBase {
         calls.hit(owner, victim);
         List<Mob> pair = calls.cousins();
 
-        calls.onPlayerDeath(victim);
+        calls.onPlayerDeath(victim, pair.getFirst());
 
         assertFalse(calls.active());
         assertTrue(pair.stream().allMatch(cousin -> !cousin.isValid()));
         assertTrue(chat(owner).stream().anyMatch(line -> line.startsWith("The job is done.")));
+    }
+
+    private static long heads(org.mockbukkit.mockbukkit.entity.PlayerMock player, String name) {
+        return java.util.Arrays.stream(player.getInventory().getContents())
+                .filter(item -> item != null && item.getType() == org.bukkit.Material.PLAYER_HEAD)
+                .filter(item -> plain(item.getItemMeta().displayName()).equals(name))
+                .count();
+    }
+
+    @Test
+    void aKillByTheCousinsGivesTheBossTheTargetsHead() {
+        calls.hit(owner, victim);
+
+        calls.onPlayerDeath(victim, calls.cousins().getFirst());
+
+        assertEquals(1, heads(owner, "Victim"));
+        org.bukkit.inventory.ItemStack head = java.util.Arrays.stream(owner.getInventory().getContents())
+                .filter(item -> item != null && item.getType() == org.bukkit.Material.PLAYER_HEAD).findFirst().orElseThrow();
+        assertEquals(victim.getUniqueId(), ((org.bukkit.inventory.meta.SkullMeta) head.getItemMeta()).getPlayerProfile().getId());
+        assertTrue(chat(owner).contains("Leonel and Marco bring you Victim's head."));
+    }
+
+    @Test
+    void anyOtherDeathOfTheTargetEndsTheHitWithoutAHead() {
+        calls.hit(owner, victim);
+
+        calls.onPlayerDeath(victim, null);
+        assertFalse(calls.active());
+        assertEquals(0, heads(owner, "Victim"));
+
+        store.setHitReadyAt(owner.getUniqueId(), 0);
+        calls.hit(owner, victim);
+        calls.onPlayerDeath(victim, owner);
+        assertEquals(0, heads(owner, "Victim"), "killing the target yourself earns no trophy");
+    }
+
+    @Test
+    void aGuardKillEarnsNoHead() {
+        calls.guard(owner);
+
+        calls.onPlayerDeath(victim, calls.cousins().getFirst());
+
+        assertEquals(0, heads(owner, "Victim"));
+    }
+
+    @Test
+    void anOfflineBossGetsTheHeadOnTheirNextJoin() {
+        calls.hit(owner, victim);
+        Mob cousin = calls.cousins().getFirst();
+        owner.disconnect();
+
+        calls.onPlayerDeath(victim, cousin);
+        assertEquals(1, store.takePendingHeads(owner.getUniqueId()).size(), "kept for later");
+        store.addPendingHead(owner.getUniqueId(), new dev.sirbepy.mc.cartel.CartelStore.PendingHead(victim.getUniqueId(), "Victim"));
+
+        owner.reconnect();
+        calls.deliverPendingHeads(owner);
+
+        assertEquals(1, heads(owner, "Victim"));
+        assertTrue(store.takePendingHeads(owner.getUniqueId()).isEmpty(), "delivered once");
     }
 
     @Test

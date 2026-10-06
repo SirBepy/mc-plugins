@@ -9,6 +9,7 @@ import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Enemy;
@@ -16,6 +17,8 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.SkullMeta;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -222,15 +225,54 @@ public final class CallManager {
         }
     }
 
-    public void onPlayerDeath(Player dead) {
+    /** {@code killer} is whatever dealt the killing blow (null if nothing did, e.g. the void). */
+    public void onPlayerDeath(Player dead, Entity killer) {
         if (call == null) {
             return;
         }
         if (call.mode == Mode.HIT && dead.getUniqueId().equals(call.target)) {
+            UUID owner = call.owner;
             end("The job is done. " + call.targetName + " is dead.");
+            if (killer != null && cousins.isCousin(killer)) {
+                deliverHead(owner, new CartelStore.PendingHead(dead.getUniqueId(), dead.getName()));
+            }
         } else if (call.mode == Mode.GUARD && dead.getUniqueId().equals(call.owner)) {
             end("You died. The cousins leave.");
         }
+    }
+
+    // ---- trophies ----
+
+    private void deliverHead(UUID ownerId, CartelStore.PendingHead head) {
+        Player owner = Bukkit.getPlayer(ownerId);
+        if (owner == null) {
+            store.addPendingHead(ownerId, head);
+            return;
+        }
+        giveHead(owner, head);
+    }
+
+    /** Hands {@code owner} every trophy head that came in while they were offline. */
+    public void deliverPendingHeads(Player owner) {
+        for (CartelStore.PendingHead head : store.takePendingHeads(owner.getUniqueId())) {
+            giveHead(owner, head);
+        }
+    }
+
+    private static void giveHead(Player owner, CartelStore.PendingHead head) {
+        for (ItemStack overflow : owner.getInventory().addItem(trophy(head)).values()) {
+            owner.getWorld().dropItemNaturally(owner.getLocation(), overflow);
+        }
+        owner.sendMessage(Component.text("Leonel and Marco bring you " + head.name() + "'s head.", NamedTextColor.DARK_RED));
+    }
+
+    static ItemStack trophy(CartelStore.PendingHead head) {
+        ItemStack item = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta meta = (SkullMeta) item.getItemMeta();
+        meta.setPlayerProfile(Bukkit.createProfile(head.player(), head.name()));
+        meta.displayName(Component.text(head.name(), NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+        item.setItemMeta(meta);
+        return item;
     }
 
     // ---- steering ----

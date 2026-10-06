@@ -5,12 +5,14 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Cooldowns and the one-time phone gift, per owner, in {@code state.yml}. Kept on disk because a
+ * Cooldowns, the one-time phone gift and undelivered trophy heads, per owner, in {@code state.yml}. Kept on disk because a
  * cooldown counted in real days has to survive restarts; writes are rare (one per call), so each
  * change saves at once.
  */
@@ -55,6 +57,35 @@ public final class CartelStore {
 
     public void setPhoneGiven(UUID owner, boolean given) {
         set(owner + ".phone-given", given);
+    }
+
+    /** A trophy head waiting for an offline owner. */
+    public record PendingHead(UUID player, String name) {
+    }
+
+    public void addPendingHead(UUID owner, PendingHead head) {
+        List<String> heads = new ArrayList<>(yaml.getStringList(owner + ".pending-heads"));
+        heads.add(head.player() + "|" + head.name());
+        set(owner + ".pending-heads", heads);
+    }
+
+    /** Every head waiting for {@code owner}, removed from the store. */
+    public List<PendingHead> takePendingHeads(UUID owner) {
+        List<String> raw = yaml.getStringList(owner + ".pending-heads");
+        if (raw.isEmpty()) {
+            return List.of();
+        }
+        List<PendingHead> heads = new ArrayList<>();
+        for (String entry : raw) {
+            int bar = entry.indexOf('|');
+            try {
+                heads.add(new PendingHead(UUID.fromString(entry.substring(0, bar)), entry.substring(bar + 1)));
+            } catch (RuntimeException e) {
+                logger.warning("Skipping a malformed pending head: " + entry);
+            }
+        }
+        set(owner + ".pending-heads", null);
+        return heads;
     }
 
     private void set(String path, Object value) {

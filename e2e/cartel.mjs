@@ -5,7 +5,7 @@ import {
 // The cartel flip phone: the owner's right-click opens the phone menu, Guard Mode brings two armed
 // cousins who kill a nearby monster and leave a bystander alone, the phone menu calls them off, and
 // Assassinate Mode (target list + confirm) broadcasts the warning, spawns them ~10 blocks from the
-// target and kills them, after which a second hit is refused for a day. A stranger's phone is dead.
+// target and kills them, the owner gets the target's head, and a second hit is refused for a day. A stranger's phone is dead.
 // Runs inside a Towny town with mobs off, since Towny would otherwise delete the cousins within 5 s.
 const PLATFORM_Y = 200;
 const { bx: BX, bz: BZ } = randomOrigin();
@@ -162,6 +162,9 @@ try {
     assert(d >= 8.5 && d <= 11.5, `cousin appeared ${d.toFixed(1)} blocks from the target`);
     await waitFor(() => died, 'the target is killed', 30_000);
     await waitForLine(owner, /The job is done/, 5_000);
+    await waitForLine(owner, /Leonel and Marco bring you CartelMark's head\./, 5_000);
+    await waitFor(async () => /Found [1-9]/.test(await rcon.command(`minecraft:clear ${OWNER} minecraft:player_head 0`)),
+      "the owner holds the target's head", 5_000);
     await waitFor(async () => (await cousinCount()) === 0, 'cousins leave after the job', 5_000);
   });
 

@@ -11,11 +11,13 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.entity.EntityTransformEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 
 /**
  * Keeps the cousins on the job: they only target who {@link CallManager#allowedTarget} allows, never
  * hurt their boss or each other, can't be hurt by their boss, never turn into drowned, and drop
- * nothing when they die (Joe: their gear never drops).
+ * nothing when they die (Joe: their gear never drops). A boss who was offline when a hit landed
+ * gets the trophy head on their next join.
  */
 public final class CousinListener implements Listener {
 
@@ -60,7 +62,12 @@ public final class CousinListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerDeath(PlayerDeathEvent event) {
-        calls.onPlayerDeath(event.getEntity());
+        calls.onPlayerDeath(event.getEntity(), event.getDamageSource().getCausingEntity());
+    }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        calls.deliverPendingHeads(event.getPlayer());
     }
 
     @EventHandler(ignoreCancelled = true)

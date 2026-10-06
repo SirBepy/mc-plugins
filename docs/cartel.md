@@ -20,6 +20,11 @@ specify was picked by Claude and is listed under "Limits".
     the cousins appear **10 blocks from the target** (so the target sees them coming) and hunt
     only that player. Everyone reads, in dark red: "[Target Name], you have made enemies of the
     cartel."
+  - **Trophy**: when the cousins kill the target, Archontopouloi gets that player's head (a player
+    head with their skin, named after them) in his inventory, or at his feet if it's full. If he is
+    offline at that moment, he gets it the next time he joins. A target killed by anything else
+    (another player, a fall, the owner himself) gives no head. Guard Mode kills give no heads.
+    Added by Joe, ~21:35 UTC 2026-10-06.
   - **Call them off** (while a call is active): sends them home early; the cooldown stays used.
 - Anyone else who right-clicks the phone gets "The line is dead. This phone isn't yours."
 
