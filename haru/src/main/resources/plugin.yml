@@ -1,0 +1,10 @@
+name: Haru
+version: ${version}
+main: dev.sirbepy.mc.haru.HaruPlugin
+api-version: "26.2"
+author: sirbepy
+
+permissions:
+  haru.admin:
+    description: Place, move and inspect Haru, and adjust his owner's petals and reputation.
+    default: op

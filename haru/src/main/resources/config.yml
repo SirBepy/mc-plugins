@@ -1,0 +1,15 @@
+# Haru, Keeper of the Sakura Sanctuary: ImMijo's Shenron wish (granted 2026-10-06). Design notes and
+# every hidden reward: docs/haru.md. Haru's spot is set in-game with /haru place and kept in data.yml.
+
+# The only player Haru trades with, gives quests to and keeps reputation for. Others get a polite line.
+owner: 8c0c13b9-057a-4ac8-aacf-7b6c77f8742b
+
+# "Daily" things (quest board, Mystery Curio, Secret Stock week) roll over at midnight here.
+timezone: Europe/Zagreb
+
+# Wandering Wares change every this many Minecraft days of this world's clock.
+world: world
+rotation-days: 3
+
+# Chance that a rotation also brings a Legendary Trade (Joe: about 1 rotation in 5).
+legendary-chance: 0.2

@@ -5,7 +5,7 @@
  */
 object ServerArtifacts {
     // Our own plugin modules, shared so a new one only needs adding here, not in both build files.
-    val ourPluginProjects = listOf(":names", ":safechests", ":tag", ":claudebridge", ":tweaks", ":carry", ":market", ":dragonballs")
+    val ourPluginProjects = listOf(":names", ":safechests", ":tag", ":claudebridge", ":tweaks", ":carry", ":market", ":dragonballs", ":haru")
 
     // Modrinth CDN links, pinned. Bump a version by replacing its URL. Same list for both
     // testserver's run/ and run-e2e/, so they behave identically to each other.
