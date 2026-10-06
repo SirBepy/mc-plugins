@@ -72,3 +72,99 @@ test('build schedules the run only after force-loading the area', () => {
   assert.ok(build.at(-1).startsWith('schedule function spawn_market:build_run'));
   assert.match(lines('build_run').at(-2), /^forceload remove /);
 });
+
+// The Dragon Balls station (2026-10-06) replaced the old Crafting corner. 'anvil' is deliberately
+// not checked here: the Smith stall legitimately keeps its own (test below confirms the Dragon
+// Balls stall's own former anvil/grindstone/cartography_table/loom tiles now hold a pedestal).
+test('the old crafting_table/smithing_table/stonecutter/grindstone/cartography_table/loom are gone', () => {
+  for (const removed of ['crafting_table', 'smithing_table', 'stonecutter', 'grindstone', 'cartography_table', 'loom']) {
+    assert.equal(all.filter((l) => l.includes(removed)).length, 0, `${removed} still placed`);
+  }
+});
+
+const station = JSON.parse(readFileSync(join(here, 'dragonballs-station.json'), 'utf8'));
+
+test('dragonballs-station.json exports the radar sign and 7 head-pedestal coordinates', () => {
+  assert.equal(station.radarSign.world, 'world');
+  for (const k of ['x', 'y', 'z']) assert.equal(typeof station.radarSign[k], 'number');
+  assert.equal(station.displayHeads.length, 7);
+  for (const h of station.displayHeads) {
+    assert.equal(h.world, 'world');
+    for (const k of ['x', 'y', 'z']) assert.equal(typeof h[k], 'number');
+  }
+});
+
+test('the radar sign is a real sign at the exported coordinates, with the exact 4 lines, not an Essentials shop sign', () => {
+  const { x, y, z } = station.radarSign;
+  const radarLine = lines('attach').find((l) => l.startsWith(`setblock ${x} ${y} ${z} `) && l.includes('_sign'));
+  assert.ok(radarLine, `no sign setblock at ${x} ${y} ${z}`);
+  assert.ok(!radarLine.includes('{text:"[Sell]"') && !radarLine.includes('{text:"[Buy]"'));
+  const msgs = radarLine.slice(radarLine.indexOf('_text:')).replace(/color:"[a-z_]+"/g, '')
+    .match(/"((?:[^"\\]|\\.)*)"/g).map((m) => JSON.parse(m));
+  assert.deepEqual(msgs, ['[Dragon Radar]', 'Points at the', 'nearest ball', '1000 coins']);
+  assert.match(radarLine, /text:"\[Dragon Radar\]",color:"gold",bold:true/);
+});
+
+// Adjacent pedestals of the same state fold into one `fill` command (emit()'s row-merging), so
+// this checks both setblock and fill coverage rather than assuming one setblock per coordinate.
+function blockAt(phaseLines, x, y, z) {
+  for (const l of phaseLines) {
+    if (l.startsWith('setblock ')) {
+      const [sx, sy, sz, ...rest] = l.slice('setblock '.length).split(' ');
+      if (+sx === x && +sy === y && +sz === z) return rest.join(' ');
+    } else if (l.startsWith('fill ')) {
+      const [x0, y0, z0, x1, y1, z1, ...rest] = l.slice('fill '.length).split(' ');
+      const inRange = (v, a, b) => v >= Math.min(+a, +b) && v <= Math.max(+a, +b);
+      if (inRange(x, x0, x1) && inRange(y, y0, y1) && inRange(z, z0, z1)) return rest.join(' ');
+    }
+  }
+  return null;
+}
+
+test('every exported display-head spot sits on a placed pedestal block', () => {
+  const structureLines = lines('structure');
+  for (const { x, y, z } of station.displayHeads) {
+    const below = blockAt(structureLines, x, y - 1, z);
+    assert.ok(below, `no pedestal below ${x} ${y} ${z}`);
+    assert.match(below, /^chiseled_tuff_bricks/);
+  }
+});
+
+const model = JSON.parse(readFileSync(join(here, 'model.json'), 'utf8'));
+const lecternKey = Object.entries(model.blocks).find(([, s]) => s.includes('lectern[') && s.includes('title:"Dragon Balls"'))[0];
+const [lecternX, lecternY, lecternZ] = lecternKey.split(',').map(Number);
+
+test('the radar sign, the lectern and all 7 display-head spots sit at distinct coordinates', () => {
+  const keyOf = ({ x, y, z }) => `${x},${y},${z}`;
+  const seen = new Set([keyOf(station.radarSign), `${lecternX},${lecternY},${lecternZ}`]);
+  for (const h of station.displayHeads) {
+    const k = keyOf(h);
+    assert.ok(!seen.has(k), `${k} is shared between the radar sign/lectern and a display-head spot`);
+    seen.add(k);
+  }
+  // Also distinct in plan view (x,z), regardless of y: a head one block above or below the sign
+  // or lectern would still visually block it.
+  const planOf = ({ x, z }) => `${x},${z}`;
+  const plans = new Set([planOf(station.radarSign), `${lecternX},${lecternZ}`]);
+  for (const h of station.displayHeads) {
+    const p = planOf(h);
+    assert.ok(!plans.has(p), `${p} (x,z) is shared between the radar sign/lectern and a display-head spot`);
+    plans.add(p);
+  }
+});
+
+test('every display-head spot is air in the generated model, directly above a pedestal block', () => {
+  for (const { x, y, z } of station.displayHeads) {
+    assert.ok(!(`${x},${y},${z}` in model.blocks), `${x} ${y} ${z} is not air in model.json`);
+    const below = model.blocks[`${x},${y - 1},${z}`];
+    assert.ok(below, `no pedestal below ${x} ${y} ${z} in model.json`);
+    assert.match(below, /^chiseled_tuff_bricks/);
+  }
+});
+
+test('the lectern holds the Dragon Balls guide book, labelled by a matching sign', () => {
+  assert.ok(all.some((l) => l.includes('lectern[') && l.includes('title:"Dragon Balls"')),
+    'no lectern with the Dragon Balls book');
+  assert.ok(all.some((l) => l.includes('_sign') && l.includes('"Dragon Balls"')),
+    'no label sign reading Dragon Balls');
+});

@@ -172,9 +172,17 @@ for (const [u, y, color, lines] of BOARD) set(u, y, 4, sign('spruce_wall_sign[fa
 set(-3, Y + 1, 4, `${P.light}[hanging=false]`, 'attach');
 set(3, Y + 1, 4, `${P.light}[hanging=false]`, 'attach');
 
-// Lines are plain strings or { text, color } components. A dye colour also makes the text glow.
+// Lines are plain strings or { text, color, bold } components. A dye colour on the sign itself
+// also makes all text glow; a per-line color/bold overrides just that line (e.g. one bold line in
+// an otherwise plain sign).
 function sign(block, lines, { color, back = false } = {}) {
-  const component = (l) => (typeof l === 'string' ? JSON.stringify(l) : `{text:${JSON.stringify(l.text)},color:"${l.color}"}`);
+  const component = (l) => {
+    if (typeof l === 'string') return JSON.stringify(l);
+    const parts = [`text:${JSON.stringify(l.text)}`];
+    if (l.color) parts.push(`color:"${l.color}"`);
+    if (l.bold) parts.push('bold:true');
+    return `{${parts.join(',')}}`;
+  };
   const text = `{${color ? `color:"${color}",has_glowing_text:1b,` : ''}messages:[${lines.map(component).join(',')}]}`;
   return `${block}{front_text:${text}${back ? `,back_text:${text}` : ''}}`;
 }
@@ -187,6 +195,7 @@ function sign(block, lines, { color, back = false } = {}) {
 // (logs, coal, raw ores, diamond, ancient debris, netherite scrap, leather, rabbit hide) keep a real price.
 // Amount 64 except stack-of-16 and rare items.
 const buy = (amount, item, each) => ({ item, amount, price: +(amount * each).toFixed(2) });
+const DB_A0 = 4; // Dragon Balls stall's a0, reused below for the station coordinate export.
 // Props: [state, a, d, dy]. The 5x3 stalls have no spare floor, so props stand outside the side
 // walls under the eaves (a = -1 or 5).
 const STALLS = [
@@ -237,11 +246,41 @@ const STALLS = [
       ['obsidian', 5, 1], ['end_rod[facing=up]', 5, 1, 1]],
   },
   {
-    side: 'west', a0: 4, name: 'Crafting', wool: 'orange',
-    // Inside against the back wall, plus the rest under the eaves.
-    stations: [['crafting_table', 1], ['smithing_table', 2], ['stonecutter[facing=INWARD]', 3]],
-    props: [['anvil[facing=AXISFACE]', -1, 1], ['grindstone[face=floor,facing=INWARD]', -1, 2],
-      ['cartography_table', 5, 1], ['loom[facing=INWARD]', 5, 2]],
+    // Dragon Balls station, replacing the old Crafting corner (2026-10-06, Joe; reworked
+    // 2026-10-06 so the radar sign and the 7 head-pedestal spots never share a coordinate - the
+    // dragonballs plugin needs every exported spot distinct and each head spot free of blocks).
+    // The 7 pedestals form an arc across the open front (d=0) plus the eave corners, so every
+    // ball is visible from the plaza; the radar sign and lectern stay on the back wall (d=2),
+    // two rows back, clear of any pedestal. Reuses the old Crafting stall's exact tile
+    // coordinates - (1,2)/(3,2) [crafting_table/stonecutter] for trim, (2,2) [smithing_table] for
+    // the lectern, (-1,1)/(5,1) [anvil/cartography_table] for 2 pedestals, (-1,2)/(5,2)
+    // [grindstone/loom] for trim - so a structure+attach-only refresh on a world that still has
+    // the old blocks overwrites every one of them instead of leaving a leftover.
+    // Hanging nameplate is "DragonBall", not "Dragon Balls" (12 chars > the 10-char hanging-sign
+    // limit every other compound-word stall name already respects, e.g. Lumberjack, Fishmonger).
+    // The guide book title below stays the full "Dragon Balls": its label uses the wider wall-sign
+    // limit (15).
+    side: 'west', a0: DB_A0, name: 'DragonBall', wool: 'orange',
+    guides: [['dragonballs', 2, 2]],
+    props: [
+      // 7-point arc of pedestals facing the plaza: front row plus the flanking eave corners.
+      ['chiseled_tuff_bricks', 1, 0], ['chiseled_tuff_bricks', 2, 0], ['chiseled_tuff_bricks', 3, 0],
+      ['chiseled_tuff_bricks', -1, 0], ['chiseled_tuff_bricks', -1, 1],
+      ['chiseled_tuff_bricks', 5, 0], ['chiseled_tuff_bricks', 5, 1],
+      // Orange carpet runner from the entrance to the back wall.
+      ['orange_carpet', 1, 1], ['orange_carpet', 2, 1], ['orange_carpet', 3, 1],
+      // Orange terracotta trim on the back wall, also clearing the old crafting_table/
+      // stonecutter/grindstone/loom tiles (see the note above).
+      ['orange_terracotta', 1, 2], ['orange_terracotta', 3, 2], ['orange_terracotta', -1, 2], ['orange_terracotta', 5, 2],
+      // Radar shop sign, mounted on the back wall above the (1,2) trim block - two rows behind
+      // the pedestal arc, so no head ever sits in front of or under it. The dragonballs plugin
+      // recognises it by its exact coordinates (dragonballs-station.json), not by this text, so
+      // it deliberately isn't an Essentials [Buy]/[Sell] sign.
+      [sign('spruce_wall_sign[facing=INWARD]', [
+        { text: '[Dragon Radar]', color: 'gold', bold: true },
+        'Points at the', 'nearest ball', '1000 coins',
+      ]), 1, 2, 1],
+    ],
   },
   {
     side: 'west', a0: -8, name: 'Guide', wool: 'white',
@@ -316,6 +355,19 @@ function stall({ id, side: sideName, a0, name, wool, buys = [], props, stations 
   for (const [state, a, d, dy = 0] of props) at(a, d, Y + 1 + dy, resolve(state), dy ? 'attach' : 'build');
 }
 STALLS.forEach(stall);
+
+// ---- Dragon Balls station: export the radar sign and the 7 head-pedestal spots for the
+// dragonballs plugin, which places decorative heads on them and recognises the radar sign by
+// these exact coordinates, not by its text. Mirrors the (a, d) pairs used in the stall above.
+{
+  const S = side('west');
+  const at = (a, d, y) => { const [u, v] = S.at(DB_A0 + a, d); return { world: 'world', x: CX + u, y, z: CZ + v }; };
+  const PEDESTALS = [[1, 0], [2, 0], [3, 0], [-1, 0], [-1, 1], [5, 0], [5, 1]];
+  writeFileSync(join(here, 'dragonballs-station.json'), JSON.stringify({
+    radarSign: at(1, 2, Y + 2),
+    displayHeads: PEDESTALS.map(([a, d]) => at(a, d, Y + 2)),
+  }, null, 2) + '\n');
+}
 
 // ---- lantern posts, paths, corner gardens -----------------------------------------------------
 const post = (u, v) => {

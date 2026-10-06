@@ -50,8 +50,8 @@ fill 441 115 -885 443 115 -885 cobblestone_wall
 setblock 444 115 -885 mossy_cobblestone
 setblock 416 115 -870 tuff_brick_wall
 setblock 438 115 -870 tuff_brick_wall
-setblock 413 115 -871 grindstone[face=floor,facing=east]
-setblock 414 115 -871 anvil[facing=south]
+setblock 413 115 -871 orange_terracotta
+fill 414 115 -871 415 115 -871 chiseled_tuff_bricks
 setblock 440 115 -871 water_cauldron[level=3]
 setblock 441 115 -871 barrel[facing=up]
 setblock 412 115 -872 spruce_log
@@ -61,15 +61,20 @@ setblock 439 115 -872 spruce_log
 fill 440 115 -872 441 115 -872 spruce_planks
 setblock 442 115 -872 spruce_log
 setblock 412 115 -873 tuff_bricks
-setblock 413 115 -873 crafting_table
+setblock 413 115 -873 orange_terracotta
+setblock 414 115 -873 orange_carpet
+setblock 415 115 -873 chiseled_tuff_bricks
 setblock 426 115 -873 spruce_log
 setblock 428 115 -873 spruce_log
 setblock 442 115 -873 tuff_bricks
 setblock 412 115 -874 tuff_bricks
-setblock 413 115 -874 smithing_table
+setblock 414 115 -874 orange_carpet
+setblock 415 115 -874 chiseled_tuff_bricks
 setblock 442 115 -874 tuff_bricks
 setblock 412 115 -875 tuff_bricks
-setblock 413 115 -875 stonecutter[facing=east]
+setblock 413 115 -875 orange_terracotta
+setblock 414 115 -875 orange_carpet
+setblock 415 115 -875 chiseled_tuff_bricks
 setblock 442 115 -875 tuff_bricks
 setblock 412 115 -876 spruce_log
 fill 413 115 -876 414 115 -876 spruce_planks
@@ -77,8 +82,8 @@ setblock 415 115 -876 spruce_log
 setblock 439 115 -876 spruce_log
 fill 440 115 -876 441 115 -876 spruce_planks
 setblock 442 115 -876 spruce_log
-setblock 413 115 -877 loom[facing=east]
-setblock 414 115 -877 cartography_table
+setblock 413 115 -877 orange_terracotta
+fill 414 115 -877 415 115 -877 chiseled_tuff_bricks
 fill 440 115 -877 441 115 -877 barrel[facing=up]
 setblock 417 115 -858 tuff_brick_wall
 setblock 437 115 -858 tuff_brick_wall

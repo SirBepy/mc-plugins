@@ -63,6 +63,22 @@ export const GUIDES = {
       'When you die your items wait in a grave where you died.\n\nVoice chat works for Java players using the server modpack.',
     ],
   },
+  // Facts come from docs/dragonballs.md (Rulebook v2, agreed with Joe 2026-10-06) only.
+  dragonballs: {
+    title: 'Dragon Balls',
+    pages: [
+      '7 Dragon Balls, 1 to 7 stars, sit on the ground as heads.\n\nWalk up, break one, pick it up.\n\nGather all 7 to summon a dragon.',
+      "Carrying rules:\nEach ball slows you 5% (all 7: 35%).\n\nNo chests, ender chests, shulkers, bundles, hoppers or item frames - and you can't wear one.",
+      'Die and your balls drop where you fell, never your grave.\n\nLog off and they wait, but 24h offline (or a trip into lava or the void) sends them flying off again.',
+      'The Dragon Radar\n1000 coins, right here.\n\nPoints at the nearest awake ball, even one a player is carrying. Never shows how far.',
+      'Summoning:\nPlace all 7 within 2 blocks of each other, then right-click one.\n\nChoose your dragon.',
+      'Shenron grants 1 great wish.\n\nPorunga grants 3, each about half as strong.\n\nOnly the summoner wishes - everyone reads the answer.',
+      'Good wishes: real money, gear with max enchants, named pets, XP, a build, server effects, time or weather, a chat title, a villager trade.',
+      'Never, curse or not: hurting, robbing or finding another player, fly/op/creative, extra wishes, bans - or anything about the balls themselves.',
+      'Too big? The dragon may offer a curse instead: a lasting effect, your named items, or never wishing again. You can say no.',
+      "After the wish the balls fly off, landing further away each time - the Nether after a few wishes, the End eventually.\n\nFor 3 Minecraft days they're stone: findable, but the radar's blind and they won't summon.",
+    ],
+  },
 };
 
 // SNBT for a lectern holding the book: pages are plain strings or arrays of string/component parts.

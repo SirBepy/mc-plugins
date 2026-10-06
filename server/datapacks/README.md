@@ -105,8 +105,10 @@ was not verified.
 
 A custom folder datapack holding the spawn square build: a timber-and-tuff taiga market at world
 spawn (427, -868) with six themed [Sell] stalls (Farmer, Lumberjack, Fishmonger, Smith, Mob drops,
-Rare goods), a crafting corner, a Guide stall of lecterns holding how-to books, a welcome and
-rules board, a bell and a well. It does nothing on load: the build only happens on
+Rare goods), a Dragon Balls station (radar shop sign, a guide lectern, 7 head pedestals for the
+`dragonballs` plugin, coordinates exported to `server/spawn-market/dragonballs-station.json`), a
+Guide stall of lecterns holding how-to books, a welcome and rules board, a bell and a well. It does
+nothing on load: the build only happens on
 `/function spawn_market:build`, which **clears every tree and block above the new ground in a
 49x49 area around spawn** and flattens the middle 37x37 to y114. Back the area up before running
 it on a world that has anything there. To refresh only the stalls, signs and books on a world
