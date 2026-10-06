@@ -3,7 +3,7 @@
 // plugin (market/), which every in-game day picks a few of each stall's `buys` and writes them
 // onto the stall's sign spots; this module only says where those spots are and what each stall
 // might buy, returned as MARKET for emit.mjs to write into market/src/main/resources/stalls.yml.
-// Prices from Joe's 2026-10-05 table: AFK-farmable items are cheap, items only gathered by hand
+// Prices from Joe's 2026-10-05 table, minerals raised and logs lowered 2026-10-06: AFK-farmable items are cheap, items only gathered by hand
 // (logs, coal, raw ores, diamond, ancient debris, netherite scrap, leather, rabbit hide) keep a real price.
 // Amount 64 except stack-of-16 and rare items.
 import { writeFileSync } from 'node:fs';
@@ -29,7 +29,7 @@ export function buildStalls(model, { GUIDES, lecternState }) {
     {
       id: 'lumberjack', side: 'north', a0: 4, name: 'Lumberjack', wool: 'brown',
       buys: ['oak', 'spruce', 'birch', 'jungle', 'acacia', 'dark_oak', 'mangrove', 'cherry', 'pale_oak']
-        .map((w) => buy(64, `${w}_log`, 0.5)),
+        .map((w) => buy(64, `${w}_log`, 0.45)),
       props: [['oak_log[axis=AXIS]', -1, 1], ['birch_log[axis=AXIS]', -1, 2], ['spruce_log[axis=AXIS]', -1, 1, 1],
         ['stripped_oak_log[axis=y]', 5, 1], ['dark_oak_log[axis=AXIS]', 5, 2]],
     },
@@ -44,8 +44,8 @@ export function buildStalls(model, { GUIDES, lecternState }) {
       id: 'smith', side: 'east', a0: 4, name: 'Smith', wool: 'gray',
       // Mined things only, never ingots: iron and gold farms drop ingots and nuggets, raw ore only
       // comes from mining.
-      buys: [buy(64, 'coal', 0.05), buy(64, 'raw_iron', 0.5), buy(64, 'raw_gold', 1), buy(64, 'raw_copper', 0.1),
-        buy(16, 'diamond', 8), buy(16, 'ancient_debris', 25), buy(16, 'netherite_scrap', 26)],
+      buys: [buy(64, 'coal', 0.0625), buy(64, 'raw_iron', 0.625), buy(64, 'raw_gold', 1.25), buy(64, 'raw_copper', 0.2),
+        buy(16, 'diamond', 10), buy(16, 'ancient_debris', 30), buy(16, 'netherite_scrap', 31)],
       props: [['blast_furnace[facing=INWARD]', -1, 1], ['smoker[facing=INWARD]', -1, 2], ['anvil[facing=AXISFACE]', 5, 1],
         ['lantern[hanging=false]', -1, 1, 1]],
     },

@@ -2,43 +2,43 @@
 # Suggested price per single item, for /suggested-price. Edit raw-prices.mjs and rerun.
 items:
   abandoned_camp_map: 3
-  acacia_boat: 1.25
-  acacia_button: 0.25
-  acacia_chest_boat: 1.97
-  acacia_door: 0.5
-  acacia_fence: 0.36
-  acacia_fence_gate: 0.66
-  acacia_hanging_sign: 1.4125
+  acacia_boat: 1.125
+  acacia_button: 0.225
+  acacia_chest_boat: 1.845
+  acacia_door: 0.45
+  acacia_fence: 0.3267
+  acacia_fence_gate: 0.61
+  acacia_hanging_sign: 1.4156
   acacia_leaves: 0.02
-  acacia_log: 1
-  acacia_planks: 0.25
-  acacia_pressure_plate: 0.5
+  acacia_log: 0.9
+  acacia_planks: 0.225
+  acacia_pressure_plate: 0.45
   acacia_sapling: 0.1
-  acacia_shelf: 1
-  acacia_sign: 0.5133
-  acacia_slab: 0.125
-  acacia_stairs: 0.375
-  acacia_trapdoor: 0.75
-  acacia_wood: 1.3333
-  activator_rail: 1.0492
+  acacia_shelf: 0.9
+  acacia_sign: 0.4633
+  acacia_slab: 0.1125
+  acacia_stairs: 0.3375
+  acacia_trapdoor: 0.675
+  acacia_wood: 1.2
+  activator_rail: 1.3065
   allium: 0.05
   amethyst_block: 0.8
   amethyst_cluster: 0.5
   amethyst_shard: 0.2
-  ancient_debris: 50
+  ancient_debris: 60
   andesite: 0.01
   andesite_slab: 0.005
   andesite_stairs: 0.01
   andesite_wall: 0.01
   angler_pottery_sherd: 2
-  anvil: 31.3875
+  anvil: 39.2344
   apple: 0.1
   archer_pottery_sherd: 2
   armadillo_scute: 0.5
-  armor_stand: 0.2575
+  armor_stand: 0.2606
   arms_up_pottery_sherd: 2
   arrow: 0.0475
-  axolotl_bucket: 8.0375
+  axolotl_bucket: 8.7969
   azalea: 0.2
   azalea_leaves: 0.03
   azure_bluet: 0.05
@@ -50,7 +50,7 @@ items:
   bamboo_door: 0.18
   bamboo_fence: 0.1467
   bamboo_fence_gate: 0.34
-  bamboo_hanging_sign: 0.5925
+  bamboo_hanging_sign: 0.6956
   bamboo_mosaic: 0.09
   bamboo_mosaic_slab: 0.045
   bamboo_mosaic_stairs: 0.135
@@ -64,7 +64,7 @@ items:
   bamboo_trapdoor: 0.27
   barrel: 0.63
   basalt: 0.02
-  beacon: 101.6625
+  beacon: 101.6781
   bee_nest: 2
   beef: 0.1
   beehive: 1.14
@@ -73,24 +73,24 @@ items:
   beetroot_soup: 0.6675
   bell: 5
   big_dripleaf: 0.2
-  birch_boat: 1.25
-  birch_button: 0.25
-  birch_chest_boat: 1.97
-  birch_door: 0.5
-  birch_fence: 0.36
-  birch_fence_gate: 0.66
-  birch_hanging_sign: 1.4125
+  birch_boat: 1.125
+  birch_button: 0.225
+  birch_chest_boat: 1.845
+  birch_door: 0.45
+  birch_fence: 0.3267
+  birch_fence_gate: 0.61
+  birch_hanging_sign: 1.4156
   birch_leaves: 0.02
-  birch_log: 1
-  birch_planks: 0.25
-  birch_pressure_plate: 0.5
+  birch_log: 0.9
+  birch_planks: 0.225
+  birch_pressure_plate: 0.45
   birch_sapling: 0.1
-  birch_shelf: 1
-  birch_sign: 0.5133
-  birch_slab: 0.125
-  birch_stairs: 0.375
-  birch_trapdoor: 0.75
-  birch_wood: 1.3333
+  birch_shelf: 0.9
+  birch_sign: 0.4633
+  birch_slab: 0.1125
+  birch_stairs: 0.3375
+  birch_trapdoor: 0.675
+  birch_wood: 1.2
   black_banner: 2.74
   black_bed: 1.52
   black_bundle: 1.15
@@ -102,12 +102,12 @@ items:
   black_concrete_stairs: 0.0262
   black_cushion: 0.65
   black_dye: 0.05
-  black_glazed_terracotta: 0.2313
-  black_harness: 3.515
+  black_glazed_terracotta: 0.2375
+  black_harness: 3.5213
   black_shulker_box: 10.77
-  black_stained_glass: 0.0387
-  black_stained_glass_pane: 0.0145
-  black_terracotta: 0.2188
+  black_stained_glass: 0.0419
+  black_stained_glass_pane: 0.0157
+  black_terracotta: 0.2219
   black_wool: 0.45
   black_wool_slab: 0.225
   black_wool_stairs: 0.65
@@ -116,7 +116,7 @@ items:
   blackstone_stairs: 0.02
   blackstone_wall: 0.02
   blade_pottery_sherd: 2
-  blast_furnace: 5.2475
+  blast_furnace: 6.5319
   blaze_powder: 1
   blaze_rod: 2
   blue_banner: 2.74
@@ -131,14 +131,14 @@ items:
   blue_cushion: 0.65
   blue_dye: 0.05
   blue_egg: 0.02
-  blue_glazed_terracotta: 0.2313
-  blue_harness: 3.515
+  blue_glazed_terracotta: 0.2375
+  blue_harness: 3.5213
   blue_ice: 4.05
   blue_orchid: 0.05
   blue_shulker_box: 10.77
-  blue_stained_glass: 0.0387
-  blue_stained_glass_pane: 0.0145
-  blue_terracotta: 0.2188
+  blue_stained_glass: 0.0419
+  blue_stained_glass_pane: 0.0157
+  blue_terracotta: 0.2219
   blue_wool: 0.45
   blue_wool_slab: 0.225
   blue_wool_stairs: 0.65
@@ -158,11 +158,11 @@ items:
   breeze_rod: 1
   brewer_pottery_sherd: 2
   brewing_stand: 2.03
-  brick: 0.0625
-  brick_slab: 0.125
-  brick_stairs: 0.25
-  brick_wall: 0.25
-  bricks: 0.25
+  brick: 0.0656
+  brick_slab: 0.1313
+  brick_stairs: 0.2625
+  brick_wall: 0.2625
+  bricks: 0.2625
   brown_banner: 2.74
   brown_bed: 1.52
   brown_bundle: 1.15
@@ -175,22 +175,22 @@ items:
   brown_cushion: 0.65
   brown_dye: 0.05
   brown_egg: 0.02
-  brown_glazed_terracotta: 0.2313
-  brown_harness: 3.515
+  brown_glazed_terracotta: 0.2375
+  brown_harness: 3.5213
   brown_mushroom: 0.05
   brown_mushroom_block: 0.05
   brown_shulker_box: 10.77
-  brown_stained_glass: 0.0387
-  brown_stained_glass_pane: 0.0145
-  brown_terracotta: 0.2188
+  brown_stained_glass: 0.0419
+  brown_stained_glass_pane: 0.0157
+  brown_terracotta: 0.2219
   brown_wool: 0.45
   brown_wool_slab: 0.225
   brown_wool_stairs: 0.65
-  brush: 0.3525
+  brush: 0.5556
   bubble_coral: 0.2
   bubble_coral_block: 0.2
   bubble_coral_fan: 0.2
-  bucket: 3.0375
+  bucket: 3.7969
   bundle: 1.1
   buried_ancient_city_map: 3
   buried_mineshaft_map: 3
@@ -200,54 +200,54 @@ items:
   bush: 0.01
   cactus: 0.02
   cactus_flower: 0.05
-  cake: 9.8125
+  cake: 12.0906
   calcite: 0.05
   calibrated_sculk_sensor: 4
-  campfire: 3.22
+  campfire: 2.945
   candle: 0.3
   carrot: 0.1
   carrot_on_a_stick: 0.42
   cartography_table: 0.44
   carved_pumpkin: 0.3
-  cauldron: 7.0875
+  cauldron: 8.8594
   chainmail_boots: 2
   chainmail_chestplate: 5
   chainmail_helmet: 3
   chainmail_leggings: 4
-  charcoal: 1.0125
-  cherry_boat: 1.25
-  cherry_button: 0.25
-  cherry_chest_boat: 1.97
-  cherry_door: 0.5
-  cherry_fence: 0.36
-  cherry_fence_gate: 0.66
-  cherry_hanging_sign: 1.4125
+  charcoal: 0.9156
+  cherry_boat: 1.125
+  cherry_button: 0.225
+  cherry_chest_boat: 1.845
+  cherry_door: 0.45
+  cherry_fence: 0.3267
+  cherry_fence_gate: 0.61
+  cherry_hanging_sign: 1.4156
   cherry_leaves: 0.02
-  cherry_log: 1
-  cherry_planks: 0.25
-  cherry_pressure_plate: 0.5
+  cherry_log: 0.9
+  cherry_planks: 0.225
+  cherry_pressure_plate: 0.45
   cherry_sapling: 0.1
-  cherry_shelf: 1
-  cherry_sign: 0.5133
-  cherry_slab: 0.125
-  cherry_stairs: 0.375
-  cherry_trapdoor: 0.75
-  cherry_wood: 1.3333
+  cherry_shelf: 0.9
+  cherry_sign: 0.4633
+  cherry_slab: 0.1125
+  cherry_stairs: 0.3375
+  cherry_trapdoor: 0.675
+  cherry_wood: 1.2
   chest: 0.72
-  chest_minecart: 5.7825
+  chest_minecart: 7.0481
   chicken: 0.1
   chipped_anvil: 10
   chiseled_bookshelf: 0.675
   chiseled_cinnabar: 0.02
-  chiseled_copper: 0.4781
+  chiseled_copper: 0.9352
   chiseled_deepslate: 0.01
-  chiseled_nether_bricks: 0.09
+  chiseled_nether_bricks: 0.1025
   chiseled_polished_blackstone: 0.02
-  chiseled_quartz_block: 0.8
+  chiseled_quartz_block: 1
   chiseled_red_sandstone: 0.12
-  chiseled_resin_bricks: 0.85
+  chiseled_resin_bricks: 0.8625
   chiseled_sandstone: 0.08
-  chiseled_stone_bricks: 0.0225
+  chiseled_stone_bricks: 0.0256
   chiseled_sulfur: 0.02
   chiseled_tuff: 0.02
   chiseled_tuff_bricks: 0.02
@@ -263,11 +263,11 @@ items:
   cinnabar_wall: 0.02
   clay: 0.2
   clay_ball: 0.05
-  clock: 2.15
+  clock: 2.5875
   closed_eyeblossom: 0.05
-  coal: 0.1
-  coal_block: 0.9
-  coal_ore: 0.2
+  coal: 0.125
+  coal_block: 1.125
+  coal_ore: 0.25
   coarse_dirt: 0.015
   coast_armor_trim_smithing_template: 10
   cobbled_deepslate: 0.01
@@ -281,9 +281,9 @@ items:
   cobweb: 0.2
   cocoa_beans: 0.05
   cod: 0.5
-  cod_bucket: 3.5375
-  comparator: 0.6875
-  compass: 4.15
+  cod_bucket: 4.2969
+  comparator: 0.8219
+  compass: 5.1875
   composter: 0.315
   conduit: 54
   cooked_beef: 0.1
@@ -294,114 +294,114 @@ items:
   cooked_rabbit: 0.1
   cooked_salmon: 0.5
   cookie: 0.0313
-  copper_axe: 0.7175
-  copper_bars: 0.0797
-  copper_block: 1.9125
-  copper_boots: 0.85
-  copper_bulb: 1.9594
-  copper_chain: 0.2597
-  copper_chest: 2.42
-  copper_chestplate: 1.7
-  copper_door: 0.425
+  copper_axe: 1.3269
+  copper_bars: 0.1559
+  copper_block: 3.7406
+  copper_boots: 1.6625
+  copper_bulb: 3.3367
+  copper_chain: 0.508
+  copper_chest: 4.045
+  copper_chestplate: 3.325
+  copper_door: 0.8312
   copper_golem_statue: 2
-  copper_grate: 0.4781
-  copper_helmet: 1.0625
-  copper_hoe: 0.505
+  copper_grate: 0.9352
+  copper_helmet: 2.0781
+  copper_hoe: 0.9113
   copper_horse_armor: 2
-  copper_ingot: 0.2125
-  copper_lantern: 0.2298
-  copper_leggings: 1.4875
+  copper_ingot: 0.4156
+  copper_lantern: 0.4222
+  copper_leggings: 2.9094
   copper_nautilus_armor: 2
-  copper_nugget: 0.0236
-  copper_ore: 0.4
-  copper_pickaxe: 0.7175
-  copper_shovel: 0.2925
-  copper_spear: 0.2925
-  copper_sword: 0.465
-  copper_torch: 0.0409
-  copper_trapdoor: 0.85
+  copper_nugget: 0.0462
+  copper_ore: 0.8
+  copper_pickaxe: 1.3269
+  copper_shovel: 0.4956
+  copper_spear: 0.4956
+  copper_sword: 0.8713
+  copper_torch: 0.0528
+  copper_trapdoor: 1.6625
   cornflower: 0.05
-  cracked_deepslate_bricks: 0.0225
-  cracked_deepslate_tiles: 0.0225
-  cracked_nether_bricks: 0.1025
-  cracked_polished_blackstone_bricks: 0.0325
-  cracked_stone_bricks: 0.035
-  crafter: 5.7925
+  cracked_deepslate_bricks: 0.0256
+  cracked_deepslate_tiles: 0.0256
+  cracked_nether_bricks: 0.1181
+  cracked_polished_blackstone_bricks: 0.0356
+  cracked_stone_bricks: 0.0413
+  crafter: 7.1331
   crafting_table: 0.36
   creaking_heart: 3
   creeper_banner_pattern: 5.04
   creeper_head: 5
-  crimson_button: 0.25
-  crimson_door: 0.5
-  crimson_fence: 0.36
-  crimson_fence_gate: 0.66
+  crimson_button: 0.225
+  crimson_door: 0.45
+  crimson_fence: 0.3267
+  crimson_fence_gate: 0.61
   crimson_fungus: 0.1
-  crimson_hanging_sign: 1.4125
-  crimson_hyphae: 1.3333
+  crimson_hanging_sign: 1.4156
+  crimson_hyphae: 1.2
   crimson_nylium: 0.05
-  crimson_planks: 0.25
-  crimson_pressure_plate: 0.5
+  crimson_planks: 0.225
+  crimson_pressure_plate: 0.45
   crimson_roots: 0.01
-  crimson_shelf: 1
-  crimson_sign: 0.5133
-  crimson_slab: 0.125
-  crimson_stairs: 0.375
-  crimson_stem: 1
-  crimson_trapdoor: 0.75
-  crossbow: 1.9038
+  crimson_shelf: 0.9
+  crimson_sign: 0.4633
+  crimson_slab: 0.1125
+  crimson_stairs: 0.3375
+  crimson_stem: 0.9
+  crimson_trapdoor: 0.675
+  crossbow: 2.2834
   crying_obsidian: 1
-  cut_copper: 0.4781
-  cut_copper_slab: 0.2391
-  cut_copper_stairs: 0.4781
+  cut_copper: 0.9352
+  cut_copper_slab: 0.4676
+  cut_copper_stairs: 0.9352
   cut_red_sandstone: 0.12
   cut_red_sandstone_slab: 0.06
   cut_sandstone: 0.08
   cut_sandstone_slab: 0.04
-  cyan_banner: 2.6875
-  cyan_bed: 1.5113
-  cyan_bundle: 1.1413
-  cyan_candle: 0.3413
-  cyan_carpet: 0.2942
-  cyan_concrete: 0.0252
-  cyan_concrete_powder: 0.0252
-  cyan_concrete_slab: 0.0126
-  cyan_concrete_stairs: 0.0252
-  cyan_cushion: 0.6413
-  cyan_dye: 0.0413
-  cyan_glazed_terracotta: 0.2302
-  cyan_harness: 3.5063
-  cyan_shulker_box: 10.7612
-  cyan_stained_glass: 0.0377
-  cyan_stained_glass_pane: 0.0141
-  cyan_terracotta: 0.2177
-  cyan_wool: 0.4413
-  cyan_wool_slab: 0.2206
-  cyan_wool_stairs: 0.6412
+  cyan_banner: 2.6969
+  cyan_bed: 1.5128
+  cyan_bundle: 1.1428
+  cyan_candle: 0.3428
+  cyan_carpet: 0.2952
+  cyan_concrete: 0.0254
+  cyan_concrete_powder: 0.0254
+  cyan_concrete_slab: 0.0127
+  cyan_concrete_stairs: 0.0254
+  cyan_cushion: 0.6428
+  cyan_dye: 0.0428
+  cyan_glazed_terracotta: 0.2366
+  cyan_harness: 3.5141
+  cyan_shulker_box: 10.7628
+  cyan_stained_glass: 0.041
+  cyan_stained_glass_pane: 0.0154
+  cyan_terracotta: 0.221
+  cyan_wool: 0.4428
+  cyan_wool_slab: 0.2214
+  cyan_wool_stairs: 0.6428
   damaged_anvil: 5
   dandelion: 0.05
   danger_pottery_sherd: 2
-  dark_oak_boat: 1.25
-  dark_oak_button: 0.25
-  dark_oak_chest_boat: 1.97
-  dark_oak_door: 0.5
-  dark_oak_fence: 0.36
-  dark_oak_fence_gate: 0.66
-  dark_oak_hanging_sign: 1.4125
+  dark_oak_boat: 1.125
+  dark_oak_button: 0.225
+  dark_oak_chest_boat: 1.845
+  dark_oak_door: 0.45
+  dark_oak_fence: 0.3267
+  dark_oak_fence_gate: 0.61
+  dark_oak_hanging_sign: 1.4156
   dark_oak_leaves: 0.02
-  dark_oak_log: 1
-  dark_oak_planks: 0.25
-  dark_oak_pressure_plate: 0.5
+  dark_oak_log: 0.9
+  dark_oak_planks: 0.225
+  dark_oak_pressure_plate: 0.45
   dark_oak_sapling: 0.1
-  dark_oak_shelf: 1
-  dark_oak_sign: 0.5133
-  dark_oak_slab: 0.125
-  dark_oak_stairs: 0.375
-  dark_oak_trapdoor: 0.75
-  dark_oak_wood: 1.3333
+  dark_oak_shelf: 0.9
+  dark_oak_sign: 0.4633
+  dark_oak_slab: 0.1125
+  dark_oak_stairs: 0.3375
+  dark_oak_trapdoor: 0.675
+  dark_oak_wood: 1.2
   dark_prismarine: 1.65
   dark_prismarine_slab: 0.825
   dark_prismarine_stairs: 1.65
-  daylight_detector: 0.8325
+  daylight_detector: 0.9919
   dead_brain_coral: 0.05
   dead_brain_coral_block: 0.05
   dead_brain_coral_fan: 0.05
@@ -418,49 +418,49 @@ items:
   dead_tube_coral: 0.05
   dead_tube_coral_block: 0.05
   dead_tube_coral_fan: 0.05
-  decorated_pot: 0.25
-  deepslate: 0.0225
+  decorated_pot: 0.2625
+  deepslate: 0.0256
   deepslate_brick_slab: 0.005
   deepslate_brick_stairs: 0.01
   deepslate_brick_wall: 0.01
   deepslate_bricks: 0.01
-  deepslate_coal_ore: 0.2
-  deepslate_copper_ore: 0.4
-  deepslate_diamond_ore: 18
-  deepslate_emerald_ore: 4
-  deepslate_gold_ore: 2.2
-  deepslate_iron_ore: 1.2
-  deepslate_lapis_ore: 1.5
-  deepslate_redstone_ore: 1
+  deepslate_coal_ore: 0.25
+  deepslate_copper_ore: 0.8
+  deepslate_diamond_ore: 22
+  deepslate_emerald_ore: 5
+  deepslate_gold_ore: 2.75
+  deepslate_iron_ore: 1.5
+  deepslate_lapis_ore: 1.9
+  deepslate_redstone_ore: 1.25
   deepslate_tile_slab: 0.005
   deepslate_tile_stairs: 0.01
   deepslate_tile_wall: 0.01
   deepslate_tiles: 0.01
   desert_pyramid_map: 3
   desert_village_map: 3
-  detector_rail: 1.0367
-  diamond: 16
-  diamond_axe: 48.08
-  diamond_block: 144
-  diamond_boots: 64
-  diamond_chestplate: 128
-  diamond_helmet: 80
-  diamond_hoe: 32.08
+  detector_rail: 1.295
+  diamond: 20
+  diamond_axe: 60.08
+  diamond_block: 180
+  diamond_boots: 80
+  diamond_chestplate: 160
+  diamond_helmet: 100
+  diamond_hoe: 40.08
   diamond_horse_armor: 10
-  diamond_leggings: 112
+  diamond_leggings: 140
   diamond_nautilus_armor: 10
-  diamond_ore: 18
-  diamond_pickaxe: 48.08
-  diamond_shovel: 16.08
-  diamond_spear: 16.08
-  diamond_sword: 32.04
+  diamond_ore: 22
+  diamond_pickaxe: 60.08
+  diamond_shovel: 20.08
+  diamond_spear: 20.08
+  diamond_sword: 40.04
   diorite: 0.01
   diorite_slab: 0.005
   diorite_stairs: 0.01
   diorite_wall: 0.01
   dirt: 0.01
   disc_fragment_5: 2
-  dispenser: 0.59
+  dispenser: 0.615
   dragon_breath: 2
   dragon_egg: 500
   dragon_head: 50
@@ -468,19 +468,19 @@ items:
   dried_kelp: 0.01
   dried_kelp_block: 0.09
   dripstone_block: 0.2
-  dropper: 0.17
+  dropper: 0.195
   dune_armor_trim_smithing_template: 10
   echo_shard: 5
   egg: 0.02
   elytra: 100
-  emerald: 2
-  emerald_block: 18
-  emerald_ore: 4
+  emerald: 2.5
+  emerald_block: 22.5
+  emerald_ore: 5
   enchanted_book: 0.5
   enchanted_golden_apple: 50
-  enchanting_table: 35.12
-  end_crystal: 21.7275
-  end_rod: 0.5281
+  enchanting_table: 43.12
+  end_crystal: 21.7494
+  end_rod: 0.5289
   end_stone: 0.05
   end_stone_brick_slab: 0.025
   end_stone_brick_stairs: 0.05
@@ -491,28 +491,28 @@ items:
   ender_pearl: 0.5
   experience_bottle: 1
   explorer_pottery_sherd: 2
-  exposed_chiseled_copper: 0.4781
-  exposed_copper: 1.9125
-  exposed_copper_bars: 0.0797
-  exposed_copper_bulb: 1.9594
-  exposed_copper_chain: 0.2597
-  exposed_copper_chest: 2.42
-  exposed_copper_door: 0.425
+  exposed_chiseled_copper: 0.9352
+  exposed_copper: 3.7406
+  exposed_copper_bars: 0.1559
+  exposed_copper_bulb: 3.3367
+  exposed_copper_chain: 0.508
+  exposed_copper_chest: 4.045
+  exposed_copper_door: 0.8312
   exposed_copper_golem_statue: 2
-  exposed_copper_grate: 0.4781
-  exposed_copper_lantern: 0.2298
-  exposed_copper_trapdoor: 0.85
-  exposed_cut_copper: 0.4781
-  exposed_cut_copper_slab: 0.2391
-  exposed_cut_copper_stairs: 0.4781
-  exposed_lightning_rod: 0.6375
+  exposed_copper_grate: 0.9352
+  exposed_copper_lantern: 0.4222
+  exposed_copper_trapdoor: 1.6625
+  exposed_cut_copper: 0.9352
+  exposed_cut_copper_slab: 0.4676
+  exposed_cut_copper_stairs: 0.9352
+  exposed_lightning_rod: 1.2469
   eye_armor_trim_smithing_template: 10
   feather: 0.1
   fermented_spider_eye: 0.59
   fern: 0.01
-  field_masoned_banner_pattern: 0.29
+  field_masoned_banner_pattern: 0.3025
   filled_map: 1
-  fire_charge: 0.4333
+  fire_charge: 0.4417
   fire_coral: 0.2
   fire_coral_block: 0.2
   fire_coral_fan: 0.2
@@ -522,23 +522,23 @@ items:
   fishing_rod: 0.32
   fletching_table: 0.46
   flint: 0.05
-  flint_and_steel: 1.0625
+  flint_and_steel: 1.3156
   flow_armor_trim_smithing_template: 10
   flow_banner_pattern: 5
   flow_pottery_sherd: 2
   flower_banner_pattern: 0.09
-  flower_pot: 0.1875
+  flower_pot: 0.1969
   flowering_azalea: 0.3
   flowering_azalea_leaves: 0.03
   friend_pottery_sherd: 2
   furnace: 0.08
-  furnace_minecart: 5.1425
+  furnace_minecart: 6.4081
   ghast_tear: 20
   gilded_blackstone: 0.5
-  glass: 0.0325
-  glass_bottle: 0.0325
-  glass_pane: 0.0122
-  glistering_melon_slice: 0.4956
+  glass: 0.0356
+  glass_bottle: 0.0356
+  glass_pane: 0.0134
+  glistering_melon_slice: 0.5872
   globe_banner_pattern: 3
   glow_berries: 0.05
   glow_ink_sac: 0.3
@@ -547,25 +547,25 @@ items:
   glowstone: 0.6
   glowstone_dust: 0.15
   goat_horn: 5
-  gold_block: 4.6125
-  gold_ingot: 0.5125
-  gold_nugget: 0.0569
-  gold_ore: 2.2
-  golden_apple: 4.2
-  golden_axe: 1.6175
-  golden_boots: 2.05
-  golden_carrot: 0.5556
-  golden_chestplate: 4.1
+  gold_block: 5.5406
+  gold_ingot: 0.6156
+  gold_nugget: 0.0684
+  gold_ore: 2.75
+  golden_apple: 5.025
+  golden_axe: 1.9269
+  golden_boots: 2.4625
+  golden_carrot: 0.6472
+  golden_chestplate: 4.925
   golden_dandelion: 0.05
-  golden_helmet: 2.5625
-  golden_hoe: 1.105
+  golden_helmet: 3.0781
+  golden_hoe: 1.3113
   golden_horse_armor: 5
-  golden_leggings: 3.5875
+  golden_leggings: 4.3094
   golden_nautilus_armor: 5
-  golden_pickaxe: 1.6175
-  golden_shovel: 0.5925
-  golden_spear: 0.5925
-  golden_sword: 1.065
+  golden_pickaxe: 1.9269
+  golden_shovel: 0.6956
+  golden_spear: 0.6956
+  golden_sword: 1.2712
   granite: 0.01
   granite_slab: 0.005
   granite_stairs: 0.01
@@ -583,36 +583,36 @@ items:
   gray_concrete_stairs: 0.025
   gray_cushion: 0.64
   gray_dye: 0.04
-  gray_glazed_terracotta: 0.23
-  gray_harness: 3.505
+  gray_glazed_terracotta: 0.2362
+  gray_harness: 3.5112
   gray_shulker_box: 10.76
-  gray_stained_glass: 0.0375
-  gray_stained_glass_pane: 0.0141
-  gray_terracotta: 0.2175
+  gray_stained_glass: 0.0406
+  gray_stained_glass_pane: 0.0152
+  gray_terracotta: 0.2206
   gray_wool: 0.44
   gray_wool_slab: 0.22
   gray_wool_stairs: 0.64
-  green_banner: 2.635
-  green_bed: 1.5025
-  green_bundle: 1.1325
-  green_candle: 0.3325
-  green_carpet: 0.2883
-  green_concrete: 0.0241
-  green_concrete_powder: 0.0241
-  green_concrete_slab: 0.012
-  green_concrete_stairs: 0.0241
-  green_cushion: 0.6325
-  green_dye: 0.0325
-  green_glazed_terracotta: 0.2291
-  green_harness: 3.4975
-  green_shulker_box: 10.7525
-  green_stained_glass: 0.0366
-  green_stained_glass_pane: 0.0137
-  green_terracotta: 0.2166
-  green_wool: 0.4325
-  green_wool_slab: 0.2162
-  green_wool_stairs: 0.6325
-  grindstone: 0.2712
+  green_banner: 2.6538
+  green_bed: 1.5056
+  green_bundle: 1.1356
+  green_candle: 0.3356
+  green_carpet: 0.2904
+  green_concrete: 0.0245
+  green_concrete_powder: 0.0245
+  green_concrete_slab: 0.0122
+  green_concrete_stairs: 0.0245
+  green_cushion: 0.6356
+  green_dye: 0.0356
+  green_glazed_terracotta: 0.2357
+  green_harness: 3.5069
+  green_shulker_box: 10.7556
+  green_stained_glass: 0.0401
+  green_stained_glass_pane: 0.015
+  green_terracotta: 0.2201
+  green_wool: 0.4356
+  green_wool_slab: 0.2178
+  green_wool_stairs: 0.6356
+  grindstone: 0.2728
   gunpowder: 0.2
   guster_banner_pattern: 5
   guster_pottery_sherd: 2
@@ -622,13 +622,13 @@ items:
   heart_pottery_sherd: 2
   heartbreak_pottery_sherd: 2
   heavy_core: 30
-  heavy_weighted_pressure_plate: 2.025
+  heavy_weighted_pressure_plate: 2.5313
   honey_block: 1.2
   honey_bottle: 0.3
   honeycomb: 0.2
   honeycomb_block: 0.8
-  hopper: 5.7825
-  hopper_minecart: 10.845
+  hopper: 7.0481
+  hopper_minecart: 13.3762
   horn_coral: 0.2
   horn_coral_block: 0.2
   horn_coral_fan: 0.2
@@ -636,57 +636,57 @@ items:
   howl_pottery_sherd: 2
   ice: 0.05
   ink_sac: 0.2
-  iron_axe: 3.1175
-  iron_bars: 0.3797
-  iron_block: 9.1125
-  iron_boots: 4.05
-  iron_chain: 1.2375
-  iron_chestplate: 8.1
-  iron_door: 2.025
-  iron_helmet: 5.0625
-  iron_hoe: 2.105
+  iron_axe: 3.8769
+  iron_bars: 0.4746
+  iron_block: 11.3906
+  iron_boots: 5.0625
+  iron_chain: 1.5469
+  iron_chestplate: 10.125
+  iron_door: 2.5313
+  iron_helmet: 6.3281
+  iron_hoe: 2.6113
   iron_horse_armor: 3
-  iron_ingot: 1.0125
-  iron_leggings: 7.0875
+  iron_ingot: 1.2656
+  iron_leggings: 8.8594
   iron_nautilus_armor: 3
-  iron_nugget: 0.1125
-  iron_ore: 1.2
-  iron_pickaxe: 3.1175
-  iron_shovel: 1.0925
-  iron_spear: 1.0925
-  iron_sword: 2.065
-  iron_trapdoor: 4.05
+  iron_nugget: 0.1406
+  iron_ore: 1.5
+  iron_pickaxe: 3.8769
+  iron_shovel: 1.3456
+  iron_spear: 1.3456
+  iron_sword: 2.5713
+  iron_trapdoor: 5.0625
   item_frame: 1.32
-  jack_o_lantern: 0.335
-  jukebox: 16.72
-  jungle_boat: 1.25
-  jungle_button: 0.25
-  jungle_chest_boat: 1.97
-  jungle_door: 0.5
-  jungle_fence: 0.36
-  jungle_fence_gate: 0.66
-  jungle_hanging_sign: 1.4125
+  jack_o_lantern: 0.3412
+  jukebox: 20.72
+  jungle_boat: 1.125
+  jungle_button: 0.225
+  jungle_chest_boat: 1.845
+  jungle_door: 0.45
+  jungle_fence: 0.3267
+  jungle_fence_gate: 0.61
+  jungle_hanging_sign: 1.4156
   jungle_leaves: 0.02
-  jungle_log: 1
-  jungle_planks: 0.25
-  jungle_pressure_plate: 0.5
+  jungle_log: 0.9
+  jungle_planks: 0.225
+  jungle_pressure_plate: 0.45
   jungle_pyramid_map: 3
   jungle_sapling: 0.1
-  jungle_shelf: 1
-  jungle_sign: 0.5133
-  jungle_slab: 0.125
-  jungle_stairs: 0.375
-  jungle_trapdoor: 0.75
-  jungle_wood: 1.3333
+  jungle_shelf: 0.9
+  jungle_sign: 0.4633
+  jungle_slab: 0.1125
+  jungle_stairs: 0.3375
+  jungle_trapdoor: 0.675
+  jungle_wood: 1.2
   kelp: 0.01
   ladder: 0.0933
-  lantern: 0.935
-  lapis_block: 1.8
-  lapis_lazuli: 0.2
-  lapis_ore: 1.5
+  lantern: 1.1663
+  lapis_block: 2.25
+  lapis_lazuli: 0.25
+  lapis_ore: 1.9
   large_amethyst_bud: 0.2
   large_fern: 0.01
-  lava_bucket: 3.5375
+  lava_bucket: 4.2969
   lead: 0.25
   leaf_litter: 0.01
   leather: 1
@@ -708,12 +708,12 @@ items:
   light_blue_concrete_stairs: 0.025
   light_blue_cushion: 0.64
   light_blue_dye: 0.04
-  light_blue_glazed_terracotta: 0.23
-  light_blue_harness: 3.505
+  light_blue_glazed_terracotta: 0.2362
+  light_blue_harness: 3.5112
   light_blue_shulker_box: 10.76
-  light_blue_stained_glass: 0.0375
-  light_blue_stained_glass_pane: 0.0141
-  light_blue_terracotta: 0.2175
+  light_blue_stained_glass: 0.0406
+  light_blue_stained_glass_pane: 0.0152
+  light_blue_terracotta: 0.2206
   light_blue_wool: 0.44
   light_blue_wool_slab: 0.22
   light_blue_wool_stairs: 0.64
@@ -728,42 +728,42 @@ items:
   light_gray_concrete_stairs: 0.0244
   light_gray_cushion: 0.635
   light_gray_dye: 0.035
-  light_gray_glazed_terracotta: 0.2294
-  light_gray_harness: 3.5
+  light_gray_glazed_terracotta: 0.2356
+  light_gray_harness: 3.5063
   light_gray_shulker_box: 10.755
-  light_gray_stained_glass: 0.0369
-  light_gray_stained_glass_pane: 0.0138
-  light_gray_terracotta: 0.2169
+  light_gray_stained_glass: 0.04
+  light_gray_stained_glass_pane: 0.015
+  light_gray_terracotta: 0.22
   light_gray_wool: 0.435
   light_gray_wool_slab: 0.2175
   light_gray_wool_stairs: 0.635
-  light_weighted_pressure_plate: 1.025
-  lightning_rod: 0.6375
+  light_weighted_pressure_plate: 1.2312
+  lightning_rod: 1.2469
   lilac: 0.1
   lily_of_the_valley: 0.05
   lily_pad: 0.05
-  lime_banner: 2.6275
-  lime_bed: 1.5013
-  lime_bundle: 1.1313
-  lime_candle: 0.3313
-  lime_carpet: 0.2875
-  lime_concrete: 0.0239
-  lime_concrete_powder: 0.0239
-  lime_concrete_slab: 0.012
-  lime_concrete_stairs: 0.0239
-  lime_cushion: 0.6313
-  lime_dye: 0.0313
-  lime_glazed_terracotta: 0.2289
-  lime_harness: 3.4963
-  lime_shulker_box: 10.7512
-  lime_stained_glass: 0.0364
-  lime_stained_glass_pane: 0.0137
-  lime_terracotta: 0.2164
-  lime_wool: 0.4313
-  lime_wool_slab: 0.2156
-  lime_wool_stairs: 0.6312
+  lime_banner: 2.6369
+  lime_bed: 1.5028
+  lime_bundle: 1.1328
+  lime_candle: 0.3328
+  lime_carpet: 0.2885
+  lime_concrete: 0.0241
+  lime_concrete_powder: 0.0241
+  lime_concrete_slab: 0.0121
+  lime_concrete_stairs: 0.0241
+  lime_cushion: 0.6328
+  lime_dye: 0.0328
+  lime_glazed_terracotta: 0.2354
+  lime_harness: 3.5041
+  lime_shulker_box: 10.7528
+  lime_stained_glass: 0.0397
+  lime_stained_glass_pane: 0.0149
+  lime_terracotta: 0.2197
+  lime_wool: 0.4328
+  lime_wool_slab: 0.2164
+  lime_wool_stairs: 0.6328
   lingering_potion: 0.5
-  lodestone: 1.1925
+  lodestone: 1.4706
   loom: 0.38
   mace: 31
   magenta_banner: 2.71
@@ -777,43 +777,43 @@ items:
   magenta_concrete_stairs: 0.0256
   magenta_cushion: 0.645
   magenta_dye: 0.045
-  magenta_glazed_terracotta: 0.2306
-  magenta_harness: 3.51
+  magenta_glazed_terracotta: 0.2369
+  magenta_harness: 3.5162
   magenta_shulker_box: 10.765
-  magenta_stained_glass: 0.0381
-  magenta_stained_glass_pane: 0.0143
-  magenta_terracotta: 0.2181
+  magenta_stained_glass: 0.0413
+  magenta_stained_glass_pane: 0.0155
+  magenta_terracotta: 0.2213
   magenta_wool: 0.445
   magenta_wool_slab: 0.2225
   magenta_wool_stairs: 0.645
   magma_block: 0.1
   magma_cream: 1.5
-  mangrove_boat: 1.25
-  mangrove_button: 0.25
-  mangrove_chest_boat: 1.97
-  mangrove_door: 0.5
-  mangrove_fence: 0.36
-  mangrove_fence_gate: 0.66
-  mangrove_hanging_sign: 1.4125
+  mangrove_boat: 1.125
+  mangrove_button: 0.225
+  mangrove_chest_boat: 1.845
+  mangrove_door: 0.45
+  mangrove_fence: 0.3267
+  mangrove_fence_gate: 0.61
+  mangrove_hanging_sign: 1.4156
   mangrove_leaves: 0.02
-  mangrove_log: 1
-  mangrove_planks: 0.25
-  mangrove_pressure_plate: 0.5
+  mangrove_log: 0.9
+  mangrove_planks: 0.225
+  mangrove_pressure_plate: 0.45
   mangrove_propagule: 0.1
   mangrove_roots: 0.1
-  mangrove_shelf: 1
-  mangrove_sign: 0.5133
-  mangrove_slab: 0.125
-  mangrove_stairs: 0.375
-  mangrove_trapdoor: 0.75
-  mangrove_wood: 1.3333
-  map: 4.47
+  mangrove_shelf: 0.9
+  mangrove_sign: 0.4633
+  mangrove_slab: 0.1125
+  mangrove_stairs: 0.3375
+  mangrove_trapdoor: 0.675
+  mangrove_wood: 1.2
+  map: 5.5075
   medium_amethyst_bud: 0.15
   melon: 0.36
   melon_seeds: 0.04
   melon_slice: 0.04
-  milk_bucket: 3.1375
-  minecart: 5.0625
+  milk_bucket: 3.8969
+  minecart: 6.3281
   miner_pottery_sherd: 2
   mojang_banner_pattern: 50.04
   moss_block: 0.05
@@ -822,10 +822,10 @@ items:
   mossy_cobblestone_slab: 0.01
   mossy_cobblestone_stairs: 0.02
   mossy_cobblestone_wall: 0.02
-  mossy_stone_brick_slab: 0.0163
-  mossy_stone_brick_stairs: 0.0325
-  mossy_stone_brick_wall: 0.0325
-  mossy_stone_bricks: 0.0325
+  mossy_stone_brick_slab: 0.0178
+  mossy_stone_brick_stairs: 0.0356
+  mossy_stone_brick_wall: 0.0356
+  mossy_stone_bricks: 0.0356
   mourner_pottery_sherd: 2
   mud: 0.02
   mud_brick_slab: 0.06
@@ -861,55 +861,55 @@ items:
   mycelium: 0.1
   name_tag: 3
   nautilus_shell: 3
-  nether_brick: 0.0225
-  nether_brick_fence: 0.0675
-  nether_brick_slab: 0.045
-  nether_brick_stairs: 0.09
-  nether_brick_wall: 0.09
-  nether_bricks: 0.09
-  nether_gold_ore: 0.5
-  nether_quartz_ore: 0.3
+  nether_brick: 0.0256
+  nether_brick_fence: 0.0769
+  nether_brick_slab: 0.0512
+  nether_brick_stairs: 0.1025
+  nether_brick_wall: 0.1025
+  nether_bricks: 0.1025
+  nether_gold_ore: 0.6
+  nether_quartz_ore: 0.4
   nether_sprouts: 0.01
   nether_star: 100
   nether_wart: 0.1
   nether_wart_block: 0.9
-  netherite_axe: 278.13
-  netherite_block: 1890.45
-  netherite_boots: 294.05
-  netherite_chestplate: 358.05
-  netherite_helmet: 310.05
-  netherite_hoe: 262.13
+  netherite_axe: 330.5425
+  netherite_block: 2254.1625
+  netherite_boots: 350.4625
+  netherite_chestplate: 430.4625
+  netherite_helmet: 370.4625
+  netherite_hoe: 310.5425
   netherite_horse_armor: 60
-  netherite_ingot: 210.05
-  netherite_leggings: 342.05
+  netherite_ingot: 250.4625
+  netherite_leggings: 410.4625
   netherite_nautilus_armor: 60
-  netherite_pickaxe: 278.13
-  netherite_scrap: 52
-  netherite_shovel: 246.13
-  netherite_spear: 246.13
-  netherite_sword: 262.09
+  netherite_pickaxe: 330.5425
+  netherite_scrap: 62
+  netherite_shovel: 290.5425
+  netherite_spear: 290.5425
+  netherite_sword: 310.5025
   netherite_upgrade_smithing_template: 20
   netherrack: 0.01
-  note_block: 0.82
-  oak_boat: 1.25
-  oak_button: 0.25
-  oak_chest_boat: 1.97
-  oak_door: 0.5
-  oak_fence: 0.36
-  oak_fence_gate: 0.66
-  oak_hanging_sign: 1.4125
+  note_block: 0.845
+  oak_boat: 1.125
+  oak_button: 0.225
+  oak_chest_boat: 1.845
+  oak_door: 0.45
+  oak_fence: 0.3267
+  oak_fence_gate: 0.61
+  oak_hanging_sign: 1.4156
   oak_leaves: 0.02
-  oak_log: 1
-  oak_planks: 0.25
-  oak_pressure_plate: 0.5
+  oak_log: 0.9
+  oak_planks: 0.225
+  oak_pressure_plate: 0.45
   oak_sapling: 0.1
-  oak_shelf: 1
-  oak_sign: 0.5133
-  oak_slab: 0.125
-  oak_stairs: 0.375
-  oak_trapdoor: 0.75
-  oak_wood: 1.3333
-  observer: 0.46
+  oak_shelf: 0.9
+  oak_sign: 0.4633
+  oak_slab: 0.1125
+  oak_stairs: 0.3375
+  oak_trapdoor: 0.675
+  oak_wood: 1.2
+  observer: 0.56
   obsidian: 0.5
   ocean_monument_map: 3
   ochre_froglight: 0.5
@@ -927,57 +927,57 @@ items:
   orange_concrete_stairs: 0.0262
   orange_cushion: 0.65
   orange_dye: 0.05
-  orange_glazed_terracotta: 0.2313
-  orange_harness: 3.515
+  orange_glazed_terracotta: 0.2375
+  orange_harness: 3.5213
   orange_poplar_leaves: 0.02
   orange_shulker_box: 10.77
-  orange_stained_glass: 0.0387
-  orange_stained_glass_pane: 0.0145
-  orange_terracotta: 0.2188
+  orange_stained_glass: 0.0419
+  orange_stained_glass_pane: 0.0157
+  orange_terracotta: 0.2219
   orange_tulip: 0.05
   orange_wool: 0.45
   orange_wool_slab: 0.225
   orange_wool_stairs: 0.65
   oxeye_daisy: 0.05
-  oxidized_chiseled_copper: 0.4781
-  oxidized_copper: 1.9125
-  oxidized_copper_bars: 0.0797
-  oxidized_copper_bulb: 1.9594
-  oxidized_copper_chain: 0.2597
-  oxidized_copper_chest: 2.42
-  oxidized_copper_door: 0.425
+  oxidized_chiseled_copper: 0.9352
+  oxidized_copper: 3.7406
+  oxidized_copper_bars: 0.1559
+  oxidized_copper_bulb: 3.3367
+  oxidized_copper_chain: 0.508
+  oxidized_copper_chest: 4.045
+  oxidized_copper_door: 0.8312
   oxidized_copper_golem_statue: 2
-  oxidized_copper_grate: 0.4781
-  oxidized_copper_lantern: 0.2298
-  oxidized_copper_trapdoor: 0.85
-  oxidized_cut_copper: 0.4781
-  oxidized_cut_copper_slab: 0.2391
-  oxidized_cut_copper_stairs: 0.4781
-  oxidized_lightning_rod: 0.6375
+  oxidized_copper_grate: 0.9352
+  oxidized_copper_lantern: 0.4222
+  oxidized_copper_trapdoor: 1.6625
+  oxidized_cut_copper: 0.9352
+  oxidized_cut_copper_slab: 0.4676
+  oxidized_cut_copper_stairs: 0.9352
+  oxidized_lightning_rod: 1.2469
   packed_ice: 0.45
   packed_mud: 0.12
   painting: 0.72
   pale_hanging_moss: 0.05
   pale_moss_block: 0.05
   pale_moss_carpet: 0.0333
-  pale_oak_boat: 1.25
-  pale_oak_button: 0.25
-  pale_oak_chest_boat: 1.97
-  pale_oak_door: 0.5
-  pale_oak_fence: 0.36
-  pale_oak_fence_gate: 0.66
-  pale_oak_hanging_sign: 1.4125
+  pale_oak_boat: 1.125
+  pale_oak_button: 0.225
+  pale_oak_chest_boat: 1.845
+  pale_oak_door: 0.45
+  pale_oak_fence: 0.3267
+  pale_oak_fence_gate: 0.61
+  pale_oak_hanging_sign: 1.4156
   pale_oak_leaves: 0.02
-  pale_oak_log: 1
-  pale_oak_planks: 0.25
-  pale_oak_pressure_plate: 0.5
+  pale_oak_log: 0.9
+  pale_oak_planks: 0.225
+  pale_oak_pressure_plate: 0.45
   pale_oak_sapling: 0.1
-  pale_oak_shelf: 1
-  pale_oak_sign: 0.5133
-  pale_oak_slab: 0.125
-  pale_oak_stairs: 0.375
-  pale_oak_trapdoor: 0.75
-  pale_oak_wood: 1.3333
+  pale_oak_shelf: 0.9
+  pale_oak_sign: 0.4633
+  pale_oak_slab: 0.1125
+  pale_oak_stairs: 0.3375
+  pale_oak_trapdoor: 0.675
+  pale_oak_wood: 1.2
   paper: 0.04
   pearlescent_froglight: 0.5
   peony: 0.1
@@ -995,18 +995,18 @@ items:
   pink_concrete_stairs: 0.025
   pink_cushion: 0.64
   pink_dye: 0.04
-  pink_glazed_terracotta: 0.23
-  pink_harness: 3.505
+  pink_glazed_terracotta: 0.2362
+  pink_harness: 3.5112
   pink_petals: 0.05
   pink_shulker_box: 10.76
-  pink_stained_glass: 0.0375
-  pink_stained_glass_pane: 0.0141
-  pink_terracotta: 0.2175
+  pink_stained_glass: 0.0406
+  pink_stained_glass_pane: 0.0152
+  pink_terracotta: 0.2206
   pink_tulip: 0.05
   pink_wool: 0.44
   pink_wool_slab: 0.22
   pink_wool_stairs: 0.64
-  piston: 1.4225
+  piston: 1.7006
   pitcher_plant: 2
   pitcher_pod: 2
   plains_village_map: 3
@@ -1050,31 +1050,31 @@ items:
   polished_tuff_slab: 0.01
   polished_tuff_stairs: 0.02
   polished_tuff_wall: 0.02
-  poplar_boat: 1.25
-  poplar_button: 0.25
-  poplar_chest_boat: 1.97
-  poplar_door: 0.5
-  poplar_fence: 0.36
-  poplar_fence_gate: 0.66
-  poplar_hanging_sign: 1.4125
-  poplar_log: 1
-  poplar_planks: 0.25
-  poplar_pressure_plate: 0.5
+  poplar_boat: 1.125
+  poplar_button: 0.225
+  poplar_chest_boat: 1.845
+  poplar_door: 0.45
+  poplar_fence: 0.3267
+  poplar_fence_gate: 0.61
+  poplar_hanging_sign: 1.4156
+  poplar_log: 0.9
+  poplar_planks: 0.225
+  poplar_pressure_plate: 0.45
   poplar_sapling: 0.1
-  poplar_shelf: 1
-  poplar_sign: 0.5133
-  poplar_slab: 0.125
-  poplar_stairs: 0.375
-  poplar_trapdoor: 0.75
-  poplar_wood: 1.3333
-  popped_chorus_fruit: 0.1125
+  poplar_shelf: 0.9
+  poplar_sign: 0.4633
+  poplar_slab: 0.1125
+  poplar_stairs: 0.3375
+  poplar_trapdoor: 0.675
+  poplar_wood: 1.2
+  popped_chorus_fruit: 0.1156
   poppy: 0.05
   porkchop: 0.1
   potato: 0.1
   potent_sulfur: 0.5
   potion: 0.05
-  powder_snow_bucket: 3.1375
-  powered_rail: 0.5358
+  powder_snow_bucket: 3.8969
+  powered_rail: 0.6431
   prismarine: 0.8
   prismarine_brick_slab: 0.9
   prismarine_brick_stairs: 1.8
@@ -1086,7 +1086,7 @@ items:
   prismarine_wall: 0.8
   prize_pottery_sherd: 2
   pufferfish: 1
-  pufferfish_bucket: 4.0375
+  pufferfish_bucket: 4.7969
   pumpkin: 0.2
   pumpkin_pie: 0.26
   pumpkin_seeds: 0.05
@@ -1101,38 +1101,38 @@ items:
   purple_concrete_stairs: 0.0262
   purple_cushion: 0.65
   purple_dye: 0.05
-  purple_glazed_terracotta: 0.2313
-  purple_harness: 3.515
+  purple_glazed_terracotta: 0.2375
+  purple_harness: 3.5212
   purple_shulker_box: 10.77
-  purple_stained_glass: 0.0387
-  purple_stained_glass_pane: 0.0145
-  purple_terracotta: 0.2188
+  purple_stained_glass: 0.0419
+  purple_stained_glass_pane: 0.0157
+  purple_terracotta: 0.2219
   purple_wool: 0.45
   purple_wool_slab: 0.225
   purple_wool_stairs: 0.65
-  purpur_block: 0.1125
-  purpur_pillar: 0.1125
-  purpur_slab: 0.0563
-  purpur_stairs: 0.1125
-  quartz: 0.2
-  quartz_block: 0.8
-  quartz_bricks: 0.8
-  quartz_pillar: 0.8
-  quartz_slab: 0.4
-  quartz_stairs: 0.8
+  purpur_block: 0.1156
+  purpur_pillar: 0.1156
+  purpur_slab: 0.0578
+  purpur_stairs: 0.1156
+  quartz: 0.25
+  quartz_block: 1
+  quartz_bricks: 1
+  quartz_pillar: 1
+  quartz_slab: 0.5
+  quartz_stairs: 1
   rabbit: 0.1
   rabbit_foot: 1
   rabbit_hide: 1
   rabbit_stew: 0.4175
-  rail: 0.3822
+  rail: 0.4771
   raiser_armor_trim_smithing_template: 10
-  raw_copper: 0.2
-  raw_copper_block: 1.8
-  raw_gold: 2
-  raw_gold_block: 18
-  raw_iron: 1
-  raw_iron_block: 9
-  recovery_compass: 44.15
+  raw_copper: 0.4
+  raw_copper_block: 3.6
+  raw_gold: 2.5
+  raw_gold_block: 22.5
+  raw_iron: 1.25
+  raw_iron_block: 11.25
+  recovery_compass: 45.1875
   red_banner: 2.74
   red_bed: 1.52
   red_bundle: 1.15
@@ -1144,14 +1144,14 @@ items:
   red_concrete_stairs: 0.0262
   red_cushion: 0.65
   red_dye: 0.05
-  red_glazed_terracotta: 0.2313
-  red_harness: 3.515
+  red_glazed_terracotta: 0.2375
+  red_harness: 3.5213
   red_mushroom: 0.05
   red_mushroom_block: 0.05
-  red_nether_brick_slab: 0.1225
-  red_nether_brick_stairs: 0.245
-  red_nether_brick_wall: 0.245
-  red_nether_bricks: 0.245
+  red_nether_brick_slab: 0.1256
+  red_nether_brick_stairs: 0.2513
+  red_nether_brick_wall: 0.2513
+  red_nether_bricks: 0.2513
   red_poplar_leaves: 0.02
   red_sand: 0.03
   red_sandstone: 0.12
@@ -1160,25 +1160,25 @@ items:
   red_sandstone_wall: 0.12
   red_shrub: 0.01
   red_shulker_box: 10.77
-  red_stained_glass: 0.0387
-  red_stained_glass_pane: 0.0145
-  red_terracotta: 0.2188
+  red_stained_glass: 0.0419
+  red_stained_glass_pane: 0.0157
+  red_terracotta: 0.2219
   red_tulip: 0.05
   red_wool: 0.45
   red_wool_slab: 0.225
   red_wool_stairs: 0.65
-  redstone: 0.1
-  redstone_block: 0.9
-  redstone_lamp: 1
-  redstone_ore: 1
-  redstone_torch: 0.14
-  repeater: 0.4475
+  redstone: 0.125
+  redstone_block: 1.125
+  redstone_lamp: 1.1
+  redstone_ore: 1.25
+  redstone_torch: 0.165
+  repeater: 0.5319
   resin_block: 1.8
-  resin_brick: 0.2125
-  resin_brick_slab: 0.425
-  resin_brick_stairs: 0.85
-  resin_brick_wall: 0.85
-  resin_bricks: 0.85
+  resin_brick: 0.2156
+  resin_brick_slab: 0.4313
+  resin_brick_stairs: 0.8625
+  resin_brick_wall: 0.8625
+  resin_bricks: 0.8625
   resin_clump: 0.2
   respawn_anchor: 7.8
   rib_armor_trim_smithing_template: 10
@@ -1187,7 +1187,7 @@ items:
   rotten_flesh: 0.02
   saddle: 3
   salmon: 0.5
-  salmon_bucket: 3.5375
+  salmon_bucket: 4.2969
   sand: 0.02
   sandstone: 0.08
   sandstone_slab: 0.04
@@ -1207,10 +1207,10 @@ items:
   sentry_armor_trim_smithing_template: 10
   shaper_armor_trim_smithing_template: 10
   sheaf_pottery_sherd: 2
-  shears: 2.025
+  shears: 2.5313
   shelf_mushroom: 0.05
   shelter_pottery_sherd: 2
-  shield: 1.5525
+  shield: 1.8056
   short_dry_grass: 0.01
   short_grass: 0.01
   shroomlight: 0.3
@@ -1224,20 +1224,20 @@ items:
   slime_block: 4.5
   small_amethyst_bud: 0.1
   small_dripleaf: 0.05
-  smithing_table: 2.385
-  smoker: 4.08
-  smooth_basalt: 0.0325
-  smooth_quartz: 0.8125
-  smooth_quartz_slab: 0.4063
-  smooth_quartz_stairs: 0.8125
-  smooth_red_sandstone: 0.1325
-  smooth_red_sandstone_slab: 0.0663
-  smooth_red_sandstone_stairs: 0.1325
-  smooth_sandstone: 0.0925
-  smooth_sandstone_slab: 0.0462
-  smooth_sandstone_stairs: 0.0925
-  smooth_stone: 0.035
-  smooth_stone_slab: 0.0175
+  smithing_table: 2.8912
+  smoker: 3.68
+  smooth_basalt: 0.0356
+  smooth_quartz: 1.0156
+  smooth_quartz_slab: 0.5078
+  smooth_quartz_stairs: 1.0156
+  smooth_red_sandstone: 0.1356
+  smooth_red_sandstone_slab: 0.0678
+  smooth_red_sandstone_stairs: 0.1356
+  smooth_sandstone: 0.0956
+  smooth_sandstone_slab: 0.0478
+  smooth_sandstone_stairs: 0.0956
+  smooth_stone: 0.0413
+  smooth_stone_slab: 0.0206
   sniffer_egg: 10
   snort_pottery_sherd: 2
   snout_armor_trim_smithing_template: 10
@@ -1245,81 +1245,81 @@ items:
   snow_block: 0.04
   snowball: 0.01
   snowy_village_map: 3
-  soul_campfire: 3.17
-  soul_lantern: 0.9475
+  soul_campfire: 2.87
+  soul_lantern: 1.1787
   soul_sand: 0.05
   soul_soil: 0.05
-  soul_torch: 0.0475
+  soul_torch: 0.0538
   spectral_arrow: 0.3237
   spider_eye: 0.5
   spire_armor_trim_smithing_template: 10
   splash_potion: 0.2
   sponge: 3
   spore_blossom: 1
-  spruce_boat: 1.25
-  spruce_button: 0.25
-  spruce_chest_boat: 1.97
-  spruce_door: 0.5
-  spruce_fence: 0.36
-  spruce_fence_gate: 0.66
-  spruce_hanging_sign: 1.4125
+  spruce_boat: 1.125
+  spruce_button: 0.225
+  spruce_chest_boat: 1.845
+  spruce_door: 0.45
+  spruce_fence: 0.3267
+  spruce_fence_gate: 0.61
+  spruce_hanging_sign: 1.4156
   spruce_leaves: 0.02
-  spruce_log: 1
-  spruce_planks: 0.25
-  spruce_pressure_plate: 0.5
+  spruce_log: 0.9
+  spruce_planks: 0.225
+  spruce_pressure_plate: 0.45
   spruce_sapling: 0.1
-  spruce_shelf: 1
-  spruce_sign: 0.5133
-  spruce_slab: 0.125
-  spruce_stairs: 0.375
-  spruce_trapdoor: 0.75
-  spruce_wood: 1.3333
-  spyglass: 0.625
+  spruce_shelf: 0.9
+  spruce_sign: 0.4633
+  spruce_slab: 0.1125
+  spruce_stairs: 0.3375
+  spruce_trapdoor: 0.675
+  spruce_wood: 1.2
+  spyglass: 1.0313
   stick: 0.04
-  sticky_piston: 1.9225
-  stone: 0.0225
+  sticky_piston: 2.2006
+  stone: 0.0256
   stone_axe: 0.11
-  stone_brick_slab: 0.0113
-  stone_brick_stairs: 0.0225
-  stone_brick_wall: 0.0225
-  stone_bricks: 0.0225
-  stone_button: 0.0225
+  stone_brick_slab: 0.0128
+  stone_brick_stairs: 0.0256
+  stone_brick_wall: 0.0256
+  stone_bricks: 0.0256
+  stone_button: 0.0256
   stone_hoe: 0.1
   stone_pickaxe: 0.11
-  stone_pressure_plate: 0.045
+  stone_pressure_plate: 0.0513
   stone_shovel: 0.09
-  stone_slab: 0.0113
+  stone_slab: 0.0128
   stone_spear: 0.09
-  stone_stairs: 0.0225
+  stone_stairs: 0.0256
   stone_sword: 0.06
-  stonecutter: 1.08
+  stonecutter: 1.3425
   straw_bed: 0.675
   string: 0.1
-  stripped_acacia_log: 1
-  stripped_acacia_wood: 1.3333
+  stripped_acacia_log: 0.9
+  stripped_acacia_wood: 1.2
   stripped_bamboo_block: 0.18
-  stripped_birch_log: 1
-  stripped_birch_wood: 1.3333
-  stripped_cherry_log: 1
-  stripped_cherry_wood: 1.3333
-  stripped_crimson_hyphae: 1.3333
-  stripped_crimson_stem: 1
-  stripped_dark_oak_log: 1
-  stripped_dark_oak_wood: 1.3333
-  stripped_jungle_log: 1
-  stripped_jungle_wood: 1.3333
-  stripped_mangrove_log: 1
-  stripped_mangrove_wood: 1.3333
-  stripped_oak_log: 1
-  stripped_oak_wood: 1.3333
-  stripped_pale_oak_log: 1
-  stripped_pale_oak_wood: 1.3333
-  stripped_poplar_log: 1
-  stripped_poplar_wood: 1.3333
-  stripped_spruce_log: 1
-  stripped_spruce_wood: 1.3333
-  stripped_warped_hyphae: 1.3333
-  stripped_warped_stem: 1
+  stripped_birch_log: 0.9
+  stripped_birch_wood: 1.2
+  stripped_cherry_log: 0.9
+  stripped_cherry_wood: 1.2
+  stripped_crimson_hyphae: 1.2
+  stripped_crimson_stem: 0.9
+  stripped_dark_oak_log: 0.9
+  stripped_dark_oak_wood: 1.2
+  stripped_jungle_log: 0.9
+  stripped_jungle_wood: 1.2
+  stripped_mangrove_log: 0.9
+  stripped_mangrove_wood: 1.2
+  stripped_oak_log: 0.9
+  stripped_oak_wood: 1.2
+  stripped_pale_oak_log: 0.9
+  stripped_pale_oak_wood: 1.2
+  stripped_poplar_log: 0.9
+  stripped_poplar_wood: 1.2
+  stripped_spruce_log: 0.9
+  stripped_spruce_wood: 1.2
+  stripped_warped_hyphae: 1.2
+  stripped_warped_stem: 0.9
   sugar: 0.04
   sugar_cane: 0.04
   sulfur: 0.02
@@ -1327,7 +1327,7 @@ items:
   sulfur_brick_stairs: 0.02
   sulfur_brick_wall: 0.02
   sulfur_bricks: 0.02
-  sulfur_cube_bucket: 5.0375
+  sulfur_cube_bucket: 5.7969
   sulfur_slab: 0.01
   sulfur_spike: 0.05
   sulfur_stairs: 0.02
@@ -1336,27 +1336,27 @@ items:
   suspicious_stew: 0.2175
   swamp_hut_map: 3
   sweet_berries: 0.05
-  tadpole_bucket: 3.5375
+  tadpole_bucket: 4.2969
   taiga_village_map: 3
   tall_dry_grass: 0.01
   tall_grass: 0.01
-  target: 1.3
-  terracotta: 0.2125
+  target: 1.4
+  terracotta: 0.2156
   tide_armor_trim_smithing_template: 10
-  tinted_glass: 0.4163
+  tinted_glass: 0.4178
   tipped_arrow: 0.3
   tnt: 1.08
-  tnt_minecart: 6.1425
-  torch: 0.035
+  tnt_minecart: 7.4081
+  torch: 0.0413
   torchflower: 2
   torchflower_seeds: 2
   totem_of_undying: 5
-  trapped_chest: 1.2912
+  trapped_chest: 1.4178
   trial_key: 2
   trident: 30
-  tripwire_hook: 0.5713
+  tripwire_hook: 0.6978
   tropical_fish: 1
-  tropical_fish_bucket: 4.0375
+  tropical_fish_bucket: 4.7969
   tube_coral: 0.2
   tube_coral_block: 0.2
   tube_coral_fan: 0.2
@@ -1377,102 +1377,102 @@ items:
   vine: 0.01
   ward_armor_trim_smithing_template: 10
   warm_ocean_ruins_map: 3
-  warped_button: 0.25
-  warped_door: 0.5
-  warped_fence: 0.36
-  warped_fence_gate: 0.66
+  warped_button: 0.225
+  warped_door: 0.45
+  warped_fence: 0.3267
+  warped_fence_gate: 0.61
   warped_fungus: 0.1
   warped_fungus_on_a_stick: 0.42
-  warped_hanging_sign: 1.4125
-  warped_hyphae: 1.3333
+  warped_hanging_sign: 1.4156
+  warped_hyphae: 1.2
   warped_nylium: 0.05
-  warped_planks: 0.25
-  warped_pressure_plate: 0.5
+  warped_planks: 0.225
+  warped_pressure_plate: 0.45
   warped_roots: 0.01
-  warped_shelf: 1
-  warped_sign: 0.5133
-  warped_slab: 0.125
-  warped_stairs: 0.375
-  warped_stem: 1
-  warped_trapdoor: 0.75
+  warped_shelf: 0.9
+  warped_sign: 0.4633
+  warped_slab: 0.1125
+  warped_stairs: 0.3375
+  warped_stem: 0.9
+  warped_trapdoor: 0.675
   warped_wart_block: 0.1
-  water_bucket: 3.0375
-  waxed_chiseled_copper: 0.5281
-  waxed_copper_bars: 0.2797
-  waxed_copper_block: 2.1125
-  waxed_copper_bulb: 2.1094
-  waxed_copper_chain: 0.4597
-  waxed_copper_chest: 2.62
-  waxed_copper_door: 0.625
+  water_bucket: 3.7969
+  waxed_chiseled_copper: 0.9852
+  waxed_copper_bars: 0.3559
+  waxed_copper_block: 3.9406
+  waxed_copper_bulb: 3.4867
+  waxed_copper_chain: 0.708
+  waxed_copper_chest: 4.245
+  waxed_copper_door: 1.0313
   waxed_copper_golem_statue: 2.2
-  waxed_copper_grate: 0.5281
-  waxed_copper_lantern: 0.4298
-  waxed_copper_trapdoor: 1.05
-  waxed_cut_copper: 0.5281
-  waxed_cut_copper_slab: 0.2641
-  waxed_cut_copper_stairs: 0.5281
-  waxed_exposed_chiseled_copper: 0.5281
-  waxed_exposed_copper: 1.9125
-  waxed_exposed_copper_bars: 0.2797
-  waxed_exposed_copper_bulb: 2.1094
-  waxed_exposed_copper_chain: 0.4597
-  waxed_exposed_copper_chest: 2.62
-  waxed_exposed_copper_door: 0.625
+  waxed_copper_grate: 0.9852
+  waxed_copper_lantern: 0.6222
+  waxed_copper_trapdoor: 1.8625
+  waxed_cut_copper: 0.9852
+  waxed_cut_copper_slab: 0.4926
+  waxed_cut_copper_stairs: 0.9852
+  waxed_exposed_chiseled_copper: 0.9852
+  waxed_exposed_copper: 3.7406
+  waxed_exposed_copper_bars: 0.3559
+  waxed_exposed_copper_bulb: 3.4867
+  waxed_exposed_copper_chain: 0.708
+  waxed_exposed_copper_chest: 4.245
+  waxed_exposed_copper_door: 1.0313
   waxed_exposed_copper_golem_statue: 2.2
-  waxed_exposed_copper_grate: 0.5281
-  waxed_exposed_copper_lantern: 0.4298
-  waxed_exposed_copper_trapdoor: 1.05
-  waxed_exposed_cut_copper: 0.5281
-  waxed_exposed_cut_copper_slab: 0.2641
-  waxed_exposed_cut_copper_stairs: 0.5281
-  waxed_exposed_lightning_rod: 0.8375
-  waxed_lightning_rod: 0.8375
-  waxed_oxidized_chiseled_copper: 0.5281
-  waxed_oxidized_copper: 1.9125
-  waxed_oxidized_copper_bars: 0.2797
-  waxed_oxidized_copper_bulb: 2.1094
-  waxed_oxidized_copper_chain: 0.4597
-  waxed_oxidized_copper_chest: 2.62
-  waxed_oxidized_copper_door: 0.625
+  waxed_exposed_copper_grate: 0.9852
+  waxed_exposed_copper_lantern: 0.6222
+  waxed_exposed_copper_trapdoor: 1.8625
+  waxed_exposed_cut_copper: 0.9852
+  waxed_exposed_cut_copper_slab: 0.4926
+  waxed_exposed_cut_copper_stairs: 0.9852
+  waxed_exposed_lightning_rod: 1.4469
+  waxed_lightning_rod: 1.4469
+  waxed_oxidized_chiseled_copper: 0.9852
+  waxed_oxidized_copper: 3.7406
+  waxed_oxidized_copper_bars: 0.3559
+  waxed_oxidized_copper_bulb: 3.4867
+  waxed_oxidized_copper_chain: 0.708
+  waxed_oxidized_copper_chest: 4.245
+  waxed_oxidized_copper_door: 1.0313
   waxed_oxidized_copper_golem_statue: 2.2
-  waxed_oxidized_copper_grate: 0.5281
-  waxed_oxidized_copper_lantern: 0.4298
-  waxed_oxidized_copper_trapdoor: 1.05
-  waxed_oxidized_cut_copper: 0.5281
-  waxed_oxidized_cut_copper_slab: 0.2641
-  waxed_oxidized_cut_copper_stairs: 0.5281
-  waxed_oxidized_lightning_rod: 0.8375
-  waxed_weathered_chiseled_copper: 0.5281
-  waxed_weathered_copper: 1.9125
-  waxed_weathered_copper_bars: 0.2797
-  waxed_weathered_copper_bulb: 2.1094
-  waxed_weathered_copper_chain: 0.4597
-  waxed_weathered_copper_chest: 2.62
-  waxed_weathered_copper_door: 0.625
+  waxed_oxidized_copper_grate: 0.9852
+  waxed_oxidized_copper_lantern: 0.6222
+  waxed_oxidized_copper_trapdoor: 1.8625
+  waxed_oxidized_cut_copper: 0.9852
+  waxed_oxidized_cut_copper_slab: 0.4926
+  waxed_oxidized_cut_copper_stairs: 0.9852
+  waxed_oxidized_lightning_rod: 1.4469
+  waxed_weathered_chiseled_copper: 0.9852
+  waxed_weathered_copper: 3.7406
+  waxed_weathered_copper_bars: 0.3559
+  waxed_weathered_copper_bulb: 3.4867
+  waxed_weathered_copper_chain: 0.708
+  waxed_weathered_copper_chest: 4.245
+  waxed_weathered_copper_door: 1.0313
   waxed_weathered_copper_golem_statue: 2.2
-  waxed_weathered_copper_grate: 0.5281
-  waxed_weathered_copper_lantern: 0.4298
-  waxed_weathered_copper_trapdoor: 1.05
-  waxed_weathered_cut_copper: 0.5281
-  waxed_weathered_cut_copper_slab: 0.2641
-  waxed_weathered_cut_copper_stairs: 0.5281
-  waxed_weathered_lightning_rod: 0.8375
+  waxed_weathered_copper_grate: 0.9852
+  waxed_weathered_copper_lantern: 0.6222
+  waxed_weathered_copper_trapdoor: 1.8625
+  waxed_weathered_cut_copper: 0.9852
+  waxed_weathered_cut_copper_slab: 0.4926
+  waxed_weathered_cut_copper_stairs: 0.9852
+  waxed_weathered_lightning_rod: 1.4469
   wayfinder_armor_trim_smithing_template: 10
-  weathered_chiseled_copper: 0.4781
-  weathered_copper: 1.9125
-  weathered_copper_bars: 0.0797
-  weathered_copper_bulb: 1.9594
-  weathered_copper_chain: 0.2597
-  weathered_copper_chest: 2.42
-  weathered_copper_door: 0.425
+  weathered_chiseled_copper: 0.9352
+  weathered_copper: 3.7406
+  weathered_copper_bars: 0.1559
+  weathered_copper_bulb: 3.3367
+  weathered_copper_chain: 0.508
+  weathered_copper_chest: 4.045
+  weathered_copper_door: 0.8312
   weathered_copper_golem_statue: 2
-  weathered_copper_grate: 0.4781
-  weathered_copper_lantern: 0.2298
-  weathered_copper_trapdoor: 0.85
-  weathered_cut_copper: 0.4781
-  weathered_cut_copper_slab: 0.2391
-  weathered_cut_copper_stairs: 0.4781
-  weathered_lightning_rod: 0.6375
+  weathered_copper_grate: 0.9352
+  weathered_copper_lantern: 0.4222
+  weathered_copper_trapdoor: 1.6625
+  weathered_cut_copper: 0.9352
+  weathered_cut_copper_slab: 0.4676
+  weathered_cut_copper_stairs: 0.9352
+  weathered_lightning_rod: 1.2469
   weeping_vines: 0.05
   wet_sponge: 3
   wheat: 0.1
@@ -1488,12 +1488,12 @@ items:
   white_concrete_stairs: 0.0237
   white_cushion: 0.6
   white_dye: 0.03
-  white_glazed_terracotta: 0.2288
-  white_harness: 3.465
+  white_glazed_terracotta: 0.235
+  white_harness: 3.4712
   white_shulker_box: 10.75
-  white_stained_glass: 0.0363
-  white_stained_glass_pane: 0.0136
-  white_terracotta: 0.2162
+  white_stained_glass: 0.0394
+  white_stained_glass_pane: 0.0148
+  white_terracotta: 0.2194
   white_tulip: 0.05
   white_wool: 0.4
   white_wool_slab: 0.2
@@ -1524,13 +1524,13 @@ items:
   yellow_concrete_stairs: 0.0262
   yellow_cushion: 0.65
   yellow_dye: 0.05
-  yellow_glazed_terracotta: 0.2313
-  yellow_harness: 3.515
+  yellow_glazed_terracotta: 0.2375
+  yellow_harness: 3.5213
   yellow_poplar_leaves: 0.02
   yellow_shulker_box: 10.77
-  yellow_stained_glass: 0.0387
-  yellow_stained_glass_pane: 0.0145
-  yellow_terracotta: 0.2188
+  yellow_stained_glass: 0.0419
+  yellow_stained_glass_pane: 0.0157
+  yellow_terracotta: 0.2219
   yellow_wool: 0.45
   yellow_wool_slab: 0.225
   yellow_wool_stairs: 0.65

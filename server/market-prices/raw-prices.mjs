@@ -1,7 +1,7 @@
 // Hand-set suggested prices (per single item) for everything that is gathered, not crafted.
 // Crafted items are priced from these by recipe, so an item only belongs here if no recipe makes
 // it, or its recipe would misprice it (e.g. smithing templates, which duplicate themselves).
-// Scale: a log is $1 and a diamond $16 (twice the spawn market's base, set in generate.mjs), so an
+// Scale: a log is $0.90 and a diamond $20 (twice the spawn market's base, set in generate.mjs), so an
 // hour of mining or chopping by hand comes to a few hundred dollars.
 
 const each = (ids, price) => Object.fromEntries(ids.map((id) => [id, price]));
@@ -12,8 +12,8 @@ const COLORS = ['white', 'orange', 'magenta', 'light_blue', 'yellow', 'lime', 'p
 
 export const RAW = {
   // Wood that no recipe makes: stripping is an axe click, so it keeps the log's price.
-  ...each(WOODS.map((w) => `stripped_${w}_log`), 1),
-  ...each(['crimson_stem', 'warped_stem', 'stripped_crimson_stem', 'stripped_warped_stem'], 1),
+  ...each(WOODS.map((w) => `stripped_${w}_log`), 0.9),
+  ...each(['crimson_stem', 'warped_stem', 'stripped_crimson_stem', 'stripped_warped_stem'], 0.9),
   stripped_bamboo_block: 0.18,
   ...each(WOODS.filter((w) => w !== 'mangrove').map((w) => (w === 'cherry' || w === 'pale_oak' ? `${w}_sapling` : `${w}_sapling`)), 0.1),
   mangrove_propagule: 0.1,
@@ -34,12 +34,12 @@ export const RAW = {
   glow_lichen: 0.05, bone_meal: 0.03, carved_pumpkin: 0.3,
 
   // Ores mined with Silk Touch, priced a little above what they drop.
-  coal_ore: 0.2, deepslate_coal_ore: 0.2, iron_ore: 1.2, deepslate_iron_ore: 1.2, copper_ore: 0.4,
-  deepslate_copper_ore: 0.4, gold_ore: 2.2, deepslate_gold_ore: 2.2, nether_gold_ore: 0.5,
-  diamond_ore: 18, deepslate_diamond_ore: 18, emerald_ore: 4, deepslate_emerald_ore: 4, lapis_ore: 1.5,
-  deepslate_lapis_ore: 1.5, redstone_ore: 1, deepslate_redstone_ore: 1, nether_quartz_ore: 0.3,
+  coal_ore: 0.25, deepslate_coal_ore: 0.25, iron_ore: 1.5, deepslate_iron_ore: 1.5, copper_ore: 0.8,
+  deepslate_copper_ore: 0.8, gold_ore: 2.75, deepslate_gold_ore: 2.75, nether_gold_ore: 0.6,
+  diamond_ore: 22, deepslate_diamond_ore: 22, emerald_ore: 5, deepslate_emerald_ore: 5, lapis_ore: 1.9,
+  deepslate_lapis_ore: 1.9, redstone_ore: 1.25, deepslate_redstone_ore: 1.25, nether_quartz_ore: 0.4,
   // Mined drops. Emerald and redstone come cheap from raid and witch farms.
-  coal: 0.1, emerald: 2, lapis_lazuli: 0.2, redstone: 0.1, quartz: 0.2,
+  coal: 0.125, emerald: 2.5, lapis_lazuli: 0.25, redstone: 0.125, quartz: 0.25,
 
   // Plants.
   ...each(['dandelion', 'poppy', 'blue_orchid', 'allium', 'azure_bluet', 'red_tulip', 'orange_tulip',
@@ -73,7 +73,7 @@ export const RAW = {
 
 Object.assign(RAW, {
   // 26.3 blocks and items.
-  poplar_log: 1, stripped_poplar_log: 1, poplar_sapling: 0.1,
+  poplar_log: 0.9, stripped_poplar_log: 0.9, poplar_sapling: 0.1,
   ...each(['orange_poplar_leaves', 'red_poplar_leaves', 'yellow_poplar_leaves'], 0.02),
   cinnabar: 0.02, sulfur: 0.02, potent_sulfur: 0.5, sulfur_spike: 0.05, shelf_mushroom: 0.05, red_shrub: 0.01,
   // Loot, trades and the rest.

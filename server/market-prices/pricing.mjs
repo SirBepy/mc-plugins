@@ -1,8 +1,8 @@
 // Prices every craftable item from its vanilla recipes, starting from a hand-written table of
 // gathered materials. Pure functions, so generate.test.mjs can check them on tiny fixtures.
 
-// What one smelt's fuel is worth: a piece of coal ($0.10 in raw-prices.mjs) smelts 8 items.
-export const FUEL = 0.0125;
+// What one smelt's fuel is worth: a piece of coal ($0.125 suggested) smelts 8 items.
+export const FUEL = 0.015625;
 
 const COOKING = new Set(['minecraft:smelting', 'minecraft:blasting', 'minecraft:smoking']);
 

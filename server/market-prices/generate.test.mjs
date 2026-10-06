@@ -57,9 +57,12 @@ test('prices.yml prices every item with a positive number', () => {
 });
 
 test('market items are twice their stall base and hand-gathered items stay dearer than farm output', () => {
-  assert.equal(items.diamond, 16);
-  assert.equal(items.raw_iron, 1);
-  assert.ok(Math.abs(items.iron_ingot - (items.raw_iron + 0.0125)) < 1e-9, 'an ingot costs its smelted raw ore');
+  assert.equal(items.diamond, 20);
+  assert.equal(items.raw_iron, 1.25);
+  assert.equal(items.raw_copper, 0.4);
+  assert.equal(items.oak_log, 0.9);
+  assert.equal(items.stripped_oak_log, items.oak_log);
+  assert.ok(Math.abs(items.iron_ingot - (items.raw_iron + FUEL)) < 1e-4, 'an ingot costs its smelted raw ore');
   assert.ok(items.netherite_ingot > 200);
 });
 
