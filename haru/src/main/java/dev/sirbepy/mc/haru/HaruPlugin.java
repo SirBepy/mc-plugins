@@ -6,7 +6,7 @@ import dev.sirbepy.mc.haru.data.HaruStore;
 import dev.sirbepy.mc.haru.effect.Auras;
 import dev.sirbepy.mc.haru.effect.OwnerEffectsListener;
 import dev.sirbepy.mc.haru.gui.HaruMenus;
-import dev.sirbepy.mc.haru.gui.MenuListener;
+import dev.sirbepy.mc.core.gui.MenuListener;
 import dev.sirbepy.mc.haru.item.BoundListener;
 import dev.sirbepy.mc.haru.item.HaruItemListener;
 import dev.sirbepy.mc.haru.npc.HaruInteractListener;

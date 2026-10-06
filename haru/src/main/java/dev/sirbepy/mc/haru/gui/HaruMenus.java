@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.haru.gui;
 
+import dev.sirbepy.mc.core.gui.Menu;
 import dev.sirbepy.mc.haru.HaruContext;
 import dev.sirbepy.mc.haru.data.OwnerState;
 import dev.sirbepy.mc.haru.dialogue.Speech;

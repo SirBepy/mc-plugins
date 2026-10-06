@@ -33,12 +33,4 @@ public final class WeightedTable<T> {
     public List<T> values() {
         return entries.stream().map(Entry::value).toList();
     }
-
-    public int weightOf(T value) {
-        return entries.stream().filter(e -> e.value() == value).mapToInt(Entry::weight).sum();
-    }
-
-    public int totalWeight() {
-        return total;
-    }
 }

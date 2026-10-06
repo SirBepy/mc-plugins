@@ -25,10 +25,6 @@ public final class HaruItems {
         this.key = new NamespacedKey(plugin, "item");
     }
 
-    public NamespacedKey key() {
-        return key;
-    }
-
     /** The marker id, or null for anything that isn't one of Haru's items. */
     public String idOf(ItemStack item) {
         if (item == null || !item.hasItemMeta()) {
