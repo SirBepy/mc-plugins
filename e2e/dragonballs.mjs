@@ -12,16 +12,9 @@ import {
 // so this suite drives `shenron summon <player> <dragon>` instead - a debug-only addition to
 // ShenronCommand that re-validates every trigger condition through SummonSessionManager.tryStart
 // exactly as a real dialog click would (see that command's own javadoc).
-//
-// IMPORTANT, confirmed empirically before writing this suite: Brigadier's `.requires` is checked
-// top-down, so a console-only top-level node hides every child from a non-console sender before the
-// dispatcher even looks at which child was typed. `/shenron say|grant|dismiss|status|curse` are
-// still gated to a real ConsoleCommandSender (RCON's sender is a DIFFERENT type,
-// RemoteConsoleCommandSender, by design - see docs/dragonballs.md's "Answer only through console
-// commands") and so stay unreachable here; only `summon` was moved off that gate (permission-only)
-// since it never bypasses a rule and is the only way an RCON-driven bot can start a session at all.
-// This suite therefore cannot exercise say/grant/curse/dismiss - it ends a session via the idle
-// timeout instead (config temporarily shortened, same restore-on-exit pattern as afk.mjs/tracker.mjs).
+// The judge commands (`/shenron say|grant|dismiss|status|curse`) accept the console and RCON, so the
+// summon step answers the wish over RCON the same way Player Claude does on live. The idle timeout is
+// temporarily shortened as a backstop (same restore-on-exit pattern as afk.mjs/tracker.mjs).
 const here = path.dirname(fileURLToPath(import.meta.url));
 const configPath = path.join(here, '..', 'testserver', 'run-e2e', 'plugins', 'DragonBalls', 'config.yml');
 const wishesPath = path.join(here, '..', 'testserver', 'run-e2e', 'plugins', 'DragonBalls', 'wishes.jsonl');
@@ -110,6 +103,22 @@ async function placeBallAt(bot, index) {
   await bot.placeBlock(ref, new Vec3(0, 1, 0));
 }
 
+// A toss flies about 4 blocks, and each re-pickup leaves the bot where the ball landed, so tossing
+// from wherever it stands walks it off the 16x16 platform within three tosses (the ball then falls
+// to the terrain far below). Every toss starts from STAND, aimed at the platform centre.
+async function tossTowardCentre(bot) {
+  await teleport(rcon, bot, STAND.x, STAND.y, STAND.z);
+  await bot.lookAt(new Vec3(BX + 0.5, PLATFORM_Y + 1, BZ + 0.5), true);
+  const ball = bot.inventory.items().find((i) => i.name === 'player_head');
+  await bot.tossStack(ball);
+}
+
+// Other suites leave item entities lying around the e2e world, so an unbounded nearest-item
+// selector can land on one of those instead of the ball that was just tossed.
+function ballEntityNear(loc) {
+  return `@e[type=minecraft:item,limit=1,sort=nearest,x=${loc.x},y=${loc.y},z=${loc.z},distance=..6]`;
+}
+
 async function openWindow(bot, block) {
   const opened = new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('window never opened')), 3_000);
@@ -125,7 +134,8 @@ async function openWindow(bot, block) {
 function shortenSummonConfig(text) {
   assert(/^summon:/m.test(text), 'DragonBalls config has a summon: section (delete a stale run-e2e config.yml and restart)');
   const set = (t, key, value) => t.replace(new RegExp(`^(  ${key}:).*$`, 'm'), `$1 ${value}`);
-  let out = set(text, 'idle-timeout-seconds', 2);
+  // Long enough for the judge commands below, short enough that a broken dismiss still ends the run.
+  let out = set(text, 'idle-timeout-seconds', 60);
   out = set(out, 'summoner-offline-seconds', 2);
   return out;
 }
@@ -191,8 +201,7 @@ try {
     await rcon.command(`dragonballs give ${HUNTER} 1`);
     await sleep(300);
     const tossAndRepickup = async () => {
-      const ball = hunter.inventory.items().find((i) => i.name === 'player_head');
-      await hunter.tossStack(ball);
+      await tossTowardCentre(hunter);
       await sleep(300);
       const s = await status();
       const dropped = Object.entries(s).find(([, v]) => v.state === 'dropped');
@@ -202,7 +211,7 @@ try {
       // or two, so walk the bot onto where the entity actually landed (after its pickup delay).
       await sleep(1_700);
       const pos = await rcon.command(
-        `data get entity @e[type=minecraft:item,limit=1,sort=nearest,x=${loc.x},y=${loc.y},z=${loc.z}] Pos`);
+        `data get entity ${ballEntityNear(loc)} Pos`);
       const [x, y, z] = (pos.match(/-?\d+(\.\d+)?(?=d)/g) ?? [loc.x, loc.y, loc.z]).map(Number);
       await teleport(rcon, hunter, x, y, z);
       await waitFor(async () => (await status())[dropped[0]].state === 'held', 'DBHunter re-picked up the tossed star', 5_000);
@@ -218,18 +227,22 @@ try {
     await waitFor(async () => near(await speedModifier(HUNTER), -0.15), '3 balls = -0.15 movement speed modifier', 3_000);
 
     // Drop one (without picking it back up) and confirm the modifier drops to -0.10 immediately.
-    const ball = hunter.inventory.items().find((i) => i.name === 'player_head');
-    await hunter.tossStack(ball);
+    // The hunter steps back across the platform at once, before the ~2 s pickup delay ends, or it
+    // re-grabs its own ball before the witness gets there.
+    await tossTowardCentre(hunter);
+    await rcon.command(`minecraft:tp ${HUNTER} ${BX - 6} ${PLATFORM_Y + 1} ${BZ - 6}`);
     await waitFor(async () => near(await speedModifier(HUNTER), -0.10), 'dropping one ball updates the modifier to -0.10', 3_000);
 
     const s = await status();
     const [starStr, loc] = Object.entries(s).find(([, v]) => v.state === 'dropped');
     witnessPickedUpStar = Number(starStr);
+    const landed = await rcon.command(`data get entity ${ballEntityNear(loc)} Pos`);
+    const [lx, ly, lz] = (landed.match(/-?\d+(\.\d+)?(?=d)/g) ?? [loc.x, loc.y, loc.z]).map(Number);
 
     // A DIFFERENT player picking it up (not the dropper) must still get the "found" broadcast -
     // recentlySelfDropped only suppresses it for the player who dropped it within the last 30s.
     const since = witness.lines.length;
-    await teleport(rcon, witness, loc.x, loc.y, loc.z);
+    await teleport(rcon, witness, lx, ly, lz);
     await waitForLine(witness, new RegExp(`found the ${witnessPickedUpStar}-Star Dragon Ball!`), 5_000, since);
     await waitFor(async () => near(await speedModifier(WITNESS), -0.05), 'DBWitness now shows -0.05 after the pickup', 3_000);
   });
@@ -271,9 +284,19 @@ try {
     await sleep(300);
     await teleport(rcon, hunter, hopperPos.x, PLATFORM_Y + 1, hopperPos.z);
     const ball = hunter.inventory.items().find((i) => i.name === 'player_head');
-    const before = await status();
-    const starThrown = before && Object.entries(before).find(([, v]) => v.state === 'held' && v.holder === HUNTER)[0];
     await hunter.tossStack(ball);
+    // The first head in the bot's inventory isn't necessarily the lowest star, so read which one left.
+    // Waiting for it also makes sure the server handled the drop before the teleport below, or the
+    // ball would spawn at the hunter's new spot.
+    let starThrown;
+    await waitFor(async () => {
+      starThrown = Object.entries(await status()).find(([, v]) => v.state === 'dropped')?.[0];
+      return starThrown !== undefined;
+    }, 'one ball is dropped after the toss', 1_000);
+    // The hunter would re-grab its own ball once the 1.5 s pickup delay ends, so it steps away, and
+    // the ball is set down right on top of the hopper.
+    await rcon.command(`minecraft:tp ${HUNTER} ${BX - 6} ${PLATFORM_Y + 1} ${BZ - 6}`);
+    await rcon.command(`minecraft:execute as ${ballEntityNear({ ...hopperPos, y: hopperPos.y + 1 })} run tp @s ${hopperPos.x + 0.5} ${hopperPos.y + 1} ${hopperPos.z + 0.5}`);
     await sleep(2_000); // a hopper pulls from directly above on its own short cooldown, well under 2s
 
     const hopperItems = await rcon.command(`minecraft:data get block ${hopperPos.x} ${hopperPos.y} ${hopperPos.z} Items`);
@@ -319,7 +342,9 @@ try {
     await hunter.equip(ball, 'hand');
     await placeBallAt(hunter, 0);
     await sleep(300);
-    const { x, y, z } = ballOffset(0);
+    // placeBallAt puts the head on top of the floor block at ballOffset, one block above it.
+    const { x, z } = ballOffset(0);
+    const y = ballOffset(0).y + 1;
     const pbv = plain(await rcon.command(`minecraft:data get block ${x} ${y} ${z} PublicBukkitValues`));
     assert(/dragonballs:star/.test(pbv), `placed block carries the dragonballs:star PDC tag (got ${pbv})`);
     const before = await status();
@@ -447,15 +472,41 @@ try {
       return lines.some((l) => l.includes('"message":"I wish for a diamond sword"'));
     }, 'wishes.jsonl recorded the wish', 5_000);
 
-    // No RCON path can /shenron grant|dismiss (console-only by design, confirmed unreachable over
-    // RCON above); the idle timeout (shortened to 2s, checked every 5s tick) ends the session instead.
+    // The judge side, over RCON exactly like Player Claude drives it on live.
+    const saySince = witness.lines.length;
+    await rcon.command('shenron say Your wish is heard, mortal.');
+    await waitForLine(witness, /Your wish is heard, mortal\./, 5_000, saySince);
+
+    const grantReply = plain(await rcon.command('shenron grant 1 e2e diamond sword'));
+    assert(!/No dragon|cannot|only/i.test(grantReply), `grant accepted (got "${grantReply.trim()}")`);
+    await waitFor(() => fs.readFileSync(wishesPath, 'utf8').includes('"type":"grant","count":1,"note":"e2e diamond sword"'),
+      'wishes.jsonl recorded the grant', 5_000);
+    const judgeStatus = plain(await rcon.command('shenron status'));
+    assert(/wishesLeft=2/.test(judgeStatus), `Porunga has 2 of 3 wishes left after one grant (got "${judgeStatus.trim()}")`);
+
+    const hasSlowness = async () => /slowness/.test(await rcon.command(`data get entity ${WITNESS} active_effects`));
+    await rcon.command(`shenron curse effect ${WITNESS} slowness 0 1`);
+    await waitFor(hasSlowness, 'the curse applies slowness at once', 3_000);
+    await rcon.command(`minecraft:kill ${WITNESS}`);
+    await waitFor(async () => witness.health > 0 && await hasSlowness(), 'the curse comes back after death and respawn', 8_000);
+    await rcon.command(`shenron curse lift ${WITNESS}`);
+    await waitFor(async () => !(await hasSlowness()), 'lifting the curse removes the slowness', 3_000);
+
+    const byeSince = witness.lines.length;
+    await rcon.command('shenron dismiss Farewell.');
+    await waitForLine(witness, /Farewell\./, 5_000, byeSince);
     await waitFor(async () => !/passed/i.test(await rcon.command('execute if entity @e[type=ender_dragon,tag=dragonballs.shenron]')),
-      'the dragon despawns once the idle timeout ends the session', 12_000);
-    // Scattering loads each destination chunk asynchronously, so the registry catches up over a few seconds.
+      'the dragon despawns once dismissed', 12_000);
+    // Scattering loads (often generates) each destination chunk asynchronously, so the registry can
+    // take well over 20 s to catch up on a fresh e2e world.
     await waitFor(async () => {
       const afterEnd = await status();
-      return Object.values(afterEnd).every((v) => v.stone && (v.state !== 'placed' || Math.abs(v.x - BX) > 500));
-    }, 'all 7 are stone and have flown away from the summon spot', 20_000);
+      // Each granted wish pushes the next scatter further out, eventually into the Nether (whose
+      // coordinates are scaled down), so a ball in another world counts as flown away too.
+      const flownAway = (v) => v.state !== 'placed' || v.world !== 'world'
+        || Math.max(Math.abs(v.x - BX), Math.abs(v.z - BZ)) > 500;
+      return Object.values(afterEnd).every((v) => v.stone && flownAway(v));
+    }, 'all 7 are stone and have flown away from the summon spot', 45_000);
 
     fs.writeFileSync(configPath, originalConfig);
     configIsShortened = false;
@@ -473,7 +524,10 @@ try {
   // --- 11. a stone ball can still be found, broken and carried -------------------------------------
   await step('a stone ball can be broken and picked up as its stone item', async () => {
     const s = await status();
-    const [starStr, loc] = Object.entries(s).find(([, v]) => v.state === 'placed');
+    // Later scatters also land in the Nether; the overworld ones are the ones teleport() can reach.
+    const overworldBall = Object.entries(s).find(([, v]) => v.state === 'placed' && v.world === 'world');
+    assert(overworldBall, `at least one stone ball landed in the overworld (got ${JSON.stringify(s)})`);
+    const [starStr, loc] = overworldBall;
     const star = Number(starStr);
     await rcon.command(`minecraft:forceload add ${loc.x - 8} ${loc.z - 8} ${loc.x + 8} ${loc.z + 8}`);
     await teleport(rcon, hunter, loc.x, loc.y + 1, loc.z);
