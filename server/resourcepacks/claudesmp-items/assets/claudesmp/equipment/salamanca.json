@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "claudesmp:salamanca"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "claudesmp:salamanca"
+      }
+    ]
+  }
+}

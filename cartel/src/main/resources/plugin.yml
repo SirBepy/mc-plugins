@@ -1,0 +1,10 @@
+name: Cartel
+version: ${version}
+main: dev.sirbepy.mc.cartel.CartelPlugin
+api-version: "26.2"
+author: sirbepy
+
+permissions:
+  cartel.admin:
+    description: Give the cartel phone, change its owner, check or reset cooldowns, and call off the cousins.
+    default: op

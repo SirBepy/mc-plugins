@@ -167,6 +167,14 @@ Haru, Keeper of the Sakura Sanctuary: ImMijo's Shenron wish (2026-10-06), an NPC
 - Haru can't be hurt, converted, leashed or moved, and comes back by himself if anything removes him. `/haru` (op) places and inspects him.
 - Full design, including every hidden reward, in `docs/haru.md`: not for players, never copy it to the website.
 
+## Cartel plugin
+
+The cartel flip phone: Archontopouloi's Shenron wish (2026-10-06). Right-clicking his phone opens a menu that calls in Leonel and Marco Salamanca (zombies in iron armor painted as the cousins by the server pack, with Sharpness X netherite swords that never drop).
+
+- **Guard Mode:** they follow him for 10 minutes and fight monsters near him and anyone who hurts him. Once every 2 real hours.
+- **Assassinate Mode:** he picks an online player; the cousins appear 10 blocks from them and hunt them for 3 minutes, and the whole server reads "[name], you have made enemies of the cartel." Once per real day.
+- Every limit and the reasoning behind it: `docs/cartel.md`. `/cartel` (op) gives phones and checks or resets cooldowns.
+
 ## Testing
 
 1. **Unit tests** (JUnit 5, plain logic wherever possible: points math, cooldowns, duration parsing, grant expiry, name validation). MockBukkit for listener/command behavior where it supports the API used.

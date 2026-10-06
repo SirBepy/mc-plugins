@@ -1584,7 +1584,7 @@ protection:
   # A comma seperated list of spawn causes, if an entity has a spawn cause that is in this list they will not be removed by town mob removal.
   # For the list of valid spawn causes, see https://jd.papermc.io/paper/1.21.4/org/bukkit/event/entity/CreatureSpawnEvent.SpawnReason.html
   # Due to technical reasons, this setting only works on Paper servers.
-  town_mob_removal_ignored_spawn_causes: TRIAL_SPAWNER
+  town_mob_removal_ignored_spawn_causes: TRIAL_SPAWNER,CUSTOM
   
   # Disable creatures triggering stone pressure plates
   disable_creature_pressureplate_stone: 'true'

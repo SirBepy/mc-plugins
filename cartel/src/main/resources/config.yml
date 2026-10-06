@@ -1,0 +1,21 @@
+# The cartel flip phone: Archontopouloi's Shenron wish (granted 2026-10-06). Rules, limits and the
+# reasoning behind every number: docs/cartel.md.
+
+# The only player the phone answers to. They get it the first time they join with the plugin running.
+owner: 69402ca0-7b6d-4419-b316-1702041aad81
+
+# Guard Mode: the cousins follow the owner and fight what threatens them.
+guard-minutes: 10
+guard-cooldown-minutes: 120
+
+# Assassinate Mode: the cousins appear this many blocks from the target and hunt them.
+hit-minutes: 3
+hit-cooldown-minutes: 1440
+hit-distance: 10
+# The target outran or out-teleported them: the cousins pick up the trail this many times, then give up.
+lose-trail-distance: 48
+retracks: 2
+
+# Each cousin. Gear is fixed by Joe's spec (iron armor, Sharpness X netherite sword) and never drops.
+health: 40
+speed: 0.33
