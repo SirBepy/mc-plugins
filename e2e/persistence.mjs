@@ -17,6 +17,19 @@ import {
 const phase = process.argv[2];
 const here = path.dirname(fileURLToPath(import.meta.url));
 const stateFile = path.join(here, '..', 'testserver', 'run-e2e', 'persistence-e2e.json');
+const boltDb = path.join(here, '..', 'testserver', 'run-e2e', 'plugins', 'Bolt', 'bolt.db');
+
+/** The access map Bolt has written to disk for the protection at [x, y, z], or undefined if none yet. */
+async function savedBoltAccess([x, y, z]) {
+  const { DatabaseSync } = await import('node:sqlite');
+  const db = new DatabaseSync(boltDb, { readOnly: true });
+  try {
+    const row = db.prepare('SELECT access FROM blocks WHERE x = ? AND y = ? AND z = ?').get(x, y, z);
+    return row ? JSON.parse(row.access) : undefined;
+  } finally {
+    db.close();
+  }
+}
 const PLATFORM_Y = 200;
 const PREFIX = '☣';
 
@@ -56,6 +69,12 @@ try {
     await waitForLine(owner, /PersA can now open all your chests/);
     owner.chat('/safe-chests-whitelist PersC 3s');
     await waitForLine(owner, /PersC can now open all your chests/);
+    // Bolt writes new protections and access changes to bolt.db only every 30 s, and the supervisor
+    // restart is a hard kill: without this wait the chest itself could come back unprotected, so
+    // anyone (PersC included) could open it. PersC's 3s grant may already be swept by then, so only
+    // PersA's entry is awaited; PersC's and PersD's revokes are what the restart must not undo.
+    await waitFor(async () => (await savedBoltAccess([BX, PLATFORM_Y + 1, BZ + 3]))?.[`player:${longGuest.player.uuid}`],
+      'Bolt saved the chest with PersA access', 40_000);
 
     await join('PersD', BX + 6, BZ);
     owner.chat('/safe-chests-whitelist PersD 1h');
