@@ -22,6 +22,7 @@ public final class DragonBallsConfig {
     private final String endWorld;
     private final int pregenLimit;
     private final int netherPregenLimit;
+    private final double netherRadiusMultiplier;
     private final int minSpacing;
     private final int maxLiquidResamples;
     private final int endMinDistance;
@@ -46,6 +47,7 @@ public final class DragonBallsConfig {
         this.endWorld = config.getString("end-world", "world_the_end");
         this.pregenLimit = config.getInt("scatter.pregen-limit", 4900);
         this.netherPregenLimit = config.getInt("scatter.nether-pregen-limit", 1200);
+        this.netherRadiusMultiplier = Math.max(0.1, config.getDouble("scatter.nether-radius-multiplier", 2.0));
         this.minSpacing = config.getInt("scatter.min-spacing", 200);
         this.maxLiquidResamples = Math.max(1, config.getInt("scatter.max-liquid-resamples", 20));
         this.endMinDistance = config.getInt("scatter.end-min-distance", 1000);
@@ -126,6 +128,10 @@ public final class DragonBallsConfig {
 
     public int netherPregenLimit() {
         return netherPregenLimit;
+    }
+
+    public double netherRadiusMultiplier() {
+        return netherRadiusMultiplier;
     }
 
     public int minSpacing() {

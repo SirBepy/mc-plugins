@@ -82,6 +82,15 @@ class DragonBallsConfigTest {
     }
 
     @Test
+    void netherRadiusMultiplierDefaultsToDoubleWhenAnOlderConfigLacksIt() {
+        assertEquals(2.0, new DragonBallsConfig(new YamlConfiguration()).netherRadiusMultiplier(), 1e-9);
+
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("scatter.nether-radius-multiplier", 1.5);
+        assertEquals(1.5, new DragonBallsConfig(yaml).netherRadiusMultiplier(), 1e-9);
+    }
+
+    @Test
     void legacyPerTierNetherAndEndKeysAreIgnoredRatherThanBreakingParsing() {
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.set("difficulty", List.of(

@@ -67,12 +67,13 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
 
   | Wishes so far (this set) | Overworld distance | Nether distance |
   | --- | --- | --- |
-  | 0 | 1000-3000 | 125-375 |
-  | 1 | 1500-3500 | 187-437 |
-  | 2 | 1500-4000 | 187-500 |
-  | 3+ | 2000-4500 | 250-562 |
+  | 0 | 1000-3000 | 250-750 |
+  | 1 | 1500-3500 | 375-875 |
+  | 2 | 1500-4000 | 375-1000 |
+  | 3+ | 2000-4500 | 500-1125 |
 
-  Nether distances are the overworld ones at the Nether's 1/8 scale. The End set always lands
+  Nether distances are the overworld ones at the Nether's 1/8 scale, doubled (Joe, 2026-10-08:
+  the Nether hunt was too short a walk). The End set always lands
   1000-3000 blocks from the End's centre, on the outer islands.
 - For 3 Minecraft days the set's balls are **stone**: you can find, break and carry them, but the
   radar can't see them and they can't summon. Then they wake up wherever they are. Other sets are

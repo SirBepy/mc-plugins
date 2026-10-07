@@ -159,8 +159,8 @@ public final class ScatterService implements BallScatterer {
             return Map.of();
         }
         double[] netherCenter = toNetherCenter(center, netherWorld);
-        int netherMin = NetherScale.toNetherRadius(tier.minRadius());
-        int netherMax = Math.max(netherMin + 1, NetherScale.toNetherRadius(tier.maxRadius()));
+        int netherMin = NetherScale.toNetherRadius(tier.minRadius(), cfg.netherRadiusMultiplier());
+        int netherMax = Math.max(netherMin + 1, NetherScale.toNetherRadius(tier.maxRadius(), cfg.netherRadiusMultiplier()));
         netherCenter = new double[]{NetherScale.clampCenter(netherCenter[0], cfg.netherPregenLimit(), netherMax),
                 NetherScale.clampCenter(netherCenter[1], cfg.netherPregenLimit(), netherMax)};
         ScatterVarietyConfig variety = variety();
@@ -199,8 +199,8 @@ public final class ScatterService implements BallScatterer {
             return;
         }
         double[] netherCenter = toNetherCenter(center, netherWorld);
-        int netherMin = NetherScale.toNetherRadius(tier.minRadius());
-        int netherMax = Math.max(netherMin + 1, NetherScale.toNetherRadius(tier.maxRadius()));
+        int netherMin = NetherScale.toNetherRadius(tier.minRadius(), cfg.netherRadiusMultiplier());
+        int netherMax = Math.max(netherMin + 1, NetherScale.toNetherRadius(tier.maxRadius(), cfg.netherRadiusMultiplier()));
         netherCenter = new double[]{NetherScale.clampCenter(netherCenter[0], cfg.netherPregenLimit(), netherMax),
                 NetherScale.clampCenter(netherCenter[1], cfg.netherPregenLimit(), netherMax)};
         List<double[]> avoid = otherBallFlatLocations(star, registry, netherWorld);

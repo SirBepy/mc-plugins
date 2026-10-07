@@ -16,9 +16,15 @@ public final class NetherScale {
         return (int) (overworldRadius / FACTOR);
     }
 
+    /** A Nether scatter radius: the overworld one at 1/8 scale, stretched by {@code multiplier}
+     * (config's nether-radius-multiplier) so the Nether hunt isn't a short walk. */
+    public static int toNetherRadius(int overworldRadius, double multiplier) {
+        return (int) (overworldRadius / FACTOR * multiplier);
+    }
+
     /**
      * Pulls a scatter centre inwards so the whole annulus stays inside the pregenerated square: the
-     * Nether's square (+/-1200) is small next to its radii (up to 562), and a centre near its edge
+     * Nether's square (+/-1200) is small next to its radii (up to 1125), and a centre near its edge
      * left too few valid spots for 7 spaced-out balls (live, 2026-10-07: 2 of 7 never placed).
      */
     public static double clampCenter(double value, int pregenLimit, int maxRadius) {
