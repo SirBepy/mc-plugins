@@ -116,7 +116,8 @@ stone:
   days: 3
   real-hours: 24
 
-# A holder offline this long has their ball re-scattered around the last summon location.
+# Balls drop where their holder logs out, so this only catches a holder who logged out before that
+# rule (2026-10-08) and stays away this long: their ball re-scatters around the last summon location.
 logout-hours: 24
 
 messages:
@@ -133,6 +134,7 @@ messages:
   no-radar-end: "<gray>The balls stir... but need an End Dragon Radar."
   end-radar-closed: "<red>The End is closed. The End Radar sleeps until it opens."
   ball-stays-behind: "<gray>Your <name> stays behind: it won't leave <home>."
+  balls-dropped-on-join: "<gray>Your Dragon Balls dropped at your feet: they never stay with you while you're logged out."
 
 # The Dragon Ball station at spawn (built by the spawn-market datapack; coordinates come from
 # server/spawn-market/dragonballs-station.json).

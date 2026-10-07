@@ -70,7 +70,7 @@ export const GUIDES = {
       'Three sets of 7 Dragon Balls, 1 to 7 stars: orange in the Overworld, red in the Nether, purple in the End.\n\nGather one full set to summon a dragon.',
       'Balls sit on the ground as heads. Some hide in villages and ruins, some at the bottom of a hole.\n\nBreak one, pick it up.\n\nThe End set sleeps until the End opens.',
       "Carrying rules:\nEach ball slows you 5% (all 7: 35%).\n\nNo chests, ender chests, shulkers, bundles, hoppers or item frames - and you can't wear one.",
-      'Die and your balls drop where you fell, never your grave.\n\nLog off and they wait, but 24h offline (or a trip into lava or the void) sends them flying off again.',
+      'Die and your balls drop where you fell, never your grave.\n\nLog off and they drop where you stood.\n\nLava or the void sends them flying off again.',
       'A ball never leaves its own world: go through a portal (or /home, /spawn) and it stays behind where you left.',
       'Radars, right here:\nDragon Radar 1000\nNether Radar 5000\nEnd Radar 20000\n\nEach points at the nearest awake ball of its own set, in its own world, even a carried one. Never how far.',
       "Summoning:\nPlace all 7 of one set within 2 blocks of each other. Hold that set's radar and right-click or hit one.\n\nChoose your dragon. The radar shatters. One dragon at a time.",

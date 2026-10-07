@@ -37,9 +37,11 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
 - Each ball you carry slows you 5% (all 7: 35%), whatever its set.
 - Balls never go into chests, ender chests, shulkers, bundles, hoppers, item frames or any other
   container, and can't be worn.
-- Die and your balls drop on the ground where you fell (never into your grave). Log out and they
-  stay with you, but after 24 h offline they fly away again. A ball lost to lava, the void or
-  anything else flies away too.
+- Die and your balls drop on the ground where you fell (never into your grave). Log out (or get
+  kicked, or the server restarts) and they drop on the ground where you logged out, the same way
+  (Joe, 2026-10-08). Anyone who logged out still carrying balls before that rule drops them at their
+  feet on their next join, with a chat line saying so, unless they stay away 24 h, in which case the
+  balls fly away instead. A ball lost to lava, the void or anything else flies away too.
 - Picking up a ball is announced to the whole server.
 - Each **radar** (sold at the Dragon Ball station at spawn) points at the nearest awake ball of its
   own set, including balls someone is carrying, and only works in that set's dimension (elsewhere

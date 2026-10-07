@@ -11,6 +11,7 @@ import dev.sirbepy.mc.dragonballs.listener.BallDeathListener;
 import dev.sirbepy.mc.dragonballs.listener.BallDimensionGuardListener;
 import dev.sirbepy.mc.dragonballs.listener.BallItemLifecycleListener;
 import dev.sirbepy.mc.dragonballs.listener.BallJoinDupeListener;
+import dev.sirbepy.mc.dragonballs.listener.BallLogoutDropListener;
 import dev.sirbepy.mc.dragonballs.listener.BallPickupListener;
 import dev.sirbepy.mc.dragonballs.listener.BallPlaceBreakListener;
 import dev.sirbepy.mc.dragonballs.listener.BallProtectionListener;
@@ -36,6 +37,7 @@ public final class DragonBallsPlugin extends JavaPlugin {
     private BallSets sets;
     private SpectacleEffects effects;
     private SummonModule.Handle summon;
+    private BallLogoutDropListener logoutDrop;
 
     @Override
     public void onEnable() {
@@ -70,6 +72,8 @@ public final class DragonBallsPlugin extends JavaPlugin {
         pm.registerEvents(new BallChunkLoadListener(sets), this);
         pm.registerEvents(new BallJoinDupeListener(sets), this);
         pm.registerEvents(new BallDimensionGuardListener(sets, config::get, slowness), this);
+        logoutDrop = new BallLogoutDropListener(sets, config::get, slowness);
+        pm.registerEvents(logoutDrop, this);
 
         getServer().getScheduler().runTaskTimer(this, new BallMaintenanceTask(sets, config::get),
                 BallMaintenanceTask.PERIOD_TICKS, BallMaintenanceTask.PERIOD_TICKS);
@@ -87,6 +91,9 @@ public final class DragonBallsPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (logoutDrop != null && getServer().isStopping()) {
+            getServer().getOnlinePlayers().forEach(logoutDrop::dropCarried);
+        }
         if (summon != null) {
             summon.shutdown();
         }

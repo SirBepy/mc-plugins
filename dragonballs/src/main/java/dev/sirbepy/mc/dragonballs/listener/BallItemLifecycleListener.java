@@ -46,9 +46,12 @@ public final class BallItemLifecycleListener implements Listener {
     @EventHandler
     public void onSpawn(ItemSpawnEvent event) {
         Item item = event.getEntity();
-        if (!sets.items().isBall(item.getItemStack())) {
-            return;
+        if (sets.items().isBall(item.getItemStack())) {
+            applyFlags(item);
         }
+    }
+
+    static void applyFlags(Item item) {
         item.setUnlimitedLifetime(true);
         item.setInvulnerable(true);
         item.setGlowing(true);
