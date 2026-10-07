@@ -8,9 +8,12 @@ below) into server/resourcepacks/dist/ClaudeSMP-server-pack-26.3.zip and prints 
 Every entry gets a fixed timestamp, so an unchanged source tree always rebuilds to the same sha1
 and server.properties' resource-pack-sha1 only has to change when the pack really changes.
 
-Then: copy the zip to the website repo's site/downloads/, publish it, and set resource-pack +
-resource-pack-sha1 in server/config/server.properties and on the live server
-(`kinetic.mjs prop ...`, read at startup, so it applies on the next restart).
+Then: copy the zip to the website repo's site/downloads/ under the name it prints (the sha1's first
+8 characters in the file name), publish it, and set resource-pack (the URL it prints) and
+resource-pack-sha1 in server/config/server.properties and on the live server (`kinetic.mjs prop
+...`, read at startup, so it applies on the next restart). Never overwrite a published pack: the
+running server keeps offering its URL with the old sha1 until that restart, and the 26.3 client
+refuses a download whose hash doesn't match, so a replaced file leaves new joiners with no pack.
 
 Run from anywhere: python server/resourcepacks/build_server_pack.py
 """
@@ -27,6 +30,7 @@ SOURCES = [
     ROOT / "server" / "resourcepacks" / "claudesmp-items",
 ]
 OUT = ROOT / "server" / "resourcepacks" / "dist" / "ClaudeSMP-server-pack-26.3.zip"
+DOWNLOADS = "https://sirbepy.github.io/sirbepys-minecraft-server/downloads/"
 SKIP = {"pack.mcmeta", "README.md", "PORTED.md"}
 FIXED_TIME = (1980, 1, 1, 0, 0, 0)
 
@@ -68,11 +72,17 @@ def build(out):
     return len(files) + 1
 
 
+def published_name(sha1):
+    return f"{OUT.stem}-{sha1[:8]}{OUT.suffix}"
+
+
 def main():
     count = build(OUT)
     sha1 = hashlib.sha1(OUT.read_bytes()).hexdigest()
     print(f"wrote {OUT} ({count} files)")
     print(f"sha1 {sha1}")
+    print(f"publish as site/downloads/{published_name(sha1)}")
+    print(f"resource-pack={DOWNLOADS}{published_name(sha1)}")
 
 
 if __name__ == "__main__":

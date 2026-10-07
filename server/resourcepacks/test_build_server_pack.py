@@ -83,6 +83,12 @@ def asset(ref, kind, ext):
     return f"assets/{namespace}/{kind}/{path}.{ext}"
 
 
+class PublishedNameTest(unittest.TestCase):
+    def test_each_pack_is_published_under_its_own_sha1(self):
+        self.assertEqual(build_server_pack.published_name("1490144e0322108fc07f358d1e944992925c0c4e"),
+                         "ClaudeSMP-server-pack-26.3-1490144e.zip")
+
+
 class BuiltPackTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
