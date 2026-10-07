@@ -164,11 +164,17 @@ public final class SummonSessionManager {
         String message = truncate(rawMessage, SummonConfig.MAX_WISH_MESSAGE_CHARS);
         Bukkit.broadcast(Component.text(player.getName() + " to " + s.dragon.displayName() + ": ", NamedTextColor.YELLOW)
                 .append(Component.text(message, NamedTextColor.WHITE)));
-        logger.info("[DragonBalls] WISH " + s.id + " " + s.dragon.displayName() + " " + s.wishesLeft + " "
-                + player.getName() + " (" + player.getUniqueId() + "): " + message);
+        logger.info(wishLogLine(s, player.getName(), player.getUniqueId(), message));
         appendLine(WishJsonWriter.wishLine(Instant.now(), s.id, s.dragon.displayName(), s.wishesLeft,
                 player.getName(), player.getUniqueId(), message, s.set.id()));
         s.lastActivityMillis = clock.getAsLong();
+    }
+
+    /** The console line Player Claude judges from; the set is in it because a Nether or End dragon
+     * grants bigger wishes than an Overworld one (docs/dragonballs.md, Guide values). */
+    static String wishLogLine(SummonSession s, String playerName, UUID playerId, String message) {
+        return "[DragonBalls] WISH " + s.id + " " + s.dragon.displayName() + " " + s.set.id() + " " + s.wishesLeft + " "
+                + playerName + " (" + playerId + "): " + message;
     }
 
     static String truncate(String message, int max) {

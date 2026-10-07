@@ -152,7 +152,7 @@ try {
     await waitFor(() => {
       if (!fs.existsSync(logPath)) return false;
       const added = fs.readFileSync(logPath, 'utf8').slice(logSizeBefore);
-      return /\[DragonBalls\] WISH \S+ Porunga \d+ DBHunter/.test(added);
+      return /\[DragonBalls\] WISH \S+ Porunga overworld \d+ DBHunter/.test(added);
     }, 'server log has a [DragonBalls] WISH line', 5_000);
 
     await waitFor(() => {

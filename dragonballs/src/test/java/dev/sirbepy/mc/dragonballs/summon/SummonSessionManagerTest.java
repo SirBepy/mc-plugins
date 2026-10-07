@@ -269,6 +269,40 @@ class SummonSessionManagerTest {
         assertTrue(scatterer.scatterAllCalled);
     }
 
+    @Test
+    void wishLineAndStatusNameTheSetTheDragonWasSummonedFrom() {
+        placeAllSevenNetherTogether();
+        SummonSessionManager sessions = newManager();
+        PlayerMock player = server.addPlayer("Goku");
+        sessions.tryStart(player, DragonType.SHENRON, new Location(netherWorld, 100, 64, 100), BallSet.NETHER);
+        List<String> logged = new java.util.ArrayList<>();
+        java.util.logging.Handler capture = new java.util.logging.Handler() {
+            @Override
+            public void publish(java.util.logging.LogRecord record) {
+                logged.add(record.getMessage());
+            }
+
+            @Override
+            public void flush() {
+            }
+
+            @Override
+            public void close() {
+            }
+        };
+        plugin.getLogger().addHandler(capture);
+        try {
+            sessions.recordWish(player, "I wish for netherite");
+        } finally {
+            plugin.getLogger().removeHandler(capture);
+        }
+
+        String wishLine = logged.stream().filter(l -> l.startsWith("[DragonBalls] WISH ")).findFirst().orElseThrow();
+        assertTrue(wishLine.matches("\\[DragonBalls] WISH \\S+ Shenron nether 1 Goku \\("
+                + player.getUniqueId() + "\\): I wish for netherite"), wishLine);
+        assertTrue(sessions.statusText().contains(" set=nether "), sessions.statusText());
+    }
+
     /** Package-visible so it matches BallRegistryTest's own fake-scatterer style. */
     private static final class FakeScatterer implements BallScatterer {
         boolean scatterAllCalled;
