@@ -123,18 +123,27 @@ public final class DragonBallsCommand {
     }
 
     private int scatter(CommandSourceStack source, BallSet set, boolean stone) {
+        return scatter(source.getSender(), set, stone);
+    }
+
+    int scatter(CommandSender sender, BallSet set, boolean stone) {
         if (!sets.isEnabled(set)) {
-            source.getSender().sendMessage(Component.text("The End hasn't opened yet."));
+            sender.sendMessage(Component.text("The End hasn't opened yet."));
             return Command.SINGLE_SUCCESS;
         }
         BallRegistry registry = sets.registry(set);
         Location center = registry.lastSummon();
         if (center == null) {
-            source.getSender().sendMessage(Component.text("No last-summon location yet; its world hasn't loaded."));
+            sender.sendMessage(Component.text("No last-summon location yet; its world hasn't loaded."));
             return Command.SINGLE_SUCCESS;
         }
+        // The scatter only moves the registry's record, so the old heads (and carried copies) have to
+        // go first: a live re-scatter on 2026-10-07 left 2 duplicate Nether heads behind.
+        for (BallView view : registry.getBalls()) {
+            teardown(registry, view);
+        }
         registry.scatterAll(center, stone);
-        config.get().messages().send(source.getSender(), "scatter-success");
+        config.get().messages().send(sender, "scatter-success");
         return Command.SINGLE_SUCCESS;
     }
 
