@@ -161,6 +161,8 @@ public final class ScatterService implements BallScatterer {
         double[] netherCenter = toNetherCenter(center, netherWorld);
         int netherMin = NetherScale.toNetherRadius(tier.minRadius());
         int netherMax = Math.max(netherMin + 1, NetherScale.toNetherRadius(tier.maxRadius()));
+        netherCenter = new double[]{NetherScale.clampCenter(netherCenter[0], cfg.netherPregenLimit(), netherMax),
+                NetherScale.clampCenter(netherCenter[1], cfg.netherPregenLimit(), netherMax)};
         ScatterVarietyConfig variety = variety();
         // The Nether set has no underground stars (its "surface" is already a cavern); only the
         // POI slice (fortress/bastion) applies here.
@@ -170,7 +172,7 @@ public final class ScatterService implements BallScatterer {
         List<double[]> avoid = new ArrayList<>();
         for (int star = 1; star <= 7; star++) {
             double[] candidate = ScatterPlanner.findCandidate(random, netherCenter[0], netherCenter[1], netherMin,
-                    netherMax, cfg.netherPregenLimit(), avoid, cfg.minSpacing(), 2000);
+                    netherMax, cfg.netherPregenLimit(), avoid, NetherScale.toNetherRadius(cfg.minSpacing()), 2000);
             if (candidate == null) {
                 plugin.getLogger().warning("Could not find a nether scatter spot for star " + star);
                 continue;
@@ -199,9 +201,11 @@ public final class ScatterService implements BallScatterer {
         double[] netherCenter = toNetherCenter(center, netherWorld);
         int netherMin = NetherScale.toNetherRadius(tier.minRadius());
         int netherMax = Math.max(netherMin + 1, NetherScale.toNetherRadius(tier.maxRadius()));
+        netherCenter = new double[]{NetherScale.clampCenter(netherCenter[0], cfg.netherPregenLimit(), netherMax),
+                NetherScale.clampCenter(netherCenter[1], cfg.netherPregenLimit(), netherMax)};
         List<double[]> avoid = otherBallFlatLocations(star, registry, netherWorld);
         double[] candidate = ScatterPlanner.findCandidate(random, netherCenter[0], netherCenter[1], netherMin,
-                netherMax, cfg.netherPregenLimit(), avoid, cfg.minSpacing(), 2000);
+                netherMax, cfg.netherPregenLimit(), avoid, NetherScale.toNetherRadius(cfg.minSpacing()), 2000);
         if (candidate == null) {
             plugin.getLogger().warning("Could not find a free nether scatter spot for star " + star);
             return;
@@ -618,7 +622,7 @@ public final class ScatterService implements BallScatterer {
             }
             Location found = result.getLocation();
             if (PoiAcceptance.accepts(found.getX(), found.getZ(), centerX, centerZ, minRadius, maxRadius,
-                    pregenLimit, avoid, config.get().minSpacing())
+                    pregenLimit, avoid, NetherScale.toNetherRadius(config.get().minSpacing()))
                     && townyGuard.isWilderness(found)) {
                 double[] jittered = jitterNear(found);
                 return new PoiMatch(jittered[0], jittered[1], structure.getKey().asString());
@@ -640,7 +644,7 @@ public final class ScatterService implements BallScatterer {
             DragonBallsConfig cfg = config.get();
             if (attempts + 1 < cfg.maxLiquidResamples()) {
                 double[] fresh = ScatterPlanner.findCandidate(random, centerX, centerZ, minRadius, maxRadius,
-                        pregenLimit, avoid, cfg.minSpacing(), 2000);
+                        pregenLimit, avoid, NetherScale.toNetherRadius(cfg.minSpacing()), 2000);
                 if (fresh != null) {
                     return resolveNetherSpot(netherWorld, centerX, centerZ, minRadius, maxRadius, pregenLimit, avoid,
                             fresh[0], fresh[1], attempts + 1);
@@ -685,7 +689,7 @@ public final class ScatterService implements BallScatterer {
         items.applyBlockTexture(skull, registry.set(), star, stone);
         skull.update(true);
         registry.markPlaced(star, block.getLocation(), stone);
-        plugin.getLogger().info("[DragonBalls] Placed " + registry.set().id() + " " + star + "-star at "
+        plugin.getLogger().info("Placed " + registry.set().id() + " " + star + "-star at "
                 + world.getName() + " " + x + " " + y + " " + z + " (" + kind + ")");
     }
 

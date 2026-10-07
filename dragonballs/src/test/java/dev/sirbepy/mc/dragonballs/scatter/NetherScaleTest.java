@@ -19,4 +19,19 @@ class NetherScaleTest {
         assertEquals(562, NetherScale.toNetherRadius(4500));
         assertEquals(0, NetherScale.toNetherRadius(7));
     }
+
+    @Test
+    void clampsACentreSoTheWholeAnnulusFitsTheSquare() {
+        assertEquals(825.0, NetherScale.clampCenter(1050, 1200, 375), 1e-9);
+        assertEquals(-825.0, NetherScale.clampCenter(-1100, 1200, 375), 1e-9);
+        assertEquals(53.0, NetherScale.clampCenter(53, 1200, 375), 1e-9);
+        assertEquals(0.0, NetherScale.clampCenter(400, 300, 562), 1e-9);
+    }
+
+    @Test
+    void scalesBallSpacingToo() {
+        // 200 overworld blocks of spacing would be 1600 in the Nether: 7 balls never fit an annulus
+        // only 125-375 wide.
+        assertEquals(25, NetherScale.toNetherRadius(200));
+    }
 }

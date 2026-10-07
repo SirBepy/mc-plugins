@@ -15,4 +15,14 @@ public final class NetherScale {
     public static int toNetherRadius(int overworldRadius) {
         return (int) (overworldRadius / FACTOR);
     }
+
+    /**
+     * Pulls a scatter centre inwards so the whole annulus stays inside the pregenerated square: the
+     * Nether's square (+/-1200) is small next to its radii (up to 562), and a centre near its edge
+     * left too few valid spots for 7 spaced-out balls (live, 2026-10-07: 2 of 7 never placed).
+     */
+    public static double clampCenter(double value, int pregenLimit, int maxRadius) {
+        double bound = Math.max(0, pregenLimit - maxRadius);
+        return Math.max(-bound, Math.min(bound, value));
+    }
 }
