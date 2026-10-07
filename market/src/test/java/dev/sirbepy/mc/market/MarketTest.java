@@ -226,7 +226,7 @@ class MarketTest {
     @Test
     void applyWritesDyedGlowingSellSignsAndClearsUnusedSpots() {
         WorldMock world = server.addSimpleWorld("world");
-        Stall stall = new Stall("test", DyeColor.YELLOW,
+        Stall stall = new Stall("test", "Test", DyeColor.YELLOW,
                 List.of(new Stall.Slot(0, 70, 0, BlockFace.SOUTH), new Stall.Slot(1, 70, 0, BlockFace.SOUTH),
                         new Stall.Slot(2, 70, 0, BlockFace.SOUTH)),
                 List.of(new Offer("wheat", 64, new BigDecimal("3.2")), new Offer("carrot", 64, new BigDecimal("3.2"))));
@@ -252,6 +252,8 @@ class MarketTest {
     @Test
     void applyUsesTodaysPicksForEveryStall() {
         WorldMock world = server.addSimpleWorld("world");
+        // MockBukkit has no lectern block state, so this test leaves the price lectern to e2e/market.mjs.
+        layout = new MarketLayout(layout.signBlock(), null, layout.stalls());
         Market market = market(5);
         market.refresh();
         market.apply(world);

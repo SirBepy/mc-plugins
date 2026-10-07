@@ -4,6 +4,7 @@ import com.mojang.brigadier.Command;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.World;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -67,8 +68,18 @@ public final class MarketPlugin extends JavaPlugin {
                     })
                     .build(), "Suggests a price for the item in your hand", List.of("price"));
             event.registrar().register(Commands.literal("market")
-                        .requires(src -> src.getSender().hasPermission("market.admin"))
+                        .requires(src -> src.getSender().hasPermission("market.use") || src.getSender().hasPermission("market.admin"))
+                        .executes(ctx -> today(ctx.getSource().getSender()))
+                        .then(Commands.literal("today")
+                                .executes(ctx -> today(ctx.getSource().getSender())))
+                        .then(Commands.literal("prices")
+                                .requires(src -> src.getExecutor() instanceof Player)
+                                .executes(ctx -> {
+                                    ((Player) ctx.getSource().getExecutor()).openBook(PriceList.book(market.layout(), config.get()));
+                                    return Command.SINGLE_SUCCESS;
+                                }))
                         .then(Commands.literal("rotate")
+                                .requires(src -> src.getSender().hasPermission("market.admin"))
                                 .executes(ctx -> {
                                     market.rotate();
                                     applyIfWorldLoaded();
@@ -76,13 +87,19 @@ public final class MarketPlugin extends JavaPlugin {
                                     return Command.SINGLE_SUCCESS;
                                 }))
                         .then(Commands.literal("reload")
+                                .requires(src -> src.getSender().hasPermission("market.admin"))
                                 .executes(ctx -> {
                                     reload();
                                     config.get().messages().send(ctx.getSource().getSender(), "reload-success");
                                     return Command.SINGLE_SUCCESS;
                                 }))
-                        .build(), "Spawn market admin");
+                        .build(), "What the spawn market buys today, and its usual prices");
         });
+    }
+
+    private int today(CommandSender sender) {
+        PriceList.today(market.layout(), market::buying, config.get()).forEach(sender::sendMessage);
+        return Command.SINGLE_SUCCESS;
     }
 
     // stalls.yml and prices.yml ship inside the jar, so only config.yml can change without a restart.

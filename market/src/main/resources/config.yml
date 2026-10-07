@@ -24,6 +24,13 @@ messages:
   rotated: "<gold>A new day at the spawn market: the stalls are buying different things. Check the [Sell] signs at spawn."
   rotate-success: "<green>The spawn market picked new buyers."
   reload-success: "<green>Market config reloaded. Item counts and prices apply from the next rotation (/market rotate)."
+  today-header: "<gold>Today the spawn market buys:"
+  today-stall: "<yellow><stall>:</yellow> <offers>"
+  # The price book, on the Guide stall's lectern and from /market prices. A page fits about 14
+  # short lines.
+  prices-book-title: "Market prices"
+  prices-book-author: "the spawn market"
+  prices-book-intro: "<bold>Market prices</bold>\n\nWhat each stall pays on a usual day. A day's price can be up to <spread> lower or higher.\n\nEach stall buys only a few of these a day: /market shows today's."
   price-hold: "<gray>Hold the item you want priced in your main hand."
   price-untradeable: "<gray><item> can't be traded."
   price-unknown: "<gray>No suggested price for <item> yet."

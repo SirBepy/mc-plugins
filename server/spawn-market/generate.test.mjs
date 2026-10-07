@@ -47,6 +47,18 @@ test('every selling stall has 3 free sign spots and a pool that fits on a sign',
   }
 });
 
+test('the price lectern is an empty lectern labelled Prices that nothing else builds over', () => {
+  const m = readFileSync(join(here, '..', '..', 'market', 'src', 'main', 'resources', 'stalls.yml'), 'utf8')
+    .match(/^price-lectern: \{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: (\w+)\}$/m);
+  assert.ok(m, 'stalls.yml has no price-lectern');
+  const [, x, y, z, facing] = m;
+  const at = (dy) => all.filter((l) => l.startsWith(`setblock ${x} ${Number(y) + dy} ${z} `));
+  // The Market plugin puts the book in, so the datapack's lectern has none.
+  assert.deepEqual(at(0), [`setblock ${x} ${y} ${z} lectern[facing=${facing}]`]);
+  assert.equal(at(2).length, 1);
+  assert.match(at(2)[0], /hanging_sign.*"Prices"/);
+});
+
 test('every sign line fits on the sign', () => {
   for (const l of lines('attach').filter((l) => l.includes('_sign'))) {
     const max = l.includes('hanging_sign') ? 10 : 15; // hanging signs are narrower

@@ -5,6 +5,8 @@ import { Rcon, assert, createBot, quit, sleep, teleport, waitFor, waitForLine } 
 // (coordinates from market/src/main/resources/stalls.yml), a bot selling to it gets paid the
 // sign's price, and the next in-game day rotates the market. The e2e world has no spawn market, so a floor and a back wall are built around the spot.
 const SIGN = { x: 420, y: 116, z: -882 };
+// stalls.yml's price-lectern: the plugin places it and its price book itself.
+const LECTERN = { x: 415, y: 115, z: -865 };
 const SELLER = 'MarketSeller';
 
 const rcon = await Rcon.connect();
@@ -33,6 +35,7 @@ async function balance() {
 
 try {
   await rcon.command(`minecraft:forceload add ${SIGN.x - 8} ${SIGN.z - 8} ${SIGN.x + 8} ${SIGN.z + 8}`);
+  await rcon.command(`minecraft:forceload add ${LECTERN.x} ${LECTERN.z}`);
   await rcon.command(`minecraft:fill ${SIGN.x - 3} ${SIGN.y - 2} ${SIGN.z + 1} ${SIGN.x + 3} ${SIGN.y - 2} ${SIGN.z + 5} minecraft:stone`);
   await rcon.command(`minecraft:fill ${SIGN.x - 3} ${SIGN.y - 1} ${SIGN.z} ${SIGN.x + 3} ${SIGN.y + 2} ${SIGN.z + 5} minecraft:air`);
   await rcon.command(`minecraft:fill ${SIGN.x - 3} ${SIGN.y - 1} ${SIGN.z - 1} ${SIGN.x + 3} ${SIGN.y + 2} ${SIGN.z - 1} minecraft:stone`);
@@ -89,6 +92,37 @@ try {
     assert((await signData('color')) === '"yellow"', 'the stall spot still holds a dyed sign after the rotation');
   });
 
+  await step('the Guide stall lectern holds the price book', async () => {
+    await waitFor(async () => /passed/i.test(plain(await rcon.command(
+      `minecraft:execute if block ${LECTERN.x} ${LECTERN.y} ${LECTERN.z} minecraft:lectern[has_book=true]`))),
+    'a lectern with a book at the price-lectern spot', 15_000);
+    const title = plain(await rcon.command(`minecraft:data get block ${LECTERN.x} ${LECTERN.y} ${LECTERN.z} Book.components."minecraft:written_book_content".title`));
+    assert(/Market prices/.test(title), `the book is the price book (got ${title.trim()})`);
+    // Command feedback cuts long NBT short, so read the book one text part at a time: a page is
+    // [heading, "\n", name, "\n", price, "\n", name, ...].
+    const part = async (page, i) => plain(await rcon.command(`minecraft:data get block ${LECTERN.x} ${LECTERN.y} ${LECTERN.z} Book.components."minecraft:written_book_content".pages[${page}].raw.extra[${i}]`))
+      .replace(/^.*has the following block data: /, '').trim();
+    let found;
+    for (let page = 1; page < 12 && !found; page++) {
+      if (!/Lumberjack/.test(await part(page, 0))) continue;
+      for (let i = 2; i < 28 && !found; i += 4) {
+        if ((await part(page, i)) === '"Dark oak log"') found = await part(page, i + 2);
+      }
+    }
+    assert(/text: "  64 for \$14\.40"/.test(found ?? ''),`the book lists 64 dark oak logs at $14.40, half a normal log (got ${found})`);
+  });
+
+  await step('/market lists today\'s buyers and /market prices opens the book', async () => {
+    const [bot] = bots;
+    const since = bot.lines.length;
+    bot.chat('/market');
+    await waitForLine(bot, /Today the spawn market buys:/, 5_000, since);
+    await waitForLine(bot, /Lumberjack: 64 [a-z ]+ \$\d+\.\d\d/, 5_000, since);
+    const opened = new Promise((resolve) => bot._client.once('open_book', resolve));
+    bot.chat('/market prices');
+    await Promise.race([opened, sleep(5_000).then(() => { throw new Error('/market prices opened no book'); })]);
+  });
+
   await step('/suggested-price and /price quote the held item', async () => {
     const [bot] = bots;
     await rcon.command(`minecraft:clear ${SELLER}`);
@@ -111,6 +145,7 @@ try {
 } finally {
   await rcon.command(`deop ${SELLER}`).catch(() => {});
   await rcon.command(`minecraft:forceload remove ${SIGN.x - 8} ${SIGN.z - 8} ${SIGN.x + 8} ${SIGN.z + 8}`).catch(() => {});
+  await rcon.command(`minecraft:forceload remove ${LECTERN.x} ${LECTERN.z}`).catch(() => {});
   await quit(...bots);
   rcon.close();
 }

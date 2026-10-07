@@ -49,6 +49,8 @@ try {
     const id = ESSENTIALS_ALIASES[m[1]] ?? m[1];
     market[id] = (Number(m[3]) / Number(m[2])) * MARKUP;
   }
+  // Stripping is an axe click, so a stripped log or stem is worth what the stall pays for the bark one.
+  for (const [id, price] of Object.entries(market)) if (`stripped_${id}` in RAW) market[`stripped_${id}`] = price;
   // Derived prices (weathered copper, concrete, filled buckets) can unlock more recipes and vice
   // versa, so alternate until neither adds anything.
   let fixed = { ...RAW, ...market };

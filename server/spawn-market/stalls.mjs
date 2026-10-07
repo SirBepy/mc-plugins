@@ -28,8 +28,14 @@ export function buildStalls(model, { GUIDES, lecternState }) {
     },
     {
       id: 'lumberjack', side: 'north', a0: 4, name: 'Lumberjack', wool: 'brown',
-      buys: ['oak', 'spruce', 'birch', 'jungle', 'acacia', 'dark_oak', 'mangrove', 'cherry', 'pale_oak']
-        .map((w) => buy(64, `${w}_log`, 0.45)),
+      // Spruce, jungle, dark oak and pale oak grow 2x2 giants that drop several times the logs of a
+      // normal tree, so they pay half (Joe, 2026-10-08). Nether stems pay 20% over a log: the trip
+      // costs more, but a huge fungus fells as easily as a tree.
+      buys: [
+        ...['oak', 'spruce', 'birch', 'jungle', 'acacia', 'dark_oak', 'mangrove', 'cherry', 'pale_oak']
+          .map((w) => buy(64, `${w}_log`, ['spruce', 'jungle', 'dark_oak', 'pale_oak'].includes(w) ? 0.225 : 0.45)),
+        buy(64, 'crimson_stem', 0.54), buy(64, 'warped_stem', 0.54),
+      ],
       props: [['oak_log[axis=AXIS]', -1, 1], ['birch_log[axis=AXIS]', -1, 2], ['spruce_log[axis=AXIS]', -1, 1, 1],
         ['stripped_oak_log[axis=y]', 5, 1], ['dark_oak_log[axis=AXIS]', 5, 2]],
     },
@@ -116,16 +122,18 @@ export function buildStalls(model, { GUIDES, lecternState }) {
       // [book, a, d]: three against the back wall, four under the eaves either side.
       guides: [['start', 2, 2], ['homes', 1, 2], ['money', 3, 2], ['towns', -1, 1], ['chests', -1, 2],
         ['tag', 5, 1], ['more', 5, 2]],
+      // The Market plugin fills this lectern's book itself from stalls.yml, so it can't go stale.
+      priceLectern: [5, 0],
       props: [],
     },
   ];
 
-  // Market plugin sign spots per selling stall, in absolute coordinates.
-  const MARKET = [];
+  // Market plugin sign spots per selling stall and its price-book lectern, in absolute coordinates.
+  const MARKET = { stalls: [], priceLectern: null };
 
   // A 5-wide, 3-deep open-front stall: a (0..4) along the side, d (0..3) away from the plaza,
   // back wall at d = 3.
-  function stall({ id, side: sideName, a0, name, wool, buys = [], props, stations = [], guides = [] }) {
+  function stall({ id, side: sideName, a0, name, wool, buys = [], props, stations = [], guides = [], priceLectern }) {
     const S = side(sideName);
     const at = (a, d, y, state, phase) => { const [u, v] = S.at(a0 + a, d); set(u, y, v, state, phase); };
     const inward = S.inward;
@@ -166,20 +174,28 @@ export function buildStalls(model, { GUIDES, lecternState }) {
     for (const [state, a] of stations) at(a, 2, Y + 1, resolve(state));
     // Lecterns face their reader: the plaza for the back-wall ones, sideways for the eaves ones,
     // each labelled by a sign above it (wall sign inside, hanging sign under the eaves).
-    for (const [key, a, d] of guides) {
+    const lectern = (a, d, title, state) => {
       const eaves = a < 0 || a > 4;
       const facing = a < 0 ? minusA : a > 4 ? S.plusA : inward;
-      const label = ['', GUIDES[key].title, '', ''];
-      at(a, d, Y + 1, lecternState(facing, key), 'attach');
+      const label = ['', title, '', ''];
+      at(a, d, Y + 1, state(facing), 'attach');
       if (eaves) at(a, d, Y + 3, sign(`spruce_hanging_sign[attached=false,rotation=${ROTATION[facing]}]`, label, { color: wool }), 'attach');
       else at(a, d, Y + 2, sign(`spruce_wall_sign[facing=${inward}]`, label, { color: wool }), 'attach');
+      return facing;
+    };
+    for (const [key, a, d] of guides) lectern(a, d, GUIDES[key].title, (facing) => lecternState(facing, key));
+    if (priceLectern) {
+      const [a, d] = priceLectern;
+      const facing = lectern(a, d, 'Prices', (f) => `lectern[facing=${f}]`);
+      const [u, v] = S.at(a0 + a, d);
+      MARKET.priceLectern = { x: CX + u, y: Y + 1, z: CZ + v, facing };
     }
     if (buys.length) {
       const slots = [1, 2, 3].map((a) => {
         const [u, v] = S.at(a0 + a, 2);
         return { x: CX + u, y: Y + 2, z: CZ + v, facing: inward };
       });
-      MARKET.push({ id, color: wool, slots, buys });
+      MARKET.stalls.push({ id, name, color: wool, slots, buys });
     }
     for (const [state, a, d, dy = 0] of props) at(a, d, Y + 1 + dy, resolve(state), dy ? 'attach' : 'build');
   }

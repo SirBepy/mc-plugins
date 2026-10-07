@@ -62,6 +62,15 @@ test('market items are twice their stall base and hand-gathered items stay deare
   assert.equal(items.raw_copper, 0.4);
   assert.equal(items.oak_log, 0.9);
   assert.equal(items.stripped_oak_log, items.oak_log);
+  // Tall-tree logs pay half, Nether stems 20% over a log, and stripping keeps each one's price.
+  for (const log of ['spruce_log', 'jungle_log', 'dark_oak_log', 'pale_oak_log']) {
+    assert.equal(items[log], items.oak_log / 2, log);
+    assert.equal(items[`stripped_${log}`], items[log], `stripped_${log}`);
+  }
+  for (const stem of ['crimson_stem', 'warped_stem']) {
+    assert.ok(Math.abs(items[stem] - items.oak_log * 1.2) < 1e-4, stem);
+    assert.equal(items[`stripped_${stem}`], items[stem], `stripped_${stem}`);
+  }
   assert.ok(Math.abs(items.iron_ingot - (items.raw_iron + FUEL)) < 1e-4, 'an ingot costs its smelted raw ore');
   assert.ok(items.netherite_ingot > 200);
 });

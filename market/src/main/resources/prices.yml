@@ -203,7 +203,7 @@ items:
   cake: 12.0906
   calcite: 0.05
   calibrated_sculk_sensor: 4
-  campfire: 2.945
+  campfire: 1.595
   candle: 0.3
   carrot: 0.1
   carrot_on_a_stick: 0.42
@@ -214,7 +214,7 @@ items:
   chainmail_chestplate: 5
   chainmail_helmet: 3
   chainmail_leggings: 4
-  charcoal: 0.9156
+  charcoal: 0.4656
   cherry_boat: 1.125
   cherry_button: 0.225
   cherry_chest_boat: 1.845
@@ -331,23 +331,23 @@ items:
   creaking_heart: 3
   creeper_banner_pattern: 5.04
   creeper_head: 5
-  crimson_button: 0.225
-  crimson_door: 0.45
-  crimson_fence: 0.3267
-  crimson_fence_gate: 0.61
+  crimson_button: 0.27
+  crimson_door: 0.54
+  crimson_fence: 0.3867
+  crimson_fence_gate: 0.7
   crimson_fungus: 0.1
-  crimson_hanging_sign: 1.4156
-  crimson_hyphae: 1.2
+  crimson_hanging_sign: 1.5956
+  crimson_hyphae: 1.44
   crimson_nylium: 0.05
-  crimson_planks: 0.225
-  crimson_pressure_plate: 0.45
+  crimson_planks: 0.27
+  crimson_pressure_plate: 0.54
   crimson_roots: 0.01
-  crimson_shelf: 0.9
-  crimson_sign: 0.4633
-  crimson_slab: 0.1125
-  crimson_stairs: 0.3375
-  crimson_stem: 0.9
-  crimson_trapdoor: 0.675
+  crimson_shelf: 1.08
+  crimson_sign: 0.5533
+  crimson_slab: 0.135
+  crimson_stairs: 0.405
+  crimson_stem: 1.08
+  crimson_trapdoor: 0.81
   crossbow: 2.2834
   crying_obsidian: 1
   cut_copper: 0.9352
@@ -380,24 +380,24 @@ items:
   damaged_anvil: 5
   dandelion: 0.05
   danger_pottery_sherd: 2
-  dark_oak_boat: 1.125
-  dark_oak_button: 0.225
-  dark_oak_chest_boat: 1.845
-  dark_oak_door: 0.45
-  dark_oak_fence: 0.3267
-  dark_oak_fence_gate: 0.61
-  dark_oak_hanging_sign: 1.4156
+  dark_oak_boat: 0.5625
+  dark_oak_button: 0.1125
+  dark_oak_chest_boat: 1.2825
+  dark_oak_door: 0.225
+  dark_oak_fence: 0.1767
+  dark_oak_fence_gate: 0.385
+  dark_oak_hanging_sign: 0.9656
   dark_oak_leaves: 0.02
-  dark_oak_log: 0.9
-  dark_oak_planks: 0.225
-  dark_oak_pressure_plate: 0.45
+  dark_oak_log: 0.45
+  dark_oak_planks: 0.1125
+  dark_oak_pressure_plate: 0.225
   dark_oak_sapling: 0.1
-  dark_oak_shelf: 0.9
-  dark_oak_sign: 0.4633
-  dark_oak_slab: 0.1125
-  dark_oak_stairs: 0.3375
-  dark_oak_trapdoor: 0.675
-  dark_oak_wood: 1.2
+  dark_oak_shelf: 0.45
+  dark_oak_sign: 0.2383
+  dark_oak_slab: 0.0563
+  dark_oak_stairs: 0.1688
+  dark_oak_trapdoor: 0.3375
+  dark_oak_wood: 0.6
   dark_prismarine: 1.65
   dark_prismarine_slab: 0.825
   dark_prismarine_stairs: 1.65
@@ -659,25 +659,25 @@ items:
   item_frame: 1.32
   jack_o_lantern: 0.3412
   jukebox: 20.72
-  jungle_boat: 1.125
-  jungle_button: 0.225
-  jungle_chest_boat: 1.845
-  jungle_door: 0.45
-  jungle_fence: 0.3267
-  jungle_fence_gate: 0.61
-  jungle_hanging_sign: 1.4156
+  jungle_boat: 0.5625
+  jungle_button: 0.1125
+  jungle_chest_boat: 1.2825
+  jungle_door: 0.225
+  jungle_fence: 0.1767
+  jungle_fence_gate: 0.385
+  jungle_hanging_sign: 0.9656
   jungle_leaves: 0.02
-  jungle_log: 0.9
-  jungle_planks: 0.225
-  jungle_pressure_plate: 0.45
+  jungle_log: 0.45
+  jungle_planks: 0.1125
+  jungle_pressure_plate: 0.225
   jungle_pyramid_map: 3
   jungle_sapling: 0.1
-  jungle_shelf: 0.9
-  jungle_sign: 0.4633
-  jungle_slab: 0.1125
-  jungle_stairs: 0.3375
-  jungle_trapdoor: 0.675
-  jungle_wood: 1.2
+  jungle_shelf: 0.45
+  jungle_sign: 0.2383
+  jungle_slab: 0.0563
+  jungle_stairs: 0.1688
+  jungle_trapdoor: 0.3375
+  jungle_wood: 0.6
   kelp: 0.01
   ladder: 0.0933
   lantern: 1.1663
@@ -960,24 +960,24 @@ items:
   pale_hanging_moss: 0.05
   pale_moss_block: 0.05
   pale_moss_carpet: 0.0333
-  pale_oak_boat: 1.125
-  pale_oak_button: 0.225
-  pale_oak_chest_boat: 1.845
-  pale_oak_door: 0.45
-  pale_oak_fence: 0.3267
-  pale_oak_fence_gate: 0.61
-  pale_oak_hanging_sign: 1.4156
+  pale_oak_boat: 0.5625
+  pale_oak_button: 0.1125
+  pale_oak_chest_boat: 1.2825
+  pale_oak_door: 0.225
+  pale_oak_fence: 0.1767
+  pale_oak_fence_gate: 0.385
+  pale_oak_hanging_sign: 0.9656
   pale_oak_leaves: 0.02
-  pale_oak_log: 0.9
-  pale_oak_planks: 0.225
-  pale_oak_pressure_plate: 0.45
+  pale_oak_log: 0.45
+  pale_oak_planks: 0.1125
+  pale_oak_pressure_plate: 0.225
   pale_oak_sapling: 0.1
-  pale_oak_shelf: 0.9
-  pale_oak_sign: 0.4633
-  pale_oak_slab: 0.1125
-  pale_oak_stairs: 0.3375
-  pale_oak_trapdoor: 0.675
-  pale_oak_wood: 1.2
+  pale_oak_shelf: 0.45
+  pale_oak_sign: 0.2383
+  pale_oak_slab: 0.0563
+  pale_oak_stairs: 0.1688
+  pale_oak_trapdoor: 0.3375
+  pale_oak_wood: 0.6
   paper: 0.04
   pearlescent_froglight: 0.5
   peony: 0.1
@@ -1225,7 +1225,7 @@ items:
   small_amethyst_bud: 0.1
   small_dripleaf: 0.05
   smithing_table: 2.8912
-  smoker: 3.68
+  smoker: 1.88
   smooth_basalt: 0.0356
   smooth_quartz: 1.0156
   smooth_quartz_slab: 0.5078
@@ -1245,7 +1245,7 @@ items:
   snow_block: 0.04
   snowball: 0.01
   snowy_village_map: 3
-  soul_campfire: 2.87
+  soul_campfire: 1.52
   soul_lantern: 1.1787
   soul_sand: 0.05
   soul_soil: 0.05
@@ -1256,24 +1256,24 @@ items:
   splash_potion: 0.2
   sponge: 3
   spore_blossom: 1
-  spruce_boat: 1.125
-  spruce_button: 0.225
-  spruce_chest_boat: 1.845
-  spruce_door: 0.45
-  spruce_fence: 0.3267
-  spruce_fence_gate: 0.61
-  spruce_hanging_sign: 1.4156
+  spruce_boat: 0.5625
+  spruce_button: 0.1125
+  spruce_chest_boat: 1.2825
+  spruce_door: 0.225
+  spruce_fence: 0.1767
+  spruce_fence_gate: 0.385
+  spruce_hanging_sign: 0.9656
   spruce_leaves: 0.02
-  spruce_log: 0.9
-  spruce_planks: 0.225
-  spruce_pressure_plate: 0.45
+  spruce_log: 0.45
+  spruce_planks: 0.1125
+  spruce_pressure_plate: 0.225
   spruce_sapling: 0.1
-  spruce_shelf: 0.9
-  spruce_sign: 0.4633
-  spruce_slab: 0.1125
-  spruce_stairs: 0.3375
-  spruce_trapdoor: 0.675
-  spruce_wood: 1.2
+  spruce_shelf: 0.45
+  spruce_sign: 0.2383
+  spruce_slab: 0.0563
+  spruce_stairs: 0.1688
+  spruce_trapdoor: 0.3375
+  spruce_wood: 0.6
   spyglass: 1.0313
   stick: 0.04
   sticky_piston: 2.2006
@@ -1302,24 +1302,24 @@ items:
   stripped_birch_wood: 1.2
   stripped_cherry_log: 0.9
   stripped_cherry_wood: 1.2
-  stripped_crimson_hyphae: 1.2
-  stripped_crimson_stem: 0.9
-  stripped_dark_oak_log: 0.9
-  stripped_dark_oak_wood: 1.2
-  stripped_jungle_log: 0.9
-  stripped_jungle_wood: 1.2
+  stripped_crimson_hyphae: 1.44
+  stripped_crimson_stem: 1.08
+  stripped_dark_oak_log: 0.45
+  stripped_dark_oak_wood: 0.6
+  stripped_jungle_log: 0.45
+  stripped_jungle_wood: 0.6
   stripped_mangrove_log: 0.9
   stripped_mangrove_wood: 1.2
   stripped_oak_log: 0.9
   stripped_oak_wood: 1.2
-  stripped_pale_oak_log: 0.9
-  stripped_pale_oak_wood: 1.2
+  stripped_pale_oak_log: 0.45
+  stripped_pale_oak_wood: 0.6
   stripped_poplar_log: 0.9
   stripped_poplar_wood: 1.2
-  stripped_spruce_log: 0.9
-  stripped_spruce_wood: 1.2
-  stripped_warped_hyphae: 1.2
-  stripped_warped_stem: 0.9
+  stripped_spruce_log: 0.45
+  stripped_spruce_wood: 0.6
+  stripped_warped_hyphae: 1.44
+  stripped_warped_stem: 1.08
   sugar: 0.04
   sugar_cane: 0.04
   sulfur: 0.02
@@ -1377,24 +1377,24 @@ items:
   vine: 0.01
   ward_armor_trim_smithing_template: 10
   warm_ocean_ruins_map: 3
-  warped_button: 0.225
-  warped_door: 0.45
-  warped_fence: 0.3267
-  warped_fence_gate: 0.61
+  warped_button: 0.27
+  warped_door: 0.54
+  warped_fence: 0.3867
+  warped_fence_gate: 0.7
   warped_fungus: 0.1
   warped_fungus_on_a_stick: 0.42
-  warped_hanging_sign: 1.4156
-  warped_hyphae: 1.2
+  warped_hanging_sign: 1.5956
+  warped_hyphae: 1.44
   warped_nylium: 0.05
-  warped_planks: 0.225
-  warped_pressure_plate: 0.45
+  warped_planks: 0.27
+  warped_pressure_plate: 0.54
   warped_roots: 0.01
-  warped_shelf: 0.9
-  warped_sign: 0.4633
-  warped_slab: 0.1125
-  warped_stairs: 0.3375
-  warped_stem: 0.9
-  warped_trapdoor: 0.675
+  warped_shelf: 1.08
+  warped_sign: 0.5533
+  warped_slab: 0.135
+  warped_stairs: 0.405
+  warped_stem: 1.08
+  warped_trapdoor: 0.81
   warped_wart_block: 0.1
   water_bucket: 3.7969
   waxed_chiseled_copper: 0.9852

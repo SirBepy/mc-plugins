@@ -15,8 +15,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/** The generated {@code stalls.yml}: sign block type plus every stall, in file order. */
-public record MarketLayout(Material signBlock, List<Stall> stalls) {
+/**
+ * The generated {@code stalls.yml}: sign block type, the price-book lectern's spot (null when the
+ * file has none) and every stall, in file order.
+ */
+public record MarketLayout(Material signBlock, Stall.Slot priceLectern, List<Stall> stalls) {
 
     public static MarketLayout load(InputStream stream) {
         return from(YamlConfiguration.loadConfiguration(new InputStreamReader(stream, StandardCharsets.UTF_8)));
@@ -27,6 +30,9 @@ public record MarketLayout(Material signBlock, List<Stall> stalls) {
         if (signBlock == null) {
             throw new IllegalArgumentException("Unknown sign-block in stalls.yml: " + root.getString("sign-block"));
         }
+        ConfigurationSection lectern = root.getConfigurationSection("price-lectern");
+        Stall.Slot priceLectern = lectern == null ? null : new Stall.Slot(lectern.getInt("x"), lectern.getInt("y"),
+                lectern.getInt("z"), BlockFace.valueOf(lectern.getString("facing", "north").toUpperCase(Locale.ROOT)));
         List<Stall> stalls = new ArrayList<>();
         ConfigurationSection section = root.getConfigurationSection("stalls");
         if (section != null) {
@@ -45,10 +51,10 @@ public record MarketLayout(Material signBlock, List<Stall> stalls) {
                     buys.add(new Offer(String.valueOf(offer.get("item")), number(offer, "amount").intValue(),
                             new BigDecimal(String.valueOf(number(offer, "price")))));
                 }
-                stalls.add(new Stall(id, color, List.copyOf(slots), List.copyOf(buys)));
+                stalls.add(new Stall(id, stall.getString("name", id), color, List.copyOf(slots), List.copyOf(buys)));
             }
         }
-        return new MarketLayout(signBlock, List.copyOf(stalls));
+        return new MarketLayout(signBlock, priceLectern, List.copyOf(stalls));
     }
 
     private static Number number(Map<?, ?> map, String key) {

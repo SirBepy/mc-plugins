@@ -86,11 +86,18 @@ public final class Market {
         return new Offer(offer.item(), offer.amount(), price.max(MIN_PRICE));
     }
 
-    /** Writes today's buyers onto every stall's signs and clears the unused sign spots. */
+    /** Writes today's buyers onto every stall's signs, clears the unused sign spots and refreshes the price book's lectern. */
     public void apply(World world) {
         for (Stall stall : layout.stalls()) {
             SignWriter.write(world, layout.signBlock(), stall, picks.getOrDefault(stall.id(), List.of()));
         }
+        if (layout.priceLectern() != null) {
+            LecternWriter.write(world, layout.priceLectern(), PriceList.book(layout, config.get()));
+        }
+    }
+
+    public MarketLayout layout() {
+        return layout;
     }
 
     public List<Offer> buying(String stallId) {
