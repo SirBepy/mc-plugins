@@ -17,16 +17,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Today's three Spirit Requests (one easy, one medium, one hard), drawn fresh at midnight from the
- * requests the owner's tier allows. Finished requests are claimed at Haru for petals and reputation;
- * claiming all three in a day earns a bonus.
+ * The current set of three Spirit Requests (one easy, one medium, one hard), drawn fresh at midnight
+ * and noon from the requests the owner's tier allows; whatever is left of the old set expires. Finished
+ * requests are claimed at Haru for petals and reputation; claiming all three in a set earns a bonus.
+ * Two sets a day at these rewards pay what one daily set used to, so reputation keeps the same pace.
  */
 public final class QuestBoard {
 
-    public static final int MAX_REROLLS = 3;
+    public static final int MAX_REROLLS = 2;
     public static final int REROLL_COST = 3;
-    public static final int DAILY_BONUS_PETALS = 10;
-    public static final int DAILY_BONUS_REPUTATION = 10;
+    public static final int SET_BONUS_PETALS = 5;
+    public static final int SET_BONUS_REPUTATION = 5;
 
     public enum ClaimResult { CLAIMED, NOT_DONE, ALREADY_CLAIMED, MISSING_ITEMS }
 
@@ -38,18 +39,18 @@ public final class QuestBoard {
         this.progression = progression;
     }
 
-    /** Draws a new board when the date changed since the last one. True if it did. */
-    public boolean ensureToday(OwnerState state, LocalDate today) {
-        if (today.toString().equals(state.boardDate()) && state.board().size() == Difficulty.values().length) {
+    /** Draws a new board when the request set changed since the last one. True if it did. */
+    public boolean ensureCurrentSet(OwnerState state, long set) {
+        if (setKey(set).equals(state.boardDate()) && state.board().size() == Difficulty.values().length) {
             return false;
         }
-        Random random = Rotation.random("board", today.toEpochDay());
+        Random random = Rotation.random("board", set);
         state.board().clear();
         for (Difficulty difficulty : Difficulty.values()) {
             List<QuestDef> options = options(state.tier(), difficulty, Set.of());
             state.board().add(new ActiveQuest(options.get(random.nextInt(options.size())).id(), 0, false));
         }
-        state.setBoardDate(today.toString());
+        state.setBoardDate(setKey(set));
         state.setRerollsUsed(0);
         return true;
     }
@@ -97,9 +98,9 @@ public final class QuestBoard {
         given.add(petals + " Spirit Petals");
         int reputation = def.difficulty().reputation();
         if (state.board().stream().allMatch(ActiveQuest::claimed)) {
-            state.addPetals(DAILY_BONUS_PETALS);
-            given.add(DAILY_BONUS_PETALS + " more Spirit Petals for finishing every request today");
-            reputation += DAILY_BONUS_REPUTATION;
+            state.addPetals(SET_BONUS_PETALS);
+            given.add(SET_BONUS_PETALS + " more Spirit Petals for finishing every request in this set");
+            reputation += SET_BONUS_REPUTATION;
         }
         progression.addReputation(player, state, reputation);
         return ClaimResult.CLAIMED;
@@ -110,7 +111,7 @@ public final class QuestBoard {
     }
 
     /** Swaps an unfinished, unclaimed request for another of the same difficulty. */
-    public RerollResult reroll(OwnerState state, int index, LocalDate today) {
+    public RerollResult reroll(OwnerState state, int index, long set) {
         ActiveQuest active = state.board().get(index);
         QuestDef def = QuestPool.byId(active.questId());
         if (active.claimed() || isDone(active, def)) {
@@ -128,10 +129,15 @@ public final class QuestBoard {
         if (!state.spendPetals(cost)) {
             return RerollResult.NO_PETALS;
         }
-        Random random = Rotation.random("reroll-" + index + "-" + state.rerollsUsed(), today.toEpochDay());
+        Random random = Rotation.random("reroll-" + index + "-" + state.rerollsUsed(), set);
         state.board().set(index, new ActiveQuest(options.get(random.nextInt(options.size())).id(), 0, false));
         state.setRerollsUsed(state.rerollsUsed() + 1);
         return RerollResult.REROLLED;
+    }
+
+    /** The set's start in the configured zone, e.g. "2026-10-07 12:00"; stored as the board's date. */
+    public static String setKey(long set) {
+        return LocalDate.ofEpochDay(Math.floorDiv(set, 2)) + (Math.floorMod(set, 2) == 0 ? " 00:00" : " 12:00");
     }
 
     static List<QuestDef> options(Tier tier, Difficulty difficulty, Set<String> exclude) {

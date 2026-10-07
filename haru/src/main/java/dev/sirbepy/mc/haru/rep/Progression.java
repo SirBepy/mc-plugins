@@ -22,7 +22,7 @@ public final class Progression {
     public static final String MILESTONE_COLLECTION = "milestone:collection";
     public static final String MILESTONE_JOURNAL = "milestone:journal";
     public static final String AURA_PETAL_STORM = "aura:petal_storm";
-    public static final int JOURNAL_QUESTS = 25;
+    public static final int JOURNAL_QUESTS = 50;
 
     private final Consumer<Player> celebrate;
 
@@ -73,7 +73,7 @@ public final class Progression {
         if (state.questsCompleted() >= JOURNAL_QUESTS && state.unlocks().add(MILESTONE_JOURNAL)) {
             Rewards.give(player, Milestones.journal(player.getName()));
             state.addPetals(30);
-            Speech.say(player, "Twenty-five requests. I wrote some things down for you. Read it when the rain comes.");
+            Speech.say(player, "Fifty requests. I wrote some things down for you. Read it when the rain comes.");
             celebrate.accept(player);
         }
     }

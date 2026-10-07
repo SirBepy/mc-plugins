@@ -64,10 +64,10 @@ public final class HaruContext {
         return config.get().isOwner(player.getUniqueId());
     }
 
-    /** The owner's state, with today's quest board drawn if the date rolled over. */
+    /** The owner's state, with a fresh quest board drawn if a new request set began. */
     public OwnerState ownerState() {
         OwnerState state = store.state(config.get().owner());
-        if (board.ensureToday(state, clock.today())) {
+        if (board.ensureCurrentSet(state, clock.requestSet())) {
             store.save();
         }
         return state;

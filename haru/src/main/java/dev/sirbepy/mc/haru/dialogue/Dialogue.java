@@ -156,7 +156,7 @@ public final class Dialogue {
             }
         }
         if (ctx.allQuestsClaimed()) {
-            pool.add("Every request done today! Rest now. The sanctuary is in good hands.");
+            pool.add("Every request done! Rest now. The sanctuary is in good hands.");
         }
         if (ctx.level() >= 30) {
             pool.add("Your spirit glows with so much knowledge. Put it in a book before it spills.");

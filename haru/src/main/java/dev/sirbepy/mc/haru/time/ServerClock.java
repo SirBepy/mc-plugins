@@ -5,6 +5,7 @@ import org.bukkit.Server;
 import org.bukkit.World;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.function.Supplier;
 
 public final class ServerClock implements HaruClock {
@@ -20,6 +21,11 @@ public final class ServerClock implements HaruClock {
     @Override
     public LocalDate today() {
         return LocalDate.now(config.get().zone());
+    }
+
+    @Override
+    public LocalDateTime localNow() {
+        return LocalDateTime.now(config.get().zone());
     }
 
     @Override

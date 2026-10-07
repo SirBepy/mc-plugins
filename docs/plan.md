@@ -163,7 +163,7 @@ The spawn market's rotating buyers. The server buys as little as possible so pla
 Haru, Keeper of the Sakura Sanctuary: ImMijo's Shenron wish (2026-10-06), an NPC merchant and quest giver at his base.
 
 - **Everyone:** right-click Haru for his Everyday Wares, vanilla villager goods for emeralds, a little cheaper than a villager, with limited stock that comes back every 3 Minecraft days.
-- **ImMijo:** the full menu: rotating wares, daily Spirit Requests that pay Spirit Petals, a reputation that unlocks more of the shop and of Haru's story, a Petal Exchange, a daily Mystery Curio and more he has to find himself. Everything from his own shelves is bound to him.
+- **ImMijo:** the full menu: rotating wares, Spirit Requests twice a day that pay Spirit Petals, a reputation that unlocks more of the shop and of Haru's story, a Petal Exchange, a daily Mystery Curio and more he has to find himself. Everything from his own shelves is bound to him.
 - Haru can't be hurt, converted, leashed or moved, and comes back by himself if anything removes him. `/haru` (op) places and inspects him.
 - Full design, including every hidden reward, in `docs/haru.md`: not for players, never copy it to the website.
 

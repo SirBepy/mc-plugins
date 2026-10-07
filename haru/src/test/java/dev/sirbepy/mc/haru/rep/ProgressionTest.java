@@ -46,12 +46,12 @@ class ProgressionTest extends HaruTestBase {
     }
 
     @Test
-    void twentyFiveRequestsEarnTheJournal() {
+    void fiftyRequestsEarnTheJournal() {
         OwnerState state = state();
-        state.setQuestsCompleted(Progression.JOURNAL_QUESTS - 1);
+        state.setQuestsCompleted(49);
         ctx.progression().checkMilestones(owner, state);
         assertFalse(state.has(Progression.MILESTONE_JOURNAL));
-        state.setQuestsCompleted(Progression.JOURNAL_QUESTS);
+        state.setQuestsCompleted(50);
         ctx.progression().checkMilestones(owner, state);
         assertTrue(state.has(Progression.MILESTONE_JOURNAL));
         assertEquals(1, count(owner, Material.WRITTEN_BOOK));

@@ -92,7 +92,7 @@ public final class HaruMenus {
                 go(player, Screen.WANDERING));
         long ready = state.board().stream().filter(q -> !q.claimed()).count();
         menu.set(24, Icons.button(Material.WRITABLE_BOOK, "Spirit Requests", Goods.SAKURA,
-                "Small favours, paid in Spirit Petals and trust.", ready + " of 3 still open today."), go(player, Screen.QUESTS));
+                "Small favours, paid in Spirit Petals and trust.", ready + " of 3 still open."), go(player, Screen.QUESTS));
         menu.set(29, Icons.button(Goods.head(Heads.PINK_ORB), "Petal Exchange", Goods.PETAL,
                 List.of("Spend Spirit Petals on cosmetics,", "collectibles, blessings and more.",
                         "You have " + state.petals() + " Spirit Petals.")), go(player, Screen.PETALS));

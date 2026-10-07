@@ -29,7 +29,7 @@ public record QuestDef(String id, Type type, Set<String> targets, int amount, Di
     }
 
     public enum Difficulty {
-        EASY(8, 12), MEDIUM(16, 25), HARD(30, 45);
+        EASY(4, 6), MEDIUM(8, 12), HARD(15, 23);
 
         private final int petals;
         private final int reputation;
@@ -39,9 +39,9 @@ public record QuestDef(String id, Type type, Set<String> targets, int amount, Di
             this.reputation = reputation;
         }
 
-        /** Petals grow by 2 per tier, so higher trust pays better. */
+        /** Petals grow by 1 per tier, so higher trust pays better. */
         public int petals(Tier tier) {
-            return petals + 2 * tier.ordinal();
+            return petals + tier.ordinal();
         }
 
         public int reputation() {

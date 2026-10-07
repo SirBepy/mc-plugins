@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/** Today's three Spirit Requests: left-click claims, right-click asks Haru for a different one. */
+/** The current three Spirit Requests: left-click claims, right-click asks Haru for a different one. */
 final class QuestMenu {
 
     private static final int[] SLOTS = {20, 22, 24};
@@ -38,10 +38,10 @@ final class QuestMenu {
     Menu build(Player player, OwnerState state) {
         Menu menu = new Menu(6, Component.text("Spirit Requests", Speech.HARU));
         int rerollsLeft = QuestBoard.MAX_REROLLS - state.rerollsUsed();
-        menu.set(4, Icons.button(Material.BOOK, "Haru's requests for today", Goods.SAKURA,
-                "New requests every midnight.",
+        menu.set(4, Icons.button(Material.BOOK, "Haru's requests", Goods.SAKURA,
+                "New requests at midnight and noon.",
                 "Finish all three for a bonus.",
-                "Different request: " + rerollsLeft + " left today ("
+                "Different request: " + rerollsLeft + " left until then ("
                         + (ctx.board().rerollCost(state) == 0 ? "next one free" : QuestBoard.REROLL_COST + " petals") + ")."));
         for (int i = 0; i < state.board().size() && i < SLOTS.length; i++) {
             int index = i;
@@ -107,12 +107,12 @@ final class QuestMenu {
     }
 
     private void reroll(Player player, OwnerState state, int index) {
-        switch (ctx.board().reroll(state, index, ctx.clock().today())) {
+        switch (ctx.board().reroll(state, index, ctx.clock().requestSet())) {
             case REROLLED -> {
                 Speech.say(player, "Hmm. Then perhaps this instead.");
                 ctx.store().save();
             }
-            case NO_REROLLS_LEFT -> Speech.say(player, "That is all the requests I have thought of today.");
+            case NO_REROLLS_LEFT -> Speech.say(player, "That is all the requests I have thought of for now.");
             case NO_PETALS -> Speech.note(player, "A different request costs " + QuestBoard.REROLL_COST + " Spirit Petals.");
             case NOT_REROLLABLE -> Speech.say(player, "That one is finished. Claim it instead.");
             case NOTHING_ELSE -> Speech.say(player, "I have no other request of that kind right now.");

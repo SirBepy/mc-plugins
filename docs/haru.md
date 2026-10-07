@@ -89,17 +89,25 @@ Unbreaking III, Mending) at 64E + 60, sold once ever. No beacon, no netherite te
 
 ### Spirit Requests (ImMijo)
 
-Three a day (one easy, one medium, one hard) drawn at midnight Europe/Zagreb from 60+ requests: hand
-in items, kill mobs, mine ores without Silk Touch, harvest ripe crops, fish, breed, enchant, trade with
-villagers, visit biomes (Terralith's sakura biomes count). Easy/medium/hard pay 8/16/30 petals (+2 per
-trust tier) and 12/25/45 trust; all three in a day adds 10 petals and 10 trust. Up to 3 rerolls a
-day, the first free, then 3 petals. Progress shows on the action bar; finished requests are claimed at
-Haru.
+A set of three (one easy, one medium, one hard) every 12 hours, drawn at midnight and noon
+Europe/Zagreb from 60+ requests: hand in items, kill mobs, mine ores without Silk Touch, harvest ripe
+crops, fish, breed, enchant, trade with villagers, visit biomes (Terralith's sakura biomes count).
+Easy/medium/hard pay 4/8/15 petals (+1 per trust tier) and 6/12/23 trust; all three in a set adds 5
+petals and 5 trust. Up to 2 rerolls a set, the first free, then 3 petals. Progress shows on the action
+bar; finished requests are claimed at Haru. Whatever is left of a set when the next one is drawn
+expires, finished-but-unclaimed requests included, as the old daily board did.
+
+Until 2026-10-07 it was one set a day at double the rewards (8/16/30 petals +2 per tier, 12/25/45
+trust, 10 + 10 bonus, 3 rerolls a day). ImMijo asked for 12 hours ("every midnight is a bit
+menacing"); Joe approved with every reward halved, so two full sets pay exactly what one daily set
+did (64 petals + 6 per tier, 92 trust) and the pace to max reputation is unchanged. Rerolls went from
+3 a day (1 free) to 2 a set (1 free), so 4 a day with 2 free; the paid ones still cost 6 petals a day
+in total.
 
 ### Reputation
 
-Stranger 0, Acquaintance 100, Friend 350, Trusted 800, Kindred Spirit 1500, Sakura Bound 2500. Every
-daily request done is 92 trust, so max is about four weeks of perfect days. Each tier up shows a
+Stranger 0, Acquaintance 100, Friend 350, Trusted 800, Kindred Spirit 1500, Sakura Bound 2500. Both of a
+day's request sets done is 92 trust, so max is about four weeks of perfect days. Each tier up shows a
 title, plays a fanfare and Haru tells the next piece of his story (he was a cherry tree for three
 hundred springs; the dragon's voice woke him; the keepers before ImMijo left things in his care), and
 those lines join his everyday talk.
@@ -140,7 +148,9 @@ a blue axolotl. No netherite and no emeralds or coins come out of a curio.
 - **Sakura Bound:** "The Final Petal" (cherry-tree head trophy) and 50 petals, with Haru's last line.
 - **Whole Sanctuary collection:** "Portrait of Haru" (monk head), 100 petals, 40 trust and the hidden
   Petal Storm aura.
-- **25 requests completed:** "Haru's Journal", a five-page written book of his story, and 30 petals.
+- **50 requests completed:** "Haru's Journal", a five-page written book of his story, and 30 petals.
+  (25 until 2026-10-07; doubled with the switch to two request sets a day so it comes at the same
+  pace. The other milestones don't count requests and are unchanged.)
 
 ### Dialogue
 
