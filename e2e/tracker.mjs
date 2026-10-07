@@ -44,7 +44,7 @@ function withShortAfk(text) {
 // refuses. A config.yml older than that section uses the code default (on), hence the append.
 function withoutTeleportBlock(text) {
   if (/^teleport-block:/m.test(text)) {
-    return text.replace(/^(teleport-block:\n(?:(?:  #.*)?\n)*?  enabled:).*$/m, '$1 false');
+    return text.replace(/^(teleport-block:\r?\n(?:(?:  #.*)?\r?\n)*?  enabled:).*$/m, '$1 false');
   }
   return `${text.trimEnd()}\n\nteleport-block:\n  enabled: false\n`;
 }
