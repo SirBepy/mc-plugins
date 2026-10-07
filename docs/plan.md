@@ -179,11 +179,11 @@ The Adventurer's Guild: ImMijo's Shenron wish (Nuova Shenron, 2026-10-08), a ser
 
 ## Cartel plugin
 
-The cartel flip phone: Archontopouloi's Shenron wish (2026-10-06). Right-clicking his phone opens a menu that calls in Leonel and Marco Salamanca (zombies in iron armor painted as the cousins by the server pack, with Sharpness X netherite swords that never drop).
+The cartel flip phone: Archontopouloi's Shenron wish (2026-10-06). Right-clicking his phone opens a menu that calls in Leonel and Marco Salamanca (zombies painted as the cousins by the server pack, in a chainmail chestplate and leggings, with a crossbow drawn as a black pistol; none of it ever drops).
 
-- **Guard Mode:** they follow him for 10 minutes and fight monsters near him and anyone who hurts him. Once every 2 real hours.
-- **Assassinate Mode:** he picks an online player; the cousins appear 10 blocks from them and hunt them for 3 minutes, and the whole server reads "[name], you have made enemies of the cartel." Once every 36 hours (was once per real day until the dragon's council raised it on 2026-10-07, after the pillar-cheese argument, as the price of Marco's pistol).
-- **Marco's pistol (Assassinate Mode only):** if the target has had no melee path for 3 seconds (pillared or otherwise out of reach), Marco swaps his sword for a bow drawn as a pistol and shoots: at most 3 damage per hit, one shot per 1.5 s, no knockback, fire or effects, arrows can't be picked up. The moment a path opens he re-draws the sword. Leonel and Guard Mode stay melee only.
+- **Guard Mode:** they follow him for 10 minutes and shoot monsters near him and anyone who hurts him. Once every 2 real hours.
+- **Assassinate Mode:** he picks an online player; the cousins appear 10 blocks from them and hunt them for 3 minutes, and the whole server reads "[name], you have made enemies of the cartel." Once every real day (24 h).
+- **Fully ranged, both cousins, both modes (Joe, 2026-10-07, replacing the council's Marco-only pistol and its 36 h cooldown):** the crossbow carries Piercing IV, Quick Charge III and Power V. The plugin fires the bolts itself (a zombie has no ranged attack), so it applies all three: bolts pierce 4 entities, reload in half a second, and do 2.5x an arrow's base damage (Power V's +150%). They keep their distance (close in past 8 blocks, back off inside 4), never melee, and their bolts hurt only who the call lets them fight, with no knockback; nobody can pick the bolts up.
 - Every limit and the reasoning behind it: `docs/cartel.md`. `/cartel` (op) gives phones and checks or resets cooldowns.
 
 ## Testing

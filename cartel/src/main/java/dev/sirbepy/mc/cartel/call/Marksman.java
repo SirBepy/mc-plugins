@@ -1,0 +1,62 @@
+package dev.sirbepy.mc.cartel.call;
+
+import java.util.function.IntSupplier;
+
+/**
+ * One cousin's crossbow drill, in server ticks: load for {@link #CHARGE_TICKS}, aim for a pillager's
+ * 1-2 s, fire when the shot is clear and in {@link #RANGE}, reload. Also decides whether he closes in,
+ * holds or backs off. Pure state, driven by {@link RangedGoal}; keyed on the server's tick count
+ * rather than on calls, since a goal isn't necessarily ticked every tick.
+ */
+public final class Marksman {
+
+    public enum Move { CLOSE_IN, HOLD, BACK_OFF }
+
+    /** Quick Charge III: a crossbow loads in 25 ticks, 5 fewer per level. */
+    static final int CHARGE_TICKS = 25 - 5 * 3;
+    /** A pillager waits 20 + random(20) ticks between loading and firing. */
+    static final int AIM_TICKS = 20;
+    static final int AIM_SPREAD = 20;
+    /** A pillager's own crossbow range. */
+    static final double RANGE = 16;
+    /** A pillager stops walking in at 8 blocks. */
+    static final double HOLD = 8;
+    /** Closer than this (horizontally) he can't see over a pillar's top, and a monster is on him. */
+    static final double TOO_CLOSE = 4;
+
+    private final IntSupplier aimDelay;
+    private long loadingSince = -1;
+    private long fireAt = -1;
+
+    /** {@code aimDelay} answers 0 to {@link #AIM_SPREAD} - 1, like a pillager's random. */
+    public Marksman(IntSupplier aimDelay) {
+        this.aimDelay = aimDelay;
+    }
+
+    public Move move(double horizontal, boolean clearShot) {
+        if (horizontal < TOO_CLOSE) {
+            return Move.BACK_OFF;
+        }
+        return !clearShot || horizontal > HOLD ? Move.CLOSE_IN : Move.HOLD;
+    }
+
+    /** Whether a bolt leaves on server tick {@code tick}; firing starts the next reload. */
+    public boolean tick(long tick, double distance, boolean clearShot) {
+        if (loadingSince < 0) {
+            loadingSince = tick;
+        }
+        long loadedAt = loadingSince + CHARGE_TICKS;
+        if (tick < loadedAt) {
+            return false;
+        }
+        if (fireAt < 0) {
+            fireAt = loadedAt + AIM_TICKS + aimDelay.getAsInt();
+        }
+        if (tick < fireAt || !clearShot || distance > RANGE) {
+            return false;
+        }
+        loadingSince = tick;
+        fireAt = -1;
+        return true;
+    }
+}

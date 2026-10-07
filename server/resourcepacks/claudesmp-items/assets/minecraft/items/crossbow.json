@@ -5,6 +5,13 @@
     "index": 0,
     "cases": [
       {
+        "when": "cartel_pistol",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/cartel_pistol"
+        }
+      },
+      {
         "when": "pollos_gun",
         "model": {
           "type": "minecraft:select",

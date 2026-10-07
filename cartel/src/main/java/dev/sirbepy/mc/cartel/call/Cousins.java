@@ -21,14 +21,19 @@ import org.bukkit.inventory.meta.components.EquippableComponent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
- * Spawns Leonel and Marco Salamanca: adult zombies fully covered by iron armor whose
- * {@code claudesmp:salamanca} equipment texture (server pack) paints the cousins' bald heads,
- * sunglasses and grey suits over every visible part of the zombie. The armor keeps iron's stats;
- * only the look changes. Players without the pack see plain zombies with their names and swords.
+ * Spawns Leonel and Marco Salamanca: adult zombies in a chainmail chestplate and leggings, with two
+ * armorless pieces on the head and feet, all carrying the {@code claudesmp:salamanca} equipment
+ * texture (server pack) that paints the cousins' bald heads, sunglasses, grey suits and boots over
+ * every visible part of the zombie. Only the chainmail counts as armor (Joe, 2026-10-07). Players
+ * without the pack see plain zombies with their names and crossbows.
  */
 public final class Cousins {
 
@@ -36,10 +41,13 @@ public final class Cousins {
     public static final NamespacedKey LOOK = new NamespacedKey("claudesmp", "salamanca");
     public static final String PISTOL_LOOK = "cartel_pistol";
 
+    private final Plugin plugin;
     private final NamespacedKey key;
     private final Supplier<CartelConfig> config;
+    private final Random random = new Random();
 
     public Cousins(Plugin plugin, Supplier<CartelConfig> config) {
+        this.plugin = plugin;
         this.key = new NamespacedKey(plugin, "cousin");
         this.config = config;
     }
@@ -48,8 +56,11 @@ public final class Cousins {
         return entity != null && entity.getPersistentDataContainer().has(key, PersistentDataType.BOOLEAN);
     }
 
-    public Mob spawn(Location at, String name) {
-        return at.getWorld().spawn(at, Zombie.class, zombie -> dress(zombie, name));
+    /** {@code friendly}: whoever the cousin must never fire through (see {@link RangedGoal}). */
+    public Mob spawn(Location at, String name, Predicate<Entity> friendly) {
+        Zombie cousin = at.getWorld().spawn(at, Zombie.class, zombie -> dress(zombie, name));
+        RangedGoal.attach(plugin, cousin, friendly, random);
+        return cousin;
     }
 
     void mark(Entity entity) {
@@ -78,18 +89,30 @@ public final class Cousins {
         setBase(zombie, Attribute.SPAWN_REINFORCEMENTS, 0);
 
         EntityEquipment gear = zombie.getEquipment();
-        gear.setHelmet(armor(Material.IRON_HELMET, EquipmentSlot.HEAD));
-        gear.setChestplate(armor(Material.IRON_CHESTPLATE, EquipmentSlot.CHEST));
-        gear.setLeggings(armor(Material.IRON_LEGGINGS, EquipmentSlot.LEGS));
-        gear.setBoots(armor(Material.IRON_BOOTS, EquipmentSlot.FEET));
-        gear.setItemInMainHand(sword());
-        for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS,
-                EquipmentSlot.FEET, EquipmentSlot.HAND, EquipmentSlot.OFF_HAND}) {
+        outfit().forEach((slot, item) -> {
+            gear.setItem(slot, item);
             gear.setDropChance(slot, 0f);
-        }
+        });
+        gear.setDropChance(EquipmentSlot.OFF_HAND, 0f);
     }
 
-    private static ItemStack armor(Material material, EquipmentSlot slot) {
+    /** Everything a cousin wears and holds, by slot. */
+    public static Map<EquipmentSlot, ItemStack> outfit() {
+        Map<EquipmentSlot, ItemStack> outfit = new EnumMap<>(EquipmentSlot.class);
+        outfit.put(EquipmentSlot.HEAD, look(Material.PAPER, EquipmentSlot.HEAD));
+        outfit.put(EquipmentSlot.CHEST, look(Material.CHAINMAIL_CHESTPLATE, EquipmentSlot.CHEST));
+        outfit.put(EquipmentSlot.LEGS, look(Material.CHAINMAIL_LEGGINGS, EquipmentSlot.LEGS));
+        outfit.put(EquipmentSlot.FEET, look(Material.PAPER, EquipmentSlot.FEET));
+        outfit.put(EquipmentSlot.HAND, crossbow());
+        return outfit;
+    }
+
+    /**
+     * {@code material} worn in {@code slot} with the Salamanca look. Paper has no armor value, so on
+     * the head and feet it is only the look: the client draws any item whose equippable component
+     * has an asset id through the armor layer, never as a held or head item.
+     */
+    private static ItemStack look(Material material, EquipmentSlot slot) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         EquippableComponent look = meta.getEquippable();
@@ -101,28 +124,24 @@ public final class Cousins {
         return item;
     }
 
-    public static ItemStack sword() {
-        ItemStack sword = new ItemStack(Material.NETHERITE_SWORD);
-        sword.addUnsafeEnchantment(Enchantment.SHARPNESS, 10);
-        ItemMeta meta = sword.getItemMeta();
-        meta.setUnbreakable(true);
-        sword.setItemMeta(meta);
-        return sword;
-    }
-
     /**
-     * Marco's sidearm (see {@link Sidearm}): a plain bow, no enchantments, drawn as a black pistol by
-     * the server pack's {@code cartel_pistol} look. Without the pack it is just a bow.
+     * The cousins' crossbow, drawn as a black pistol by the server pack's {@code cartel_pistol} look
+     * (a plain crossbow without the pack). The enchantments are what Joe asked for; Power isn't a
+     * crossbow enchantment and the plugin fires the bolts, so {@link RangedGoal#load} is what applies
+     * all three.
      */
-    public static ItemStack pistol() {
-        ItemStack bow = new ItemStack(Material.BOW);
-        ItemMeta meta = bow.getItemMeta();
+    public static ItemStack crossbow() {
+        ItemStack crossbow = new ItemStack(Material.CROSSBOW);
+        crossbow.addUnsafeEnchantment(Enchantment.PIERCING, RangedGoal.PIERCING);
+        crossbow.addUnsafeEnchantment(Enchantment.QUICK_CHARGE, 3);
+        crossbow.addUnsafeEnchantment(Enchantment.POWER, 5);
+        ItemMeta meta = crossbow.getItemMeta();
         meta.setUnbreakable(true);
         CustomModelDataComponent look = meta.getCustomModelDataComponent();
         look.setStrings(List.of(PISTOL_LOOK));
         meta.setCustomModelDataComponent(look);
-        bow.setItemMeta(meta);
-        return bow;
+        crossbow.setItemMeta(meta);
+        return crossbow;
     }
 
     private static void setBase(Mob mob, Attribute attribute, double value) {

@@ -5,8 +5,9 @@ flip phone...` in `plugins/DragonBalls/wishes.jsonl`), built by the `cartel` plu
 (2026-10-06, ~20:50-20:55 UTC) set the gear, the 1 real day hit cooldown and the 10-block spawn
 distance, and explicitly allowed Assassinate Mode against players: an override of the Dragon Balls
 rulebook's "never hurt another player" line for this wish only. Everything below that Joe didn't
-specify was picked by Claude and is listed under "Limits". Marco's pistol and the 36 h cooldown
-came later, from the dragon's council (see "Marco's pistol").
+specify was picked by Claude and is listed under "Limits". On 2026-10-07 Joe made both cousins
+fully ranged (see "The crossbow"), replacing the dragon's council's Marco-only pistol from the same
+day.
 
 ## What the owner gets
 
@@ -31,57 +32,68 @@ came later, from the dragon's council (see "Marco's pistol").
 
 ## The cousins
 
-Two adult zombies named Leonel Salamanca and Marco Salamanca, wearing **iron armor** (all four
-pieces) and holding a **Sharpness X netherite sword**, per Joe's spec. The armor carries the server
-pack's `claudesmp:salamanca` equipment look, which paints their bald heads, wraparound sunglasses,
-goatees, grey suits and silver-toed boots over the whole zombie; it keeps iron armor's stats.
-Players without the pack see plain zombies with name tags and swords.
+Two adult zombies named Leonel Salamanca and Marco Salamanca, wearing a **chainmail chestplate and
+chainmail leggings** (no helmet, no boots) and holding a **crossbow drawn as a black pistol**, per
+Joe's spec of 2026-10-07 (until then: full iron armor and Sharpness X netherite swords). Every piece
+carries the server pack's `claudesmp:salamanca` equipment look, which paints their bald heads,
+wraparound sunglasses, goatees, grey suits and silver-toed boots over the whole zombie. The head and
+feet carry the look on a piece of paper (Joe's pick: the full look, with stats that are exactly
+chainmail chest and legs): paper has no armor value, and the client draws any item with an
+equipment look through the armor layer, never as an item on the head. Players without the pack see
+plain zombies with name tags and crossbows.
 
-- In Assassinate Mode Marco can swap his sword for a pistol when the target climbs out of reach
-  (next section). Leonel is melee only, always.
 - 40 health (a plain zombie has 20), movement speed 0.33 (a zombie walks at 0.23), follow range 64.
   No Resistance, no extra armor or toughness, no enchanted armor.
 - **Nothing drops when they die**: no gear, no XP, no zombie loot. Their gear can't be picked up
-  or knocked off either (drop chance 0, armor and sword unbreakable).
+  or knocked off either (drop chance 0, armor and crossbow unbreakable).
 - They never hurt the owner or each other, and the owner can't hurt them.
 - They don't burn in daylight, don't turn into drowned, don't break doors, don't pick up items, and
   never call zombie reinforcements.
 - They are never saved to disk: a restart, or the chunk they stand in unloading, removes them.
 
-## Marco's pistol (the dragon's council, 2026-10-07)
+## The crossbow (Joe, 2026-10-07)
 
 Melee-only cousins could be cheesed: a target who pillared 3 blocks up during Assassinate Mode just
-waited out the 3 minutes. The council of 5, which Joe made the final judge of wishes, voted 3-2 on
-2026-10-07 to fix that narrowly, without raising the cousins' general power, and set the price
-below.
+waited out the 3 minutes. The dragon's council first voted Marco a conditional pistol (with a 36 h
+cooldown as the price); Archontopouloi refused that deal, and Joe replaced it the same evening, at
+about 20:50 UTC, with this:
 
-- **Marco Salamanca only, Assassinate Mode only.** Leonel stays melee-only; Guard Mode is untouched
-  (both cousins melee).
-- Marco draws only after the target has had **no melee path for 3 continuous seconds** (pillared,
-  up a 2-block step, on water: anywhere vanilla pathfinding can't bring a zombie to them). The
-  first check that finds a path again puts the pistol away and the netherite sword back in his
-  hand, and the 3 seconds start over. Checks run every half second, the cousins' steering rate.
-- With the pistol out he backs off to about 5 blocks from the target (from the pillar's base every
-  shot would hit the pillar) and only fires when no block is in the way.
-- **Shots:** at most **3 damage (1.5 hearts) per hit**, before armor, at most **one shot per 1.5
-  seconds**; a plain arrow with no enchantments, no knockback, no fire and no effects, which can't be
-  picked up. They hurt nobody but the target (a bystander in the way takes nothing). Measured on the
-  26.2 test server 2026-10-07: 2.5 damage per hit on its difficulty, pistol out 3.3 s after the call.
-- Unchanged: 40 HP, iron armor, speed 0.33, follow range 64.
-- **Range picked by Claude:** he only draws on a target within 16 blocks (a skeleton's bow range);
-  farther than that he walks towards them like before.
-- **Look:** the bow carries the server pack's `cartel_pistol` look, the Los Pollos Hermanos gun's
-  side-on pistol recoloured to black gunmetal with a wooden grip, posed for a zombie's raised arm.
-  It fires with the Pollos gun's gunshot sound. Without the pack (and on Bedrock) it's a plain bow
-  and the shot is silent. The look was checked in an offline render only, not in a 26.3 client.
-- **Price:** Assassinate Mode's cooldown went from once per real day (24 h) to once per 36 hours.
+- **Both cousins, both modes, ranged only.** The zombie's melee goal is removed when they spawn, so
+  they never hit anyone with their hands.
+- **The crossbow:** Piercing IV, Quick Charge III and Power V, unbreakable, with the server pack's
+  `cartel_pistol` look (the Los Pollos Hermanos gun's side-on pistol recoloured to black gunmetal
+  with a wooden grip). Without the pack (and on Bedrock) it's a plain enchanted crossbow.
+- **How the enchantments work:** a zombie has no ranged attack, so the plugin fires each bolt
+  itself (Paper launches it with no weapon attached, so nothing on the crossbow applies by itself).
+  It applies all three by hand, on every bolt:
+  - **Power V** (not a crossbow enchantment in vanilla): the bolt's base damage is set to 2.5 times
+    an arrow's 2, i.e. +150%, which is also exactly what vanilla's Power V adds to a bow's arrow
+    (+1, then +0.5 per level above I). Vanilla multiplies the base by the bolt's speed when it hits.
+  - **Piercing IV:** the bolt passes through 4 entities.
+  - **Quick Charge III:** a reload takes 10 ticks (half a second), vanilla's 25 minus 5 per level.
+  - Like every vanilla crossbow bolt, it is **critical**: a random bonus on top (Joe's pick).
+- **Bolts:** fired at a pillager's bolt speed (1.6) at the target's chest, lifted for the drop the way
+  a pillager aims. That makes **8 damage (4 hearts) before armor, 8-13 with the crit's bonus**.
+  Measured on the 26.2 test server: see the e2e log line "one bolt" (bare vs full Protection IV
+  netherite). They fire with the Pollos gun's gunshot sound (silent without the pack).
+- **Who they hurt:** in Assassinate Mode only the target; in Guard Mode only who the cousins may
+  fight (monsters near the owner, anyone who hurt the owner or a cousin in the last 15 s). A bolt
+  that pierces into anyone else, or one still flying after the call ended, does nothing. No
+  knockback, no fire. Nobody can pick the bolts up. A cousin holds his shot while the other cousin or
+  the owner stands in the line of fire.
+- **Rhythm (Claude's picks, copied from the pillager):** after loading, he aims for 1-2 s before
+  each bolt, so roughly one bolt per 1.5-2.5 s per cousin. He only fires with no block in the way
+  and within 16 blocks.
+- **Keeping distance (Claude's picks, from the pillager's 8 blocks):** farther than 8 blocks, or
+  with no clear shot, he walks in; inside 4 blocks (horizontally) he backs off to 8, which is also
+  how he gets a line over a pillar's top from its base; in between he stands and shoots.
 
 ## Limits (picked by Claude, 2026-10-06)
 
 | | Guard Mode | Assassinate Mode |
 | --- | --- | --- |
 | Lasts | 10 minutes | 3 minutes |
-| Cooldown | 2 real hours from the call | 36 real hours from the call (the council, 2026-10-07; was 24 h, Joe's) |
+| Cooldown | 2 real hours from the call | 24 real hours from the call (Joe; the council's 36 h never went live) |
 | Ends early when | the owner dies or logs out; both cousins die | the target dies, logs out, or switches to creative/spectator; both cousins die |
 
 - One call at a time; a new call needs the old one to end or be called off.

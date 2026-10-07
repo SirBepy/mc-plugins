@@ -19,8 +19,8 @@ import org.bukkit.event.player.PlayerJoinEvent;
 /**
  * Keeps the cousins on the job: they only target who {@link CallManager#allowedTarget} allows, never
  * hurt their boss or each other, can't be hurt by their boss, never turn into drowned, and drop
- * nothing when they die (Joe: their gear never drops). Marco's pistol shots hit only the hit's
- * target, softly, with no knockback or fire. A boss who was offline when a hit landed
+ * nothing when they die (Joe: their gear never drops). Their crossbow bolts hurt only who the call
+ * lets them fight, with no knockback or fire. A boss who was offline when a hit landed
  * gets the trophy head on their next join.
  */
 public final class CousinListener implements Listener {
@@ -53,19 +53,11 @@ public final class CousinListener implements Listener {
         }
     }
 
-    /**
-     * Marco's pistol shots hurt only the hit's target, for at most {@link Sidearm#MAX_DAMAGE} before
-     * armor. HIGHEST so no other plugin raises it again afterwards.
-     */
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    /** A bolt that reaches anyone the call doesn't let the cousins fight (Piercing IV passes on) hurts nobody. */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onShot(EntityDamageByEntityEvent event) {
-        if (!cousinShot(event.getDamager())) {
-            return;
-        }
-        if (!calls.isHitTarget(event.getEntity())) {
+        if (cousinShot(event.getDamager()) && !calls.fairGame(event.getEntity())) {
             event.setCancelled(true);
-        } else if (event.getDamage() > Sidearm.MAX_DAMAGE) {
-            event.setDamage(Sidearm.MAX_DAMAGE);
         }
     }
 

@@ -8,8 +8,8 @@ repair stay vanilla, and players without the pack (or on Bedrock via Geyser) see
 verbatim copy of the 26.3 client jar's own `assets/minecraft/items/crossbow.json` model, so every
 other crossbow keeps its loading and charged looks. `assets/minecraft/items/netherite_sword.json`
 does the same for netherite swords, and `assets/minecraft/items/compass.json` does the same for
-compasses (Dragon Radar, below), `assets/minecraft/items/clock.json` for clocks (cartel
-phone, below), and `assets/minecraft/items/bow.json` for bows (Marco's pistol, below).
+compasses (Dragon Radar, below), and `assets/minecraft/items/clock.json` for clocks (cartel
+phone, below).
 
 ## Looks
 
@@ -127,20 +127,24 @@ phone, below), and `assets/minecraft/items/bow.json` for bows (Marco's pistol, b
   green LCD, silver hinge and keypad, on `item/generated`. `clock.json`'s `fallback` is the 26.3
   jar's own clock model verbatim.
 
-- `cartel_pistol` (bow): Marco Salamanca's pistol, the bow the Cartel plugin hands him in
-  Assassinate Mode once a target has climbed out of melee reach (the dragon's council, 2026-10-07,
-  `docs/cartel.md`). The texture is `pollos_gun.png`'s side-on pistol recoloured to black gunmetal
-  with a wooden grip, so it can't be mistaken for Archontopouloi's gold gun. Only zombies hold it,
+- `cartel_pistol` (crossbow): Leonel and Marco Salamanca's pistol, the enchanted crossbow the Cartel
+  plugin gives both cousins in both modes (Joe, 2026-10-07, `docs/cartel.md`; a bow until then). The
+  plugin fires their bolts itself, so the crossbow is never loaded or drawn and one look covers it: a
+  zombie's arm pose ignores what it holds (26.3's `HumanoidMobRenderer.getArmPose` only knows spears),
+  so the display solved for the bow needed no change. The texture is `pollos_gun.png`'s side-on
+  pistol recoloured to black gunmetal with a wooden grip, so it can't be mistaken for Archontopouloi's
+  gold gun. Only zombies hold it,
   so only the third-person display is set: solved with `.for_bepy/item-display-solver/pose.py` for
   26.3's aggressive zombie arm (`AnimationUtils.animateZombieArms`: xRot -pi/1.5, yRot -0.1), barrel
   along the raised arm and grip in the fist. Left hand repeats the right-hand numbers (the client
-  mirrors them), for the few left-handed zombies. `bow.json`'s `fallback` is the 26.3 jar's own bow
-  model verbatim. Not yet seen in a real 26.3 client, only in the solver's offline render.
+  mirrors them), for the few left-handed zombies. Not yet seen in a real 26.3 client, only in the
+  solver's offline render.
 
 - `claudesmp:salamanca` (equipment asset, `assets/claudesmp/equipment/salamanca.json`): the look of
-  Leonel and Marco Salamanca, the cartel phone's hitmen. The plugin spawns them as zombies in iron
-  armor whose `equippable` component's asset id is `claudesmp:salamanca`, so the armor keeps iron's
-  stats but draws `textures/entity/equipment/humanoid/salamanca.png` (helmet: bald head,
+  Leonel and Marco Salamanca, the cartel phone's hitmen. The plugin spawns them as zombies wearing a
+  chainmail chestplate and leggings plus a paper item on the head and feet, all four with an
+  `equippable` component whose asset id is `claudesmp:salamanca`, so only the chainmail counts as
+  armor but every piece draws `textures/entity/equipment/humanoid/salamanca.png` (helmet: bald head,
   wraparound sunglasses, goatee; chestplate: grey suit over a black shirt, hands at the sleeve
   ends; boots: dark boots with silver toes) and `humanoid_leggings/salamanca.png` (grey trousers,
   belt). Every face of the zombie is covered, so none of its green skin shows. Format checked

@@ -2,7 +2,6 @@ package dev.sirbepy.mc.cartel;
 
 import dev.sirbepy.mc.cartel.call.CallManager;
 import dev.sirbepy.mc.cartel.call.Cousins;
-import dev.sirbepy.mc.cartel.call.Sidearm;
 import dev.sirbepy.mc.cartel.call.TestSpawner;
 import dev.sirbepy.mc.cartel.call.Trophies;
 import net.kyori.adventure.text.Component;
@@ -10,7 +9,6 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
@@ -45,12 +43,6 @@ public abstract class CartelTestBase {
     protected CallManager calls;
     protected PlayerMock owner;
     protected PlayerMock victim;
-    /** What the stubbed pathfinder answers for Marco: can he walk up to his target? */
-    protected boolean[] meleePath = {true};
-    /** Every pistol shot fired, as "shooter name -> target name". */
-    protected List<String> shots = new ArrayList<>();
-    /** Every cousin handed the stand-off behaviour, by name. */
-    protected List<String> standOffs = new ArrayList<>();
 
     @BeforeEach
     void setUpServer() {
@@ -65,11 +57,7 @@ public abstract class CartelTestBase {
         store = new CartelStore(new File(tempDir.toFile(), "state.yml"), plugin.getLogger());
         cousins = new Cousins(plugin, () -> config);
         trophies = new Trophies(store);
-        calls = new CallManager(() -> config, store, TestSpawner.of(cousins), cousins, trophies, () -> now[0], new Random(7),
-                () -> new Sidearm((cousin, target) -> meleePath[0], (cousin, target) -> true,
-                        (shooter, target) -> shots.add(plain(shooter.customName()) + " -> " + target.getName()),
-                        new ItemStack(Material.NETHERITE_SWORD), new ItemStack(Material.BOW),
-                        (marco, drawn) -> standOffs.add(plain(marco.customName()))));
+        calls = new CallManager(() -> config, store, TestSpawner.of(cousins), cousins, trophies, () -> now[0], new Random(7));
         floor(0, 0, 30);
         owner.teleport(new Location(world, 0.5, FLOOR_Y, 0.5));
         victim.teleport(new Location(world, 5.5, FLOOR_Y, 5.5));

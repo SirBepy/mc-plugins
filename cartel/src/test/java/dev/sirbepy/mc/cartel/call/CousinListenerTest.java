@@ -118,29 +118,50 @@ class CousinListenerTest extends CartelTestBase {
     }
 
     @Test
-    void marcosShotsHurtTheTargetForAtMostThreeAndNobodyElse() {
+    void aHitsBoltsHurtTheTargetAtFullDamageAndNobodyElse() {
         calls.hit(owner, victim);
-        Arrow arrow = arrowFrom(calls.cousins().get(CallManager.MARCO));
+        Arrow bolt = arrowFrom(calls.cousins().get(1));
 
-        EntityDamageByEntityEvent onTarget = shot(arrow, victim, 6.0);
+        EntityDamageByEntityEvent onTarget = shot(bolt, victim, 12.0);
         listener.onShot(onTarget);
         assertFalse(onTarget.isCancelled());
-        assertEquals(Sidearm.MAX_DAMAGE, onTarget.getDamage());
-
-        EntityDamageByEntityEvent weak = shot(arrow, victim, 2.0);
-        listener.onShot(weak);
-        assertEquals(2.0, weak.getDamage(), "a shot already under the cap is left alone");
+        assertEquals(12.0, onTarget.getDamage(), "no cap: Power V's damage stands");
 
         PlayerMock bystander = server.addPlayer("Bystander");
-        EntityDamageByEntityEvent onBystander = shot(arrow, bystander, 3.0);
+        EntityDamageByEntityEvent onBystander = shot(bolt, bystander, 8.0);
         listener.onShot(onBystander);
         assertTrue(onBystander.isCancelled());
     }
 
     @Test
-    void marcosShotsNeitherKnockBackNorSetOnFire() {
+    void guardBoltsHurtMonstersButNeitherAnInnocentPlayerNorTheOtherCousin() {
+        calls.guard(owner);
+        Mob leonel = calls.cousins().get(0);
+        Mob marco = calls.cousins().get(1);
+        Arrow bolt = arrowFrom(marco);
+        Zombie monster = world.spawn(new Location(world, 4, FLOOR_Y, 4), Zombie.class);
+
+        EntityDamageByEntityEvent onMonster = shot(bolt, monster, 8.0);
+        listener.onShot(onMonster);
+        assertFalse(onMonster.isCancelled());
+
+        EntityDamageByEntityEvent onVictim = shot(bolt, victim, 8.0);
+        listener.onShot(onVictim);
+        assertTrue(onVictim.isCancelled(), "a player who did nothing is left alone");
+
+        EntityDamageByEntityEvent onLeonel = shot(bolt, leonel, 8.0);
+        listener.onFriendlyFire(onLeonel);
+        assertTrue(onLeonel.isCancelled());
+
+        EntityDamageByEntityEvent onBoss = shot(bolt, owner, 8.0);
+        listener.onFriendlyFire(onBoss);
+        assertTrue(onBoss.isCancelled());
+    }
+
+    @Test
+    void boltsNeitherKnockBackNorSetOnFire() {
         calls.hit(owner, victim);
-        Arrow arrow = arrowFrom(calls.cousins().get(CallManager.MARCO));
+        Arrow arrow = arrowFrom(calls.cousins().get(1));
 
         EntityPushedByEntityAttackEvent push = new EntityPushedByEntityAttackEvent(victim,
                 EntityKnockbackEvent.Cause.ENTITY_ATTACK, arrow, new Vector(0.4, 0.4, 0));

@@ -1,8 +1,8 @@
 """Checks the built join pack: the Pollos gun and katana looks resolve to a model and texture inside
 the zip, the gunshot Tweaks plays resolves to an .ogg inside it, the Dragon Radar and Shenron looks
-are wired up and have the expected pixels, phantom sounds carry 32 blocks, Marco's pistol resolves,
-and every other crossbow, netherite sword, compass, bow and vanilla sound still uses the vanilla 26.3
-definition.
+are wired up and have the expected pixels, phantom sounds carry 32 blocks, the Salamanca cousins'
+pistol resolves, and every other crossbow, netherite sword, compass and vanilla sound still uses the
+vanilla 26.3 definition (bows are left alone).
 
 Run from server/resourcepacks/: python -m unittest test_build_server_pack
 """
@@ -42,23 +42,6 @@ VANILLA_CROSSBOW = {
         "property": "minecraft:using_item",
     },
     "property": "minecraft:charge_type",
-}
-
-# The 26.3 client jar's own assets/minecraft/items/bow.json model.
-VANILLA_BOW = {
-    "type": "minecraft:condition",
-    "on_false": {"type": "minecraft:model", "model": "minecraft:item/bow"},
-    "on_true": {
-        "type": "minecraft:range_dispatch",
-        "entries": [
-            {"model": {"type": "minecraft:model", "model": "minecraft:item/bow_pulling_1"}, "threshold": 0.65},
-            {"model": {"type": "minecraft:model", "model": "minecraft:item/bow_pulling_2"}, "threshold": 0.9},
-        ],
-        "fallback": {"type": "minecraft:model", "model": "minecraft:item/bow_pulling_0"},
-        "property": "minecraft:use_duration",
-        "scale": 0.05,
-    },
-    "property": "minecraft:using_item",
 }
 
 # The 26.3 client jar's own assets/minecraft/items/netherite_sword.json model.
@@ -202,12 +185,11 @@ class BuiltPackTest(unittest.TestCase):
         sword = self.json("assets/minecraft/items/netherite_sword.json")["model"]
         self.assertEqual(sword["fallback"], VANILLA_NETHERITE_SWORD)
 
-    def test_marcos_pistol_resolves_to_its_texture(self):
-        self.assert_look_resolves("bow", "cartel_pistol")
+    def test_the_salamanca_pistol_resolves_to_its_texture(self):
+        self.assert_look_resolves("crossbow", "cartel_pistol")
 
-    def test_other_bows_stay_vanilla(self):
-        bow = self.json("assets/minecraft/items/bow.json")["model"]
-        self.assertEqual(bow["fallback"], VANILLA_BOW)
+    def test_bows_are_left_to_vanilla(self):
+        self.assertNotIn("assets/minecraft/items/bow.json", self.entries)
 
     def test_dragon_radar_idle_resolves_to_its_texture(self):
         self.assert_look_resolves("compass", "dragon_radar_idle")

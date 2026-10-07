@@ -2,12 +2,12 @@ import {
   Rcon, assert, createBot, nbtText, quit, randomOrigin, releasePlatform, sleep, teleport, waitFor, waitForLine,
 } from './lib.mjs';
 
-// The cartel flip phone: the owner's right-click opens the phone menu, Guard Mode brings two armed
-// cousins who kill a nearby monster and leave a bystander alone, the phone menu calls them off, and
-// Assassinate Mode (target list + confirm) broadcasts the warning, spawns them ~10 blocks from the
-// target and kills them, the owner gets the target's head, and a second hit is refused for 36 hours. A stranger's phone is dead.
-// A target on a 4-block pillar gets Marco's pistol after 3 s: soft shots (at most 3 damage, no knockback, arrows
-// can't be picked up), and the sword comes back the moment the target is on reachable ground.
+// The cartel flip phone: the owner's right-click opens the phone menu, Guard Mode brings two cousins in
+// chainmail with crossbow-pistols who shoot a nearby monster dead and leave a bystander alone, the phone
+// menu calls them off, and Assassinate Mode (target list + confirm) broadcasts the warning, spawns them
+// ~10 blocks from the target and kills them, the owner gets the target's head, and a second hit is refused
+// for 24 hours. A stranger's phone is dead. A target on a 4-block pillar is shot from range: the bolt damage
+// is logged bare and in full Protection IV netherite, with no knockback, and the bolts can't be picked up.
 // Runs inside a Towny town with mobs off, since Towny would otherwise delete the cousins within 5 s.
 const PLATFORM_Y = 200;
 const { bx: BX, bz: BZ } = randomOrigin();
@@ -15,7 +15,6 @@ const OWNER = 'CartelGus';
 const TARGET = 'CartelMark';
 const TOWN = `cartel${Date.now() % 100000}`;
 const COUSINS = '@e[tag=cartel.cousin]';
-const MARCO = '@e[tag=cartel.cousin,name="Marco Salamanca",limit=1]';
 
 const rcon = await Rcon.connect();
 const bots = [];
@@ -108,11 +107,11 @@ try {
     const menu = await openPhone(owner);
     assert(/Cartel Phone/.test(titleOf(menu)), `title (got ${titleOf(menu)})`);
     assert(containerSize(menu) === 27, `three rows (got ${containerSize(menu)})`);
-    assert(menu.slots[11]?.name === 'shield' && menu.slots[15]?.name === 'netherite_sword', 'guard and hit buttons');
+    assert(menu.slots[11]?.name === 'shield' && menu.slots[15]?.name === 'crossbow', 'guard and hit buttons');
     owner.closeWindow(menu);
   });
 
-  await step('Guard Mode brings two cousins in iron armor with Sharpness X netherite swords', async () => {
+  await step('Guard Mode brings two cousins in chainmail with enchanted crossbow-pistols', async () => {
     const menu = await openPhone(owner);
     const since = owner.lines.length;
     await owner.clickWindow(11, 0, 0);
@@ -120,17 +119,21 @@ try {
     const count = await cousinCount();
     assert(count === 2, `two cousins (got ${count}: ${await rcon.command(`minecraft:execute if entity ${COUSINS}`)}; ${await rcon.command('cartel status')})`);
     const one = `${COUSINS.slice(0, -1)},limit=1]`;
-    const slots = { head: 'iron_helmet', chest: 'iron_chestplate', legs: 'iron_leggings', feet: 'iron_boots', mainhand: 'netherite_sword' };
+    const slots = { head: 'paper', chest: 'chainmail_chestplate', legs: 'chainmail_leggings', feet: 'paper', mainhand: 'crossbow' };
     for (const [slot, item] of Object.entries(slots)) {
       const id = await rcon.command(`minecraft:data get entity ${one} equipment.${slot}.id`);
       assert(id.includes(`minecraft:${item}`), `${item} in ${slot} (got ${id})`);
     }
     for (const slot of ['head', 'chest', 'legs', 'feet']) {
       const look = await rcon.command(`minecraft:data get entity ${one} equipment.${slot}.components."minecraft:equippable".asset_id`);
-      assert(look.includes('claudesmp:salamanca'), `Salamanca look on the ${slot} armor (got ${look})`);
+      assert(look.includes('claudesmp:salamanca'), `Salamanca look on the ${slot} (got ${look})`);
     }
-    const sharpness = await rcon.command(`minecraft:data get entity ${one} equipment.mainhand.components."minecraft:enchantments"."minecraft:sharpness"`);
-    assert(/: 10$/.test(sharpness.trim()), `Sharpness X (got ${sharpness})`);
+    for (const [enchantment, level] of Object.entries({ piercing: 4, quick_charge: 3, power: 5 })) {
+      const got = await rcon.command(`minecraft:data get entity ${one} equipment.mainhand.components."minecraft:enchantments"."minecraft:${enchantment}"`);
+      assert(new RegExp(`: ${level}$`).test(got.trim()), `${enchantment} ${level} (got ${got})`);
+    }
+    const pistol = await rcon.command(`minecraft:data get entity ${one} equipment.mainhand.components."minecraft:custom_model_data".strings`);
+    assert(pistol.includes('cartel_pistol'), `the pistol look (got ${pistol})`);
     const health = await rcon.command(`minecraft:data get entity ${one} Health`);
     assert(/40(\.0)?f/.test(health), `40 health (got ${health})`);
     void menu;
@@ -157,7 +160,7 @@ try {
     await waitFor(async () => (await cousinCount()) === 0, 'cousins gone', 5_000);
   });
 
-  await step('Marco shoots a target on a pillar softly, without knockback, and re-draws his sword when they come down', async () => {
+  await step('the cousins shoot a target on a pillar from range, without knockback, with bolts nobody can pick up', async () => {
     await rcon.command('cartel reset');
     const px = BX + 14;
     const pz = BZ + 8;
@@ -165,56 +168,60 @@ try {
     await teleport(rcon, target, px, PLATFORM_Y + 5, pz);
     await rcon.command(`minecraft:effect give ${TARGET} minecraft:instant_health 1 10 true`);
     await sleep(1000);
-    const hits = [];
+    let hits = [];
     let last = target.health;
     const onHealth = () => {
       if (target.health < last) hits.push(last - target.health);
       last = target.health;
     };
     target.on('health', onHealth);
+    const firstHit = async (what) => {
+      await waitFor(() => hits.length >= 1, `the target is shot (${what})`, 20_000).catch(async (error) => {
+        const arrows = await rcon.command('minecraft:execute if entity @e[type=minecraft:arrow]');
+        throw new Error(`${error.message} (health ${target.health}, arrows: ${arrows}, a cousin at `
+          + `${JSON.stringify(await position(`${COUSINS.slice(0, -1)},limit=1]`))}, target at ${JSON.stringify(target.entity.position)})`);
+      });
+      return hits[0];
+    };
     try {
       await confirmScreen(owner, TARGET);
       const since = target.lines.length;
       await owner.clickWindow(11, 0, 0);
       await waitForLine(target, /CartelMark, you have made enemies of the cartel\./, 5_000, since);
-      const calledAt = Date.now();
-      await waitFor(async () => /Marco's pistol out/.test(await rcon.command('cartel status')), 'Marco draws the pistol', 15_000);
-      const drawnAfter = Date.now() - calledAt;
-      assert(drawnAfter >= 2_500, `not before 3 s of no melee path (drew after ${drawnAfter} ms)`);
-      const held = `${MARCO} equipment.mainhand`;
-      const id = await rcon.command(`minecraft:data get entity ${held}.id`);
-      assert(id.includes('minecraft:bow'), `a bow (got ${id})`);
-      const look = await rcon.command(`minecraft:data get entity ${held}.components."minecraft:custom_model_data".strings`);
-      assert(look.includes('cartel_pistol'), `the pistol look (got ${look})`);
-      const enchants = await rcon.command(`minecraft:data get entity ${held}.components."minecraft:enchantments"`);
-      assert(/Found no elements/i.test(enchants), `no enchantments on the bow (got ${enchants})`);
-      const leonel = await rcon.command(`minecraft:data get entity @e[tag=cartel.cousin,name="Leonel Salamanca",limit=1] equipment.mainhand.id`);
-      assert(leonel.includes('minecraft:netherite_sword'), `Leonel keeps his sword (got ${leonel})`);
-      await waitFor(() => hits.length >= 2, 'the target is shot twice', 15_000).catch(async (error) => {
-        const arrows = await rcon.command('minecraft:execute if entity @e[type=minecraft:arrow]');
-        throw new Error(`${error.message} (hits ${JSON.stringify(hits)}, health ${target.health}, arrows: ${arrows}, `
-          + `Marco at ${JSON.stringify(await position(MARCO))}, target at ${JSON.stringify(target.entity.position)})`);
-      });
-      assert(hits.every((h) => h <= 3.01), `every shot did at most 3 damage (got ${hits.map((h) => h.toFixed(2)).join(', ')})`);
-      console.log(`  pistol drawn ${drawnAfter} ms after the call; shot damage ${hits.map((h) => h.toFixed(2)).join(', ')}`);
+      const bare = await firstHit('no armor');
+      // Power V on a pillager-speed bolt: ceil(1.6 x 5) = 8, plus a crit's random bonus of up to 5.
+      assert(bare >= 7 && bare <= 14.01, `one bolt on a bare target did 7-14 (got ${bare.toFixed(2)})`);
       const at = target.entity.position;
       assert(Math.abs(at.x - (px + 0.5)) < 0.45 && Math.abs(at.z - (pz + 0.5)) < 0.45 && at.y >= PLATFORM_Y + 4.9,
         `no knockback: still on the pillar (at ${at.x.toFixed(2)} ${at.y.toFixed(2)} ${at.z.toFixed(2)})`);
-      // A shot that lands is gone at once, so catch one in flight.
-      const arrow = `@e[type=minecraft:arrow,x=${px},y=${PLATFORM_Y},z=${pz},distance=..24,limit=1]`;
+      const nearest = await position(`@e[tag=cartel.cousin,limit=1,sort=nearest,x=${px + 0.5},y=${PLATFORM_Y + 1},z=${pz + 0.5}]`);
+      const away = Math.hypot(nearest.x - (px + 0.5), nearest.z - (pz + 0.5));
+      assert(away >= 2.5, `the nearest cousin shoots from range, not from the pillar's base (${away.toFixed(1)} blocks)`);
+
+      for (const [slot, item] of Object.entries({ head: 'helmet', chest: 'chestplate', legs: 'leggings', feet: 'boots' })) {
+        await rcon.command(`minecraft:item replace entity ${TARGET} armor.${slot} with minecraft:netherite_${item}[enchantments={protection:4}]`);
+      }
+      await rcon.command(`minecraft:effect give ${TARGET} minecraft:instant_health 1 10 true`);
+      await sleep(1500);
+      hits = [];
+      last = target.health;
+      const armored = await firstHit('Protection IV netherite');
+      assert(armored < bare, `armor cuts the bolt (${armored.toFixed(2)} vs ${bare.toFixed(2)})`);
+      console.log(`  one bolt: ${bare.toFixed(2)} damage bare, ${armored.toFixed(2)} in full Protection IV netherite; `
+        + `nearest cousin ${away.toFixed(1)} blocks off`);
+
+      // A bolt that lands in a player is gone at once, so catch one in flight or in the ground.
+      const arrow = `@e[type=minecraft:arrow,x=${px},y=${PLATFORM_Y},z=${pz},distance=..32,limit=1]`;
       let pickup = '';
-      const until = Date.now() + 8_000;
+      const until = Date.now() + 10_000;
       while (Date.now() < until && !/: \d+b$/.test(pickup.trim())) {
         pickup = await rcon.command(`minecraft:data get entity ${arrow} pickup`);
       }
-      assert(/: 0b$/.test(pickup.trim()), `Marco's arrows can't be picked up (got ${pickup})`);
-
-      await teleport(rcon, target, BX + 4, PLATFORM_Y + 1, BZ + 4);
-      await waitFor(async () => (await rcon.command(`minecraft:data get entity ${MARCO} equipment.mainhand.id`)).includes('netherite_sword'),
-        'Marco re-draws his sword once a path opens', 5_000);
+      assert(/: 0b$/.test(pickup.trim()), `the bolts can't be picked up (got ${pickup})`);
     } finally {
       target.off('health', onHealth);
       await rcon.command('cartel dismiss');
+      await rcon.command(`minecraft:clear ${TARGET}`);
       await rcon.command(`minecraft:fill ${px} ${PLATFORM_Y + 1} ${pz} ${px} ${PLATFORM_Y + 4} ${pz} minecraft:air`);
       await rcon.command('minecraft:kill @e[type=minecraft:arrow]');
     }
@@ -243,13 +250,13 @@ try {
     await waitFor(async () => (await cousinCount()) === 0, 'cousins leave after the job', 5_000);
   });
 
-  await step('a second hit is refused for 36 hours', async () => {
+  await step('a second hit is refused for 24 hours', async () => {
     await waitFor(() => target.health > 0, 'target respawned', 10_000);
     await sleep(1000);
     await confirmScreen(owner, TARGET);
     const since = owner.lines.length;
     await owner.clickWindow(11, 0, 0);
-    await waitForLine(owner, /Assassinate Mode is ready again in 1d 11h 59m/, 5_000, since);
+    await waitForLine(owner, /Assassinate Mode is ready again in 23h 59m/, 5_000, since);
     assert((await cousinCount()) === 0, 'no cousins');
   });
 

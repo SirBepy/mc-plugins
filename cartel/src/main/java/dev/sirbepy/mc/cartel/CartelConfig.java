@@ -15,7 +15,7 @@ public record CartelConfig(UUID owner, Duration guardLength, Duration guardCoold
                 Duration.ofMinutes(c.getLong("guard-minutes", 10)),
                 Duration.ofMinutes(c.getLong("guard-cooldown-minutes", 120)),
                 Duration.ofMinutes(c.getLong("hit-minutes", 3)),
-                Duration.ofHours(c.getLong("hit-cooldown-hours", 36)),
+                Duration.ofHours(c.getLong("hit-cooldown-hours", 24)),
                 c.getInt("hit-distance", 10),
                 c.getInt("lose-trail-distance", 48),
                 c.getInt("retracks", 2),

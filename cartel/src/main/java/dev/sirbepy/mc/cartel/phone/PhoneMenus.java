@@ -59,10 +59,10 @@ public final class PhoneMenus {
             owner.closeInventory();
             tell(owner, calls.guard(owner));
         });
-        menu.set(HIT_SLOT, icon(Material.NETHERITE_SWORD, "Assassinate Mode", NamedTextColor.DARK_RED,
+        menu.set(HIT_SLOT, icon(Material.CROSSBOW, "Assassinate Mode", NamedTextColor.DARK_RED,
                 "Send the cousins after a player.",
                 "They appear " + c.hitDistance() + " blocks away and hunt them for " + Durations.format(c.hitLength()) + ".",
-                "Marco draws a pistol if they climb out of reach.",
+                "Both cousins keep their distance and shoot.",
                 "Everyone hears about it. Once every " + Durations.format(c.hitCooldown()) + ".",
                 readiness(calls.hitWait(owner.getUniqueId()))), (shown, click) -> openTargets(owner));
         if (calls.active()) {
