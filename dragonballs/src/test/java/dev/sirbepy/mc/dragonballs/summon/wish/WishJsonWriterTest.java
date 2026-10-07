@@ -48,4 +48,18 @@ class WishJsonWriterTest {
         assertTrue(line.contains("\"note\":\"\""));
         assertTrue(line.endsWith("\"set\":\"nether\"}"));
     }
+
+    @Test
+    void publicLineEscapesQuotesAndBackslashes() {
+        String line = WishJsonWriter.publicLine(TIME, "abc123", "Go\"ku's wish", "a \\new\\ car");
+        assertEquals("{\"time\":\"2026-10-06T12:00:00Z\",\"session\":\"abc123\",\"type\":\"public\","
+                + "\"title\":\"Go\\\"ku's wish\",\"line\":\"a \\\\new\\\\ car\"}", line);
+    }
+
+    @Test
+    void publicLineEscapesNonAsciiAndControlChars() {
+        String line = WishJsonWriter.publicLine(TIME, "abc123", "Vegeta's wish éè", "line one\nline two\t!");
+        assertTrue(line.contains("\"title\":\"Vegeta's wish éè\""));
+        assertTrue(line.contains("\"line\":\"line one\\nline two\\t!\""));
+    }
 }

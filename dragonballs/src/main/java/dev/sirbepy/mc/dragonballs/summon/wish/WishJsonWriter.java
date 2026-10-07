@@ -13,9 +13,15 @@ import java.util.UUID;
 /**
  * Builds and appends lines to {@code plugins/DragonBalls/wishes.jsonl}: one
  * {@code {"time","session","dragon","wishesLeft","player","uuid","message","set"}} line per
- * wish-session chat message, and one {@code {"time","session","type":"grant","count","note","set"}}
- * line per {@code /shenron grant} (schema not specified by the rulebook; "type" distinguishes it
- * from a wish line for anything reading the file back). {@code set} is additive (the 3-set split
+ * wish-session chat message, one {@code {"time","session","type":"grant","count","note","set"}}
+ * line per {@code /shenron grant}, and one
+ * {@code {"time","session","type":"public","title","line"}} line per {@code /shenron public}
+ * (schema not specified by the rulebook; "type" distinguishes each from a wish line for anything
+ * reading the file back). A "public" record is a player-safe stand-in for a grant: the grant's own
+ * "note" is the judge's internal reasoning and must never be published, so the public website reads
+ * "public" records instead. Running {@code /shenron public} again for the same session appends a
+ * newer "public" record rather than replacing the old one, so a consumer must take the latest
+ * "public" record per session as the current one. {@code set} is additive (the 3-set split
  * added it on top of the original schema): Player Claude's existing parser only reads fields it
  * already knows by name, so an older reader keeps working unchanged. Hand-escaped JSON, same
  * reasoning as ClaudeBridge's InboxWriter: a wish or a judge's note can contain quotes or
@@ -47,6 +53,18 @@ public final class WishJsonWriter {
                 + ",\"count\":" + count
                 + ",\"note\":\"" + Json.escape(note == null ? "" : note)
                 + "\",\"set\":\"" + Json.escape(set)
+                + "\"}";
+    }
+
+    /** A player-safe record for {@code session}, backfilling a {@link #grantedLine grant} that is
+     * safe to show on the public website; see the class javadoc for why this exists instead of
+     * publishing the grant's own note, and for the "latest wins" rule across repeated calls. */
+    public static String publicLine(Instant time, String session, String title, String line) {
+        return "{\"time\":\"" + Json.escape(time.toString())
+                + "\",\"session\":\"" + Json.escape(session)
+                + "\",\"type\":\"public\""
+                + ",\"title\":\"" + Json.escape(title)
+                + "\",\"line\":\"" + Json.escape(line)
                 + "\"}";
     }
 

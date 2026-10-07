@@ -110,6 +110,13 @@ public final class SummonSessionManager {
         return session == null ? null : session.summonerId;
     }
 
+    /** The {@code wishes.jsonl} file this manager appends to; exposed read-only so {@code /shenron
+     * public} can scan past grant records and backfill a player-safe record, independent of whether
+     * a session is currently active (unlike {@link #grant}, which only touches the live session). */
+    File wishesFile() {
+        return wishesFile;
+    }
+
     public String statusText() {
         SummonSession s = session;
         if (s == null) {
