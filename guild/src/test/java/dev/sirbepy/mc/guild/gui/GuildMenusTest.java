@@ -95,6 +95,22 @@ class GuildMenusTest extends GuildTestBase {
     }
 
     @Test
+    void theBoardShowsTheBountyAndGrandQuestAndLeadsToTheHallOfFameAndTitles() {
+        join(alice);
+        guild.events().tick();
+        Menu menu = menus.build(alice, GuildMenus.Screen.MAIN, 0);
+        assertEquals(guild.events().bounty().title(), name(menu.getInventory().getItem(FameMenus.BOUNTY_SLOT)));
+        assertEquals(guild.events().grandQuest().title(), name(menu.getInventory().getItem(FameMenus.GRAND_SLOT)));
+
+        menu.click(GuildMenus.INFO_SLOT, ClickType.LEFT);
+        assertEquals("The Hall of Fame", name(menu.getInventory().getItem(4)));
+        menu.click(45, ClickType.LEFT);
+        menu.click(GuildMenus.PROFILE_SLOT, ClickType.LEFT);
+        assertEquals("Titles", name(menu.getInventory().getItem(4)));
+        assertTrue(lore(menu.getInventory().getItem(4)).contains("E-Rank Adventurer"), "the rank title is worn");
+    }
+
+    @Test
     void theOfficeWithdrawButtonPaysTheGuildmaster() {
         join(alice);
         join(gm);

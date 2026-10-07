@@ -56,6 +56,7 @@ public final class GuildPlugin extends JavaPlugin {
         scheduler.runTaskTimer(this, store::flush, 600L, 600L);
         scheduler.runTaskTimer(this, staff::ensure, 60L, 100L);
         scheduler.runTaskTimer(this, staff::lookAtVisitors, 20L, 10L);
+        scheduler.runTaskTimer(this, guild.events()::tick, 100L, 100L);
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             new GuildCommand(guild, menus).registerInto(event.registrar());

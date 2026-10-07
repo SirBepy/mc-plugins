@@ -14,6 +14,7 @@ import dev.sirbepy.mc.guild.data.GuildStore;
 import dev.sirbepy.mc.guild.data.LedgerEntry;
 import dev.sirbepy.mc.guild.data.Member;
 import dev.sirbepy.mc.guild.econ.Bank;
+import dev.sirbepy.mc.guild.events.ServerEvents;
 import dev.sirbepy.mc.guild.fame.Achievements;
 import dev.sirbepy.mc.guild.rank.Rank;
 import dev.sirbepy.mc.guild.time.GuildClock;
@@ -71,6 +72,7 @@ public final class Guild {
     private final Random random;
     private final Board board;
     private final Achievements achievements;
+    private final ServerEvents events;
 
     public Guild(Supplier<GuildConfig> config, GuildClock clock, GuildStore store, Bank bank, Random random) {
         this.config = config;
@@ -80,6 +82,11 @@ public final class Guild {
         this.random = random;
         this.board = new Board(random);
         this.achievements = new Achievements(store);
+        this.events = new ServerEvents(this, random);
+    }
+
+    public ServerEvents events() {
+        return events;
     }
 
     public Achievements achievements() {
@@ -226,6 +233,7 @@ public final class Guild {
                 finished.add("the Guildmaster's commission \"" + o.text() + "\"");
             }
         }
+        events.progress(player, member, kind, facts, amount);
         if (bar != null) {
             player.sendActionBar(Component.text("⚔ " + bar, Chat.BRONZE));
             store.markDirty();
@@ -310,6 +318,10 @@ public final class Guild {
         member.setLastActive(clock.nowMillis());
         store.save();
         achievements.afterClaim(player, member, def, clock.localNow(), clock.nowMillis());
+        String titleReward = dev.sirbepy.mc.guild.contract.ContractPool.TITLE_REWARDS.get(def.id());
+        if (titleReward != null) {
+            achievements.grant(player, member, titleReward);
+        }
         store.save();
         return new Claim(result, coins, levels, reward.reputation(), clipped, items);
     }

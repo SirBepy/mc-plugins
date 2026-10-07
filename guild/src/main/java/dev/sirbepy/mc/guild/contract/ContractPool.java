@@ -271,6 +271,20 @@ public final class ContractPool {
                     o(Kind.HUNT, Set.of("WITHER_SKELETON"), 12, "Defeat 12 Wither Skeletons"),
                     o(Kind.GATHER, Set.of("WITHER_SKELETON_SKULL"), 1, "Deliver a Wither Skeleton Skull")),
 
+            // Secret story contracts: each pays a weekly's reward and its own title (TITLE_REWARDS).
+            weekly("wa_charter", Rank.A, "Expedition: The Sunken Charter", Material.MAP,
+                    o(Kind.STRUCTURE, Set.of("minecraft:shipwreck*"), 1, "Search a shipwreck for the charter's first page"),
+                    o(Kind.STRUCTURE, Set.of("minecraft:buried_treasure"), 1, "Dig where the map's cross was drawn"),
+                    o(Kind.STRUCTURE, Set.of("minecraft:monument"), 1, "Carry the last page into an Ocean Monument")),
+            weekly("wa_ashes", Rank.A, "Expedition: Ashes of the Old Guild", Material.CHARCOAL,
+                    o(Kind.STRUCTURE, Set.of("incendium:abandoned_tower"), 1, "Find the old Nether guild's abandoned tower"),
+                    o(Kind.STRUCTURE, Set.of("nova_structures:nether_keep"), 1, "Search a Nether keep for its records"),
+                    o(Kind.NAMED_HUNT, Set.of("incendium.mob.misc.headless.name"), 1, "Lay its last Headless Warrior to rest")),
+            weekly("ws_legend", Rank.S, "Legend: The Last S-Rank", Material.ECHO_SHARD,
+                    o(Kind.STRUCTURE, Set.of("minecraft:ancient_city"), 1, "Follow her trail into an Ancient City"),
+                    o(Kind.BOSS, Set.of("WARDEN"), 1, "Face what she faced (a Warden, shared)"),
+                    o(Kind.GATHER, Set.of("ECHO_SHARD"), 4, "Bring back 4 Echo Shards for her grave"),
+                    o(Kind.STRUCTURE, Set.of("incendium:sanctum"), 1, "Light a candle for her in an Incendium Sanctum")),
             weekly("ws_warden", Rank.S, "Into the Deep Dark", Material.SCULK_CATALYST,
                     o(Kind.BOSS, Set.of("WARDEN"), 1, "Defeat a Warden (shared)")),
             weekly("ws_raid", Rank.S, "Raid Breaker", Material.OMINOUS_BOTTLE,
@@ -318,7 +332,15 @@ public final class ContractPool {
             rare("r_toadstool", "A rare request: a mushroom the size of a tower", Material.BROWN_MUSHROOM_BLOCK,
                     o(Kind.STRUCTURE, Set.of("structory_towers:great_toadstool"), 1, "Find the Great Toadstool")),
             rare("r_hive", "A rare request: a hive bigger than a house, underground", Material.BEEHIVE,
-                    o(Kind.STRUCTURE, Set.of("terralith:underground/giant_bee_hive"), 1, "Find the giant bee hive")));
+                    o(Kind.STRUCTURE, Set.of("terralith:underground/giant_bee_hive"), 1, "Find the giant bee hive")),
+            rare("r_patron", "A mysterious patron leaves a sealed note: a cake, a lantern and a pie, no questions", Material.CAKE,
+                    o(Kind.GATHER, Set.of("CAKE"), 1, "A Cake"),
+                    o(Kind.GATHER, Set.of("LANTERN"), 1, "A Lantern"),
+                    o(Kind.GATHER, Set.of("PUMPKIN_PIE"), 1, "A Pumpkin Pie")));
+
+    /** Secret: contracts that also grant a title when claimed. */
+    public static final Map<String, String> TITLE_REWARDS = Map.of(
+            "wa_charter", "charter", "wa_ashes", "ashwalker", "ws_legend", "heir", "r_patron", "patron");
 
     /** Built on first lookup: Trials reads this class's structure sets while it initializes, so the
      * index can't be built in this class's own static init without a cycle. */

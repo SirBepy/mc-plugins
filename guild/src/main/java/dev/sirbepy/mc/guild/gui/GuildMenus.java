@@ -33,7 +33,7 @@ import java.util.List;
  */
 public final class GuildMenus {
 
-    public enum Screen { MAIN, COMMISSIONS, OFFICE, MEMBERS, LEDGER }
+    public enum Screen { MAIN, COMMISSIONS, OFFICE, MEMBERS, LEDGER, TITLES, HALL_OF_FAME }
 
     static final int[] DAILY_SLOTS = {19, 21, 23};
     static final int WEEKLY_SLOT = 25;
@@ -47,9 +47,11 @@ public final class GuildMenus {
     static final int BACK_SLOT = 49;
 
     private final Guild guild;
+    private final FameMenus fame;
 
     public GuildMenus(Guild guild) {
         this.guild = guild;
+        this.fame = new FameMenus(guild);
     }
 
     public void open(Player player, Screen screen) {
@@ -67,11 +69,26 @@ public final class GuildMenus {
             case OFFICE -> guild.isGuildmaster(player) ? office(player) : main(player, member);
             case MEMBERS -> members(player, page);
             case LEDGER -> ledger(player, page);
+            case TITLES -> titlesMenu(player, member);
+            case HALL_OF_FAME -> hallOfFame(player);
         };
     }
 
     private void refresh(Player player, Menu shown, Screen screen, int page) {
         shown.adopt(build(player, screen, page));
+    }
+
+    private Menu titlesMenu(Player player, Member member) {
+        return fame.titles(player, member, (shown, screen) -> refresh(player, shown, screen, 0));
+    }
+
+    /** Opens the Hall of Fame directly, for the archivist. */
+    public void openHallOfFame(Player player) {
+        player.openInventory(hallOfFame(player).getInventory());
+    }
+
+    private Menu hallOfFame(Player player) {
+        return fame.hallOfFame(player, (shown, screen) -> refresh(player, shown, screen, 0));
     }
 
     // ---- Registration ----
@@ -115,7 +132,19 @@ public final class GuildMenus {
 
     private Menu main(Player player, Member member) {
         Menu menu = new Menu(6, Component.text("Adventurer's Guild: " + member.rank().title(), Chat.BRONZE));
-        menu.set(PROFILE_SLOT, profile(player, member));
+        menu.set(PROFILE_SLOT, profile(player, member), (shown, click) -> refresh(player, shown, Screen.TITLES, 0));
+        menu.set(FameMenus.BOUNTY_SLOT, fame.bountyIcon(member), (shown, click) -> {
+            fame.claimBounty(player);
+            refresh(player, shown, Screen.MAIN, 0);
+        });
+        menu.set(FameMenus.GRAND_SLOT, fame.grandIcon(member), (shown, click) -> {
+            fame.claimGrand(player);
+            refresh(player, shown, Screen.MAIN, 0);
+        });
+        ItemStack activity = fame.activityIcon(member);
+        if (activity != null) {
+            menu.set(FameMenus.ACTIVITY_SLOT, activity);
+        }
         for (int i = 0; i < member.dailies().size() && i < DAILY_SLOTS.length; i++) {
             ActiveContract daily = member.dailies().get(i);
             int slot = i;
@@ -153,7 +182,7 @@ public final class GuildMenus {
                 "Treasury. First to finish and claim one wins it.",
                 "",
                 "!Click to view"), (shown, click) -> refresh(player, shown, Screen.COMMISSIONS, 0));
-        menu.set(INFO_SLOT, info());
+        menu.set(INFO_SLOT, info(), (shown, click) -> refresh(player, shown, Screen.HALL_OF_FAME, 0));
         if (guild.isGuildmaster(player)) {
             menu.set(OFFICE_SLOT, Icons.glint(Icons.icon(Material.LECTERN, "Guildmaster's Office", NamedTextColor.GOLD,
                     "Treasury, members, ledger, statistics,",
@@ -169,6 +198,9 @@ public final class GuildMenus {
         GuildConfig cfg = guild.config();
         List<String> lore = new ArrayList<>();
         lore.add(member.rank().title());
+        if (member.activeTitle() != null && !member.activeTitle().startsWith("rank-")) {
+            lore.add("\"" + dev.sirbepy.mc.guild.fame.Titles.name(member.activeTitle()) + "\"");
+        }
         lore.add("Reputation: " + member.reputation());
         lore.add("Contracts completed: " + member.contractsDone());
         Rank next = member.rank().next();
@@ -183,6 +215,8 @@ public final class GuildMenus {
                 + member.levelsToday() + " / " + cfg.dailyLevelCap() + " levels");
         lore.add("Rerolls left today: " + Math.max(0, member.rank().rerolls() - member.rerollsUsed()));
         lore.add("New dailies at midnight, a new weekly on Monday.");
+        lore.add("");
+        lore.add("!Click for your titles");
         if (guild.isGuildmaster(player)) {
             lore.add("");
             lore.add("!Founder and Guildmaster");
@@ -202,7 +236,9 @@ public final class GuildMenus {
                 "Higher ranks draw harder contracts.",
                 "",
                 "Daily limits from Guild contracts:",
-                Text.coins(guild.config().dailyCoinCap()) + ", " + guild.config().dailyLevelCap() + " levels.");
+                Text.coins(guild.config().dailyCoinCap()) + ", " + guild.config().dailyLevelCap() + " levels.",
+                "",
+                "!Click for the Hall of Fame");
     }
 
     private ItemStack contractIcon(Player player, Member member, ActiveContract active, int dailySlot) {

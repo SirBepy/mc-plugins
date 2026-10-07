@@ -185,6 +185,19 @@ try {
     await waitForLine(hero, new RegExp(`Guildmaster ${GM}: The Guild is open for business`), 5_000, since);
   });
 
+  await step('the board shows the server bounty and Grand Quest, and the Hall of Fame opens', async () => {
+    let opened = nextWindow(hero);
+    hero.chat('/guild');
+    menu = await opened;
+    assert(menu.slots[11] && menu.slots[13], 'bounty and Grand Quest icons on the board');
+    hero.closeWindow(menu);
+    opened = nextWindow(hero);
+    hero.chat('/guild halloffame');
+    menu = await opened;
+    assert(/Hall of Fame/.test(titleOf(menu)), `hall of fame title (got ${titleOf(menu)})`);
+    hero.closeWindow(menu);
+  });
+
   // The staff stand wherever ImMijo asks in the hall he builds; the suite puts Lyra on its platform.
   const LYRA = { x: BX + 0.5, y: PLATFORM_Y + 1, z: BZ + 4.5 };
   await step('the receptionist is placed by console command at a given spot', async () => {

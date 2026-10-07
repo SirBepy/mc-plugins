@@ -196,20 +196,58 @@ pufferfish and a tropical fish, tame a parrot, slay a Toxic Slime, a Reactor Sen
 Spirit, visit a Dungeons and Taverns tavern and a firewatch tower, stand in the mushroom fields, find a
 Structory old manor, Terralith's mage towers.
 
-## Secret: phase 3 content (planned, not built yet)
+## Secret: titles and hidden achievements
 
-- **Hidden achievements and titles**, chosen from the profile as an active title: first contract ever
-  claimed on the server; 50 fishing contracts; contracts of 10 different kinds; 25 distinct structure
-  types visited while a member (tracked passively); a claim between 03:00 and 05:00; 10 commissions
-  completed; finishing a weekly within an hour of it being drawn; dying three times inside one trial.
-  Each announced to its finder only, with the title's line.
-- **Expedition contracts** (A) and **Legend contracts** (S): short story chains (the Guild's founding
-  charter, a lost S-Rank adventurer from before the server) with unique titles and cosmetics.
-- **Bounties** (C+): one server-wide bounty at a time, first finisher claims it.
-- **Grand Quests**: weekly server-wide goals (a Great Hunt, a Great Harvest, an Ore Rush); every
-  contributor over a threshold earns reputation and coins inside their caps, the top contributor a title.
-- **Hall of Fame**: first to each rank, most contracts, most reputation, longest daily streak, bounties.
-- **Guildmaster activities**: a Hunting Season or Fishing Derby he can start, funded from the Treasury.
+Worn from the profile (click the head in `/guild`, or `/guild titles`); the title list shows only
+what the adventurer has earned. Each new one shows a title card and a line to its finder only. All in
+`fame/Titles.java` and `fame/Achievements.java`.
+
+| Title | Earned for |
+| --- | --- |
+| E-Rank ... S-Rank Adventurer | reaching the rank (first A and first S announced to the server) |
+| Founder of the Guild | the Guildmaster, on registering |
+| The First of Many | the very first contract the Guild ever paid (announced) |
+| Night Owl | a claim between 03:00 and 05:00 Europe/Zagreb |
+| Pathfinder | 25 different structure kinds stood in while a member (tracked passively, contract or not) |
+| Wanderer of Many Lands | 40 different biomes, same |
+| Master Angler | 25 fishing contracts |
+| Jack of All Trades | contracts of 10 different objective kinds |
+| The Guildmaster's Hand | 10 commissions |
+| Swiftblade | a weekly finished within an hour of being posted |
+| Death's Regular | three deaths during one Promotion Trial |
+| Steadfast / Unbroken | claims on 7 / 30 days in a row |
+| Centurion | 100 contracts |
+| Seeker of Oddities | 10 rare contracts |
+| Bane of Giants | credited on a Wither, a Warden and an Elder Guardian |
+| Bounty Hunter | 5 bounties |
+| Champion of the Guild | the biggest contributor to a Grand Quest |
+| The Patron's Favourite | the mysterious patron's rare request (a cake, a lantern and a pumpkin pie) |
+| Keeper of the Charter | Expedition: The Sunken Charter (A weekly: a shipwreck, buried treasure, an Ocean Monument) |
+| Ashwalker | Expedition: Ashes of the Old Guild (A weekly: Incendium's abandoned tower, a Nether keep, a Headless Warrior) |
+| Heir of Legends | Legend: The Last S-Rank (S weekly: an Ancient City, a Warden, 4 echo shards, an Incendium Sanctum) |
+| Derby Champion | winning one of the Guildmaster's activities |
+
+## Server-wide events (`events/ServerEvents.java`, `events/EventPools.java`)
+
+- **Bounties** (C-Rank and up, never the Guildmaster): one at a time on the board, 180-300 coins +
+  30-50 reputation + 2 levels inside the daily caps (commission minted on top). First to finish and
+  claim wins it, announced to all; a new one comes 12 h after a claim, or after 3 days unclaimed. Pool:
+  an Evoker, 6 Wither Skeletons, a Ravager (B), 3 Ghasts, 5 Breezes, 3 Piglin Brutes (B), 2 Reactor
+  Sentries (B), an Elder Guardian (A), 4 Witches, 6 Phantoms, 2 Sanctum Inquisitors (B), 15 Drowned.
+- **Grand Quests**: one a week (Monday), the whole server's progress counted together: 1,000 hostile
+  mobs, 2,000 ripe crops, 800 ores, 300 catches or 250 animals bred. Once done, everyone who gave at
+  least 2% of the goal (10 minimum) claims 150 coins + 30 reputation + 3 levels inside their caps; the
+  biggest contributor earns Champion of the Guild.
+- **Guildmaster activities**: `/guild activity <hunt|fish|mine> <prize> [minutes]`, once a real day,
+  10-60 minutes (30 by default), prize 50-500 coins escrowed from the Treasury. Members (not the
+  Guildmaster) score hostile kills, catches or ore; the top score takes the prize (split on a tie,
+  refunded with no entrants), from the Treasury so outside the daily cap.
+
+## Hall of Fame
+
+`/guild halloffame`, the book in `/guild`, or Pip the archivist: the first to each rank and the first
+contract (stored once, never overwritten), and top-5 tables for contracts, reputation, longest daily
+streak, bounties, commissions, structure kinds explored and titles.
 
 ## The Guild Hall and its staff
 

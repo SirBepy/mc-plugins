@@ -10,6 +10,7 @@ import dev.sirbepy.mc.guild.Guild;
 import dev.sirbepy.mc.guild.contract.Objective;
 import dev.sirbepy.mc.guild.data.Commission;
 import dev.sirbepy.mc.guild.data.Member;
+import dev.sirbepy.mc.guild.events.ServerEvents;
 import dev.sirbepy.mc.guild.gui.GuildMenus;
 import dev.sirbepy.mc.guild.gui.Text;
 import dev.sirbepy.mc.guild.rank.Rank;
@@ -48,6 +49,21 @@ public final class GuildCommand {
                 .then(Commands.literal("board").executes(c -> open(c, GuildMenus.Screen.MAIN)))
                 .then(Commands.literal("office").executes(c -> open(c, GuildMenus.Screen.OFFICE)))
                 .then(Commands.literal("commissions").executes(c -> open(c, GuildMenus.Screen.COMMISSIONS)))
+                .then(Commands.literal("titles").executes(c -> open(c, GuildMenus.Screen.TITLES)))
+                .then(Commands.literal("halloffame").executes(c -> {
+                    Player player = player(c);
+                    if (player != null) {
+                        menus.openHallOfFame(player);
+                    }
+                    return Command.SINGLE_SUCCESS;
+                }))
+                .then(Commands.literal("activity")
+                        .then(Commands.argument("kind", StringArgumentType.word())
+                                .suggests((c, b) -> suggest(b, Set.of("hunt", "fish", "mine")))
+                                .then(Commands.argument("prize", IntegerArgumentType.integer(1))
+                                        .executes(c -> activity(c, 30))
+                                        .then(Commands.argument("minutes", IntegerArgumentType.integer(10, 60))
+                                                .executes(c -> activity(c, IntegerArgumentType.getInteger(c, "minutes")))))))
                 .then(Commands.literal("profile")
                         .executes(this::profileSelf)
                         .then(Commands.argument("player", StringArgumentType.word())
@@ -215,6 +231,30 @@ public final class GuildCommand {
                 return null;
             }
         }
+    }
+
+    private int activity(CommandContext<CommandSourceStack> c, int minutes) {
+        Player player = player(c);
+        if (player == null) {
+            return Command.SINGLE_SUCCESS;
+        }
+        ServerEvents.ActivityKind kind = ServerEvents.parseActivity(StringArgumentType.getString(c, "kind"));
+        if (kind == null) {
+            Chat.send(player, "Activities: hunt, fish or mine.", NamedTextColor.RED);
+            return Command.SINGLE_SUCCESS;
+        }
+        int prize = IntegerArgumentType.getInteger(c, "prize");
+        switch (guild.events().startActivity(player, kind, prize, minutes)) {
+            case STARTED -> Chat.send(player, Text.coins(prize) + " moved from the Treasury into the prize purse.", NamedTextColor.GREEN);
+            case NOT_GUILDMASTER -> Chat.send(player, "Only the Guildmaster opens Guild activities.", NamedTextColor.GRAY);
+            case ALREADY_TODAY -> Chat.send(player, "One Guild activity a day. Tomorrow, Guildmaster.", NamedTextColor.YELLOW);
+            case RUNNING -> Chat.send(player, "An activity is already running.", NamedTextColor.YELLOW);
+            case BAD_PRIZE -> Chat.send(player, "The prize must be " + ServerEvents.ACTIVITY_MIN_PRIZE + " to "
+                    + ServerEvents.ACTIVITY_MAX_PRIZE + " coins.", NamedTextColor.YELLOW);
+            case TREASURY_SHORT -> Chat.send(player, "The Treasury holds only "
+                    + Text.coins(guild.store().treasury().balance()) + ".", NamedTextColor.YELLOW);
+        }
+        return Command.SINGLE_SUCCESS;
     }
 
     private int cancel(CommandContext<CommandSourceStack> c) {

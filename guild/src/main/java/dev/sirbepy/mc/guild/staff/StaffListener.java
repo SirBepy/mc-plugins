@@ -76,7 +76,9 @@ public final class StaffListener implements Listener {
             case EXAMINER -> member != null && (Guild.qualifies(member) || activeTrial(member)) ? GuildMenus.Screen.MAIN : null;
             case ARCHIVIST -> null;
         };
-        if (screen != null) {
+        if (staff == Staff.ARCHIVIST) {
+            menus.openHallOfFame(player);
+        } else if (screen != null) {
             menus.open(player, screen);
         }
     }
