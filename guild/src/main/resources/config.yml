@@ -1,0 +1,20 @@
+# The Adventurer's Guild: ImMijo's Shenron wish (Nuova Shenron, 2026-10-08, session i9mha1).
+# Design notes and every secret: docs/guild.md (not for players). Members, boards and the Treasury
+# live in guild.yml next to this file.
+
+# The Guild's founder and permanent Guildmaster. Gets the office; never a rank, never admin powers.
+guildmaster: 8c0c13b9-057a-4ac8-aacf-7b6c77f8742b
+
+# Dailies, caps and the Guildmaster's withdrawal limit roll over at midnight here; weeklies on Monday.
+timezone: Europe/Zagreb
+
+# The dragon's caps, announced in-game. Lowering them is fine; raising them breaks the wish's terms.
+registration-fee: 500
+daily-coin-cap: 2000
+daily-level-cap: 15
+commission-rate: 0.05
+guildmaster-daily-withdrawal: 1000
+commissions-per-week: 3
+commission-min-reward: 10
+commission-max-reward: 1000
+announcement-cooldown-minutes: 30

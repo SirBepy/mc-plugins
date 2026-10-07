@@ -168,6 +168,15 @@ Haru, Keeper of the Sakura Sanctuary: ImMijo's Shenron wish (2026-10-06), an NPC
 - Haru can't be hurt, converted, leashed or moved, and comes back by himself if anything removes him. `/haru` (op) places and inspects him.
 - Full design, including every hidden reward, in `docs/haru.md`: not for players, never copy it to the website.
 
+## Guild plugin
+
+The Adventurer's Guild: ImMijo's Shenron wish (Nuova Shenron, 2026-10-08), a server-wide quest and rank system. ImMijo is its founder and Guildmaster.
+
+- **Everyone:** `/guild` to register (500 coins once, into the Guild Treasury) and start as an E-Rank Adventurer. Each adventurer gets 3 daily contracts (new at midnight Europe/Zagreb) and 1 weekly (new on Monday), each showing its reward up front: hunts, mining, hand-ins, harvests, fishing, breeding, taming, trading, enchanting, smelting, and visits to biomes and structures from vanilla, Terralith, Structory, Dungeons and Taverns and Incendium. Ranks E, D, C, B, A, S come from reputation and contracts, and each rank above E needs its Promotion Trial; higher ranks draw harder, stranger contracts. At most 2,000 coins and 15 levels a day from Guild contracts.
+- **The Guildmaster:** an office in `/guild` with the Treasury (fees plus a 5% commission minted on top of every paid contract; he may draw 1,000 a day), members, ledger and statistics, up to 3 Treasury-funded commissions a week, a featured commission and server announcements. He has his own rank, starts at E, and can promote no one.
+- `/guildadmin` (op) inspects and repairs members, boards and the Treasury.
+- Full design, including every secret, in `docs/guild.md`: not for players, never copy it to the website.
+
 ## Cartel plugin
 
 The cartel flip phone: Archontopouloi's Shenron wish (2026-10-06). Right-clicking his phone opens a menu that calls in Leonel and Marco Salamanca (zombies in iron armor painted as the cousins by the server pack, with Sharpness X netherite swords that never drop).
