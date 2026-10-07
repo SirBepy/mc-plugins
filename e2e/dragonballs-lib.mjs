@@ -156,11 +156,26 @@ export async function openSuite(suiteName) {
   }
 
   /** Hunter stands at STAND (one block outside the cluster, within reach of all 7 columns) and
-   * places `star` (must already be in hand) on top of the floor block at ballOffset(index). */
+   * places `star` (must already be in hand) on top of the floor block at ballOffset(index).
+   * A column a prior pickup just vacated can still hold the dropped-item entity for a tick or
+   * two, which gets BlockPlaceEvent refused ("the block is still air"); a short retry rides that
+   * out instead of failing the whole suite on one unlucky tick. */
   async function placeBallAt(bot, index) {
     const { x, y, z } = ballOffset(index);
     const ref = bot.blockAt(new Vec3(x, y, z));
-    await bot.placeBlock(ref, new Vec3(0, 1, 0));
+    for (let attempt = 1; ; attempt++) {
+      try {
+        // The caller already equips before calling, but a retry needs its own: the refused
+        // attempt below can leave the hand desynced from the server's view of it.
+        const ball = bot.inventory.items().find((it) => it.name === 'player_head');
+        if (ball) await bot.equip(ball, 'hand');
+        await bot.placeBlock(ref, new Vec3(0, 1, 0));
+        return;
+      } catch (error) {
+        if (attempt >= 3) throw error;
+        await sleep(250);
+      }
+    }
   }
 
   // A toss flies about 4 blocks, and each re-pickup leaves the bot where the ball landed, so tossing

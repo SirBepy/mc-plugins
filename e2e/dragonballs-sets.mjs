@@ -31,10 +31,25 @@ function netherBallOffset(index) {
   return { x: BX + dx, y: NETHER_PLATFORM_Y, z: BZ + dz };
 }
 
+// Same transient refusal placeBallAt (dragonballs-lib.mjs) guards against: a column a prior pickup
+// just vacated can still hold the dropped-item entity for a tick or two, getting BlockPlaceEvent
+// refused ("the block is still air").
 async function placeNetherBallAt(bot, index) {
   const { x, y, z } = netherBallOffset(index);
   const ref = bot.blockAt(new Vec3(x, y, z));
-  await bot.placeBlock(ref, new Vec3(0, 1, 0));
+  for (let attempt = 1; ; attempt++) {
+    try {
+      // The caller already equips before calling, but a retry needs its own: the refused attempt
+      // below can leave the hand desynced from the server's view of it.
+      const ball = bot.inventory.items().find((it) => it.name === 'player_head');
+      if (ball) await bot.equip(ball, 'hand');
+      await bot.placeBlock(ref, new Vec3(0, 1, 0));
+      return;
+    } catch (error) {
+      if (attempt >= 3) throw error;
+      await sleep(250);
+    }
+  }
 }
 
 async function buildSign(pos) {
@@ -160,10 +175,12 @@ try {
         const ball = hunter.inventory.items().find((it) => it.name === 'player_head');
         await hunter.equip(ball, 'hand');
         await placeNetherBallAt(hunter, i);
-        await sleep(150);
+        // The registry's own record of the placement can lag the BlockPlaceEvent by more than a
+        // blind sleep (seen: still "held" 300ms after a placeBlock that didn't throw), so confirm
+        // this star actually turned before moving to the next one.
+        await waitFor(async () => (await status()).nether[star].state === 'placed', `${star}-star registered as placed`, 5_000);
       }
     }
-    await sleep(300);
     const placed = (await status()).nether;
     assert(Object.values(placed).every((v) => v.state === 'placed' && !v.stone),
       `all 7 Nether balls placed and awake before summon (got ${JSON.stringify(placed)})`);

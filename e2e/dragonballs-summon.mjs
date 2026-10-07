@@ -105,10 +105,12 @@ try {
         const ball = hunter.inventory.items().find((it) => it.name === 'player_head');
         await hunter.equip(ball, 'hand');
         await placeBallAt(hunter, i);
-        await sleep(150);
+        // The registry's own record of the placement can lag the BlockPlaceEvent by more than a
+        // blind sleep (seen on dragonballs-sets.mjs's identical loop: still "held" 300ms after a
+        // placeBlock that didn't throw), so confirm this star actually turned before moving on.
+        await waitFor(async () => (await status())[star].state === 'placed', `${star}-star registered as placed`, 5_000);
       }
     }
-    await sleep(300);
     const placed = await status();
     assert(Object.values(placed).every((v) => v.state === 'placed'), `all 7 placed before summon (got ${JSON.stringify(placed)})`);
 
@@ -185,7 +187,8 @@ try {
     await waitFor(async () => !/passed/i.test(await rcon.command('execute if entity @e[type=ender_dragon,tag=dragonballs.shenron]')),
       'the dragon despawns once dismissed', 12_000);
     // Scattering loads (often generates) each destination chunk asynchronously, so the registry can
-    // take well over 20 s to catch up on a fresh e2e world.
+    // take well over 20 s to catch up on a fresh e2e world; an instrumented run measured one star
+    // still short of "flown away" at the old 45s cutoff, settling at 42-50s depending on the run.
     await waitFor(async () => {
       const afterEnd = await status();
       // The overworld set never leaves its own dimension (each of the 3 sets stays in its own
@@ -193,7 +196,7 @@ try {
       const flownAway = (v) => v.state !== 'placed' || v.world !== 'world'
         || Math.max(Math.abs(v.x - BX), Math.abs(v.z - BZ)) > 500;
       return Object.values(afterEnd).every((v) => v.stone && flownAway(v));
-    }, 'all 7 are stone and have flown away from the summon spot', 45_000);
+    }, 'all 7 are stone and have flown away from the summon spot', 90_000);
 
     fs.writeFileSync(configPath, originalConfig);
     configIsShortened = false;
