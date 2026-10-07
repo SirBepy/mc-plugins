@@ -75,8 +75,8 @@ public final class DragonBallsPlugin extends JavaPlugin {
         logoutDrop = new BallLogoutDropListener(sets, config::get, slowness);
         pm.registerEvents(logoutDrop, this);
 
-        getServer().getScheduler().runTaskTimer(this, new BallMaintenanceTask(sets, config::get),
-                BallMaintenanceTask.PERIOD_TICKS, BallMaintenanceTask.PERIOD_TICKS);
+        getServer().getScheduler().runTaskTimer(this, new BallMaintenanceTask(sets, config::get,
+                logoutDrop::dropForOfflineHolders), 1L, BallMaintenanceTask.PERIOD_TICKS);
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 new DragonBallsCommand(sets, config::get, this::reload).registerInto(event.registrar()));

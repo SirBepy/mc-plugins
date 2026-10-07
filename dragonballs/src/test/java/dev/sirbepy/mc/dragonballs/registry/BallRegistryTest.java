@@ -242,19 +242,6 @@ class BallRegistryTest {
     }
 
     @Test
-    void touchHolderSeenOnlyAffectsAnActuallyHeldBall() {
-        BallRegistry registry = newRegistry();
-        PlayerMock player = server.addPlayer();
-        registry.markHeld(1, player, false);
-        registry.touchHolderSeen(1, 12345L);
-        assertEquals(12345L, registry.get(1).orElseThrow().lastSeenMillis());
-
-        // Star 2 is still PLACED; touching it must be a no-op, not throw or corrupt its state.
-        registry.touchHolderSeen(2, 99999L);
-        assertEquals(BallState.PLACED, registry.get(2).orElseThrow().state());
-    }
-
-    @Test
     void lastSummonRoundTripsThroughReload() {
         BallRegistry registry = newRegistry();
         registry.setLastSummon(new Location(world, 427, 70, -868));

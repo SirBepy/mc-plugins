@@ -39,9 +39,10 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
   container, and can't be worn.
 - Die and your balls drop on the ground where you fell (never into your grave). Log out (or get
   kicked, or the server restarts) and they drop on the ground where you logged out, the same way
-  (Joe, 2026-10-08). Anyone who logged out still carrying balls before that rule drops them at their
-  feet on their next join, with a chat line saying so, unless they stay away 24 h, in which case the
-  balls fly away instead. A ball lost to lava, the void or anything else flies away too.
+  (Joe, 2026-10-08). Balls never wait in an offline player's inventory: any still held by someone
+  offline (from before that rule) drop where they logged out when the server starts, and the copy
+  left in their inventory vanishes when they rejoin. There is no offline timer. A ball lost to lava,
+  the void or anything else flies away.
 - Picking up a ball is announced to the whole server.
 - Each **radar** (sold at the Dragon Ball station at spawn) points at the nearest awake ball of its
   own set, including balls someone is carrying, and only works in that set's dimension (elsewhere

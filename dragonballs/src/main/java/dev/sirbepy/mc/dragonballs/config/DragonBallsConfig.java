@@ -32,7 +32,6 @@ public final class DragonBallsConfig {
     private final StoneMode stoneMode;
     private final int stoneDays;
     private final int stoneRealHours;
-    private final int logoutHours;
     private final Messages messages;
 
     public DragonBallsConfig(FileConfiguration config) {
@@ -59,7 +58,6 @@ public final class DragonBallsConfig {
         this.stoneMode = "real-hours".equals(mode) ? StoneMode.REAL_HOURS : StoneMode.MINECRAFT_DAYS;
         this.stoneDays = Math.max(1, config.getInt("stone.days", 3));
         this.stoneRealHours = Math.max(1, config.getInt("stone.real-hours", 24));
-        this.logoutHours = Math.max(1, config.getInt("logout-hours", 24));
         this.messages = new Messages(config.getConfigurationSection("messages"));
     }
 
@@ -168,10 +166,6 @@ public final class DragonBallsConfig {
 
     public int stoneRealHours() {
         return stoneRealHours;
-    }
-
-    public int logoutHours() {
-        return logoutHours;
     }
 
     public Messages messages() {

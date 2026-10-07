@@ -116,10 +116,6 @@ stone:
   days: 3
   real-hours: 24
 
-# Balls drop where their holder logs out, so this only catches a holder who logged out before that
-# rule (2026-10-08) and stays away this long: their ball re-scatters around the last summon location.
-logout-hours: 24
-
 messages:
   found: "<gold><player> found the <star>-Star Dragon Ball!"
   found-nether: "<gold><player> found the <star>-Star Nether Dragon Ball!"

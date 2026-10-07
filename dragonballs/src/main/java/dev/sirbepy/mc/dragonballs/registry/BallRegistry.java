@@ -238,14 +238,6 @@ public final class BallRegistry {
         return views;
     }
 
-    public void touchHolderSeen(int star, long nowMillis) {
-        Ball ball = balls.get(star);
-        if (ball != null && ball.state == BallState.HELD) {
-            ball.lastSeenMillis = nowMillis;
-            save();
-        }
-    }
-
     public Location lastSummon() {
         var world = lastSummonWorld == null ? null : Bukkit.getWorld(lastSummonWorld);
         return world == null ? null : new Location(world, lastSummonX, lastSummonY, lastSummonZ);

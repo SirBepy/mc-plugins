@@ -37,7 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Carried balls drop where the player logs out (and, for someone who logged out before that rule,
  * at their feet on the next join), each routed to its own set's registry; a ball item the registry
- * doesn't have held by this player is a dupe and is never dropped.
+ * doesn't have held by this player is a dupe and is never dropped. A ball an offline player still
+ * holds drops where they logged out.
  */
 class BallLogoutDropListenerTest {
 
@@ -49,6 +50,7 @@ class BallLogoutDropListenerTest {
     private BallLogoutDropListener listener;
     private PlayerMock player;
     private final List<Item> flagged = new ArrayList<>();
+    private Location logoutSpot;
 
     @BeforeEach
     void setUp(@TempDir Path tempDir) {
@@ -65,7 +67,7 @@ class BallLogoutDropListenerTest {
         BallRegistry end = new BallRegistry(new File(tempDir.toFile(), "balls-end.yml"), plugin.getLogger(), items, BallSet.END);
         sets = new BallSets(overworld, nether, end, items, () -> config);
         listener = new BallLogoutDropListener(sets, () -> config, new BallSlowness(plugin, overworld, () -> config),
-                flagged::add);
+                flagged::add, id -> logoutSpot);
         player = server.addPlayer();
         player.teleport(new Location(world, 50, 64, 50));
     }
@@ -165,5 +167,47 @@ class BallLogoutDropListenerTest {
         listener.onQuit(new PlayerQuitEvent(player, Component.empty(), PlayerQuitEvent.QuitReason.DISCONNECTED));
 
         assertEquals(1, droppedBalls().size());
+    }
+
+    @Test
+    void aBallHeldByAnOfflinePlayerDropsWhereTheyLoggedOut() {
+        overworld.markHeld(7, player, false);
+        player.disconnect();
+        logoutSpot = new Location(world, -300, 70, 900);
+
+        listener.dropForOfflineHolders(overworld);
+
+        List<Item> balls = droppedBalls();
+        assertEquals(1, balls.size());
+        assertEquals(-300, balls.get(0).getLocation().getBlockX());
+        assertEquals(900, balls.get(0).getLocation().getBlockZ());
+        assertEquals(BallState.DROPPED, overworld.get(7).orElseThrow().state());
+        assertTrue(overworld.isDroppedAs(7, balls.get(0).getUniqueId()));
+        assertEquals(1, flagged.size());
+    }
+
+    @Test
+    void anOfflineHoldersLogoutSpotInAnotherWorldFallsBackToTheBallsLastKnownSpot() {
+        overworld.markHeld(1, player, true);
+        player.disconnect();
+        logoutSpot = new Location(server.addSimpleWorld("world_nether"), 5, 64, 5);
+
+        listener.dropForOfflineHolders(overworld);
+
+        List<Item> balls = droppedBalls();
+        assertEquals(1, balls.size(), "an Overworld ball never drops outside the Overworld");
+        assertEquals(50, balls.get(0).getLocation().getBlockX());
+        assertTrue(items.isStoneItem(balls.get(0).getItemStack()), "a stone ball stays stone");
+    }
+
+    @Test
+    void aBallHeldByAnOnlinePlayerIsLeftAlone() {
+        overworld.markHeld(2, player, false);
+        logoutSpot = new Location(world, 0, 64, 0);
+
+        listener.dropForOfflineHolders(overworld);
+
+        assertTrue(droppedBalls().isEmpty());
+        assertEquals(BallState.HELD, overworld.get(2).orElseThrow().state());
     }
 }
