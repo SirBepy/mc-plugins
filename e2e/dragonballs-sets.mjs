@@ -1,0 +1,263 @@
+import fs from 'node:fs';
+import { Vec3 } from 'vec3';
+import { assert, nbtText, sleep, teleport, waitFor, waitForLine } from './lib.mjs';
+import {
+  HUNTER, NETHER_PLATFORM_Y, OFFSETS, SIGNS, WITNESS, buildNetherPlatform, configPath,
+  crossDimensionTeleport, logPath, openSuite, releaseNetherPlatform,
+} from './dragonballs-lib.mjs';
+
+// Dragon Balls, the Nether/End sets: status across all 3 sets, buying the Nether/End radars (price
+// and look), the cross-dimension "stays behind" guard, a real Nether summon (wrong-set radar
+// refused and not spent, a matching debug-summon starts it, a second set is refused while one is
+// active, dismiss re-scatters only that set) and the overworld scatter's underground placements.
+// Overworld lifecycle/radar/summon: dragonballs.mjs / dragonballs-summon.mjs. Rules and the console
+// protocol: docs/dragonballs.md.
+const {
+  rcon, BX, BZ, STAND, hunter, witness, step, plain, status, balance, collectAllSeven, shortenSummonConfig, finish,
+} = await openSuite('DragonBalls sets');
+
+// A second platform, inside the Nether, at the same flat (x, z) as the overworld one openSuite
+// already built - safe only because they're different worlds, and a Nether ball can never be
+// placed anywhere else.
+const NETHER_STAND = { x: BX, y: NETHER_PLATFORM_Y + 1, z: BZ + 2 };
+
+function netherBallOffset(index) {
+  const [dx, dz] = OFFSETS[index];
+  return { x: BX + dx, y: NETHER_PLATFORM_Y, z: BZ + dz };
+}
+
+async function placeNetherBallAt(bot, index) {
+  const { x, y, z } = netherBallOffset(index);
+  const ref = bot.blockAt(new Vec3(x, y, z));
+  await bot.placeBlock(ref, new Vec3(0, 1, 0));
+}
+
+async function buildSign(pos) {
+  await rcon.command(`minecraft:fill ${pos.x - 1} ${pos.y - 1} ${pos.z - 1} ${pos.x + 1} ${pos.y - 1} ${pos.z + 1} minecraft:stone`);
+  await rcon.command(`minecraft:fill ${pos.x - 1} ${pos.y} ${pos.z - 1} ${pos.x + 1} ${pos.y + 3} ${pos.z + 1} minecraft:air`);
+  await rcon.command(`minecraft:setblock ${pos.x} ${pos.y} ${pos.z} minecraft:oak_sign`);
+}
+
+async function clearSign(pos) {
+  await rcon.command(`minecraft:setblock ${pos.x} ${pos.y} ${pos.z} minecraft:air`);
+}
+
+const originalConfig = fs.readFileSync(configPath, 'utf8');
+let configIsShortened = false;
+
+try {
+  await buildNetherPlatform(rcon, BX, BZ, NETHER_PLATFORM_Y);
+  await rcon.command('dragonballs wake');
+
+  // --- 1. status lists all three sets, Nether/End still exactly as the boot scatter left them ------
+  await step('dragonballs status lists all three sets with 7 balls each', async () => {
+    const s = await status();
+    for (const set of ['overworld', 'nether', 'end']) {
+      assert(Object.keys(s[set]).length === 7, `${set} status has 7 stars (got ${JSON.stringify(s[set])})`);
+    }
+    // Nether and End are untouched by the overworld-only suites that ran before this one, so every
+    // one of their 14 balls should still be exactly where the plugin's first-boot scatter put them.
+    for (const set of ['nether', 'end']) {
+      for (let star = 1; star <= 7; star++) {
+        assert(s[set][star].state === 'placed' && !s[set][star].stone,
+          `${set} star ${star} placed and awake since boot (got ${JSON.stringify(s[set][star])})`);
+      }
+    }
+  });
+
+  // --- 2. radar shop: Nether/End price and look, keep one Overworld radar for step 4 ----------------
+  await step('buying a Nether radar costs exactly 5000 and shows the Nether look; the End sign sells at 20000', async () => {
+    await rcon.command(`minecraft:forceload add ${SIGNS.overworld.x - 8} ${SIGNS.overworld.z - 8} ${SIGNS.overworld.x + 8} ${SIGNS.overworld.z + 8}`);
+    for (const pos of Object.values(SIGNS)) await buildSign(pos);
+    await sleep(300);
+    await rcon.command(`eco set ${HUNTER} 30000`);
+
+    const buyAndCheck = async (set, expectName, expectModel, keep) => {
+      const pos = SIGNS[set];
+      // Cleared at the start of every call, not just the end of the previous one, and given a flat
+      // sleep rather than a tight wait on the bot's own inventory view - that view lags noticeably
+      // behind a /clear (unlike a plugin-driven addItem), and the count check below is an absolute
+      // "== 1", not a delta off whatever this read happens to see.
+      await rcon.command(`minecraft:clear ${HUNTER} minecraft:compass`);
+      await sleep(500);
+      await teleport(rcon, hunter, pos.x, pos.y, pos.z + 1);
+      const signBlock = hunter.blockAt(new Vec3(pos.x, pos.y, pos.z));
+      const before = await balance(HUNTER);
+      await hunter.activateBlock(signBlock);
+      await waitFor(async () => (await balance(HUNTER)) === before - pos.price,
+        `buying the ${set} radar withdraws exactly ${pos.price}`, 5_000);
+      await waitFor(() => hunter.inventory.items().filter((i) => i.name === 'compass').length === 1,
+        `DBHunter received the ${set} radar`, 5_000);
+      const radar = hunter.inventory.items().find((i) => i.name === 'compass');
+      await hunter.equip(radar, 'hand');
+      await sleep(300); // lets the equip's own window-click round trip land server-side first
+      // Querying the whole SelectedItem truncates mid-NBT (RCON's response size cap) before it ever
+      // reaches custom_name/custom_model_data; asking for each component path alone stays well under it.
+      const name = plain(await rcon.command(`minecraft:data get entity ${HUNTER} SelectedItem.components."minecraft:custom_name"`));
+      const model = plain(await rcon.command(`minecraft:data get entity ${HUNTER} SelectedItem.components."minecraft:custom_model_data"`));
+      assert(name.includes(expectName), `${set} radar shows "${expectName}" (got ${name})`);
+      assert(model.includes(expectModel), `${set} radar carries the ${expectModel} model (got ${model})`);
+      if (!keep) await rcon.command(`minecraft:clear ${HUNTER} minecraft:compass`);
+    };
+
+    await buyAndCheck('nether', 'Nether Dragon Radar', 'dragon_radar_nether', false);
+    await buyAndCheck('end', 'End Dragon Radar', 'dragon_radar_end', false);
+    // Kept deliberately: step 4 needs an Overworld radar in hand to prove it's refused on a Nether ball.
+    await buyAndCheck('overworld', 'Dragon Radar', 'dragon_radar', true);
+
+    for (const pos of Object.values(SIGNS)) await clearSign(pos);
+    await rcon.command(`minecraft:forceload remove ${SIGNS.overworld.x - 8} ${SIGNS.overworld.z - 8} ${SIGNS.overworld.x + 8} ${SIGNS.overworld.z + 8}`);
+  });
+
+  // --- 3. dimension guard: a Nether ball stays behind, an Overworld ball travels ---------------------
+  await step('a Nether ball is left behind when its holder leaves the Nether; an Overworld ball travels with them', async () => {
+    await rcon.command(`minecraft:clear ${WITNESS}`);
+    // Both balls are given only once DBWitness is already standing in the Nether - giving the
+    // Overworld one beforehand would make its OWN inbound crossing (overworld -> nether) the trigger
+    // that leaves it behind, defeating the "carried in, then given" setup this scenario needs.
+    await crossDimensionTeleport(rcon, witness, 'minecraft:the_nether', NETHER_STAND.x, NETHER_STAND.y, NETHER_STAND.z);
+    await rcon.command(`dragonballs give ${WITNESS} 1 nether`);
+    await rcon.command(`dragonballs give ${WITNESS} 1`);
+    await sleep(300);
+
+    const before = await status();
+    assert(before.nether[1].state === 'held' && before.nether[1].holder === WITNESS, 'the Nether ball is held, in the Nether');
+    assert(before.overworld[1].state === 'held' && before.overworld[1].holder === WITNESS, 'the Overworld ball is held too');
+
+    await crossDimensionTeleport(rcon, witness, 'minecraft:overworld', STAND.x, STAND.y, STAND.z);
+    const after = await status();
+    assert(after.nether[1].state === 'dropped', `the Nether ball dropped behind (got ${JSON.stringify(after.nether[1])})`);
+    assert(after.nether[1].world === 'world_nether'
+      && Math.abs(after.nether[1].x - NETHER_STAND.x) < 4 && Math.abs(after.nether[1].z - NETHER_STAND.z) < 4,
+      `it dropped at the Nether departure point (got ${JSON.stringify(after.nether[1])}, expected near ${NETHER_STAND.x},${NETHER_STAND.z})`);
+    assert(after.overworld[1].state === 'held' && after.overworld[1].holder === WITNESS,
+      `the Overworld ball stayed with DBWitness (got ${JSON.stringify(after.overworld[1])})`);
+
+    await rcon.command(`dragonballs give ${HUNTER} 1 nether`);
+    await rcon.command(`dragonballs give ${HUNTER} 1`);
+    await sleep(200);
+  });
+
+  // --- 4. a real Nether summon: wrong radar refused, matching debug-summon starts it, a second set --
+  //        is blocked while active, and dismiss re-scatters only the Nether set -----------------------
+  await step("an Overworld radar does not summon a ready Nether set; a session blocks a second set; dismiss re-scatters only the Nether set", async () => {
+    fs.writeFileSync(configPath, shortenSummonConfig(originalConfig));
+    configIsShortened = true;
+    await rcon.command('dragonballs reload');
+
+    await rcon.command(`minecraft:clear ${HUNTER} minecraft:player_head`);
+    await collectAllSeven(hunter, HUNTER, 'nether');
+    await crossDimensionTeleport(rcon, hunter, 'minecraft:the_nether', NETHER_STAND.x, NETHER_STAND.y, NETHER_STAND.z);
+    for (let i = 0; i < 7; i++) {
+      const star = i + 1;
+      const s = await status();
+      if (s.nether[star].state !== 'placed') {
+        const ball = hunter.inventory.items().find((it) => it.name === 'player_head');
+        await hunter.equip(ball, 'hand');
+        await placeNetherBallAt(hunter, i);
+        await sleep(150);
+      }
+    }
+    await sleep(300);
+    const placed = (await status()).nether;
+    assert(Object.values(placed).every((v) => v.state === 'placed' && !v.stone),
+      `all 7 Nether balls placed and awake before summon (got ${JSON.stringify(placed)})`);
+
+    // The Overworld radar kept from step 2: readiness is READY, but it's the wrong set's radar, so
+    // the ball only stirs (same as holding no radar at all) and nothing is spent.
+    const overworldRadar = hunter.inventory.items().find((i) => i.name === 'compass');
+    assert(overworldRadar, 'DBHunter still holds the Overworld radar bought in step 2');
+    await hunter.equip(overworldRadar, 'hand');
+    const ballSpot = Object.values(placed)[0];
+    const ballBlock = hunter.blockAt(new Vec3(ballSpot.x, ballSpot.y, ballSpot.z));
+    const hintSince = hunter.lines.length;
+    // Mineflayer's own actionBar event never fires for ViaBackwards' NBT action bar (see tracker.mjs).
+    const recordActionBar = (packet) => {
+      if (packet.isActionBar !== false) hunter.lines.push(nbtText(packet.text ?? packet.content));
+    };
+    hunter._client.on('action_bar', recordActionBar);
+    hunter._client.on('system_chat', recordActionBar);
+    await hunter.activateBlock(ballBlock);
+    await waitForLine(hunter, /The balls stir\.\.\. but need a Nether Dragon Radar/, 5_000, hintSince);
+    hunter._client.removeListener('action_bar', recordActionBar);
+    hunter._client.removeListener('system_chat', recordActionBar);
+    assert(!/passed/i.test(await rcon.command('execute if entity @e[type=ender_dragon,tag=dragonballs.shenron]')),
+      'no dragon summoned from the wrong-set radar');
+    assert(hunter.inventory.items().some((i) => i.name === 'compass'), 'the Overworld radar was not consumed');
+
+    // Snapshot the Overworld set before the Nether session even starts, to prove dismiss leaves it alone.
+    const overworldBefore = (await status()).overworld;
+
+    const since = witness.lines.length;
+    const reply = plain(await rcon.command(`shenron summon ${HUNTER} shenron nether`));
+    assert(!/Cannot summon|not online|No placed|Unknown dragon|Unknown set/.test(reply),
+      `Nether summon via RCON reports no error (got "${reply.trim()}")`);
+    await waitForLine(witness, /DBHunter has summoned Shenron!/, 5_000, since);
+    await waitFor(async () => /passed/i.test(await rcon.command('execute if entity @e[type=ender_dragon,tag=dragonballs.shenron]')),
+      'the Shenron dragon entity exists', 5_000);
+
+    const secondSetReply = plain(await rcon.command(`shenron summon ${HUNTER} shenron overworld`));
+    assert(/Cannot summon/.test(secondSetReply),
+      `a second set's summon is refused while one is already active (got "${secondSetReply.trim()}")`);
+
+    const byeSince = witness.lines.length;
+    await rcon.command('shenron dismiss Farewell, Nether.');
+    await waitForLine(witness, /Farewell, Nether\./, 5_000, byeSince);
+    await waitFor(async () => !/passed/i.test(await rcon.command('execute if entity @e[type=ender_dragon,tag=dragonballs.shenron]')),
+      'the dragon despawns once dismissed', 12_000);
+
+    // The Nether scatter radius for a set's first-ever wish is 125-375 blocks (the overworld's
+    // 1000-3000 band at 1/8 scale) from the summon cluster, so >100 away is an unambiguous "moved".
+    await waitFor(async () => {
+      const afterNether = (await status()).nether;
+      return Object.values(afterNether).every((v) => v.stone
+        && (v.state !== 'placed' || Math.max(Math.abs(v.x - BX), Math.abs(v.z - BZ)) > 100));
+    }, 'all 7 Nether balls are stone and have moved away from the summon cluster', 45_000);
+
+    const overworldAfter = (await status()).overworld;
+    assert(JSON.stringify(overworldAfter) === JSON.stringify(overworldBefore),
+      `the Overworld set is untouched by the Nether set's own scatter (before ${JSON.stringify(overworldBefore)}, after ${JSON.stringify(overworldAfter)})`);
+
+    fs.writeFileSync(configPath, originalConfig);
+    configIsShortened = false;
+    await rcon.command('dragonballs reload');
+  });
+
+  // --- 5. overworld scatter: at least one star lands underground, verified via the placement log ----
+  await step('dragonballs scatter puts at least one overworld ball underground', async () => {
+    let undergroundLine = null;
+    for (let attempt = 0; attempt < 5 && !undergroundLine; attempt++) {
+      const logSizeBefore = fs.existsSync(logPath) ? fs.statSync(logPath).size : 0;
+      await rcon.command('dragonballs scatter');
+      try {
+        await waitFor(() => {
+          if (!fs.existsSync(logPath)) return false;
+          const added = fs.readFileSync(logPath, 'utf8').slice(logSizeBefore);
+          return (added.match(/\[DragonBalls\] Placed overworld \d-star/g) ?? []).length >= 7;
+        }, `scatter attempt ${attempt + 1} placed all 7 overworld stars`, 30_000);
+      } catch (timeout) {
+        // A star failed to find a spot (rare, logged as a WARNING rather than a placement line);
+        // this attempt won't have an underground line either, so just try scattering again.
+        console.log(`  ${timeout.message}; retrying`);
+        continue;
+      }
+      const added = fs.readFileSync(logPath, 'utf8').slice(logSizeBefore);
+      const match = added.match(/\[DragonBalls\] Placed overworld (\d)-star at (\S+) (-?\d+) (-?\d+) (-?\d+) \(underground\)/);
+      if (match) undergroundLine = match[0];
+    }
+    assert(undergroundLine,
+      'at least one overworld scatter (5 tries) logged an underground placement - none did; see the suite output above for what every attempt actually logged');
+    console.log(`  underground placement seen: ${undergroundLine}`);
+  });
+
+  await finish();
+} catch (error) {
+  await finish(error);
+} finally {
+  if (configIsShortened) {
+    fs.writeFileSync(configPath, originalConfig);
+    await rcon.command('dragonballs reload').catch(() => {});
+  }
+  await rcon.command('minecraft:kill @e[type=ender_dragon,tag=dragonballs.shenron]').catch(() => {});
+  await releaseNetherPlatform(rcon, BX, BZ);
+}

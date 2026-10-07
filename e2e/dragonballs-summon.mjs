@@ -14,9 +14,12 @@ import {
 // summon step answers the wish over RCON the same way Player Claude does on live. The idle timeout is
 // temporarily shortened as a backstop (same restore-on-exit pattern as afk.mjs/tracker.mjs).
 const {
-  rcon, BX, BZ, STAND, hunter, witness, step, plain, status, balance, placeBallAt, shortenSummonConfig,
+  rcon, BX, BZ, STAND, hunter, witness, step, plain, status: rawStatus, balance, placeBallAt, shortenSummonConfig,
   collectAllSeven, finish,
 } = await openSuite('DragonBalls summon');
+// This suite only ever touches the overworld set; flatten to the familiar star-keyed map so the
+// rest of the file (written before the 3-set split) reads unchanged.
+const status = async () => (await rawStatus()).overworld;
 const originalConfig = fs.readFileSync(configPath, 'utf8');
 let configIsShortened = false;
 
@@ -185,8 +188,8 @@ try {
     // take well over 20 s to catch up on a fresh e2e world.
     await waitFor(async () => {
       const afterEnd = await status();
-      // Each granted wish pushes the next scatter further out, eventually into the Nether (whose
-      // coordinates are scaled down), so a ball in another world counts as flown away too.
+      // The overworld set never leaves its own dimension (each of the 3 sets stays in its own
+      // dimension now), so distance from the summon spot is what "flown away" means here.
       const flownAway = (v) => v.state !== 'placed' || v.world !== 'world'
         || Math.max(Math.abs(v.x - BX), Math.abs(v.z - BZ)) > 500;
       return Object.values(afterEnd).every((v) => v.stone && flownAway(v));
@@ -208,7 +211,6 @@ try {
   // --- 11. a stone ball can still be found, broken and carried -------------------------------------
   await step('a stone ball can be broken and picked up as its stone item', async () => {
     const s = await status();
-    // Later scatters also land in the Nether; the overworld ones are the ones teleport() can reach.
     const overworldBall = Object.entries(s).find(([, v]) => v.state === 'placed' && v.world === 'world');
     assert(overworldBall, `at least one stone ball landed in the overworld (got ${JSON.stringify(s)})`);
     const [starStr, loc] = overworldBall;

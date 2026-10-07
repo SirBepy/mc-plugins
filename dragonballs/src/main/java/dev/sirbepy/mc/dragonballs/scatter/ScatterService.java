@@ -54,6 +54,10 @@ public final class ScatterService implements BallScatterer {
     private static final int POI_JITTER_RADIUS = 6;
     private static final Material[] RIM_MATERIALS = {Material.COARSE_DIRT, Material.GRAVEL, Material.COBBLESTONE};
 
+    /** A POI search hit: where it landed, and which structure matched, for the placement log line. */
+    private record PoiMatch(double x, double z, String structureId) {
+    }
+
     private final JavaPlugin plugin;
     private final Supplier<DragonBallsConfig> config;
     private final BallItems items;
@@ -295,7 +299,7 @@ public final class ScatterService implements BallScatterer {
         Predicate<Material> accept = material -> SurfaceClassifier.classify(material) == SurfaceKind.SOLID;
         return resolveGroundSurface(world, center.getX(), center.getZ(), tier.minRadius(), tier.maxRadius(),
                 config.get().pregenLimit(), avoid, candidate[0], candidate[1], accept, 0)
-                .thenCompose(xz -> placeAtSurface(star, world, xz[0], xz[1], stone, registry));
+                .thenCompose(xz -> placeAtSurface(star, world, xz[0], xz[1], stone, registry, "surface"));
     }
 
     // ---- overworld: 1-2 stars underground, 1-2 at a point of interest (Joe's "hole going down" /
@@ -328,12 +332,12 @@ public final class ScatterService implements BallScatterer {
                         offset -> isBlockedForShaft(world, bx + offset[0], groundY + offset[1], bz + offset[2]))
                 && isWilderness(world, bx, bz);
         if (!safe) {
-            placeAtSurfaceNow(star, world, bx, bz, stone, registry);
+            placeAtSurfaceNow(star, world, bx, bz, stone, registry, "surface");
             return;
         }
         carveShaft(world, bx, groundY, bz, shape);
         int[] head = shape.headOffset();
-        placeHead(star, world, bx + head[0], groundY + head[1], bz + head[2], stone, registry);
+        placeHead(star, world, bx + head[0], groundY + head[1], bz + head[2], stone, registry, "underground");
     }
 
     /** True if every offset the shaft would touch, plus the chunk it spans, stays within the single
@@ -399,19 +403,19 @@ public final class ScatterService implements BallScatterer {
                                                             BallRegistry registry, ScatterVarietyConfig variety) {
         return runOnMain(() -> {
         }).thenCompose(ignored -> {
-            double[] poiSpot = searchOverworldPoi(world, candidate, center, tier, avoid, variety);
+            PoiMatch poiSpot = searchOverworldPoi(world, candidate, center, tier, avoid, variety);
             if (poiSpot == null) {
                 // No qualifying structure within the attempt budget: fall back exactly like a plain star.
                 return finalizeOverworld(star, world, center, tier, avoid, candidate, stone, registry);
             }
-            return placePoiBall(star, world, poiSpot[0], poiSpot[1], stone, registry);
+            return placePoiBall(star, world, poiSpot.x(), poiSpot.z(), stone, registry, "poi " + poiSpot.structureId());
         });
     }
 
     /** Tries up to {@code poi-attempts} of the configured structures (shuffled, so the same type
      * doesn't always win), accepting the first whose reported location is inside the set's own
      * annulus, inside the pregen bound, far enough from the other balls, and not in a town. */
-    private double[] searchOverworldPoi(World world, double[] candidate, Location center, DifficultyTier tier,
+    private PoiMatch searchOverworldPoi(World world, double[] candidate, Location center, DifficultyTier tier,
                                           List<double[]> avoid, ScatterVarietyConfig variety) {
         List<Structure> structures = StructureCatalog.resolve(variety.overworldPoiStructures());
         Collections.shuffle(structures, random);
@@ -419,7 +423,8 @@ public final class ScatterService implements BallScatterer {
         DragonBallsConfig cfg = config.get();
         int attempts = Math.min(variety.poiAttempts(), structures.size());
         for (int i = 0; i < attempts; i++) {
-            StructureSearchResult result = world.locateNearestStructure(origin, structures.get(i),
+            Structure structure = structures.get(i);
+            StructureSearchResult result = world.locateNearestStructure(origin, structure,
                     variety.poiSearchRadiusChunks(), false);
             if (result == null) {
                 continue;
@@ -428,7 +433,8 @@ public final class ScatterService implements BallScatterer {
             if (PoiAcceptance.accepts(found.getX(), found.getZ(), center.getX(), center.getZ(), tier.minRadius(),
                     tier.maxRadius(), cfg.pregenLimit(), avoid, cfg.minSpacing())
                     && townyGuard.isWilderness(found)) {
-                return jitterNear(found);
+                double[] jittered = jitterNear(found);
+                return new PoiMatch(jittered[0], jittered[1], structure.getKey().asString());
             }
         }
         return null;
@@ -438,7 +444,7 @@ public final class ScatterService implements BallScatterer {
      * (a room's open air right underneath it) down to the real floor, then falls back to the usual
      * liquid shore-search if the jittered offset still lands on water. */
     private CompletableFuture<Void> placePoiBall(int star, World world, double x, double z, boolean stone,
-                                                   BallRegistry registry) {
+                                                   BallRegistry registry, String kind) {
         int bx = (int) Math.floor(x);
         int bz = (int) Math.floor(z);
         return loadChunkFor(world, bx, bz).thenCompose(chunk -> {
@@ -448,7 +454,7 @@ public final class ScatterService implements BallScatterer {
             CompletableFuture<double[]> resolved = accept.test(surface) && isWilderness(world, bx, bz)
                     ? CompletableFuture.completedFuture(new double[]{bx + 0.5, bz + 0.5})
                     : shoreSearch(world, bx, bz, 0, accept);
-            return resolved.thenCompose(xz -> placeAtSurface(star, world, xz[0], xz[1], stone, registry));
+            return resolved.thenCompose(xz -> placeAtSurface(star, world, xz[0], xz[1], stone, registry, kind));
         });
     }
 
@@ -483,7 +489,7 @@ public final class ScatterService implements BallScatterer {
         Predicate<Material> accept = material -> material == Material.END_STONE;
         return resolveGroundSurface(endWorld, 0, 0, config.get().endMinDistance(), config.get().endMaxDistance(),
                 Integer.MAX_VALUE, avoid, candidate[0], candidate[1], accept, 0)
-                .thenCompose(xz -> placeAtSurface(star, endWorld, xz[0], xz[1], stone, registry));
+                .thenCompose(xz -> placeAtSurface(star, endWorld, xz[0], xz[1], stone, registry, "surface"));
     }
 
     /**
@@ -548,13 +554,13 @@ public final class ScatterService implements BallScatterer {
     }
 
     private CompletableFuture<Void> placeAtSurface(int star, World world, double x, double z, boolean stone,
-                                                     BallRegistry registry) {
-        return runOnMain(() -> placeAtSurfaceNow(star, world, (int) Math.floor(x), (int) Math.floor(z), stone, registry));
+                                                     BallRegistry registry, String kind) {
+        return runOnMain(() -> placeAtSurfaceNow(star, world, (int) Math.floor(x), (int) Math.floor(z), stone, registry, kind));
     }
 
-    private void placeAtSurfaceNow(int star, World world, int bx, int bz, boolean stone, BallRegistry registry) {
+    private void placeAtSurfaceNow(int star, World world, int bx, int bz, boolean stone, BallRegistry registry, String kind) {
         int y = world.getHighestBlockYAt(bx, bz, HeightMap.MOTION_BLOCKING_NO_LEAVES);
-        placeHead(star, world, bx, y, bz, stone, registry);
+        placeHead(star, world, bx, y, bz, stone, registry, kind);
     }
 
     // ---- nether: column scan for a safe floor/headroom spot, not a heightmap ----
@@ -565,7 +571,7 @@ public final class ScatterService implements BallScatterer {
                                                      BallRegistry registry) {
         return resolveNetherSpot(netherWorld, centerX, centerZ, minRadius, maxRadius, pregenLimit, avoid,
                 candidate[0], candidate[1], 0)
-                .thenCompose(xyz -> runOnMain(() -> placeHead(star, netherWorld, xyz[0], xyz[1], xyz[2], stone, registry)))
+                .thenCompose(xyz -> runOnMain(() -> placeHead(star, netherWorld, xyz[0], xyz[1], xyz[2], stone, registry, "surface")))
                 .exceptionally(error -> {
                     plugin.getLogger().log(Level.WARNING,
                             "Could not find a safe nether spot for star " + star + "; leaving it unscattered", error);
@@ -582,12 +588,13 @@ public final class ScatterService implements BallScatterer {
                                                          BallRegistry registry, ScatterVarietyConfig variety) {
         return runOnMain(() -> {
         }).thenCompose(ignored -> {
-            double[] poiSpot = searchNetherPoi(netherWorld, candidate, centerX, centerZ, minRadius, maxRadius,
+            PoiMatch poiSpot = searchNetherPoi(netherWorld, candidate, centerX, centerZ, minRadius, maxRadius,
                     pregenLimit, avoid, variety);
-            double[] spot = poiSpot != null ? poiSpot : candidate;
+            double[] spot = poiSpot != null ? new double[]{poiSpot.x(), poiSpot.z()} : candidate;
+            String kind = poiSpot != null ? "poi " + poiSpot.structureId() : "surface";
             return resolveNetherSpot(netherWorld, centerX, centerZ, minRadius, maxRadius, pregenLimit, avoid,
                     spot[0], spot[1], 0)
-                    .thenCompose(xyz -> runOnMain(() -> placeHead(star, netherWorld, xyz[0], xyz[1], xyz[2], stone, registry)));
+                    .thenCompose(xyz -> runOnMain(() -> placeHead(star, netherWorld, xyz[0], xyz[1], xyz[2], stone, registry, kind)));
         }).exceptionally(error -> {
             plugin.getLogger().log(Level.WARNING,
                     "Could not find a safe nether spot for star " + star + "; leaving it unscattered", error);
@@ -595,7 +602,7 @@ public final class ScatterService implements BallScatterer {
         });
     }
 
-    private double[] searchNetherPoi(World netherWorld, double[] candidate, double centerX, double centerZ,
+    private PoiMatch searchNetherPoi(World netherWorld, double[] candidate, double centerX, double centerZ,
                                        int minRadius, int maxRadius, int pregenLimit, List<double[]> avoid,
                                        ScatterVarietyConfig variety) {
         List<Structure> structures = StructureCatalog.resolve(variety.netherPoiStructures());
@@ -603,7 +610,8 @@ public final class ScatterService implements BallScatterer {
         Location origin = new Location(netherWorld, candidate[0], DESTINATION_PREVIEW_Y, candidate[1]);
         int attempts = Math.min(variety.poiAttempts(), structures.size());
         for (int i = 0; i < attempts; i++) {
-            StructureSearchResult result = netherWorld.locateNearestStructure(origin, structures.get(i),
+            Structure structure = structures.get(i);
+            StructureSearchResult result = netherWorld.locateNearestStructure(origin, structure,
                     variety.poiSearchRadiusChunks(), false);
             if (result == null) {
                 continue;
@@ -612,7 +620,8 @@ public final class ScatterService implements BallScatterer {
             if (PoiAcceptance.accepts(found.getX(), found.getZ(), centerX, centerZ, minRadius, maxRadius,
                     pregenLimit, avoid, config.get().minSpacing())
                     && townyGuard.isWilderness(found)) {
-                return jitterNear(found);
+                double[] jittered = jitterNear(found);
+                return new PoiMatch(jittered[0], jittered[1], structure.getKey().asString());
             }
         }
         return null;
@@ -668,7 +677,7 @@ public final class ScatterService implements BallScatterer {
         return world.getChunkAtAsync((int) Math.floor(x) >> 4, (int) Math.floor(z) >> 4, true);
     }
 
-    private void placeHead(int star, World world, int x, int y, int z, boolean stone, BallRegistry registry) {
+    private void placeHead(int star, World world, int x, int y, int z, boolean stone, BallRegistry registry, String kind) {
         Block block = world.getBlockAt(x, y, z);
         block.setType(Material.PLAYER_HEAD);
         Skull skull = (Skull) block.getState();
@@ -676,6 +685,8 @@ public final class ScatterService implements BallScatterer {
         items.applyBlockTexture(skull, registry.set(), star, stone);
         skull.update(true);
         registry.markPlaced(star, block.getLocation(), stone);
+        plugin.getLogger().info("[DragonBalls] Placed " + registry.set().id() + " " + star + "-star at "
+                + world.getName() + " " + x + " " + y + " " + z + " (" + kind + ")");
     }
 
     private CompletableFuture<Void> runOnMain(Runnable action) {

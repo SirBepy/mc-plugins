@@ -5,9 +5,12 @@ import { HUNTER, PLATFORM_Y, WITNESS, openSuite } from './dragonballs-lib.mjs';
 // Dragon Balls, ball lifecycle: status, the dupe guard, slowness while carrying, the container and
 // hopper guards, death drops and place/break. Radar and summon live in dragonballs-summon.mjs.
 const {
-  rcon, BX, BZ, STAND, hunter, witness, step, plain, ballOffset, status, near, speedModifier, placeBallAt,
+  rcon, BX, BZ, STAND, hunter, witness, step, plain, ballOffset, status: rawStatus, near, speedModifier, placeBallAt,
   tossTowardCentre, ballEntityNear, openWindow, collectAllSeven, finish,
 } = await openSuite('DragonBalls');
+// This suite only ever touches the overworld set; flatten to the familiar star-keyed map so the
+// rest of the file (written before the 3-set split) reads unchanged.
+const status = async () => (await rawStatus()).overworld;
 
 try {
   // --- 1. plugin enabled, status lists 7 balls, reset under our control -------------------------

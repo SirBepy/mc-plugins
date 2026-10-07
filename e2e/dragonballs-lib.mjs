@@ -1,13 +1,14 @@
 import { Vec3 } from 'vec3';
 import {
-  Rcon, assert, buildPlatform, createBot, quit, randomOrigin, releasePlatform, sleep, teleport,
+  Rcon, assert, buildPlatform, createBot, quit, randomOrigin, releasePlatform, sleep, teleport, waitFor,
 } from './lib.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Shared setup and helpers for the two Dragon Balls suites: dragonballs.mjs (ball lifecycle) and
-// dragonballs-summon.mjs (radar, summon and the stone phase). Rules and the console protocol:
-// docs/dragonballs.md.
+// Shared setup and helpers for the three Dragon Balls suites: dragonballs.mjs (ball lifecycle),
+// dragonballs-summon.mjs (radar, summon and the stone phase, overworld set only) and
+// dragonballs-sets.mjs (the Nether/End sets, cross-dimension guard, and the underground scatter
+// check). Rules and the console protocol: docs/dragonballs.md.
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const configPath = path.join(here, '..', 'testserver', 'run-e2e', 'plugins', 'DragonBalls', 'config.yml');
 export const wishesPath = path.join(here, '..', 'testserver', 'run-e2e', 'plugins', 'DragonBalls', 'wishes.jsonl');
@@ -17,12 +18,49 @@ export const PLATFORM_Y = 200;
 // All 7 within Chebyshev radius 1 of (BX, BZ) - well inside summon.radius (default 2). The bots
 // stand one block further out (BZ + 2) so their own hitbox never occupies a column they're about
 // to place into (BlockPlaceEvent is refused into an occupied space) while staying within reach.
-const OFFSETS = [[0, 0], [1, 0], [0, 1], [1, 1], [-1, 0], [0, -1], [-1, -1]];
+export const OFFSETS = [[0, 0], [1, 0], [0, 1], [1, 1], [-1, 0], [0, -1], [-1, -1]];
 export const HUNTER = 'DBHunter';
 export const WITNESS = 'DBWitness';
-// Default station.radar-sign coords (config.yml) - the e2e world has no spawn-market build, so a
-// small floor + sign are carved out here, same spirit as market.mjs's "no spawn market" comment.
-export const SIGN = { x: 413, y: 116, z: -873 };
+// station.radar-signs.<set> coords (config.yml); the e2e world has no spawn-market build, so a
+// small floor + sign(s) are carved out here, same spirit as market.mjs's "no spawn market" comment.
+export const SIGNS = {
+  overworld: { x: 413, y: 116, z: -873, price: 1000 },
+  nether: { x: 413, y: 116, z: -875, price: 5000 },
+  end: { x: 413, y: 117, z: -874, price: 20000 },
+};
+// Back-compat name for dragonballs-summon.mjs, which only ever deals with the overworld sign.
+export const SIGN = SIGNS.overworld;
+
+// A separate flat platform inside the Nether, for dragonballs-sets.mjs's own set of scenarios.
+// Chosen within findNetherSafeY's own scan band (32-108) so the carved floor never collides with
+// the natural bedrock roof (~127).
+export const NETHER_PLATFORM_Y = 90;
+
+/** Same shape as buildPlatform/releasePlatform in lib.mjs, but carved inside the Nether via
+ * `execute in`, since RCON's console sender otherwise always targets the default (overworld) world. */
+export async function buildNetherPlatform(rcon, bx, bz, y) {
+  await rcon.command(`minecraft:execute in minecraft:the_nether run forceload add ${bx - 16} ${bz - 16} ${bx + 16} ${bz + 16}`);
+  await rcon.command(`minecraft:execute in minecraft:the_nether run fill ${bx - 8} ${y} ${bz - 8} ${bx + 8} ${y} ${bz + 8} minecraft:stone`);
+  await rcon.command(`minecraft:execute in minecraft:the_nether run fill ${bx - 8} ${y + 1} ${bz - 8} ${bx + 8} ${y + 4} ${bz + 8} minecraft:air`);
+}
+
+export async function releaseNetherPlatform(rcon, bx, bz) {
+  await rcon.command(`minecraft:execute in minecraft:the_nether run forceload remove ${bx - 16} ${bz - 16} ${bx + 16} ${bz + 16}`).catch(() => {});
+}
+
+/** Crosses into another dimension via `execute in` (vanilla /teleport can't change worlds on its
+ * own), confirmed by the server's own authoritative Dimension tag rather than mineflayer's bot.game
+ * state (never inspected elsewhere in this codebase, so not worth relying on here either). */
+export async function crossDimensionTeleport(rcon, bot, dimension, x, y, z) {
+  // The inner command needs the minecraft: prefix too - EssentialsX shadows plain "tp" globally,
+  // including inside an execute-in context, and its own /tp never follows that context's dimension.
+  await rcon.command(`minecraft:execute in ${dimension} run minecraft:tp ${bot.username} ${x} ${y} ${z}`);
+  await waitFor(async () => (await rcon.command(`data get entity ${bot.username} Dimension`)).includes(dimension),
+    `${bot.username} arrived in ${dimension}`, 15_000);
+  await sleep(1_000);
+  await bot.waitForChunksToLoad().catch(() => {});
+  await sleep(500);
+}
 
 /**
  * Connects RCON, builds a fresh platform and logs both bots in on it with empty inventories.
@@ -52,22 +90,34 @@ export async function openSuite(suiteName) {
     return { x: BX + dx, y: PLATFORM_Y, z: BZ + dz };
   }
 
-  /** Parses `dragonballs status`'s one-line-per-star output into {state, world, x, y, z, holder, stone}. */
+  /** Parses `dragonballs status`'s "-- Overworld/Nether/End --" sectioned, one-line-per-star output
+   * into {overworld, nether, end}, each a {star: {state, world, x, y, z, holder, stone}} map. The 3
+   * sections all number their stars 1-7, so the header is what the dormant "sleeps" line and every
+   * ball line below it get filed under - without it, a later section's star N would silently clobber
+   * an earlier one's (the bug this replaced). */
   function parseStatus(text) {
-    const out = {};
+    const sets = { overworld: {}, nether: {}, end: {} };
+    let current = null;
     for (const line of plain(text).split(/\r?\n/)) {
+      const header = line.match(/^-- (Overworld|Nether|End) --$/);
+      if (header) {
+        current = header[1].toLowerCase();
+        continue;
+      }
+      if (!current) continue;
       const m = line.match(/^(?<star>\d)-star: (?:placed at (?<pw>\S+) (?<px>-?\d+),(?<py>-?\d+),(?<pz>-?\d+)|dropped at (?<dw>\S+) (?<dx>-?\d+),(?<dy>-?\d+),(?<dz>-?\d+)|held by (?<holder>\S+))(?<stone>\s*\(stone\))?/);
       if (!m) continue;
       const g = m.groups;
       const star = Number(g.star);
       const stone = Boolean(g.stone);
-      if (g.pw) out[star] = { state: 'placed', world: g.pw, x: Number(g.px), y: Number(g.py), z: Number(g.pz), stone };
-      else if (g.dw) out[star] = { state: 'dropped', world: g.dw, x: Number(g.dx), y: Number(g.dy), z: Number(g.dz), stone };
-      else out[star] = { state: 'held', holder: g.holder, stone };
+      if (g.pw) sets[current][star] = { state: 'placed', world: g.pw, x: Number(g.px), y: Number(g.py), z: Number(g.pz), stone };
+      else if (g.dw) sets[current][star] = { state: 'dropped', world: g.dw, x: Number(g.dx), y: Number(g.dy), z: Number(g.dz), stone };
+      else sets[current][star] = { state: 'held', holder: g.holder, stone };
     }
-    return out;
+    return sets;
   }
 
+  /** {overworld, nether, end}, each a star-keyed map - see parseStatus. */
   async function status() {
     return parseStatus(await rcon.command('dragonballs status'));
   }
@@ -136,9 +186,12 @@ export async function openSuite(suiteName) {
     return out;
   }
 
-  async function collectAllSeven(bot, playerName) {
+  /** Gives all 7 of `set`'s balls (default overworld, matching /dragonballs give's own default) to
+   * playerName in one go. */
+  async function collectAllSeven(bot, playerName, set) {
+    const suffix = set ? ` ${set}` : '';
     for (let star = 1; star <= 7; star++) {
-      await rcon.command(`dragonballs give ${playerName} ${star}`);
+      await rcon.command(`dragonballs give ${playerName} ${star}${suffix}`);
     }
     await sleep(300);
   }
