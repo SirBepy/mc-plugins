@@ -21,6 +21,7 @@ import org.mockbukkit.mockbukkit.world.WorldMock;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -87,5 +88,13 @@ public abstract class CartelTestBase {
             lines.add(plain(next));
         }
         return lines;
+    }
+
+    /** How many player heads named {@code name} {@code player} is carrying. */
+    protected static long heads(PlayerMock player, String name) {
+        return Arrays.stream(player.getInventory().getContents())
+                .filter(item -> item != null && item.getType() == Material.PLAYER_HEAD)
+                .filter(item -> plain(item.getItemMeta().displayName()).equals(name))
+                .count();
     }
 }

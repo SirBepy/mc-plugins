@@ -95,13 +95,6 @@ class CallManagerTest extends CartelTestBase {
         assertTrue(chat(owner).stream().anyMatch(line -> line.startsWith("The job is done.")));
     }
 
-    private static long heads(org.mockbukkit.mockbukkit.entity.PlayerMock player, String name) {
-        return java.util.Arrays.stream(player.getInventory().getContents())
-                .filter(item -> item != null && item.getType() == org.bukkit.Material.PLAYER_HEAD)
-                .filter(item -> plain(item.getItemMeta().displayName()).equals(name))
-                .count();
-    }
-
     @Test
     void aKillByTheCousinsGivesTheBossTheTargetsHead() {
         calls.hit(owner, victim);

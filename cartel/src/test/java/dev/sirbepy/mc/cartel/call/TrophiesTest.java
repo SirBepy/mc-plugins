@@ -6,7 +6,6 @@ import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.junit.jupiter.api.Test;
-import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 import java.util.Arrays;
 
@@ -14,13 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TrophiesTest extends CartelTestBase {
-
-    private static long heads(PlayerMock player, String name) {
-        return Arrays.stream(player.getInventory().getContents())
-                .filter(item -> item != null && item.getType() == Material.PLAYER_HEAD)
-                .filter(item -> plain(item.getItemMeta().displayName()).equals(name))
-                .count();
-    }
 
     @Test
     void anOnlineOwnerGetsTheHeadRightAway() {
