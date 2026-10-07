@@ -3,6 +3,7 @@ package dev.sirbepy.mc.cartel;
 import dev.sirbepy.mc.cartel.call.CallManager;
 import dev.sirbepy.mc.cartel.call.CousinListener;
 import dev.sirbepy.mc.cartel.call.Cousins;
+import dev.sirbepy.mc.cartel.call.Sidearm;
 import dev.sirbepy.mc.cartel.call.Trophies;
 import dev.sirbepy.mc.cartel.phone.Phone;
 import dev.sirbepy.mc.cartel.phone.PhoneListener;
@@ -24,12 +25,18 @@ public final class CartelPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        // The 24 h cooldown lived under hit-cooldown-minutes until the council's 36 h (2026-10-07):
+        // drop it so existing configs pick up hit-cooldown-hours instead.
+        getConfig().set("hit-cooldown-minutes", null);
+        getConfig().options().copyDefaults(true);
+        saveConfig();
         config.set(CartelConfig.from(getConfig()));
 
         CartelStore store = new CartelStore(new File(getDataFolder(), "state.yml"), getLogger());
         Cousins cousins = new Cousins(this, config::get);
         Trophies trophies = new Trophies(store);
-        calls = new CallManager(config::get, store, cousins::spawn, cousins, trophies, System::currentTimeMillis, new Random());
+        calls = new CallManager(config::get, store, cousins::spawn, cousins, trophies, System::currentTimeMillis, new Random(),
+                () -> Sidearm.forMarco(this));
         PhoneMenus menus = new PhoneMenus(calls, config::get);
         PhoneListener phones = new PhoneListener(new Phone(this), config::get, store, menus::open);
 

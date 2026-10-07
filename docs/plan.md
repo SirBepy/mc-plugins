@@ -173,7 +173,8 @@ Haru, Keeper of the Sakura Sanctuary: ImMijo's Shenron wish (2026-10-06), an NPC
 The cartel flip phone: Archontopouloi's Shenron wish (2026-10-06). Right-clicking his phone opens a menu that calls in Leonel and Marco Salamanca (zombies in iron armor painted as the cousins by the server pack, with Sharpness X netherite swords that never drop).
 
 - **Guard Mode:** they follow him for 10 minutes and fight monsters near him and anyone who hurts him. Once every 2 real hours.
-- **Assassinate Mode:** he picks an online player; the cousins appear 10 blocks from them and hunt them for 3 minutes, and the whole server reads "[name], you have made enemies of the cartel." Once per real day.
+- **Assassinate Mode:** he picks an online player; the cousins appear 10 blocks from them and hunt them for 3 minutes, and the whole server reads "[name], you have made enemies of the cartel." Once every 36 hours (was once per real day until the dragon's council raised it on 2026-10-07, after the pillar-cheese argument, as the price of Marco's pistol).
+- **Marco's pistol (Assassinate Mode only):** if the target has had no melee path for 3 seconds (pillared or otherwise out of reach), Marco swaps his sword for a bow drawn as a pistol and shoots: at most 3 damage per hit, one shot per 1.5 s, no knockback, fire or effects, arrows can't be picked up. The moment a path opens he re-draws the sword. Leonel and Guard Mode stay melee only.
 - Every limit and the reasoning behind it: `docs/cartel.md`. `/cartel` (op) gives phones and checks or resets cooldowns.
 
 ## Testing

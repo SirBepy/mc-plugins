@@ -1,11 +1,14 @@
 package dev.sirbepy.mc.cartel.call;
 
+import io.papermc.paper.event.entity.EntityPushedByEntityAttackEvent;
+import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityCombustByEntityEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
@@ -16,7 +19,8 @@ import org.bukkit.event.player.PlayerJoinEvent;
 /**
  * Keeps the cousins on the job: they only target who {@link CallManager#allowedTarget} allows, never
  * hurt their boss or each other, can't be hurt by their boss, never turn into drowned, and drop
- * nothing when they die (Joe: their gear never drops). A boss who was offline when a hit landed
+ * nothing when they die (Joe: their gear never drops). Marco's pistol shots hit only the hit's
+ * target, softly, with no knockback or fire. A boss who was offline when a hit landed
  * gets the trophy head on their next join.
  */
 public final class CousinListener implements Listener {
@@ -49,6 +53,36 @@ public final class CousinListener implements Listener {
         }
     }
 
+    /**
+     * Marco's pistol shots hurt only the hit's target, for at most {@link Sidearm#MAX_DAMAGE} before
+     * armor. HIGHEST so no other plugin raises it again afterwards.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onShot(EntityDamageByEntityEvent event) {
+        if (!cousinShot(event.getDamager())) {
+            return;
+        }
+        if (!calls.isHitTarget(event.getEntity())) {
+            event.setCancelled(true);
+        } else if (event.getDamage() > Sidearm.MAX_DAMAGE) {
+            event.setDamage(Sidearm.MAX_DAMAGE);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onShotKnockback(EntityPushedByEntityAttackEvent event) {
+        if (cousinShot(event.getPushedBy())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onShotFire(EntityCombustByEntityEvent event) {
+        if (cousinShot(event.getCombuster())) {
+            event.setCancelled(true);
+        }
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onHurt(EntityDamageByEntityEvent event) {
         calls.noteAttack(event.getEntity(), attacker(event.getDamager()));
@@ -77,6 +111,11 @@ public final class CousinListener implements Listener {
         if (cousins.isCousin(event.getEntity())) {
             event.setCancelled(true);
         }
+    }
+
+    private boolean cousinShot(Entity entity) {
+        return entity instanceof AbstractArrow arrow && arrow.getShooter() instanceof Entity shooter
+                && cousins.isCousin(shooter);
     }
 
     static LivingEntity attacker(Entity damager) {

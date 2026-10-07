@@ -16,10 +16,12 @@ import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.inventory.meta.components.EquippableComponent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -32,6 +34,7 @@ public final class Cousins {
 
     public static final String TAG = "cartel.cousin";
     public static final NamespacedKey LOOK = new NamespacedKey("claudesmp", "salamanca");
+    public static final String PISTOL_LOOK = "cartel_pistol";
 
     private final NamespacedKey key;
     private final Supplier<CartelConfig> config;
@@ -98,13 +101,28 @@ public final class Cousins {
         return item;
     }
 
-    private static ItemStack sword() {
+    public static ItemStack sword() {
         ItemStack sword = new ItemStack(Material.NETHERITE_SWORD);
         sword.addUnsafeEnchantment(Enchantment.SHARPNESS, 10);
         ItemMeta meta = sword.getItemMeta();
         meta.setUnbreakable(true);
         sword.setItemMeta(meta);
         return sword;
+    }
+
+    /**
+     * Marco's sidearm (see {@link Sidearm}): a plain bow, no enchantments, drawn as a black pistol by
+     * the server pack's {@code cartel_pistol} look. Without the pack it is just a bow.
+     */
+    public static ItemStack pistol() {
+        ItemStack bow = new ItemStack(Material.BOW);
+        ItemMeta meta = bow.getItemMeta();
+        meta.setUnbreakable(true);
+        CustomModelDataComponent look = meta.getCustomModelDataComponent();
+        look.setStrings(List.of(PISTOL_LOOK));
+        meta.setCustomModelDataComponent(look);
+        bow.setItemMeta(meta);
+        return bow;
     }
 
     private static void setBase(Mob mob, Attribute attribute, double value) {

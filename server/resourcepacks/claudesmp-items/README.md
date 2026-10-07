@@ -8,8 +8,8 @@ repair stay vanilla, and players without the pack (or on Bedrock via Geyser) see
 verbatim copy of the 26.3 client jar's own `assets/minecraft/items/crossbow.json` model, so every
 other crossbow keeps its loading and charged looks. `assets/minecraft/items/netherite_sword.json`
 does the same for netherite swords, and `assets/minecraft/items/compass.json` does the same for
-compasses (Dragon Radar, below), and `assets/minecraft/items/clock.json` for clocks (cartel
-phone, below).
+compasses (Dragon Radar, below), `assets/minecraft/items/clock.json` for clocks (cartel
+phone, below), and `assets/minecraft/items/bow.json` for bows (Marco's pistol, below).
 
 ## Looks
 
@@ -126,6 +126,16 @@ phone, below).
   wish, approved by Joe on 2026-10-06 (`docs/cartel.md`). A 32x32 black flip phone, open, with a
   green LCD, silver hinge and keypad, on `item/generated`. `clock.json`'s `fallback` is the 26.3
   jar's own clock model verbatim.
+
+- `cartel_pistol` (bow): Marco Salamanca's pistol, the bow the Cartel plugin hands him in
+  Assassinate Mode once a target has climbed out of melee reach (the dragon's council, 2026-10-07,
+  `docs/cartel.md`). The texture is `pollos_gun.png`'s side-on pistol recoloured to black gunmetal
+  with a wooden grip, so it can't be mistaken for Archontopouloi's gold gun. Only zombies hold it,
+  so only the third-person display is set: solved with `.for_bepy/item-display-solver/pose.py` for
+  26.3's aggressive zombie arm (`AnimationUtils.animateZombieArms`: xRot -pi/1.5, yRot -0.1), barrel
+  along the raised arm and grip in the fist. Left hand repeats the right-hand numbers (the client
+  mirrors them), for the few left-handed zombies. `bow.json`'s `fallback` is the 26.3 jar's own bow
+  model verbatim. Not yet seen in a real 26.3 client, only in the solver's offline render.
 
 - `claudesmp:salamanca` (equipment asset, `assets/claudesmp/equipment/salamanca.json`): the look of
   Leonel and Marco Salamanca, the cartel phone's hitmen. The plugin spawns them as zombies in iron

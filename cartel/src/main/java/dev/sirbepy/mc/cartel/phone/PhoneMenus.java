@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 
 /**
  * The phone's chest screens (Geyser shows them to Bedrock players too): the main menu, the target
- * list, and a confirm step so a misclick can't spend a day's cooldown.
+ * list, and a confirm step so a misclick can't spend Assassinate Mode's cooldown.
  */
 public final class PhoneMenus {
 
@@ -62,6 +62,7 @@ public final class PhoneMenus {
         menu.set(HIT_SLOT, icon(Material.NETHERITE_SWORD, "Assassinate Mode", NamedTextColor.DARK_RED,
                 "Send the cousins after a player.",
                 "They appear " + c.hitDistance() + " blocks away and hunt them for " + Durations.format(c.hitLength()) + ".",
+                "Marco draws a pistol if they climb out of reach.",
                 "Everyone hears about it. Once every " + Durations.format(c.hitCooldown()) + ".",
                 readiness(calls.hitWait(owner.getUniqueId()))), (shown, click) -> openTargets(owner));
         if (calls.active()) {

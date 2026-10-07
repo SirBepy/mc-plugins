@@ -9,8 +9,9 @@ guard-minutes: 10
 guard-cooldown-minutes: 120
 
 # Assassinate Mode: the cousins appear this many blocks from the target and hunt them.
+# 36 h cooldown (was 24 h): the price of Marco's pistol, set by the dragon's council on 2026-10-07.
 hit-minutes: 3
-hit-cooldown-minutes: 1440
+hit-cooldown-hours: 36
 hit-distance: 10
 # The target outran or out-teleported them: the cousins pick up the trail this many times, then give up.
 lose-trail-distance: 48

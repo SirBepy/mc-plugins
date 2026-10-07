@@ -42,6 +42,7 @@ public final class CallManager {
     }
 
     static final String[] NAMES = {"Leonel Salamanca", "Marco Salamanca"};
+    static final int MARCO = 1;
     static final long ATTACKER_MEMORY_MILLIS = 15_000;
     private static final double GUARD_RANGE = 16;
     private static final double GUARD_LEASH = 24;
@@ -53,6 +54,7 @@ public final class CallManager {
     private final Trophies trophies;
     private final LongSupplier clock;
     private final Random random;
+    private final Supplier<Sidearm> sidearms;
     private final Map<UUID, Long> recentAttackers = new HashMap<>();
     private Call call;
 
@@ -63,20 +65,25 @@ public final class CallManager {
         final String targetName;
         final List<Mob> cousins;
         final long endsAt;
+        /** Marco, the cousin who draws the pistol on a cornered hit target. */
+        final Mob marco;
+        final Sidearm sidearm;
         int retracks;
 
-        Call(Mode mode, UUID owner, UUID target, String targetName, List<Mob> cousins, long endsAt) {
+        Call(Mode mode, UUID owner, UUID target, String targetName, List<Mob> cousins, long endsAt, Sidearm sidearm) {
             this.mode = mode;
             this.owner = owner;
             this.target = target;
             this.targetName = targetName;
             this.cousins = cousins;
             this.endsAt = endsAt;
+            this.marco = cousins.get(MARCO);
+            this.sidearm = sidearm;
         }
     }
 
     public CallManager(Supplier<CartelConfig> config, CartelStore store, Spawner spawner, Cousins cousins,
-                       Trophies trophies, LongSupplier clock, Random random) {
+                       Trophies trophies, LongSupplier clock, Random random, Supplier<Sidearm> sidearms) {
         this.config = config;
         this.store = store;
         this.spawner = spawner;
@@ -84,6 +91,7 @@ public final class CallManager {
         this.trophies = trophies;
         this.clock = clock;
         this.random = random;
+        this.sidearms = sidearms;
     }
 
     // ---- state ----
@@ -114,7 +122,8 @@ public final class CallManager {
         }
         long left = Math.max(0, call.endsAt - clock.getAsLong());
         return call.mode + (call.mode == Mode.HIT ? " on " + call.targetName : "") + ", " + call.cousins.size()
-                + " cousin(s), " + Durations.format(Duration.ofMillis(left)) + " left, retracks " + call.retracks;
+                + " cousin(s), " + Durations.format(Duration.ofMillis(left)) + " left, retracks " + call.retracks
+                + (pistolDrawn() ? ", Marco's pistol out" : "");
     }
 
     private Duration untilReady(long readyAt) {
@@ -142,7 +151,7 @@ public final class CallManager {
         }
         long now = clock.getAsLong();
         call = new Call(Mode.GUARD, owner.getUniqueId(), null, null, spawnPair(spots),
-                now + config.get().guardLength().toMillis());
+                now + config.get().guardLength().toMillis(), null);
         store.setGuardReadyAt(owner.getUniqueId(), now + config.get().guardCooldown().toMillis());
         return "Leonel and Marco are here. They guard you for "
                 + Durations.format(config.get().guardLength()) + ".";
@@ -167,7 +176,7 @@ public final class CallManager {
         long now = clock.getAsLong();
         List<Mob> pair = spawnPair(spots);
         call = new Call(Mode.HIT, owner.getUniqueId(), target.getUniqueId(), target.getName(), pair,
-                now + config.get().hitLength().toMillis());
+                now + config.get().hitLength().toMillis(), sidearms.get());
         store.setHitReadyAt(owner.getUniqueId(), now + config.get().hitCooldown().toMillis());
         for (Mob cousin : pair) {
             cousin.setTarget(target);
@@ -329,6 +338,9 @@ public final class CallManager {
                 cousin.setTarget(victim);
             }
         }
+        if (call.cousins.contains(call.marco)) {
+            call.sidearm.steer(call.marco, victim, clock.getAsLong());
+        }
     }
 
     private boolean retrack(Player victim) {
@@ -388,6 +400,16 @@ public final class CallManager {
         if (victim.getUniqueId().equals(call.owner) || cousins.isCousin(victim)) {
             recentAttackers.put(attacker.getUniqueId(), clock.getAsLong());
         }
+    }
+
+    /** Whether {@code entity} is the player an active hit is out for. */
+    public boolean isHitTarget(Entity entity) {
+        return call != null && call.mode == Mode.HIT && entity != null && entity.getUniqueId().equals(call.target);
+    }
+
+    /** Whether Marco has his pistol out on the active hit. */
+    public boolean pistolDrawn() {
+        return call != null && call.sidearm != null && call.sidearm.drawn();
     }
 
     public boolean isOwner(Entity entity) {

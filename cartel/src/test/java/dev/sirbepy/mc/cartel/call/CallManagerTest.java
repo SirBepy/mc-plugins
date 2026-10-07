@@ -3,6 +3,7 @@ package dev.sirbepy.mc.cartel.call;
 import dev.sirbepy.mc.cartel.CartelTestBase;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Zombie;
 import org.junit.jupiter.api.Test;
@@ -40,12 +41,12 @@ class CallManagerTest extends CartelTestBase {
     }
 
     @Test
-    void aHitStartsTheOneDayCooldown() {
+    void aHitStartsTheThirtySixHourCooldown() {
         calls.hit(owner, victim);
 
-        assertEquals(Duration.ofDays(1), calls.hitWait(owner.getUniqueId()));
+        assertEquals(Duration.ofHours(36), calls.hitWait(owner.getUniqueId()));
         calls.end(null);
-        now[0] += Duration.ofHours(23).toMillis();
+        now[0] += Duration.ofHours(35).toMillis();
         assertTrue(calls.hit(owner, victim).startsWith("Assassinate Mode is ready again in 1h"));
         assertFalse(calls.active());
 
@@ -214,6 +215,102 @@ class CallManagerTest extends CartelTestBase {
         now[0] += CallManager.ATTACKER_MEMORY_MILLIS + 1;
         calls.tick();
         assertFalse(calls.allowedTarget(cousin, victim), "for " + CallManager.ATTACKER_MEMORY_MILLIS + " ms");
+    }
+
+    private Material marcosHand() {
+        return calls.cousins().get(CallManager.MARCO).getEquipment().getItemInMainHand().getType();
+    }
+
+    private void tickAt(long millisIntoTheHit, long start) {
+        now[0] = start + millisIntoTheHit;
+        calls.tick();
+    }
+
+    @Test
+    void marcoDrawsThePistolOnlyAfterThreeSecondsWithNoMeleePath() {
+        calls.hit(owner, victim);
+        long start = now[0];
+        meleePath[0] = false;
+
+        tickAt(0, start);
+        tickAt(Sidearm.DRAW_AFTER_MILLIS - 1, start);
+        assertTrue(shots.isEmpty());
+        assertFalse(calls.pistolDrawn());
+
+        tickAt(Sidearm.DRAW_AFTER_MILLIS, start);
+        assertTrue(calls.pistolDrawn());
+        assertEquals(Material.BOW, marcosHand());
+        assertEquals(List.of("Marco Salamanca -> Victim"), shots, "only Marco shoots");
+        assertEquals(List.of("Marco Salamanca"), standOffs, "Marco keeps his distance while the pistol is out");
+        assertTrue(calls.status().contains("Marco's pistol out"), calls.status());
+    }
+
+    @Test
+    void marcoShootsAtMostOnceEveryOneAndAHalfSeconds() {
+        calls.hit(owner, victim);
+        long start = now[0];
+        meleePath[0] = false;
+
+        for (long t = 0; t <= Sidearm.DRAW_AFTER_MILLIS + 3_000; t += 500) {
+            tickAt(t, start);
+        }
+
+        assertEquals(3, shots.size(), "shots at 3 s, 4.5 s and 6 s: " + shots);
+    }
+
+    @Test
+    void aMeleePathOpeningPutsThePistolAwayAndRestartsTheWait() {
+        calls.hit(owner, victim);
+        long start = now[0];
+        meleePath[0] = false;
+        tickAt(0, start);
+        tickAt(Sidearm.DRAW_AFTER_MILLIS, start);
+        assertEquals(Material.BOW, marcosHand());
+
+        meleePath[0] = true;
+        tickAt(Sidearm.DRAW_AFTER_MILLIS + 500, start);
+        assertEquals(Material.NETHERITE_SWORD, marcosHand());
+        assertFalse(calls.pistolDrawn());
+
+        meleePath[0] = false;
+        tickAt(Sidearm.DRAW_AFTER_MILLIS + 1_000, start);
+        tickAt(2 * Sidearm.DRAW_AFTER_MILLIS + 500, start);
+        assertFalse(calls.pistolDrawn(), "the 3 s count starts over");
+        tickAt(2 * Sidearm.DRAW_AFTER_MILLIS + 1_000, start);
+        assertTrue(calls.pistolDrawn());
+        assertEquals(1, standOffs.size(), "the stand-off is attached once and follows drawn() after that");
+    }
+
+    @Test
+    void aTargetOutOfBowRangeIsChasedNotShot() {
+        calls.hit(owner, victim);
+        long start = now[0];
+        meleePath[0] = false;
+        floor(5, 40, 3);
+        victim.teleport(new Location(world, 5.5, FLOOR_Y, 40.5));
+
+        for (long t = 0; t <= 2 * Sidearm.DRAW_AFTER_MILLIS; t += 500) {
+            tickAt(t, start);
+        }
+
+        assertTrue(calls.active());
+        assertFalse(calls.pistolDrawn());
+        assertTrue(shots.isEmpty());
+    }
+
+    @Test
+    void guardModeNeverDrawsThePistol() {
+        calls.guard(owner);
+        long start = now[0];
+        meleePath[0] = false;
+
+        for (long t = 0; t <= 2 * Sidearm.DRAW_AFTER_MILLIS; t += 500) {
+            tickAt(t, start);
+        }
+
+        assertFalse(calls.pistolDrawn());
+        assertTrue(shots.isEmpty());
+        assertTrue(calls.cousins().stream().noneMatch(c -> c.getEquipment().getItemInMainHand().getType() == Material.BOW));
     }
 
     @Test

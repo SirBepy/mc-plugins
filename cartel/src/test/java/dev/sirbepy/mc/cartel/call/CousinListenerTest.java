@@ -5,15 +5,21 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
+import io.papermc.paper.event.entity.EntityKnockbackEvent;
+import io.papermc.paper.event.entity.EntityPushedByEntityAttackEvent;
+import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Zombie;
+import org.bukkit.event.entity.EntityCombustByEntityEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.Vector;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -96,6 +102,69 @@ class CousinListenerTest extends CartelTestBase {
         EntityTargetEvent onVictim = new EntityTargetEvent(cousin, victim, EntityTargetEvent.TargetReason.CLOSEST_PLAYER);
         listener.onTarget(onVictim);
         assertFalse(onVictim.isCancelled());
+    }
+
+    private Arrow arrowFrom(org.bukkit.entity.LivingEntity shooter) {
+        Arrow arrow = world.spawn(shooter.getLocation().add(0, 1.5, 0), Arrow.class);
+        arrow.setShooter(shooter);
+        return arrow;
+    }
+
+    @SuppressWarnings({"deprecation", "removal"})
+    private static EntityDamageByEntityEvent shot(Arrow arrow, org.bukkit.entity.Entity victim, double damage) {
+        return new EntityDamageByEntityEvent(arrow, victim, EntityDamageEvent.DamageCause.PROJECTILE,
+                DamageSource.builder(DamageType.ARROW).withDirectEntity(arrow).withCausingEntity((org.bukkit.entity.Entity) arrow.getShooter()).build(),
+                damage);
+    }
+
+    @Test
+    void marcosShotsHurtTheTargetForAtMostThreeAndNobodyElse() {
+        calls.hit(owner, victim);
+        Arrow arrow = arrowFrom(calls.cousins().get(CallManager.MARCO));
+
+        EntityDamageByEntityEvent onTarget = shot(arrow, victim, 6.0);
+        listener.onShot(onTarget);
+        assertFalse(onTarget.isCancelled());
+        assertEquals(Sidearm.MAX_DAMAGE, onTarget.getDamage());
+
+        EntityDamageByEntityEvent weak = shot(arrow, victim, 2.0);
+        listener.onShot(weak);
+        assertEquals(2.0, weak.getDamage(), "a shot already under the cap is left alone");
+
+        PlayerMock bystander = server.addPlayer("Bystander");
+        EntityDamageByEntityEvent onBystander = shot(arrow, bystander, 3.0);
+        listener.onShot(onBystander);
+        assertTrue(onBystander.isCancelled());
+    }
+
+    @Test
+    void marcosShotsNeitherKnockBackNorSetOnFire() {
+        calls.hit(owner, victim);
+        Arrow arrow = arrowFrom(calls.cousins().get(CallManager.MARCO));
+
+        EntityPushedByEntityAttackEvent push = new EntityPushedByEntityAttackEvent(victim,
+                EntityKnockbackEvent.Cause.ENTITY_ATTACK, arrow, new Vector(0.4, 0.4, 0));
+        listener.onShotKnockback(push);
+        assertTrue(push.isCancelled());
+
+        EntityCombustByEntityEvent burn = new EntityCombustByEntityEvent(arrow, victim, 5f);
+        listener.onShotFire(burn);
+        assertTrue(burn.isCancelled());
+    }
+
+    @Test
+    void someoneElsesArrowIsUntouched() {
+        calls.hit(owner, victim);
+        Arrow arrow = arrowFrom(owner);
+
+        EntityDamageByEntityEvent damage = shot(arrow, victim, 6.0);
+        listener.onShot(damage);
+        assertEquals(6.0, damage.getDamage());
+
+        EntityPushedByEntityAttackEvent push = new EntityPushedByEntityAttackEvent(victim,
+                EntityKnockbackEvent.Cause.ENTITY_ATTACK, arrow, new Vector(0.4, 0.4, 0));
+        listener.onShotKnockback(push);
+        assertFalse(push.isCancelled());
     }
 
     @Test
