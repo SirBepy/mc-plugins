@@ -37,6 +37,13 @@ public final class Member {
     private long trialRetryAfter;
 
     private final Map<String, Integer> stats = new HashMap<>();
+    private final Set<String> titles = new LinkedHashSet<>();
+    private String activeTitle;
+    private String lastClaimDay;
+    private int streak;
+    private long weeklyDrawnAt;
+    private final Set<String> structuresSeen = new LinkedHashSet<>();
+    private final Set<String> biomesSeen = new LinkedHashSet<>();
 
     public Member(UUID id, String name) {
         this.id = id;
@@ -193,6 +200,52 @@ public final class Member {
 
     public void addStat(String key, int amount) {
         stats.merge(key, amount, Integer::sum);
+    }
+
+    /** Title ids this adventurer has earned, in the order they came. */
+    public Set<String> titles() {
+        return titles;
+    }
+
+    public String activeTitle() {
+        return activeTitle;
+    }
+
+    public void setActiveTitle(String activeTitle) {
+        this.activeTitle = activeTitle;
+    }
+
+    public String lastClaimDay() {
+        return lastClaimDay;
+    }
+
+    public void setLastClaimDay(String lastClaimDay) {
+        this.lastClaimDay = lastClaimDay;
+    }
+
+    /** Consecutive real days with at least one claimed contract, counting the last claim day. */
+    public int streak() {
+        return streak;
+    }
+
+    public void setStreak(int streak) {
+        this.streak = streak;
+    }
+
+    public long weeklyDrawnAt() {
+        return weeklyDrawnAt;
+    }
+
+    public void setWeeklyDrawnAt(long weeklyDrawnAt) {
+        this.weeklyDrawnAt = weeklyDrawnAt;
+    }
+
+    public Set<String> structuresSeen() {
+        return structuresSeen;
+    }
+
+    public Set<String> biomesSeen() {
+        return biomesSeen;
     }
 
     /** Every contract on the board that can still make progress: dailies, weekly, trial. */

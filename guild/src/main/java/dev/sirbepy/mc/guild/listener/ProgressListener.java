@@ -64,6 +64,10 @@ public final class ProgressListener implements Listener {
         if (BossCredit.BOSSES.contains(entity.getType())) {
             for (Player credited : bosses.credited(entity, killer)) {
                 guild.progress(credited, Kind.BOSS, Set.of(type), 1);
+                var member = guild.store().member(credited.getUniqueId());
+                if (member != null) {
+                    guild.achievements().bossCredited(credited, member, type);
+                }
             }
         }
     }

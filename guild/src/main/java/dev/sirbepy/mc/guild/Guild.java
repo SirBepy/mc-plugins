@@ -14,6 +14,7 @@ import dev.sirbepy.mc.guild.data.GuildStore;
 import dev.sirbepy.mc.guild.data.LedgerEntry;
 import dev.sirbepy.mc.guild.data.Member;
 import dev.sirbepy.mc.guild.econ.Bank;
+import dev.sirbepy.mc.guild.fame.Achievements;
 import dev.sirbepy.mc.guild.rank.Rank;
 import dev.sirbepy.mc.guild.time.GuildClock;
 import net.kyori.adventure.text.Component;
@@ -69,6 +70,7 @@ public final class Guild {
     private final Bank bank;
     private final Random random;
     private final Board board;
+    private final Achievements achievements;
 
     public Guild(Supplier<GuildConfig> config, GuildClock clock, GuildStore store, Bank bank, Random random) {
         this.config = config;
@@ -77,6 +79,11 @@ public final class Guild {
         this.bank = bank;
         this.random = random;
         this.board = new Board(random);
+        this.achievements = new Achievements(store);
+    }
+
+    public Achievements achievements() {
+        return achievements;
     }
 
     public GuildConfig config() {
@@ -121,6 +128,10 @@ public final class Guild {
         }
         Member member = store.register(player.getUniqueId(), player.getName(), clock.nowMillis());
         refresh(member);
+        achievements.grant(player, member, "rank-E");
+        if (isGuildmaster(player)) {
+            achievements.grant(player, member, "founder");
+        }
         store.save();
         return RegisterResult.REGISTERED;
     }
@@ -140,7 +151,11 @@ public final class Guild {
 
     /** Draws a new board, resets the day's caps and lapses an expired trial, as the clock requires. */
     public void refresh(Member member) {
+        String weekBefore = member.boardWeek();
         boolean changed = board.ensure(member, clock.dayKey(), clock.weekKey());
+        if (!clock.weekKey().equals(weekBefore)) {
+            member.setWeeklyDrawnAt(clock.nowMillis());
+        }
         String day = clock.dayKey();
         if (!day.equals(member.earnDay())) {
             member.setEarnDay(day);
@@ -239,6 +254,8 @@ public final class Guild {
             any |= value > 0;
         }
         member.addStat("trial-deaths", 1);
+        member.addStat("trial-deaths-current", 1);
+        achievements.trialDeath(player, member);
         if (any) {
             trial.resetProgress();
             Chat.send(player, "You fell during your Promotion Trial. Its progress is lost; the trial itself stands.", NamedTextColor.RED);
@@ -268,22 +285,10 @@ public final class Guild {
             return Claim.of(ClaimResult.MISSING_ITEMS);
         }
 
-        GuildConfig cfg = config.get();
-        int coins = Math.max(0, Math.min(reward.coins(), cfg.dailyCoinCap() - member.coinsToday()));
-        int levels = Math.max(0, Math.min(reward.levels(), cfg.dailyLevelCap() - member.levelsToday()));
+        int[] paid = mint(player, member, reward.coins(), reward.levels());
+        int coins = paid[0];
+        int levels = paid[1];
         boolean clipped = coins < reward.coins() || levels < reward.levels();
-        if (coins > 0) {
-            bank.deposit(player, coins);
-            member.setCoinsToday(member.coinsToday() + coins);
-            long cut = Math.max(1, Math.round(coins * cfg.commissionRate()));
-            if (cfg.commissionRate() > 0) {
-                store.treasury().record(clock.nowMillis(), LedgerEntry.Kind.COMMISSION, cut, player.getName());
-            }
-        }
-        if (levels > 0) {
-            player.giveExpLevels(levels);
-            member.setLevelsToday(member.levelsToday() + levels);
-        }
         List<ItemStack> items = reward.bundle() ? Bundles.roll(random) : List.of();
         Inventories.give(player, items);
         active.markClaimed();
@@ -304,7 +309,33 @@ public final class Guild {
         }
         member.setLastActive(clock.nowMillis());
         store.save();
+        achievements.afterClaim(player, member, def, clock.localNow(), clock.nowMillis());
+        store.save();
         return new Claim(result, coins, levels, reward.reputation(), clipped, items);
+    }
+
+    /**
+     * Pays Guild-generated coins and levels, clipped to what is left of the adventurer's daily caps,
+     * and mints the Treasury's commission on top of the coins actually paid. Returns {coins, levels}.
+     */
+    public int[] mint(Player player, Member member, int coinsWanted, int levelsWanted) {
+        GuildConfig cfg = config.get();
+        refresh(member);
+        int coins = Math.max(0, Math.min(coinsWanted, cfg.dailyCoinCap() - member.coinsToday()));
+        int levels = Math.max(0, Math.min(levelsWanted, cfg.dailyLevelCap() - member.levelsToday()));
+        if (coins > 0) {
+            bank.deposit(player, coins);
+            member.setCoinsToday(member.coinsToday() + coins);
+            if (cfg.commissionRate() > 0) {
+                long cut = Math.max(1, Math.round(coins * cfg.commissionRate()));
+                store.treasury().record(clock.nowMillis(), LedgerEntry.Kind.COMMISSION, cut, player.getName());
+            }
+        }
+        if (levels > 0) {
+            player.giveExpLevels(levels);
+            member.setLevelsToday(member.levelsToday() + levels);
+        }
+        return new int[] {coins, levels};
     }
 
     public void addReputation(Player player, Member member, int amount) {
@@ -342,6 +373,7 @@ public final class Guild {
         ContractDef trial = Trials.forRank(member.rank().next());
         member.setTrial(ActiveContract.fresh(trial, member.rank()));
         member.setTrialStarted(clock.nowMillis());
+        member.stats().put("trial-deaths-current", 0);
         member.addStat("trials-started", 1);
         store.save();
         return TrialStart.STARTED;
@@ -352,6 +384,7 @@ public final class Guild {
         member.setTrial(null);
         member.addStat("trials-passed", 1);
         member.addStat("promoted-" + rank.name(), 1);
+        achievements.promoted(player, member, rank, clock.nowMillis());
         player.showTitle(Title.title(Component.text(rank.title(), rank.color()),
                 Component.text("Promoted by the Adventurer's Guild", Chat.PARCHMENT)));
         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1.2f);
@@ -475,6 +508,7 @@ public final class Guild {
         }
         member.setReputation(member.reputation() + COMMISSION_REPUTATION);
         member.addStat("commissions-done", 1);
+        achievements.afterCommission(player, member);
         member.addStat("coins-earned", commission.reward());
         store.save();
         Player gm = Bukkit.getPlayer(config.get().guildmaster());

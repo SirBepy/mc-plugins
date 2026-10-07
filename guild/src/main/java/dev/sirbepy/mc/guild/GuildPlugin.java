@@ -7,6 +7,10 @@ import dev.sirbepy.mc.guild.config.GuildConfig;
 import dev.sirbepy.mc.guild.data.GuildStore;
 import dev.sirbepy.mc.guild.econ.VaultBank;
 import dev.sirbepy.mc.guild.gui.GuildMenus;
+import dev.sirbepy.mc.guild.hall.HallGuard;
+import dev.sirbepy.mc.guild.staff.Dialogue;
+import dev.sirbepy.mc.guild.staff.StaffListener;
+import dev.sirbepy.mc.guild.staff.StaffNpcs;
 import dev.sirbepy.mc.guild.listener.BossCredit;
 import dev.sirbepy.mc.guild.listener.ExploreTracker;
 import dev.sirbepy.mc.guild.listener.ProgressListener;
@@ -37,19 +41,25 @@ public final class GuildPlugin extends JavaPlugin {
         BossCredit bosses = new BossCredit(clock::nowMillis);
         ExploreTracker explore = new ExploreTracker(guild);
 
+        StaffNpcs staff = new StaffNpcs(this, store);
+
         var pm = getServer().getPluginManager();
         pm.registerEvents(new MenuListener(), this);
         pm.registerEvents(bosses, this);
         pm.registerEvents(new ProgressListener(guild, bosses), this);
+        pm.registerEvents(new HallGuard(store), this);
+        pm.registerEvents(new StaffListener(staff, guild, menus, new Dialogue(guild, new Random())), this);
 
         var scheduler = getServer().getScheduler();
         scheduler.runTaskTimer(this, () -> explore.tick(getServer().getOnlinePlayers()), 40L, 40L);
         scheduler.runTaskTimer(this, bosses::sweep, 1200L, 1200L);
         scheduler.runTaskTimer(this, store::flush, 600L, 600L);
+        scheduler.runTaskTimer(this, staff::ensure, 60L, 100L);
+        scheduler.runTaskTimer(this, staff::lookAtVisitors, 20L, 10L);
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             new GuildCommand(guild, menus).registerInto(event.registrar());
-            new GuildAdminCommand(guild, this::setGuildmaster, this::reload).registerInto(event.registrar());
+            new GuildAdminCommand(guild, this::setGuildmaster, this::reload, staff).registerInto(event.registrar());
         });
     }
 

@@ -85,7 +85,7 @@ Realistically S is a 2-3 month goal.
 | C | 2 rerolls a day, the Nether opens on the board (fortresses, blazes, wart), Bounty Board (phase 3) |
 | B | rare chance 15%, bastions, trial chambers and Incendium's named mobs on the board |
 | A | 3 rerolls, ancient cities, monuments, mansions, Incendium's elites; Expedition contracts (phase 3, secret) |
-| S | S-Rank title and announcement, bosses on the board, their figure in the Hall of Fame (phase 2), Legend contracts (phase 3, secret) |
+| S | S-Rank title and announcement, bosses on the board, a place in the Hall of Fame, Legend contracts (secret) |
 
 Promotions to D and C are told to the player; B, A and S are announced to the whole server.
 
@@ -141,8 +141,8 @@ torches, coal, golden carrots, rails, an iron tool. Never anything enchanted.
 
 ImMijo (`8c0c13b9-057a-4ac8-aacf-7b6c77f8742b`), `guildmaster:` in `plugins/Guild/config.yml`. He
 registers like anyone (the fee goes into his own Treasury, which is fine: it is one of his own coins in,
-and he can only take 1,000 a day out) and starts at E. His office (`/guild` -> Guildmaster's Office,
-and in phase 2 his desk NPC) has:
+and he can only take 1,000 a day out) and starts at E. His office (`/guild office`, the Office button
+in `/guild`, or a right-click on Silas the treasurer) has:
 
 - **Treasury**: balance, today's withdrawals left, withdraw 100 / 500 / all allowed, the last ledger lines.
 - **Members**: every adventurer with rank, reputation, contracts done, last active.
@@ -167,8 +167,11 @@ and in phase 2 his desk NPC) has:
 
 - `/guild` (everyone): the Guild menu (register, board, profile, commissions, office).
 - `/guild profile [player]`, `/guild board`, `/guild announce`, `/guild commission ...`, `/guild cancel <id>`, `/guild feature <id>`.
-- `/guildadmin` (ops, console, RCON): `status`, `member <player>`, `rep <player> <n>`, `newday <player>`,
-  `newweek <player>`, `setrank <player> <rank>` (repairs only), `treasury <n>`, `reload`.
+- `/guildadmin` (ops, console, RCON): `status`, `member <player>`, `rep <player> <n>`, `contracts <player> <n>`,
+  `newday <player>`, `newweek <player>`, `setrank <player> <rank>` and `resettrial <player>` (repairs only),
+  `complete <player> <0|1|2|weekly|trial>` (testing), `treasury <n>`, `resetannounce`, `guildmaster <player>`,
+  `probe <world> <x> <y> <z>` (the biome and structures exploration contracts see there), `staff ...` and
+  `hall guard ...` (above), `reload`.
 
 ## Secret: Promotion Trials
 
@@ -208,13 +211,34 @@ Structory old manor, Terralith's mage towers.
 - **Hall of Fame**: first to each rank, most contracts, most reputation, longest daily streak, bounties.
 - **Guildmaster activities**: a Hunting Season or Fishing Derby he can start, funded from the Treasury.
 
-## Phase 2: the Guild Hall (planned)
+## The Guild Hall and its staff
 
-A timber-and-stone hall near spawn (427, -868) with a reception desk, the quest board, a gathering hall
-with long tables and a hearth, a vaulted Treasury and the Guildmaster's office upstairs. NPCs (Mannequins
-for Java, villagers for Bedrock and declined packs, like Haru): a receptionist, a quest clerk, a
-treasurer, a trial examiner and an archivist, each with lines by rank, time of day, trial state and
-first meeting.
+**ImMijo builds the Guild Hall himself** (Joe, 2026-10-08: "ImMijo will build the entire building, you
+just spawn the npcs where he tells you to"). Claude builds nothing; Player Claude places each staff
+member where ImMijo asks, from the console:
+
+- `guildadmin staff place <role> <world> <x> <y> <z> <yaw>` (yaw: 0 faces south, 90 west, 180 north,
+  -90 east; an op standing on the spot can use `guildadmin staff place <role>`), `guildadmin staff remove
+  <role>`, `guildadmin staff list`. The world names are `world`, `world_nether`, `world_the_end`.
+- Optional, only if ImMijo or Joe wants it: `guildadmin hall guard <world> <x0> <y0> <z0> <x1> <y1> <z1>`
+  stops non-ops breaking or placing blocks, editing signs, taking item-frame or armour-stand items,
+  toggling trapdoors or candles, and blows up nothing inside that box; `guildadmin hall guard off` lifts
+  it. Off by default.
+
+The staff are AI-less, invulnerable villagers with a name and a floating title, the same body for Java
+and Bedrock; they turn to face the nearest visitor, can't be hurt, leashed, converted or traded with,
+and a guard tick re-creates or snaps back anyone missing within 5 seconds while their chunk is loaded.
+
+| Role id | Name | Title | Right-click opens |
+| --- | --- | --- | --- |
+| receptionist | Lyra Fennwick (cheerful, a little overworked, knows every file) | Guild Receptionist | registration for strangers, the board for members |
+| clerk | Bram Ashgrove (grumpy retired adventurer, lost a finger to a Breeze) | Quest Clerk | the board (members) |
+| treasurer | Silas Coinwright (fastidious, loves his ledger) | Guild Treasurer | the Guildmaster's office (Guildmaster only); others hear the balance |
+| examiner | Captain Maren Holt (stern, fair, ex-soldier) | Trial Examiner | the board when a trial is open or running; otherwise says what is still needed |
+| archivist | Pip Quillfeather (chatty, keeps every record) | Guild Archivist | talks Guild records; the Hall of Fame |
+
+Dialogue depends on the first visit, the visitor's rank, finished-but-unclaimed work, a finished weekly,
+rerolls, the trial state and time left, the Guildmaster, night and thunder. Sneak-click only talks.
 
 ## Testing
 

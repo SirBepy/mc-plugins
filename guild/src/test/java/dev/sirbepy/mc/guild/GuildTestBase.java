@@ -79,6 +79,14 @@ public abstract class GuildTestBase {
         return guild.member(player);
     }
 
+    /** Puts a specific contract in daily slot 1, so a test doesn't depend on the random draw. */
+    public static dev.sirbepy.mc.guild.data.ActiveContract placeDaily(Member member, String id) {
+        var def = dev.sirbepy.mc.guild.contract.ContractPool.byId(id);
+        var active = dev.sirbepy.mc.guild.data.ActiveContract.fresh(def, def.rank());
+        member.dailies().set(1, active);
+        return active;
+    }
+
     protected void give(Player player, Material material, int amount) {
         player.getInventory().addItem(new ItemStack(material, amount));
     }

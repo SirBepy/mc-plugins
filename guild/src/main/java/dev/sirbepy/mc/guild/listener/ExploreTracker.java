@@ -39,16 +39,15 @@ public final class ExploreTracker {
             if (member == null) {
                 continue;
             }
-            boolean biome = wants(member, Kind.BIOME);
-            boolean structure = wants(member, Kind.STRUCTURE);
-            if (biome) {
-                guild.progress(player, Kind.BIOME, Set.of(biomeKey(player.getLocation())), 1);
+            String biome = biomeKey(player.getLocation());
+            List<String> inside = structuresAt(player.getLocation());
+            // Every member's wanderings count toward the exploration titles, contract or not.
+            guild.achievements().explored(player, member, biome, inside);
+            if (wants(member, Kind.BIOME)) {
+                guild.progress(player, Kind.BIOME, Set.of(biome), 1);
             }
-            if (structure) {
-                List<String> inside = structuresAt(player.getLocation());
-                if (!inside.isEmpty()) {
-                    guild.progress(player, Kind.STRUCTURE, inside, 1);
-                }
+            if (!inside.isEmpty() && wants(member, Kind.STRUCTURE)) {
+                guild.progress(player, Kind.STRUCTURE, inside, 1);
             }
         }
     }

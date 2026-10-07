@@ -31,6 +31,18 @@ public final class GuildStore {
     private final Treasury treasury = new Treasury();
     private final List<Commission> commissions = new ArrayList<>();
     private final List<ItemStack> stores = new ArrayList<>();
+    /** Hall of Fame "firsts" (first to D-Rank, first contract...), set once and never overwritten. */
+    public record First(UUID id, String name, long time) {
+    }
+
+    private final Map<String, First> firsts = new LinkedHashMap<>();
+    /** Server-wide state for bounties, Grand Quests and Guildmaster activities, by key. */
+    private final YamlConfiguration events = new YamlConfiguration();
+    /** Staff id -> {villager, title display}; an id present here means that staff member is placed. */
+    private final Map<String, UUID[]> staff = new LinkedHashMap<>();
+    /** Staff id -> where they stand, as ImMijo asked for it in the hall he built. */
+    private final Map<String, Place> staffSpots = new LinkedHashMap<>();
+    private Place.Box guard;
     private int nextCommissionId = 1;
     private String featuredId;
     private long lastAnnouncement;
@@ -80,6 +92,41 @@ public final class GuildStore {
         return stores;
     }
 
+    public Map<String, UUID[]> staff() {
+        return staff;
+    }
+
+    public Map<String, Place> staffSpots() {
+        return staffSpots;
+    }
+
+    /** The Guild Hall's guarded box, or null while none is set. */
+    public Place.Box guard() {
+        return guard;
+    }
+
+    public void setGuard(Place.Box guard) {
+        this.guard = guard;
+    }
+
+    public Map<String, First> firsts() {
+        return firsts;
+    }
+
+    /** Records a first once; true if this call set it. */
+    public boolean claimFirst(String key, UUID id, String name, long time) {
+        if (firsts.containsKey(key)) {
+            return false;
+        }
+        firsts.put(key, new First(id, name, time));
+        return true;
+    }
+
+    /** Free-form server-wide event state (bounty, Grand Quest, activity), saved under "events". */
+    public YamlConfiguration events() {
+        return events;
+    }
+
     public String featuredId() {
         return featuredId;
     }
@@ -126,6 +173,42 @@ public final class GuildStore {
         }
         yaml.set("commissions", commissionList);
         yaml.set("stores", new ArrayList<>(stores));
+        ConfigurationSection firstsSection = yaml.createSection("firsts");
+        firsts.forEach((key, first) -> {
+            ConfigurationSection f = firstsSection.createSection(key);
+            f.set("id", first.id().toString());
+            f.set("name", first.name());
+            f.set("time", first.time());
+        });
+        for (Map.Entry<String, Object> entry : events.getValues(true).entrySet()) {
+            if (!(entry.getValue() instanceof ConfigurationSection)) {
+                yaml.set("events." + entry.getKey(), entry.getValue());
+            }
+        }
+        ConfigurationSection staffSection = yaml.createSection("staff");
+        staff.forEach((id, ids) -> {
+            ConfigurationSection s = staffSection.createSection(id);
+            s.set("villager", ids[0] == null ? null : ids[0].toString());
+            s.set("title", ids[1] == null ? null : ids[1].toString());
+            Place spot = staffSpots.get(id);
+            if (spot != null) {
+                s.set("world", spot.world());
+                s.set("x", spot.x());
+                s.set("y", spot.y());
+                s.set("z", spot.z());
+                s.set("yaw", spot.yaw());
+            }
+        });
+        if (guard != null) {
+            ConfigurationSection g = yaml.createSection("hall-guard");
+            g.set("world", guard.world());
+            g.set("x0", guard.x0());
+            g.set("y0", guard.y0());
+            g.set("z0", guard.z0());
+            g.set("x1", guard.x1());
+            g.set("y1", guard.y1());
+            g.set("z1", guard.z1());
+        }
         try {
             YamlFiles.saveAtomically(yaml, file);
             dirty = false;
@@ -169,6 +252,42 @@ public final class GuildStore {
         for (Object item : yaml.getList("stores", List.of())) {
             if (item instanceof ItemStack stack) {
                 stores.add(stack);
+            }
+        }
+        ConfigurationSection firstsSection = yaml.getConfigurationSection("firsts");
+        if (firstsSection != null) {
+            for (String key : firstsSection.getKeys(false)) {
+                ConfigurationSection f = firstsSection.getConfigurationSection(key);
+                UUID id = f == null ? null : parseUuid(f.getString("id"));
+                if (id != null) {
+                    firsts.put(key, new First(id, f.getString("name", "?"), f.getLong("time")));
+                }
+            }
+        }
+        ConfigurationSection eventsSection = yaml.getConfigurationSection("events");
+        if (eventsSection != null) {
+            for (Map.Entry<String, Object> entry : eventsSection.getValues(true).entrySet()) {
+                if (!(entry.getValue() instanceof ConfigurationSection)) {
+                    events.set(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+        ConfigurationSection g = yaml.getConfigurationSection("hall-guard");
+        if (g != null && g.getString("world") != null) {
+            guard = Place.Box.of(g.getString("world"), g.getInt("x0"), g.getInt("y0"), g.getInt("z0"),
+                    g.getInt("x1"), g.getInt("y1"), g.getInt("z1"));
+        }
+        ConfigurationSection staffSection = yaml.getConfigurationSection("staff");
+        if (staffSection != null) {
+            for (String id : staffSection.getKeys(false)) {
+                ConfigurationSection s = staffSection.getConfigurationSection(id);
+                if (s != null) {
+                    staff.put(id, new UUID[] {parseUuid(s.getString("villager")), parseUuid(s.getString("title"))});
+                    if (s.getString("world") != null) {
+                        staffSpots.put(id, new Place(s.getString("world"), s.getDouble("x"), s.getDouble("y"), s.getDouble("z"),
+                                (float) s.getDouble("yaw")));
+                    }
+                }
             }
         }
     }
@@ -226,6 +345,13 @@ public final class GuildStore {
         s.set("trial-started", m.trialStarted());
         s.set("trial-retry-after", m.trialRetryAfter());
         s.set("stats", new LinkedHashMap<>(m.stats()));
+        s.set("titles", new ArrayList<>(m.titles()));
+        s.set("active-title", m.activeTitle());
+        s.set("last-claim-day", m.lastClaimDay());
+        s.set("streak", m.streak());
+        s.set("weekly-drawn", m.weeklyDrawnAt());
+        s.set("structures-seen", new ArrayList<>(m.structuresSeen()));
+        s.set("biomes-seen", new ArrayList<>(m.biomesSeen()));
     }
 
     private static Member readMember(UUID id, ConfigurationSection s) {
@@ -264,6 +390,13 @@ public final class GuildStore {
                 m.stats().put(key, stats.getInt(key));
             }
         }
+        m.titles().addAll(s.getStringList("titles"));
+        m.setActiveTitle(s.getString("active-title"));
+        m.setLastClaimDay(s.getString("last-claim-day"));
+        m.setStreak(s.getInt("streak"));
+        m.setWeeklyDrawnAt(s.getLong("weekly-drawn"));
+        m.structuresSeen().addAll(s.getStringList("structures-seen"));
+        m.biomesSeen().addAll(s.getStringList("biomes-seen"));
         return m;
     }
 

@@ -130,12 +130,19 @@ try {
     await waitForLine(gm, /Commission posted/, 10_000, since);
     assert((await treasury()) === before - 50, 'reward escrowed');
 
-    await rcon.command(`minecraft:summon minecraft:zombie ${BX + 5} ${PLATFORM_Y + 1} ${BZ} {NoAI:1b,Health:1f,PersistenceRequired:1b,Tags:["guild_e2e"]}`);
+    await rcon.command(`minecraft:summon minecraft:zombie ${BX + 5} ${PLATFORM_Y + 1} ${BZ} {NoAI:1b,Health:1f,PersistenceRequired:1b,Tags:["guild_e2e"],equipment:{head:{id:"minecraft:leather_helmet",count:1}}}`);
     let zombie;
-    await waitFor(() => (zombie = Object.values(hero.entities).find((e) => e.name === 'zombie')), 'hero sees the zombie');
+    // At night the world is full of zombies; take the one summoned on the platform.
+    const spot = { x: BX + 5.5, y: PLATFORM_Y + 1, z: BZ + 0.5 };
+    await waitFor(() => (zombie = Object.values(hero.entities)
+      .find((e) => e.name === 'zombie' && e.position.distanceTo(spot) < 1.5)), 'hero sees the zombie');
     const heroSince = hero.lines.length;
-    await hero.lookAt(zombie.position.offset(0, 1, 0));
-    hero.attack(zombie);
+    // A helmet keeps it from burning in daylight, which would leave no killer to credit.
+    for (let i = 0; i < 5 && hero.entities[zombie.id]; i++) {
+      await hero.lookAt(zombie.position.offset(0, 1, 0));
+      hero.attack(zombie);
+      await sleep(700);
+    }
     await waitForLine(hero, /commission/i, 10_000, heroSince);
 
     const heroBefore = await balance(HERO);
@@ -172,9 +179,42 @@ try {
   });
 
   await step('the Guildmaster announces to the server', async () => {
+    await rcon.command('guildadmin resetannounce'); // the cooldown is server-wide and an earlier run may have used it
     const since = hero.lines.length;
     gm.chat('/guild announce The Guild is open for business');
     await waitForLine(hero, new RegExp(`Guildmaster ${GM}: The Guild is open for business`), 5_000, since);
+  });
+
+  // The staff stand wherever ImMijo asks in the hall he builds; the suite puts Lyra on its platform.
+  const LYRA = { x: BX + 0.5, y: PLATFORM_Y + 1, z: BZ + 4.5 };
+  await step('the receptionist is placed by console command at a given spot', async () => {
+    await rcon.command(`guildadmin staff place receptionist world ${LYRA.x} ${LYRA.y} ${LYRA.z} 180`);
+    await waitFor(async () => /receptionist \(Lyra Fennwick, Guild Receptionist\): present/
+      .test(await rcon.command('guildadmin staff list')), 'Lyra present', 20_000);
+  });
+
+  await step('right-clicking the receptionist gets a word from Lyra and the Guild board', async () => {
+    await teleport(rcon, hero, BX, PLATFORM_Y + 1, BZ + 2);
+    let lyra;
+    await waitFor(() => (lyra = Object.values(hero.entities)
+      .find((e) => e.name === 'villager' && e.position.distanceTo(LYRA) < 1)), 'hero sees Lyra');
+    const since = hero.lines.length;
+    const opened = nextWindow(hero);
+    await hero.activateEntity(lyra);
+    menu = await opened;
+    assert(/Adventurer's Guild/.test(titleOf(menu)), `board title (got ${titleOf(menu)})`);
+    await waitForLine(hero, /^Lyra: /, 5_000, since);
+    hero.closeWindow(menu);
+  });
+
+  await step('inside a guarded hall box a member cannot break blocks', async () => {
+    await rcon.command(`guildadmin hall guard world ${BX - 8} ${PLATFORM_Y - 2} ${BZ - 8} ${BX + 8} ${PLATFORM_Y + 10} ${BZ + 8}`);
+    const floor = hero.blockAt(hero.entity.position.offset(0, -1, 0));
+    assert(floor && floor.name !== 'air', `standing on the platform (got ${floor?.name})`);
+    await Promise.race([hero.dig(floor, true).catch(() => {}), sleep(6_000)]);
+    await sleep(500);
+    const after = await rcon.command(`minecraft:execute if block ${floor.position.x} ${floor.position.y} ${floor.position.z} minecraft:${floor.name}`);
+    assert(/Test passed/.test(after), `floor block still there (${after})`);
   });
 
   console.log(`\nGuild e2e: ${results.length} passed`);
@@ -183,6 +223,8 @@ try {
   process.exitCode = 1;
 } finally {
   await rcon.command('minecraft:kill @e[tag=guild_e2e]').catch(() => {});
+  await rcon.command('guildadmin staff remove receptionist').catch(() => {});
+  await rcon.command('guildadmin hall guard off').catch(() => {});
   await releasePlatform(rcon, BX, BZ);
   await quit(...bots);
   await sleep(200);
