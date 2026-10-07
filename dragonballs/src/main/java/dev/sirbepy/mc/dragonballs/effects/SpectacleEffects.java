@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.dragonballs.effects;
 
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -9,10 +10,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.Map;
 
 /**
- * The real {@link SummonEffects}: dark stormy sky, a harmless scaled-up dragon circling above the
- * balls, and a flight of glowing heads when the wish is done. Split into {@link SkyEffect},
- * {@link DragonActor} and {@link FlyingBalls} so each piece stays small; this class is just the
- * wiring and the {@link SummonEffects} contract.
+ * The real {@link SummonEffects}: a per-ball strike sequence, a dark stormy sky (Overworld only -
+ * the Nether and End have no sky to darken), a harmless scaled-up dragon circling above the balls
+ * with a per-set look, and a flight of glowing heads when the wish is done. Split into
+ * {@link SkyEffect}, {@link BallStrikeSequence}, {@link DragonActor} and {@link FlyingBalls} so
+ * each piece stays small; this class is just the wiring and the {@link SummonEffects} contract.
  */
 public final class SpectacleEffects implements SummonEffects {
 
@@ -20,12 +22,14 @@ public final class SpectacleEffects implements SummonEffects {
     private final SkyEffect sky;
     private final DragonActor dragon;
     private final FlyingBalls flyingBalls;
+    private final BallStrikeSequence strikes;
 
     public SpectacleEffects(JavaPlugin plugin, BallItems ballItems) {
         this.plugin = plugin;
         this.sky = new SkyEffect(plugin);
         this.dragon = new DragonActor(plugin);
         this.flyingBalls = new FlyingBalls(plugin, ballItems);
+        this.strikes = new BallStrikeSequence(plugin);
 
         PluginManager pm = plugin.getServer().getPluginManager();
         pm.registerEvents(sky, plugin);
@@ -39,9 +43,13 @@ public final class SpectacleEffects implements SummonEffects {
         if (world == null) {
             return;
         }
-        sky.begin(world);
-        sky.thunderOverBalls(world, scene.ballOrigins());
-        dragon.spawn(scene.center(), scene.dragon(), EffectsConfig.from(plugin.getConfig()));
+        // The Nether and End render no sky, so darkening one there would be a no-op anyway.
+        if (scene.set() == BallSet.OVERWORLD) {
+            sky.begin(world);
+        }
+        EffectsConfig config = EffectsConfig.from(plugin.getConfig());
+        strikes.play(world, scene.ballOrigins(), scene.set(),
+                () -> dragon.spawn(scene.center(), scene.dragon(), scene.set(), config));
     }
 
     @Override
@@ -51,6 +59,7 @@ public final class SpectacleEffects implements SummonEffects {
 
     @Override
     public void onEnd(SummonScene scene, Map<Integer, Location> destinations) {
+        strikes.cancel();
         dragon.despawnWithEffects();
         sky.end();
         flyingBalls.launch(scene.ballOrigins(), destinations, scene.set());
@@ -58,6 +67,7 @@ public final class SpectacleEffects implements SummonEffects {
 
     @Override
     public void shutdown() {
+        strikes.cancel();
         dragon.despawnImmediate();
         flyingBalls.removeAllImmediately();
         sky.shutdown();

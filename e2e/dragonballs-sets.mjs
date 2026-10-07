@@ -2,9 +2,14 @@ import fs from 'node:fs';
 import { Vec3 } from 'vec3';
 import { assert, nbtText, sleep, teleport, waitFor, waitForLine } from './lib.mjs';
 import {
-  HUNTER, NETHER_PLATFORM_Y, OFFSETS, SIGNS, WITNESS, buildNetherPlatform, configPath,
-  crossDimensionTeleport, logPath, openSuite, releaseNetherPlatform,
+  HUNTER, NETHER_PLATFORM_Y, OFFSETS, SIGNS, WITNESS, addNetherCeiling, buildNetherPlatform, configPath,
+  crossDimensionTeleport, logPath, openSuite, releaseNetherPlatform, removeNetherCeiling,
 } from './dragonballs-lib.mjs';
+
+// Ceiling height for the summon-dragon headroom check in step 4: tall enough that the dragon's
+// own ceiling scan (nether-max-height, default 18) sees it, short enough that the hover-height
+// clamp (nether-ceiling-clearance/nether-min-height, defaults 2/3) visibly kicks in.
+const SUMMON_CEILING_HEIGHT = 10;
 
 // Dragon Balls, the Nether/End sets: status across all 3 sets, buying the Nether/End radars (price
 // and look), the cross-dimension "stays behind" guard, a real Nether summon (wrong-set radar
@@ -188,6 +193,10 @@ try {
     // Snapshot the Overworld set before the Nether session even starts, to prove dismiss leaves it alone.
     const overworldBefore = (await status()).overworld;
 
+    // A solid roof so the dragon's headroom clamp (the bug this whole feature fixes: a Nether
+    // dragon spawning inside the cavern ceiling) has something real to clamp against.
+    await addNetherCeiling(rcon, BX, BZ, NETHER_PLATFORM_Y, SUMMON_CEILING_HEIGHT);
+
     const since = witness.lines.length;
     const reply = plain(await rcon.command(`shenron summon ${HUNTER} shenron nether`));
     assert(!/Cannot summon|not online|No placed|Unknown dragon|Unknown set/.test(reply),
@@ -195,6 +204,38 @@ try {
     await waitForLine(witness, /DBHunter has summoned Shenron!/, 5_000, since);
     await waitFor(async () => /passed/i.test(await rcon.command('execute if entity @e[type=ender_dragon,tag=dragonballs.shenron]')),
       'the Shenron dragon entity exists', 5_000);
+
+    // --- 4a. the Nether dragon is half-scale, in world_nether, and never clipped into a block ----
+    const posReply = plain(await rcon.command(
+      'minecraft:execute in minecraft:the_nether run data get entity @e[type=ender_dragon,tag=dragonballs.shenron,limit=1] Pos'));
+    assert(!/No entity was found/.test(posReply), `the dragon resolves inside world_nether (got "${posReply.trim()}")`);
+    const posMatch = posReply.match(/\[(-?\d+\.?\d*)d?,\s*(-?\d+\.?\d*)d?,\s*(-?\d+\.?\d*)d?\]/);
+    assert(posMatch, `dragon Pos is parseable (got "${posReply.trim()}")`);
+    const dragonX = Math.round(Number(posMatch[1]));
+    const dragonY = Math.floor(Number(posMatch[2]));
+    const dragonZ = Math.round(Number(posMatch[3]));
+
+    const scaleReply = plain(await rcon.command(
+      'minecraft:execute in minecraft:the_nether run attribute @e[type=ender_dragon,tag=dragonballs.shenron,limit=1] minecraft:scale get'));
+    const scaleMatch = scaleReply.match(/-?\d+\.?\d*/);
+    assert(scaleMatch && Math.abs(Number(scaleMatch[0]) - 0.5) < 1e-6,
+      `the Nether dragon's scale attribute is 0.5 (got "${scaleReply.trim()}")`);
+
+    const feetCheck = plain(await rcon.command(
+      `minecraft:execute in minecraft:the_nether run execute if block ${dragonX} ${dragonY} ${dragonZ} minecraft:air`));
+    assert(/passed/i.test(feetCheck), `the block at the dragon's own position is air (got "${feetCheck.trim()}")`);
+    // ~4 blocks is the half-scale body's own height (DragonPlacement.BODY_HEIGHT_AT_SCALE_1 * 0.5);
+    // it staying air (well below the ceiling at NETHER_PLATFORM_Y + 10) proves the clamp worked.
+    const headCheck = plain(await rcon.command(
+      `minecraft:execute in minecraft:the_nether run execute if block ${dragonX} ${dragonY + 4} ${dragonZ} minecraft:air`));
+    assert(/passed/i.test(headCheck), `the block just above the dragon's head is air (got "${headCheck.trim()}")`);
+
+    // --- 4b. the Nether's ball-strike flame burst never left real fire behind -----------------------
+    for (let i = 0; i < 7; i++) {
+      const { x, y, z } = netherBallOffset(i);
+      const fireCheck = plain(await rcon.command(`minecraft:execute in minecraft:the_nether run execute if block ${x} ${y + 1} ${z} minecraft:fire`));
+      assert(!/passed/i.test(fireCheck), `no real fire at nether ball spot ${i} after the summon's flame burst (got "${fireCheck.trim()}")`);
+    }
 
     const secondSetReply = plain(await rcon.command(`shenron summon ${HUNTER} shenron overworld`));
     assert(/Cannot summon/.test(secondSetReply),
@@ -217,6 +258,8 @@ try {
     const overworldAfter = (await status()).overworld;
     assert(JSON.stringify(overworldAfter) === JSON.stringify(overworldBefore),
       `the Overworld set is untouched by the Nether set's own scatter (before ${JSON.stringify(overworldBefore)}, after ${JSON.stringify(overworldAfter)})`);
+
+    await removeNetherCeiling(rcon, BX, BZ, NETHER_PLATFORM_Y, SUMMON_CEILING_HEIGHT);
 
     fs.writeFileSync(configPath, originalConfig);
     configIsShortened = false;
@@ -259,5 +302,7 @@ try {
     await rcon.command('dragonballs reload').catch(() => {});
   }
   await rcon.command('minecraft:kill @e[type=ender_dragon,tag=dragonballs.shenron]').catch(() => {});
+  // Safe even if step 4 already removed it (same fill, now a no-op) or never got there.
+  await removeNetherCeiling(rcon, BX, BZ, NETHER_PLATFORM_Y, SUMMON_CEILING_HEIGHT).catch(() => {});
   await releaseNetherPlatform(rcon, BX, BZ);
 }

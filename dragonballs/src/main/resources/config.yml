@@ -153,6 +153,21 @@ summon:
   summoner-offline-seconds: 180
 
 effects:
-  # Blocks above the balls' centre where the dragon hovers, and its size (1.0 = vanilla Ender Dragon).
+  # Blocks above the balls' centre where the Overworld/End dragon hovers, and its size (1.0 =
+  # vanilla Ender Dragon). The Nether dragon ignores dragon-height: it scans upward for the
+  # cavern ceiling instead (see the nether- keys below).
   dragon-height: 18.0
   dragon-scale: 1.0
+  # The Nether dragon's size, and how it's placed under a cavern ceiling: scan up to
+  # nether-max-height blocks for the first solid block, try to keep nether-ceiling-clearance
+  # blocks of headroom above the scaled body, prefer nether-min-height when the ceiling is close,
+  # but never let the body poke into the ceiling itself.
+  nether-dragon-scale: 0.5
+  nether-max-height: 18.0
+  nether-ceiling-clearance: 2.0
+  nether-min-height: 3.0
+  # Particle counts for the Nether's smoke-and-ember column and the End's purple aura, emitted a
+  # few times a second for as long as the dragon is up.
+  nether-smoke-particle-count: 8
+  nether-ember-particle-count: 4
+  end-aura-particle-count: 6

@@ -1,8 +1,10 @@
 package dev.sirbepy.mc.dragonballs.effects;
 
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -21,7 +23,8 @@ import java.util.UUID;
 /**
  * Owns the one summon-dragon entity: spawning it harmless and scaled, keeping it gently alive
  * (one circling task, teleported every couple of ticks), roaring on a rate limit, and cleaning
- * up strays left by a crash.
+ * up strays left by a crash. Also drives the per-set look's repeating particle task (a Nether
+ * smoke column or an End aura) for as long as the dragon lives.
  */
 final class DragonActor {
 
@@ -29,6 +32,7 @@ final class DragonActor {
     private static final double BOB_AMPLITUDE = 0.75;
     private static final double ANGLE_STEP_RADIANS = Math.toRadians(4.0); // per circle-task tick
     private static final long CIRCLE_PERIOD_TICKS = 2;
+    private static final long AURA_PERIOD_TICKS = 10; // 0.5s; keeps the column/aura at a lag-safe rate
     private static final long GROWL_COOLDOWN_MILLIS = 5_000;
 
     private final JavaPlugin plugin;
@@ -37,7 +41,11 @@ final class DragonActor {
     private EnderDragon current;
     private Location circleCenter;
     private double circleHeight;
+    private double circleRadius;
+    private double bobAmplitude;
+    private DragonPlacement.Look look;
     private BukkitTask circleTask;
+    private BukkitTask auraTask;
     private long circleAngleTicks;
     private long lastGrowlMillis;
 
@@ -46,27 +54,53 @@ final class DragonActor {
         this.effectKey = new NamespacedKey(plugin, "effect-dragon");
     }
 
-    /** Spawns the dragon above {@code center}, {@code height} blocks up, scaled per config. Any
-     * previously-tracked dragon (there should never be one; onSummon always follows an onEnd or
-     * shutdown) is removed first so two never coexist. */
-    void spawn(Location center, DragonType type, EffectsConfig config) {
+    /** Spawns the dragon above {@code center}, scaled and positioned per {@code set} and config:
+     * the Overworld and End hover at {@code dragon-height} unscaled, the Nether scans upward for
+     * a cavern ceiling and clamps height/scale/motion to fit under it. Any previously-tracked
+     * dragon (there should never be one; onSummon always follows an onEnd or shutdown) is removed
+     * first so two never coexist. */
+    void spawn(Location center, DragonType type, BallSet set, EffectsConfig config) {
         despawnImmediate();
         World world = center.getWorld();
         if (world == null) {
             return;
         }
-        double height = config.dragonHeight();
+        this.look = DragonPlacement.lookFor(set, config, CIRCLE_RADIUS, BOB_AMPLITUDE);
+        double height = set == BallSet.NETHER
+                ? DragonPlacement.netherHoverHeight(
+                        scanCeilingDistance(world, center, (int) Math.ceil(config.netherMaxHeight())),
+                        look.scale(), config.netherMaxHeight(), config.netherCeilingClearance(), config.netherMinHeight())
+                : config.dragonHeight();
         this.circleCenter = center.clone();
         this.circleHeight = height;
+        this.circleRadius = look.circleRadius();
+        this.bobAmplitude = look.bobAmplitude();
         this.circleAngleTicks = 0;
         Location spawnAt = center.clone().add(0, height, 0);
         this.current = world.spawn(spawnAt, EnderDragon.class, CreatureSpawnEvent.SpawnReason.CUSTOM,
-                dragon -> configure(dragon, type, config));
+                dragon -> configure(dragon, type, look));
         playGrowlForWorld(world);
         startCircleTask();
+        startAuraTask(world, config);
     }
 
-    private void configure(EnderDragon dragon, DragonType type, EffectsConfig config) {
+    /** Scans straight up from {@code center} for the first non-air block, one block at a time, up
+     * to {@code maxHeight}; returns that distance, or {@code maxHeight} itself when the whole
+     * range is open (no ceiling within range, e.g. an unusually tall cavern). */
+    private static int scanCeilingDistance(World world, Location center, int maxHeight) {
+        int x = center.getBlockX();
+        int y = center.getBlockY();
+        int z = center.getBlockZ();
+        for (int i = 1; i <= maxHeight; i++) {
+            Material type = world.getBlockAt(x, y + i, z).getType();
+            if (!type.isAir()) {
+                return i;
+            }
+        }
+        return maxHeight;
+    }
+
+    private void configure(EnderDragon dragon, DragonType type, DragonPlacement.Look look) {
         dragon.setAI(false);
         dragon.setInvulnerable(true);
         dragon.setPersistent(false);
@@ -78,7 +112,7 @@ final class DragonActor {
         // because MockBukkit's attribute defaults table doesn't carry a SCALE entry for any type.
         AttributeInstance scale = dragon.getAttribute(Attribute.SCALE);
         if (scale != null) {
-            scale.setBaseValue(config.dragonScale());
+            scale.setBaseValue(look.scale());
         }
         dragon.addScoreboardTag(EffectMarkers.DRAGON_TAG);
         dragon.getPersistentDataContainer().set(effectKey, PersistentDataType.STRING, type.name());
@@ -105,14 +139,65 @@ final class DragonActor {
         }
         circleAngleTicks++;
         double angle = circleAngleTicks * ANGLE_STEP_RADIANS;
-        double x = circleCenter.getX() + CIRCLE_RADIUS * Math.cos(angle);
-        double z = circleCenter.getZ() + CIRCLE_RADIUS * Math.sin(angle);
-        double y = circleCenter.getY() + circleHeight + Math.sin(angle * 2) * BOB_AMPLITUDE;
+        double x = circleCenter.getX() + circleRadius * Math.cos(angle);
+        double z = circleCenter.getZ() + circleRadius * Math.sin(angle);
+        double y = circleCenter.getY() + circleHeight + Math.sin(angle * 2) * bobAmplitude;
         Location next = new Location(circleCenter.getWorld(), x, y, z);
         double towardCenterX = circleCenter.getX() - x;
         double towardCenterZ = circleCenter.getZ() - z;
         next.setDirection(new org.bukkit.util.Vector(towardCenterX, 0, towardCenterZ));
         current.teleport(next);
+    }
+
+    private void startAuraTask(World world, EffectsConfig config) {
+        if (look == null || (!look.smokeColumn() && !look.purpleAura())) {
+            return;
+        }
+        auraTask = plugin.getServer().getScheduler()
+                .runTaskTimer(plugin, () -> auraTick(world, config), AURA_PERIOD_TICKS, AURA_PERIOD_TICKS);
+    }
+
+    private void auraTick(World world, EffectsConfig config) {
+        if (look == null) {
+            return;
+        }
+        if (look.smokeColumn()) {
+            emitNetherColumn(world, config);
+        } else if (look.purpleAura()) {
+            emitEndAura(world, config);
+        }
+    }
+
+    /** A column of smoke and embers rooted at the summon centre, spanning up to about the
+     * dragon's own height - fixed in place (unlike the aura below) since Joe asked for the whole
+     * session wrapped in it, not just the circling dragon. */
+    private void emitNetherColumn(World world, EffectsConfig config) {
+        if (circleCenter == null || look == null) {
+            return;
+        }
+        double bodyTop = DragonPlacement.BODY_HEIGHT_AT_SCALE_1 * look.scale();
+        double columnHeight = Math.max(1.0, circleHeight + bodyTop);
+        Location mid = circleCenter.clone().add(0, columnHeight / 2.0, 0);
+        int smoke = config.netherSmokeParticleCount();
+        world.spawnParticle(Particle.CAMPFIRE_SIGNAL_SMOKE, mid, smoke, 0.6, columnHeight / 2.0, 0.6, 0.02);
+        world.spawnParticle(Particle.LARGE_SMOKE, mid, Math.max(1, smoke / 2), 0.5, columnHeight / 2.0, 0.5, 0.01);
+        Location base = circleCenter.clone().add(0, 0.5, 0);
+        int embers = config.netherEmberParticleCount();
+        world.spawnParticle(Particle.LAVA, base, embers, 0.5, 0.3, 0.5, 0);
+        world.spawnParticle(Particle.FLAME, base, embers, 0.5, 0.5, 0.5, 0.02);
+    }
+
+    /** A purple swirl following the dragon's current (circling) location. */
+    private void emitEndAura(World world, EffectsConfig config) {
+        if (current == null || !current.isValid()) {
+            return;
+        }
+        Location at = current.getLocation();
+        int portal = config.endAuraParticleCount();
+        world.spawnParticle(Particle.PORTAL, at, portal, 1.2, 1.0, 1.2, 0.3);
+        world.spawnParticle(Particle.REVERSE_PORTAL, at, Math.max(1, portal / 3), 1.0, 0.8, 1.0, 0.1);
+        world.spawnParticle(Particle.END_ROD, at, 2, 0.8, 0.6, 0.8, 0.02);
+        world.spawnParticle(Particle.DRAGON_BREATH, at, 2, 0.8, 0.6, 0.8, 0.01);
     }
 
     /** The dragon said something: a rate-limited roar plus particles near its head. */
@@ -135,6 +220,7 @@ final class DragonActor {
     void despawnWithEffects() {
         if (current == null) {
             stopCircleTask();
+            stopAuraTask();
             return;
         }
         Location at = current.getLocation();
@@ -147,6 +233,7 @@ final class DragonActor {
         current.remove();
         current = null;
         stopCircleTask();
+        stopAuraTask();
     }
 
     /** Immediate removal, no animation (shutdown, or a safety re-spawn). */
@@ -156,6 +243,7 @@ final class DragonActor {
             current = null;
         }
         stopCircleTask();
+        stopAuraTask();
     }
 
     private void stopCircleTask() {
@@ -163,6 +251,14 @@ final class DragonActor {
             circleTask.cancel();
             circleTask = null;
         }
+    }
+
+    private void stopAuraTask() {
+        if (auraTask != null) {
+            auraTask.cancel();
+            auraTask = null;
+        }
+        look = null;
     }
 
     private void playGrowlForWorld(World world) {

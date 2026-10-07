@@ -46,6 +46,12 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
   a radar of the wrong set is never used up. A hit without a radar, or on a set that isn't ready,
   still just breaks the ball so it can be carried.
 - Only one dragon at a time: while one is summoned, no other set can summon.
+- When the 7 balls are placed, each lights up one after another over about 2 seconds before the
+  dragon appears: harmless effect-only lightning for the Overworld and End, a burst of flame for
+  the Nether (never a real strike or a real fire). The dragon itself looks the same size in the
+  Overworld; in the End it keeps that size and trails a purple aura for the whole session; in the
+  Nether it's half-size, low enough to clear the cavern ceiling, and wrapped in a column of black
+  smoke and embers for as long as it's up.
 
 ## After a wish
 

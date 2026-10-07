@@ -37,15 +37,29 @@ export const SIGN = SIGNS.overworld;
 export const NETHER_PLATFORM_Y = 90;
 
 /** Same shape as buildPlatform/releasePlatform in lib.mjs, but carved inside the Nether via
- * `execute in`, since RCON's console sender otherwise always targets the default (overworld) world. */
+ * `execute in`, since RCON's console sender otherwise always targets the default (overworld)
+ * world. Air goes up 20 blocks (not just a few), so the summon-dragon's ceiling scan (up to
+ * nether-max-height, default 18) never meets an undeterminable natural block instead of the
+ * explicit ceiling a scenario adds with addNetherCeiling. */
 export async function buildNetherPlatform(rcon, bx, bz, y) {
   await rcon.command(`minecraft:execute in minecraft:the_nether run forceload add ${bx - 16} ${bz - 16} ${bx + 16} ${bz + 16}`);
   await rcon.command(`minecraft:execute in minecraft:the_nether run fill ${bx - 8} ${y} ${bz - 8} ${bx + 8} ${y} ${bz + 8} minecraft:stone`);
-  await rcon.command(`minecraft:execute in minecraft:the_nether run fill ${bx - 8} ${y + 1} ${bz - 8} ${bx + 8} ${y + 4} ${bz + 8} minecraft:air`);
+  await rcon.command(`minecraft:execute in minecraft:the_nether run fill ${bx - 8} ${y + 1} ${bz - 8} ${bx + 8} ${y + 20} ${bz + 8} minecraft:air`);
 }
 
 export async function releaseNetherPlatform(rcon, bx, bz) {
   await rcon.command(`minecraft:execute in minecraft:the_nether run forceload remove ${bx - 16} ${bz - 16} ${bx + 16} ${bz + 16}`).catch(() => {});
+}
+
+/** A thin solid layer `height` blocks above the Nether platform's floor, so a summon's ceiling
+ * scan has a known, deterministic distance to clamp against (real cavern terrain above the
+ * platform's own carved-out air isn't predictable). Paired with removeNetherCeiling. */
+export async function addNetherCeiling(rcon, bx, bz, y, height) {
+  await rcon.command(`minecraft:execute in minecraft:the_nether run fill ${bx - 8} ${y + height} ${bz - 8} ${bx + 8} ${y + height} ${bz + 8} minecraft:netherrack`);
+}
+
+export async function removeNetherCeiling(rcon, bx, bz, y, height) {
+  await rcon.command(`minecraft:execute in minecraft:the_nether run fill ${bx - 8} ${y + height} ${bz - 8} ${bx + 8} ${y + height} ${bz + 8} minecraft:air`);
 }
 
 /** Crosses into another dimension via `execute in` (vanilla /teleport can't change worlds on its
