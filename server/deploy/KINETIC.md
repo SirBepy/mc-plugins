@@ -59,6 +59,34 @@ claude-reply.mjs's arguments.
   swaps one exact piece of text and refuses unless it occurs exactly once. From Git Bash, prefix
   `MSYS_NO_PATHCONV=1` so a `/plugins/...` path isn't rewritten to the Git install folder. First
   used 2026-10-06 for Towny's `town_mob_removal_ignored_spawn_causes` (cartel phone).
+- **`restart` subcommand** does the whole live-restart dance in one call:
+  `kinetic.mjs restart "<reason>"` sends an in-chat gold `tellraw` countdown at 60/30/10 seconds
+  (the reason text appears in the 60s and 30s warnings; the 10s warning adds the "rejoin in about a
+  minute, accept the resource pack" reminder), then `save-all flush`, then `power restart`, then
+  polls `/logs/latest.log` every 5 seconds (5-minute timeout) until it sees a fresh boot that
+  reached the ready line, printing which plugins enabled and any ERROR lines from that boot. Folds
+  in four sessions' hand-rolled countdown scripts from 2026-10-06 (`.for_bepy/restart-countdown.mjs`
+  and siblings), so nobody needs to write a new one-off `wait()`-chain script again.
+  - **Fresh-boot detection**: Paper rotates `logs/latest.log` to a timestamped `.log.gz` on every
+    boot and starts a new file, so the subcommand captures the pre-restart log's *first line*
+    before sending `power restart`; any later poll whose first line differs is a fresh file. This
+    is cheaper than diffing the whole file and doesn't get confused by log lines the still-running
+    server appends between poll ticks during a slow shutdown.
+  - **"Done" detection**: matches `]: Done (` specifically (the main thread's ready line has
+    nothing between `]: ` and `Done (`), not `Done (` anywhere - a plugin can print its own early
+    done line first (Geyser's `[Geyser-Spigot] Done (1.373s)! Run /geyser help for help!` showed up
+    in a live sample before the main `Done (16.220s)! For help, type "help"`, though in practice
+    both come after every plugin has already logged its `Enabling`).
+  - **Plugin/error lines**: `Enabling <name>` is matched as `Enabling (\S+)` anywhere in the line
+    (plugin lines are prefixed `[PluginName] Enabling PluginName vX.Y.Z`, so anchoring to `]: `
+    directly would miss them); ERROR lines are matched on `/ERROR]:` (the level sits right after the
+    thread name's `/`, e.g. `[Server thread/ERROR]:` or `[DiscordSRV - Initialization/ERROR]:`).
+  - The parsing logic (`isFreshBootLog`, `parseBootLog`) is exported from `kinetic.mjs` so it can be
+    exercised offline against real and synthetic log text without touching the live server.
+  - **The Player Claude heads-up stays a manual step.** This subcommand only talks to the Kinetic
+    panel API; it cannot post into Conductor, so whoever runs a restart still posts the
+    heads-up there first, same as before. **Restarts happen only on Joe's go** - this subcommand
+    makes the restart itself one command, it does not make restarting an autonomous decision.
 - **`upload` subcommand** puts one local file into a server directory through the panel's signed
   upload URL, no SFTP key needed: `kinetic.mjs upload server/local/plugins/carry-0.1.0.jar plugins`
   (overwrites a same-named file). Take plugin jars from `server/local/plugins/` after

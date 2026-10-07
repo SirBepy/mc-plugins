@@ -1,0 +1,48 @@
+// node --test server/deploy/kinetic.test.mjs
+// Importing kinetic.mjs reads kinetic.api.key from server/secrets.properties, so this runs on a
+// machine with the secrets file; nothing here calls the panel.
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { isFreshBootLog, parseBootLog } from "./kinetic.mjs";
+
+const oldLog = [
+  "[11:58:01] [bootstrap/INFO]: Running Java 25 (OpenJDK 64-Bit Server VM 25+36-LTS; Eclipse Adoptium Temurin-25+36) on Linux",
+  "[11:58:09] [Server thread/INFO]: [Tag] Enabling Tag v0.1.0",
+  "[11:58:12] [Server thread/INFO]: Done (11.020s)! For help, type \"help\"",
+  "[12:30:00] [Server thread/INFO]: Stopping server",
+].join("\n");
+
+const newBootStarting = [
+  "[12:30:20] [bootstrap/INFO]: Running Java 25 (OpenJDK 64-Bit Server VM 25+36-LTS; Eclipse Adoptium Temurin-25+36) on Linux",
+  "[12:30:28] [Server thread/INFO]: [LuckPerms] Enabling LuckPerms v5.5.17",
+  "[12:30:29] [Server thread/INFO]: [Geyser-Spigot] Done (1.373s)! Run /geyser help for help!",
+].join("\n");
+
+const newBootDone = [
+  newBootStarting,
+  "[12:30:30] [Server thread/INFO]: [DragonBalls] Enabling DragonBalls v0.1.0",
+  "[12:30:31] [DiscordSRV - Initialization/ERROR]: No bot token is set",
+  "[12:30:36] [Server thread/INFO]: Done (16.220s)! For help, type \"help\"",
+].join("\r\n");
+
+const firstLine = (text) => text.split(/\r?\n/, 1)[0];
+
+test("the pre-restart log still being written is not a fresh boot", () => {
+  const grown = `${oldLog}\n[12:30:01] [Server thread/INFO]: Saving worlds`;
+  assert.equal(isFreshBootLog(firstLine(oldLog), grown), false);
+});
+
+test("a rotated log with a new first line is a fresh boot", () => {
+  assert.equal(isFreshBootLog(firstLine(oldLog), newBootStarting), true);
+});
+
+test("a plugin's own early Done line does not count as the server being up", () => {
+  assert.equal(parseBootLog(newBootStarting).done, false);
+});
+
+test("a finished boot reports its plugins and ERROR lines", () => {
+  const { done, enabled, errors } = parseBootLog(newBootDone);
+  assert.equal(done, true);
+  assert.deepEqual(enabled, ["LuckPerms", "DragonBalls"]);
+  assert.deepEqual(errors, ["[12:30:31] [DiscordSRV - Initialization/ERROR]: No bot token is set"]);
+});

@@ -10,6 +10,9 @@
 //   alloc-note <allocation-id> <note> set a note on an allocation
 //   var <ENV_NAME> <value>            set a startup variable
 //   power <start|stop|restart|kill>   send a power action
+//   restart "<reason>"                full live restart: 60/30/10s chat countdown, save-all
+//                                      flush, power restart, then waits for the new boot's
+//                                      "Done (" and prints which plugins enabled
 //   cmd "<console command>"           send a console command
 //   log [n]                           last n lines of logs/latest.log (default 100)
 //   ls <dir>                          list files in a server directory
@@ -137,6 +140,88 @@ async function cmdPower(action) {
   const id = await serverIdentifier();
   await api(`/servers/${id}/power`, { method: "POST", body: { signal: action } });
   console.log(`power: ${action} sent`);
+}
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Exported for offline testing. Paper rotates logs/latest.log to a timestamped .log.gz on every
+// boot and starts a brand new latest.log, so a fresh boot's first line is never a continuation of
+// the pre-restart file's first line (same file handle would repeat it verbatim). Comparing just
+// the first line (not the whole text) keeps this cheap and avoids false negatives from log lines
+// that get appended between poll ticks during a slow shutdown.
+export function isFreshBootLog(preRestartFirstLine, currentLogText) {
+  const currentFirstLine = currentLogText.split(/\r?\n/, 1)[0];
+  return currentFirstLine !== preRestartFirstLine;
+}
+
+// Exported for offline testing. Scans one boot's full log text for the "Done (" ready line and
+// collects the "Enabling <Plugin>" and ERROR lines so cmdRestart can print a concise summary
+// instead of the whole log.
+//
+// Line shape is `[HH:MM:SS] [<thread>/<LEVEL>]: <message>`. The main ready line is
+// `...]: Done (16.220s)! For help, type "help"` with nothing between "]: " and "Done ("; a plugin
+// can print its own early "Done (...)" (Geyser does, e.g. "...]: [Geyser-Spigot] Done (1.373s)!
+// Run /geyser help for help!") before every plugin has finished enabling, so matching "]: Done ("
+// specifically (not "Done (" anywhere) avoids declaring the boot complete too early. ERROR lines
+// have "ERROR" directly after the thread name's "/", e.g. "[Server thread/ERROR]:" or
+// "[DiscordSRV - Initialization/ERROR]:", so "/ERROR]:" catches both without anchoring to a
+// specific thread name.
+export function parseBootLog(logText) {
+  const lines = logText.split(/\r?\n/);
+  const done = lines.some((line) => line.includes("]: Done ("));
+  const enabled = lines
+    .map((line) => line.match(/\bEnabling (\S+)/))
+    .filter(Boolean)
+    .map((match) => match[1]);
+  const errors = lines.filter((line) => line.includes("/ERROR]:"));
+  return { done, enabled, errors };
+}
+
+async function cmdRestart(reason) {
+  if (!reason) throw new Error('restart requires a reason, e.g. `restart "cartel phone fix"`');
+  const id = await serverIdentifier();
+  const say = (text) => cmdConsole(`minecraft:tellraw @a ${JSON.stringify({ text, color: "gold" })}`);
+
+  await say(`[Server] Restarting in 60 seconds: ${reason}.`);
+  await wait(30_000);
+  await say(`[Server] Restarting in 30 seconds: ${reason}.`);
+  await wait(20_000);
+  await say(`[Server] Restarting in 10 seconds. Rejoin in about a minute and accept the resource pack.`);
+  await wait(10_000);
+
+  // Captured before the restart so the poll loop below can tell a freshly booted log apart from
+  // the one the server was still writing when we sent the restart.
+  const preRestartLog = await filesContents(id, "/logs/latest.log");
+  const preRestartFirstLine = preRestartLog.split(/\r?\n/, 1)[0];
+
+  await cmdConsole("save-all flush");
+  await wait(2_000);
+  await cmdPower("restart");
+  console.log("restart sent, waiting for the server to come back up...");
+
+  const timeoutMs = 5 * 60_000;
+  const pollMs = 5_000;
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    await wait(pollMs);
+    let text;
+    try {
+      text = await filesContents(id, "/logs/latest.log");
+    } catch {
+      continue; // panel/daemon briefly unreachable mid-restart; keep polling
+    }
+    if (!isFreshBootLog(preRestartFirstLine, text)) continue;
+    const { done, enabled, errors } = parseBootLog(text);
+    if (!done) continue;
+    console.log(`server is back up (${enabled.length} plugin${enabled.length === 1 ? "" : "s"} enabled):`);
+    for (const name of enabled) console.log(`  Enabling ${name}`);
+    if (errors.length) {
+      console.log("errors during boot:");
+      for (const line of errors) console.log(`  ${line}`);
+    }
+    return;
+  }
+  throw new Error(`timed out after ${timeoutMs / 1000}s waiting for "Done (" in a fresh boot log`);
 }
 
 // Exported so claude-reply.mjs can send its one tellraw through the same panel console API,
@@ -285,6 +370,9 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
         break;
       case "power":
         await cmdPower(args[0]);
+        break;
+      case "restart":
+        await cmdRestart(args.join(" "));
         break;
       case "cmd":
         await cmdConsole(args.join(" "));
