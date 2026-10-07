@@ -1,11 +1,8 @@
 package dev.sirbepy.mc.haru.item;
 
-import com.destroystokyo.paper.profile.PlayerProfile;
-import com.destroystokyo.paper.profile.ProfileProperty;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.DyeColor;
 import org.bukkit.FireworkEffect;
@@ -21,7 +18,6 @@ import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
-import org.bukkit.inventory.meta.SkullMeta;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -147,13 +143,10 @@ public final class Goods {
      * is derived from the hash so the same head stacks with itself across restarts.
      */
     public static ItemStack head(String textureHash) {
-        ItemStack item = new ItemStack(Material.PLAYER_HEAD);
-        SkullMeta meta = (SkullMeta) item.getItemMeta();
-        PlayerProfile profile = Bukkit.createProfile(UUID.nameUUIDFromBytes(textureHash.getBytes(StandardCharsets.UTF_8)));
-        profile.setProperty(new ProfileProperty("textures", textureValue(textureHash)));
-        meta.setPlayerProfile(profile);
-        item.setItemMeta(meta);
-        return item;
+        // Fully qualified: this package already declares its own Heads (the collectible catalog),
+        // so an import of core's Heads would clash with it by simple name.
+        return dev.sirbepy.mc.core.item.Heads.texturedHead(
+                UUID.nameUUIDFromBytes(textureHash.getBytes(StandardCharsets.UTF_8)), textureValue(textureHash));
     }
 
     public static String textureValue(String textureHash) {

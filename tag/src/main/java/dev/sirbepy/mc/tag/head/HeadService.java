@@ -1,17 +1,13 @@
 package dev.sirbepy.mc.tag.head;
 
-import com.destroystokyo.paper.profile.PlayerProfile;
-import com.destroystokyo.paper.profile.ProfileProperty;
+import dev.sirbepy.mc.core.item.Heads;
 import dev.sirbepy.mc.tag.config.HeadConfig;
 import dev.sirbepy.mc.tag.logic.HelmetDestination;
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -50,13 +46,7 @@ public final class HeadService {
     }
 
     private ItemStack texturedHead(String texture) {
-        ItemStack item = new ItemStack(Material.PLAYER_HEAD);
-        SkullMeta meta = (SkullMeta) item.getItemMeta();
-        PlayerProfile profile = Bukkit.createProfile(UUID.randomUUID());
-        profile.setProperty(new ProfileProperty("textures", texture));
-        meta.setPlayerProfile(profile);
-        item.setItemMeta(meta);
-        return item;
+        return Heads.texturedHead(UUID.randomUUID(), texture);
     }
 
     /** Gives {@code player} the IT head, moving their current helmet out of the way first. */

@@ -1,14 +1,13 @@
 package dev.sirbepy.mc.dragonballs.item;
 
 import com.destroystokyo.paper.profile.PlayerProfile;
-import com.destroystokyo.paper.profile.ProfileProperty;
+import dev.sirbepy.mc.core.item.Heads;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Skull;
@@ -182,7 +181,7 @@ public final class BallItems {
     public void applyBlockTexture(Skull skull, BallSet set, int star, boolean stone) {
         String texture = stone ? config.get().stoneTexture() : config.get().texture(set, star);
         UUID profileId = stone ? STONE_PROFILE_ID : profileId(set, star);
-        PlayerProfile profile = texturedProfile(profileId, texture);
+        PlayerProfile profile = Heads.texturedProfile(profileId, texture);
         if (profile != null) {
             skull.setPlayerProfile(profile);
         }
@@ -199,19 +198,9 @@ public final class BallItems {
     }
 
     private void applyProfile(SkullMeta meta, UUID profileId, String texture) {
-        PlayerProfile profile = texturedProfile(profileId, texture);
+        PlayerProfile profile = Heads.texturedProfile(profileId, texture);
         if (profile != null) {
             meta.setPlayerProfile(profile);
         }
-    }
-
-    /** A profile carrying {@code texture} as its skin, or null when the texture is blank (plain head). */
-    public static PlayerProfile texturedProfile(UUID profileId, String texture) {
-        if (texture == null || texture.isBlank()) {
-            return null;
-        }
-        PlayerProfile profile = Bukkit.createProfile(profileId);
-        profile.setProperty(new ProfileProperty("textures", texture));
-        return profile;
     }
 }
