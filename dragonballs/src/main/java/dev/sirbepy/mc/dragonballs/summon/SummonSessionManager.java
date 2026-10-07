@@ -143,7 +143,7 @@ public final class SummonSessionManager {
                 clock.getAsLong());
 
         effects.onSummon(scene);
-        Bukkit.broadcast(Component.text(summoner.getName() + " has summoned " + dragon.displayName() + "!", NamedTextColor.GOLD)
+        Bukkit.broadcast(Component.text(summoner.getName() + " has summoned " + dragon.displayName(set) + "!", NamedTextColor.GOLD)
                 .decorate(TextDecoration.BOLD));
         String opening = dragon == DragonType.SHENRON
                 ? "I am the Eternal Dragon. State your wish. I shall grant one."
@@ -162,7 +162,7 @@ public final class SummonSessionManager {
             return;
         }
         String message = truncate(rawMessage, SummonConfig.MAX_WISH_MESSAGE_CHARS);
-        Bukkit.broadcast(Component.text(player.getName() + " to " + s.dragon.displayName() + ": ", NamedTextColor.YELLOW)
+        Bukkit.broadcast(Component.text(player.getName() + " to " + s.dragon.displayName(s.set) + ": ", NamedTextColor.YELLOW)
                 .append(Component.text(message, NamedTextColor.WHITE)));
         logger.info(wishLogLine(s, player.getName(), player.getUniqueId(), message));
         appendLine(WishJsonWriter.wishLine(Instant.now(), s.id, s.dragon.displayName(), s.wishesLeft,
@@ -332,7 +332,7 @@ public final class SummonSessionManager {
     }
 
     private void speak(SummonSession s, String text) {
-        Bukkit.broadcast(DragonSpeech.line(s.dragon, text));
+        Bukkit.broadcast(DragonSpeech.line(s.dragon, s.set, text));
         logger.info("[DragonBalls] DRAGON " + s.id + ": " + text);
         effects.onSpeak(s.scene, text);
     }

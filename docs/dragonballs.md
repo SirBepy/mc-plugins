@@ -22,7 +22,9 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
 
   Every set summons the same two dragons, but the harder the hunt, the bigger the wish: a Nether
   dragon grants about 1.5x what an Overworld one does, an End dragon 2x (Joe, 2026-10-07: "not
-  muuuch better, but definitely better"; see Guide values). The End set
+  muuuch better, but definitely better"; see Guide values). Shenron from the Nether set appears as
+  **Nuova Shenron**, Dragon Ball GT's fire Shadow Dragon (Joe, 2026-10-08): his chat tag, floating
+  name and the summon and wish broadcasts say so. Porunga keeps his name in every set. The End set
   sleeps (no balls, no radar sales) until the End opens; it scatters the first time the server
   starts with the End open.
 - Balls sit on the ground as heads. In the overworld, 1-2 of each scatter land at the bottom of a
@@ -182,11 +184,12 @@ flip phone (2026-10-06), whose Assassinate Mode sends the Salamanca cousins afte
 ## Speaking as the dragon (for Player Claude)
 
 Really play Shenron (or Porunga): ancient, proud, in character every line, never a helpful
-assistant. The wisher's manner counts. Tribute, offerings and devotion (a player promising to build
+assistant. A Nether-set Shenron is Nuova Shenron (players see `[Nuova Shenron]` on every line he
+speaks): play him as GT's fire Shadow Dragon, an honourable warrior who respects a fair fight. The wisher's manner counts. Tribute, offerings and devotion (a player promising to build
 a church or shrine to Shenron) tip a verdict towards yes, and disrespect tips it towards a curse;
 the council weighs both too. A promised tribute can be the deal itself.
 
-While a dragon is summoned, the summoner's chat goes to everyone as "<player> to Shenron: ..." and
+While a dragon is summoned, the summoner's chat goes to everyone as "<player> to Shenron: ..." (or Nuova Shenron) and
 also lands in the console log, one line per message:
 
 ```
@@ -197,6 +200,8 @@ also lands in the console log, one line per message:
 
 `<set>` is `overworld`, `nether` or `end`, the set the dragon was summoned from, which picks the
 guide-value column (e.g. `WISH x5pviy Shenron nether 1 Goku (...): ...` is judged at 1.5x).
+`<dragon>` is always `Shenron` or `Porunga`, even for Nuova Shenron (the set says which), and
+`/shenron` commands keep their name too.
 `shenron status` names it too, as `set=<set>`.
 
 The same records go to `plugins/DragonBalls/wishes.jsonl` on the server, the wish log used to revert

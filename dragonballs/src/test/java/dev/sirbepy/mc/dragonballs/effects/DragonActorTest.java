@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.dragonballs.effects;
 
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -81,6 +82,20 @@ class DragonActorTest {
 
         actor.spawn(center, DragonType.SHENRON, BallSet.OVERWORLD, DEFAULT_CONFIG);
         assertFalse(actor.current().isGlowing());
+    }
+
+    @Test
+    void floatingNameFollowsTheSet() {
+        PlainTextComponentSerializer plain = PlainTextComponentSerializer.plainText();
+
+        actor.spawn(center, DragonType.SHENRON, BallSet.NETHER, DEFAULT_CONFIG);
+        assertEquals("Nuova Shenron", plain.serialize(actor.current().customName()));
+
+        actor.spawn(center, DragonType.SHENRON, BallSet.OVERWORLD, DEFAULT_CONFIG);
+        assertEquals("Shenron", plain.serialize(actor.current().customName()));
+
+        actor.spawn(center, DragonType.PORUNGA, BallSet.NETHER, DEFAULT_CONFIG);
+        assertEquals("Porunga", plain.serialize(actor.current().customName()));
     }
 
     @Test

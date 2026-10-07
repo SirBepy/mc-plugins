@@ -78,7 +78,7 @@ final class DragonActor {
         this.circleAngleTicks = 0;
         Location spawnAt = center.clone().add(0, height, 0);
         this.current = world.spawn(spawnAt, EnderDragon.class, CreatureSpawnEvent.SpawnReason.CUSTOM,
-                dragon -> configure(dragon, type, look));
+                dragon -> configure(dragon, type, set, look));
         playGrowlForWorld(world);
         startCircleTask();
         startAuraTask(world, config);
@@ -100,7 +100,7 @@ final class DragonActor {
         return maxHeight;
     }
 
-    private void configure(EnderDragon dragon, DragonType type, DragonPlacement.Look look) {
+    private void configure(EnderDragon dragon, DragonType type, BallSet set, DragonPlacement.Look look) {
         dragon.setAI(false);
         dragon.setInvulnerable(true);
         dragon.setPersistent(false);
@@ -118,7 +118,7 @@ final class DragonActor {
         dragon.getPersistentDataContainer().set(effectKey, PersistentDataType.STRING, type.name());
 
         NamedTextColor color = type == DragonType.PORUNGA ? NamedTextColor.AQUA : NamedTextColor.GREEN;
-        dragon.customName(Component.text(type.displayName(), color));
+        dragon.customName(Component.text(type.displayName(set), color));
         dragon.setCustomNameVisible(true);
         // Porunga's only cosmetic difference from Shenron: a glow outline (no team assigned, so it
         // renders in the client's default outline colour) - a coloured glow needs a scoreboard team,

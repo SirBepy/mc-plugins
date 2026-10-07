@@ -74,7 +74,7 @@ export const GUIDES = {
       'A ball never leaves its own world: go through a portal (or /home, /spawn) and it stays behind where you left.',
       'Radars, right here:\nDragon Radar 1000\nNether Radar 5000\nEnd Radar 20000\n\nEach points at the nearest awake ball of its own set, in its own world, even a carried one. Never how far.',
       "Summoning:\nPlace all 7 of one set within 2 blocks of each other. Hold that set's radar and right-click or hit one.\n\nChoose your dragon. The radar shatters. One dragon at a time.",
-      'Shenron grants 1 great wish.\n\nPorunga grants 3, each about half as strong.\n\nOnly the summoner wishes - everyone reads the answer.',
+      'Shenron grants 1 great wish. From the Nether set he rises as Nuova Shenron.\n\nPorunga grants 3, each about half as strong.\n\nOnly the summoner wishes - everyone reads the answer.',
       'Deeper sets, bigger wishes:\n\nA dragon from the Nether set grants about 1.5x an Overworld one.\n\nFrom the End set, 2x.',
       'Good wishes: real money, gear with max enchants, named pets, XP, a build, server effects, time or weather, a chat title, a villager trade.',
       'Never, curse or not: hurting, robbing or finding another player, fly/op/creative, extra wishes, bans - or anything about the balls themselves.',

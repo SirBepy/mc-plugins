@@ -10,6 +10,8 @@ import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
 import dev.sirbepy.mc.dragonballs.registry.BallScatterer;
 import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import dev.sirbepy.mc.dragonballs.summon.curse.CurseStore;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.AfterEach;
@@ -301,6 +303,23 @@ class SummonSessionManagerTest {
         assertTrue(wishLine.matches("\\[DragonBalls] WISH \\S+ Shenron nether 1 Goku \\("
                 + player.getUniqueId() + "\\): I wish for netherite"), wishLine);
         assertTrue(sessions.statusText().contains(" set=nether "), sessions.statusText());
+    }
+
+    @Test
+    void netherShenronIsNuovaShenronInEveryPlayerFacingLine() {
+        placeAllSevenNetherTogether();
+        SummonSessionManager sessions = newManager();
+        PlayerMock player = server.addPlayer("Goku");
+        sessions.tryStart(player, DragonType.SHENRON, new Location(netherWorld, 100, 64, 100), BallSet.NETHER);
+        sessions.recordWish(player, "I wish for netherite");
+
+        List<String> chat = new java.util.ArrayList<>();
+        for (Component c = player.nextComponentMessage(); c != null; c = player.nextComponentMessage()) {
+            chat.add(PlainTextComponentSerializer.plainText().serialize(c));
+        }
+        assertTrue(chat.contains("Goku has summoned Nuova Shenron!"), chat.toString());
+        assertTrue(chat.contains("[Nuova Shenron] I am the Eternal Dragon. State your wish. I shall grant one."), chat.toString());
+        assertTrue(chat.contains("Goku to Nuova Shenron: I wish for netherite"), chat.toString());
     }
 
     /** Package-visible so it matches BallRegistryTest's own fake-scatterer style. */

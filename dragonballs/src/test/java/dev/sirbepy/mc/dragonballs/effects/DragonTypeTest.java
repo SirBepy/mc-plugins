@@ -1,0 +1,34 @@
+package dev.sirbepy.mc.dragonballs.effects;
+
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+/** Only a Nether Shenron is renamed; the set-independent name the console parsers match stays fixed. */
+class DragonTypeTest {
+
+    @Test
+    void netherShenronIsNuovaShenron() {
+        assertEquals("Nuova Shenron", DragonType.SHENRON.displayName(BallSet.NETHER));
+    }
+
+    @Test
+    void shenronKeepsItsNameOutsideTheNether() {
+        assertEquals("Shenron", DragonType.SHENRON.displayName(BallSet.OVERWORLD));
+        assertEquals("Shenron", DragonType.SHENRON.displayName(BallSet.END));
+    }
+
+    @Test
+    void porungaIsPorungaInEverySet() {
+        for (BallSet set : BallSet.values()) {
+            assertEquals("Porunga", DragonType.PORUNGA.displayName(set), set.name());
+        }
+    }
+
+    @Test
+    void setIndependentNameNeverChanges() {
+        assertEquals("Shenron", DragonType.SHENRON.displayName());
+        assertEquals("Porunga", DragonType.PORUNGA.displayName());
+    }
+}

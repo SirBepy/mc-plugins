@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.dragonballs.summon;
 
+import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.effects.DragonType;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -18,10 +19,10 @@ final class DragonSpeech {
     private DragonSpeech() {
     }
 
-    static Component line(DragonType dragon, String text) {
+    static Component line(DragonType dragon, BallSet set, String text) {
         NamedTextColor tagColor = dragon == DragonType.SHENRON ? NamedTextColor.DARK_GREEN : NamedTextColor.DARK_AQUA;
         NamedTextColor bodyColor = dragon == DragonType.SHENRON ? NamedTextColor.GREEN : NamedTextColor.AQUA;
-        Component tag = Component.text("[" + dragon.displayName() + "]", tagColor).decorate(TextDecoration.BOLD);
+        Component tag = Component.text("[" + dragon.displayName(set) + "]", tagColor).decorate(TextDecoration.BOLD);
         return tag.append(Component.text(" " + text, bodyColor));
     }
 }
