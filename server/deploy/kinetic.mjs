@@ -182,17 +182,17 @@ async function cmdRestart(reason) {
   const id = await serverIdentifier();
   const say = (text) => cmdConsole(`minecraft:tellraw @a ${JSON.stringify({ text, color: "gold" })}`);
 
+  // Read before the countdown so a panel error aborts before players are warned, and so the poll
+  // loop below can tell a freshly booted log apart from the one the server was still writing.
+  const preRestartLog = await filesContents(id, "/logs/latest.log");
+  const preRestartFirstLine = preRestartLog.split(/\r?\n/, 1)[0];
+
   await say(`[Server] Restarting in 60 seconds: ${reason}.`);
   await wait(30_000);
   await say(`[Server] Restarting in 30 seconds: ${reason}.`);
   await wait(20_000);
   await say(`[Server] Restarting in 10 seconds. Rejoin in about a minute and accept the resource pack.`);
   await wait(10_000);
-
-  // Captured before the restart so the poll loop below can tell a freshly booted log apart from
-  // the one the server was still writing when we sent the restart.
-  const preRestartLog = await filesContents(id, "/logs/latest.log");
-  const preRestartFirstLine = preRestartLog.split(/\r?\n/, 1)[0];
 
   await cmdConsole("save-all flush");
   await wait(2_000);
