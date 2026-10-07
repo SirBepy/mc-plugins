@@ -39,7 +39,7 @@ Downloaded by `testserver/build.gradle.kts` (`downloadPlugins { modrinth(...) }`
 - DiscordSRV (needs a bot token from the owner, stays unconfigured until then)
 - Shops: QuickShop-Hikari + VaultUnlocked + EssentialsX (EssentialsX only for its economy; its own `/home`, `/tpa`, `/back`, `/nick` etc must be disabled so HuskHomes and Names own those commands)
 - ViaVersion + ViaBackwards (lets slightly older clients and test bots join)
-- Towny (land claims; a town's land grows with its residents, `town_block_ratio` 8 chunks each). Config is versioned in `server/config/plugins/Towny/settings/config.yml` and copied to the test servers too: towns are free (creation, claims, outposts, upkeep, nations, death fee all 0) and the wilderness stays open to build, break and use. Tag still works inside towns with PvP off; a blocked tag (tagback, opted out) is a normal PvP hit, so it can combat-tag both players wherever PvP is on.
+- Towny (land claims; a town's land grows with its residents, `town_block_ratio` 8 chunks each; on top of that a mayor can buy up to 64 bonus chunks per town with `/t buy bonus <n>` from the town bank at a flat $25 each). Config is versioned in `server/config/plugins/Towny/settings/config.yml` and copied to the test servers too: towns are free (creation, claims, outposts, upkeep, nations, death fee all 0) and the wilderness stays open to build, break and use. Tag still works inside towns with PvP off; a blocked tag (tagback, opted out) is a normal PvP hit, so it can combat-tag both players wherever PvP is on.
 
 Datapacks (Stardust Labs, Modrinth, installed into `world/datapacks` BEFORE the world is first generated): Terralith, Incendium, Nullscape, Structory, Structory: Towers, Amplified Nether.
 

@@ -227,6 +227,11 @@ const closedWilderness = ['build', 'destroy', 'item_use', 'switch']
   .filter((what) => !new RegExp(`^\\s+unclaimed_zone_${what}: 'true'`, 'm').test(townyConfig));
 report('Towny wilderness stays open (build, destroy, item use, switch)', closedWilderness.length === 0,
   closedWilderness.join(', ') || 'all open');
+// The town_level limits are all 0, so the flat cap only applies while the level switch is off.
+const bonusCap = townyConfig.match(/^\s+max_purchased_blocks: '(\d+)'/m)?.[1];
+const bonusPerLevel = townyConfig.match(/^\s+max_purchased_blocks_uses_town_levels: '(\w+)'/m)?.[1];
+report('Towny towns can buy up to 64 bonus chunks', bonusCap === '64' && bonusPerLevel === 'false',
+  `max_purchased_blocks ${bonusCap}, uses_town_levels ${bonusPerLevel}`);
 // Player TNT stays blown up; only mob/natural explosions (creepers, withers...) heal in the wild.
 // The config line seeds new worlds, the per-world file is what an existing world actually uses.
 const regenEntities = townyConfig.match(/wild_revert_on_mob_explosion:[\s\S]*?entities: (.*)/)?.[1] ?? '';
