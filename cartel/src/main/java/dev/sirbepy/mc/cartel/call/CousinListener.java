@@ -23,10 +23,12 @@ public final class CousinListener implements Listener {
 
     private final CallManager calls;
     private final Cousins cousins;
+    private final Trophies trophies;
 
-    public CousinListener(CallManager calls, Cousins cousins) {
+    public CousinListener(CallManager calls, Cousins cousins, Trophies trophies) {
         this.calls = calls;
         this.cousins = cousins;
+        this.trophies = trophies;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -67,7 +69,7 @@ public final class CousinListener implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        calls.deliverPendingHeads(event.getPlayer());
+        trophies.deliverPending(event.getPlayer());
     }
 
     @EventHandler(ignoreCancelled = true)

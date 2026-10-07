@@ -28,7 +28,7 @@ class CousinListenerTest extends CartelTestBase {
 
     @BeforeEach
     void setUp() {
-        listener = new CousinListener(calls, cousins);
+        listener = new CousinListener(calls, cousins, trophies);
     }
 
     @SuppressWarnings({"deprecation", "removal"})

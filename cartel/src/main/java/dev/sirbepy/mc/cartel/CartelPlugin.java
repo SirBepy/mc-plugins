@@ -3,6 +3,7 @@ package dev.sirbepy.mc.cartel;
 import dev.sirbepy.mc.cartel.call.CallManager;
 import dev.sirbepy.mc.cartel.call.CousinListener;
 import dev.sirbepy.mc.cartel.call.Cousins;
+import dev.sirbepy.mc.cartel.call.Trophies;
 import dev.sirbepy.mc.cartel.phone.Phone;
 import dev.sirbepy.mc.cartel.phone.PhoneListener;
 import dev.sirbepy.mc.cartel.phone.PhoneMenus;
@@ -27,14 +28,15 @@ public final class CartelPlugin extends JavaPlugin {
 
         CartelStore store = new CartelStore(new File(getDataFolder(), "state.yml"), getLogger());
         Cousins cousins = new Cousins(this, config::get);
-        calls = new CallManager(config::get, store, cousins::spawn, cousins, System::currentTimeMillis, new Random());
+        Trophies trophies = new Trophies(store);
+        calls = new CallManager(config::get, store, cousins::spawn, cousins, trophies, System::currentTimeMillis, new Random());
         PhoneMenus menus = new PhoneMenus(calls, config::get);
         PhoneListener phones = new PhoneListener(new Phone(this), config::get, store, menus::open);
 
         var pm = getServer().getPluginManager();
         pm.registerEvents(new MenuListener(), this);
         pm.registerEvents(phones, this);
-        pm.registerEvents(new CousinListener(calls, cousins), this);
+        pm.registerEvents(new CousinListener(calls, cousins, trophies), this);
 
         getServer().getScheduler().runTaskTimer(this, calls::tick, 10L, 10L);
 

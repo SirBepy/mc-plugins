@@ -3,6 +3,7 @@ package dev.sirbepy.mc.cartel;
 import dev.sirbepy.mc.cartel.call.CallManager;
 import dev.sirbepy.mc.cartel.call.Cousins;
 import dev.sirbepy.mc.cartel.call.TestSpawner;
+import dev.sirbepy.mc.cartel.call.Trophies;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Location;
@@ -37,6 +38,7 @@ public abstract class CartelTestBase {
     protected CartelConfig config;
     protected CartelStore store;
     protected Cousins cousins;
+    protected Trophies trophies;
     protected CallManager calls;
     protected PlayerMock owner;
     protected PlayerMock victim;
@@ -53,7 +55,8 @@ public abstract class CartelTestBase {
         config = CartelConfig.from(yaml);
         store = new CartelStore(new File(tempDir.toFile(), "state.yml"), plugin.getLogger());
         cousins = new Cousins(plugin, () -> config);
-        calls = new CallManager(() -> config, store, TestSpawner.of(cousins), cousins, () -> now[0], new Random(7));
+        trophies = new Trophies(store);
+        calls = new CallManager(() -> config, store, TestSpawner.of(cousins), cousins, trophies, () -> now[0], new Random(7));
         floor(0, 0, 30);
         owner.teleport(new Location(world, 0.5, FLOOR_Y, 0.5));
         victim.teleport(new Location(world, 5.5, FLOOR_Y, 5.5));

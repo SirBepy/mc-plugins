@@ -108,11 +108,7 @@ class CallManagerTest extends CartelTestBase {
 
         calls.onPlayerDeath(victim, calls.cousins().getFirst());
 
-        assertEquals(1, heads(owner, "Victim"));
-        org.bukkit.inventory.ItemStack head = java.util.Arrays.stream(owner.getInventory().getContents())
-                .filter(item -> item != null && item.getType() == org.bukkit.Material.PLAYER_HEAD).findFirst().orElseThrow();
-        assertEquals(victim.getUniqueId(), ((org.bukkit.inventory.meta.SkullMeta) head.getItemMeta()).getPlayerProfile().getId());
-        assertTrue(chat(owner).contains("Leonel and Marco bring you Victim's head."));
+        assertEquals(1, heads(owner, "Victim"), "the head's own shape is Trophies' job, covered in TrophiesTest");
     }
 
     @Test
@@ -136,23 +132,6 @@ class CallManagerTest extends CartelTestBase {
         calls.onPlayerDeath(victim, calls.cousins().getFirst());
 
         assertEquals(0, heads(owner, "Victim"));
-    }
-
-    @Test
-    void anOfflineBossGetsTheHeadOnTheirNextJoin() {
-        calls.hit(owner, victim);
-        Mob cousin = calls.cousins().getFirst();
-        owner.disconnect();
-
-        calls.onPlayerDeath(victim, cousin);
-        assertEquals(1, store.takePendingHeads(owner.getUniqueId()).size(), "kept for later");
-        store.addPendingHead(owner.getUniqueId(), new dev.sirbepy.mc.cartel.CartelStore.PendingHead(victim.getUniqueId(), "Victim"));
-
-        owner.reconnect();
-        calls.deliverPendingHeads(owner);
-
-        assertEquals(1, heads(owner, "Victim"));
-        assertTrue(store.takePendingHeads(owner.getUniqueId()).isEmpty(), "delivered once");
     }
 
     @Test

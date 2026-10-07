@@ -2,6 +2,7 @@ package dev.sirbepy.mc.cartel.phone;
 
 import dev.sirbepy.mc.cartel.CartelConfig;
 import dev.sirbepy.mc.cartel.CartelStore;
+import dev.sirbepy.mc.cartel.Inventories;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
@@ -103,10 +104,7 @@ public final class PhoneListener implements Listener {
 
     /** Puts a phone in {@code player}'s inventory, or at their feet if it's full. */
     public void give(Player player) {
-        ItemStack item = phone.create();
-        for (ItemStack overflow : player.getInventory().addItem(item).values()) {
-            player.getWorld().dropItemNaturally(player.getLocation(), overflow);
-        }
+        Inventories.giveOrDrop(player, phone.create());
         player.sendMessage(Component.text("A flip phone buzzes in your pocket. The cousins are a call away.",
                 NamedTextColor.DARK_RED));
     }
