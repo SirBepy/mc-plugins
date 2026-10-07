@@ -97,10 +97,11 @@ try {
     await bot.equip(bot.inventory.items().find((i) => i.name === 'diamond'), 'hand');
     let since = bot.lines.length;
     bot.chat('/suggested-price');
-    await waitForLine(bot, /Suggested price for Diamond: \$16\.00 each, \$1024\.00 for a stack of 64/, 5_000, since);
+    // prices.yml (e301e4c, 2026-10-06): diamond's base went $16 -> $20, so 2x stall base is $20/$1280.
+    await waitForLine(bot, /Suggested price for Diamond: \$20\.00 each, \$1280\.00 for a stack of 64/, 5_000, since);
     since = bot.lines.length;
     bot.chat('/price');
-    await waitForLine(bot, /Suggested price for Diamond: \$16\.00/, 5_000, since);
+    await waitForLine(bot, /Suggested price for Diamond: \$20\.00/, 5_000, since);
   });
 
   console.log(`\nMarket e2e: ${results.length} passed`);

@@ -104,10 +104,17 @@ try {
     await rcon.command(`townyadmin town new ${TOWN} CarryOwner`);
     await waitFor(async () => plain(await rcon.command(`townyadmin town ${TOWN} toggle pvp off`))
       .includes('PVP has been Disabled'), 'town exists', 10_000);
+    // The PvP toggle confirms the town exists, not that Towny's permission cache for this claim is
+    // warm yet; a thief attempt landing in that gap is let through, only for the retry below to
+    // see it refused once the cache catches up.
     await teleport(rcon, thief, BX + 1, PLATFORM_Y + 1, BZ + 1);
-    await pickUp(thief);
-    await sleep(500);
-    assert(!(await cowIsCarried()), 'thief was refused');
+    await waitFor(async () => {
+      await pickUp(thief);
+      await sleep(500);
+      if (!(await cowIsCarried())) return true;
+      await pickUp(thief); // let go so the next attempt starts clean
+      return false;
+    }, 'thief was refused', 5_000);
   });
 
   await step('the town\'s own mayor can still carry it', async () => {

@@ -27,8 +27,11 @@ async function step(name, fn) {
 const titleOf = (window) => (typeof window?.title === 'string' ? window.title
   : `${nbtText(window?.title)} ${JSON.stringify(window?.title)}`);
 const containerSize = (window) => window.slots.length - 36;
+// A 2026-10-06 refactor split Haru into two bodies: a skinned Mannequin for Java clients and a
+// villager the Java client never receives (hidden via applyVisibility, HaruNpc.java). These e2e
+// bots connect as plain Java, so what they actually see is the mannequin, not the villager.
 const haruEntity = (bot) => Object.values(bot.entities)
-  .find((e) => e.name === 'villager' && e.position.distanceTo(bot.entity.position) < 6);
+  .find((e) => e.name === 'mannequin' && e.position.distanceTo(bot.entity.position) < 6);
 
 function nextWindow(bot, timeoutMs = 5_000) {
   return new Promise((resolve, reject) => {
