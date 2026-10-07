@@ -77,6 +77,15 @@ tracker:
     afk: "<white><player></white> <gray>- AFK, can't be tagged</gray>"
     nobody: "<gray>No one to track</gray>"
 
+teleport-block:
+  # Opted-in survival/adventure players within `radius` blocks of IT (same world) can't escape by
+  # command or plugin teleport: /home, /tpa, /back, /spawn, /warp, /rtp and the like. Ender pearls,
+  # chorus fruit and portals still work. IT, opted-out players, and anyone near an AFK IT are free.
+  enabled: true
+  radius: 100
+  # <it>, <radius>. Blank silences it (the teleport is still blocked).
+  message: "<red>You're within <radius> blocks of IT (<it>), so you can't teleport away.</red>"
+
 leaderboard:
   # The in-world TextDisplay placed by `/tag leaderboard place`. Distinct from the chat-only
   # messages.leaderboard-header/entry used by `/tag top`.
@@ -129,7 +138,8 @@ logs:
     enabled: true
     broadcast: false
     console: false
-    format: "<gray>You can't tag <player> back yet.</gray>"
+    # <seconds>: time left on the tagback cooldown.
+    format: "<gray>You can't tag <player> back for another <seconds>s.</gray>"
   it-set:
     enabled: true
     broadcast: true

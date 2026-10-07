@@ -14,4 +14,9 @@ public final class TagbackRule {
     public static boolean isProtected(UUID candidate, UUID lastTagger, long tagbackExpiryMillis, long nowMillis) {
         return lastTagger != null && lastTagger.equals(candidate) && nowMillis < tagbackExpiryMillis;
     }
+
+    /** Rounded up, so the message never says 0s while the hit is still blocked. */
+    public static long secondsLeft(long tagbackExpiryMillis, long nowMillis) {
+        return Math.max(1, (tagbackExpiryMillis - nowMillis + 999) / 1000);
+    }
 }

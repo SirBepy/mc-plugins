@@ -148,10 +148,10 @@ try {
     await waitFor(() => !TagC.players.TagA?.displayName?.toString().includes(PREFIX), 'TagA tab prefix gone');
   });
 
-  await step('no tagback: TagB cannot tag TagA right away', async () => {
+  await step('no tagback: TagB cannot tag TagA right away, and is told how long is left', async () => {
     const mark = TagB.lines.length;
     await hit(TagB, TagA);
-    await waitForLine(TagB, /can't tag TagA back/, 5_000, mark);
+    await waitForLine(TagB, /can't tag TagA back for another \d+s/, 5_000, mark);
     assert((await whoIsIt()).includes('TagB is IT'), 'TagB still IT');
   });
 
@@ -186,6 +186,23 @@ try {
 
   await step('IT cannot opt out', async () => {
     await chatUntil(TagC, '/tag optout', /You are IT and cannot opt out/);
+  });
+
+  // Vanilla /tp is a COMMAND-cause teleport, the same cause /home, /spawn and /tpa use.
+  await step('players near IT cannot command-teleport away', async () => {
+    const mark = TagA.lines.length;
+    const start = TagA.entity.position.clone();
+    await rcon.command(`minecraft:tp TagA ${BX + 6} ${PLATFORM_Y + 1} ${BZ + 6}`);
+    await waitForLine(TagA, /within 100 blocks of IT \(TagC\), so you can't teleport away/, 5_000, mark);
+    await sleep(500);
+    assert(TagA.entity.position.distanceTo(start) < 1, `TagA stayed put (${start} -> ${TagA.entity.position})`);
+  });
+
+  await step('opted-out players near IT can teleport', async () => {
+    await chatUntil(TagA, '/tag optout', /opted out of Tag/);
+    await teleport(rcon, TagA, BX + 6, PLATFORM_Y + 1, BZ + 6);
+    await teleport(rcon, TagA, BX, PLATFORM_Y + 1, BZ);
+    await chatUntil(TagA, '/tag optin', /opted back into Tag/);
   });
 
   await step('stats count tags and the +10 tag penalty', async () => {

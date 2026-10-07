@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -26,6 +27,14 @@ class TagbackRuleTest {
     @Test
     void neverBlocksAnyoneElse() {
         assertFalse(TagbackRule.isProtected(someoneElse, tagger, 1_000L, 500L));
+    }
+
+    @Test
+    void secondsLeftRoundsUpAndNeverSaysZero() {
+        assertEquals(60, TagbackRule.secondsLeft(60_000L, 0L));
+        assertEquals(42, TagbackRule.secondsLeft(60_000L, 18_001L));
+        assertEquals(1, TagbackRule.secondsLeft(60_000L, 59_999L));
+        assertEquals(1, TagbackRule.secondsLeft(60_000L, 60_000L));
     }
 
     @Test

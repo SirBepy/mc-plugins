@@ -40,6 +40,15 @@ function withShortAfk(text) {
   return out;
 }
 
+// The nether round trip below is a command teleport right next to IT, which Tag's teleport block
+// refuses. A config.yml older than that section uses the code default (on), hence the append.
+function withoutTeleportBlock(text) {
+  if (/^teleport-block:/m.test(text)) {
+    return text.replace(/^(teleport-block:\n(?:(?:  #.*)?\n)*?  enabled:).*$/m, '$1 false');
+  }
+  return `${text.trimEnd()}\n\nteleport-block:\n  enabled: false\n`;
+}
+
 function compassSlot(bot) {
   return bot.inventory.slots.findIndex((item) => item?.name === 'compass');
 }
@@ -89,7 +98,7 @@ const fidget = setInterval(() => {
 }, 400);
 
 try {
-  fs.writeFileSync(configPath, withShortAfk(original));
+  fs.writeFileSync(configPath, withoutTeleportBlock(withShortAfk(original)));
   await rcon.command('tag reload');
   await buildPlatform(rcon, BX, BZ, PLATFORM_Y);
   await rcon.command('tag clear');

@@ -10,6 +10,7 @@ import dev.sirbepy.mc.tag.head.HeadService;
 import dev.sirbepy.mc.tag.listener.AfkActivityListener;
 import dev.sirbepy.mc.tag.listener.PlayerConnectionListener;
 import dev.sirbepy.mc.tag.listener.TagDamageListener;
+import dev.sirbepy.mc.tag.listener.TeleportBlockListener;
 import dev.sirbepy.mc.tag.log.LogService;
 import dev.sirbepy.mc.tag.prefix.PrefixService;
 import dev.sirbepy.mc.tag.task.AfkSamplingTask;
@@ -49,6 +50,7 @@ public final class TagPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        upgradeConfig();
 
         ServicesManager servicesManager = Bukkit.getServicesManager();
         names = servicesManager.load(NamesApi.class);
@@ -74,6 +76,7 @@ public final class TagPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerConnectionListener(service), this);
         getServer().getPluginManager().registerEvents(new AfkActivityListener(service), this);
         getServer().getPluginManager().registerEvents(new TrackerListener(service, service.tracker()), this);
+        getServer().getPluginManager().registerEvents(new TeleportBlockListener(service), this);
         getServer().getPluginManager().registerEvents(leaderboard, this);
 
         reapplyCurrentIt();
@@ -105,6 +108,7 @@ public final class TagPlugin extends JavaPlugin {
 
     public void reload() {
         reloadConfig();
+        upgradeConfig();
         TagConfig config = TagConfig.load(getConfig(), logService);
         service.setConfig(config);
         leaderboard.setConfig(config.leaderboard);
@@ -125,6 +129,12 @@ public final class TagPlugin extends JavaPlugin {
             trackerTask = null;
         }
         scheduleTasks(config);
+    }
+
+    private void upgradeConfig() {
+        if (TagConfig.upgradeLegacyDefaults(getConfig())) {
+            saveConfig();
+        }
     }
 
     private void reapplyCurrentIt() {

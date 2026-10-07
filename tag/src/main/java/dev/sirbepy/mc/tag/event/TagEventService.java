@@ -54,7 +54,8 @@ public final class TagEventService {
         }
         if (TagbackRule.isProtected(victim.getUniqueId(), lastTagger, tagbackExpiryMillis, now)) {
             maybeWarn(it, now, config, () -> config.logs.toPlayer(LogService.Event.TAGBACK_BLOCKED, it,
-                    Placeholder.unparsed("player", victim.getName())));
+                    Placeholder.unparsed("player", victim.getName()),
+                    Placeholder.unparsed("seconds", String.valueOf(TagbackRule.secondsLeft(tagbackExpiryMillis, now)))));
             return TagService.TagResult.TAGBACK_BLOCKED;
         }
 

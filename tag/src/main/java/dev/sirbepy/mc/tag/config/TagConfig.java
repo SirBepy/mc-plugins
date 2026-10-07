@@ -28,6 +28,7 @@ public final class TagConfig {
     public final AfkConfig afk;
     public final LeaderboardConfig leaderboard;
     public final TrackerConfig tracker;
+    public final TeleportBlockConfig teleportBlock;
     public final Messages messages;
     public final LogService logs;
 
@@ -51,8 +52,26 @@ public final class TagConfig {
         this.afk = AfkConfig.from(root.getConfigurationSection("afk"));
         this.leaderboard = LeaderboardConfig.from(root.getConfigurationSection("leaderboard"));
         this.tracker = TrackerConfig.from(root.getConfigurationSection("tracker"));
+        this.teleportBlock = TeleportBlockConfig.from(root.getConfigurationSection("teleport-block"));
         this.messages = new Messages(root.getConfigurationSection("messages"));
         this.logs = logs;
+    }
+
+    private static final String TAGBACK_FORMAT_PATH = "logs.tagback-blocked.format";
+    private static final String LEGACY_TAGBACK_FORMAT = "<gray>You can't tag <player> back yet.</gray>";
+    private static final String TAGBACK_FORMAT = "<gray>You can't tag <player> back for another <seconds>s.</gray>";
+
+    /**
+     * A server's config.yml is never overwritten, so one written before {@code <seconds>} existed
+     * still carries the old default; swap that exact text, leaving an owner-customised format
+     * alone. Returns true when it changed something, so the caller saves.
+     */
+    public static boolean upgradeLegacyDefaults(FileConfiguration root) {
+        if (!LEGACY_TAGBACK_FORMAT.equals(root.getString(TAGBACK_FORMAT_PATH))) {
+            return false;
+        }
+        root.set(TAGBACK_FORMAT_PATH, TAGBACK_FORMAT);
+        return true;
     }
 
     public static TagConfig load(FileConfiguration root, LogService logs) {
