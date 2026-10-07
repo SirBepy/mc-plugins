@@ -20,7 +20,9 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
   | Nether | the Nether | red | Nether Radar, 5000 coins |
   | End | the End | purple | End Radar, 20000 coins |
 
-  Every set has the same dragons and wishes; only the hunt and the radar price differ. The End set
+  Every set summons the same two dragons, but the harder the hunt, the bigger the wish: a Nether
+  dragon grants about 1.5x what an Overworld one does, an End dragon 2x (Joe, 2026-10-07: "not
+  muuuch better, but definitely better"; see Guide values). The End set
   sleeps (no balls, no radar sales) until the End opens; it scatters the first time the server
   starts with the End open.
 - Balls sit on the ground as heads. In the overworld, 1-2 of each scatter land at the bottom of a
@@ -85,6 +87,8 @@ Only the summoner can wish. Everyone on the server reads what the dragon says.
 
 ### Guide values
 
+These are for a dragon summoned from the **Overworld** set.
+
 | Wish | Shenron | Porunga (per wish) |
 | --- | --- | --- |
 | Valuables | 1 stack of iron or gold blocks, or 16 diamond blocks, or 1 netherite block | half of one of those |
@@ -104,6 +108,26 @@ Only the summoner can wish. Everyone on the server reads what the dragon says.
 
 Shulker boxes, elytra and anything else that only comes from the End stay locked until the End is
 open (`allow-end` in `bukkit.yml`).
+
+### Nether and End dragons
+
+A dragon from a deeper set is stronger, Shenron and Porunga alike: **Nether 1.5x, End 2x** every
+amount, duration and size above (Joe, 2026-10-07; the End set only counts once the End opens). A
+build scales by its area, so its sides grow less. Rows without a number (a custom look, named
+animals, a villager) stay the same kind of wish, but a Nether or End dragon may be a little more
+generous with them, and the council weighs the set too.
+
+| Wish | Shenron: Overworld / Nether / End | Porunga per wish: Overworld / Nether / End |
+| --- | --- | --- |
+| Iron or gold blocks | 64 / 96 / 128 | 32 / 48 / 64 |
+| Diamond blocks | 16 / 24 / 32 | 8 / 12 / 16 |
+| Netherite | 1 block / 1 block + 4 ingots / 2 blocks | 4 ingots / 7 ingots / 1 block |
+| Money | 100,000 / 150,000 / 200,000 | 50,000 / 75,000 / 100,000 |
+| Empty shulker boxes | 9 / 13 / 18 | 4 / 6 / 8 |
+| XP | 100 / 150 / 200 levels | 30 / 45 / 60 levels |
+| A build | ~30x30 / ~37x37 / ~42x42 | a statue / a bigger statue / a small build |
+| Non-combat effects | 1 week / ~10 days / 2 weeks | 1 day / 36 h / 2 days |
+| Combat effects | 1 day / 36 h / 2 days | none |
 
 ### Immortality
 
@@ -145,7 +169,7 @@ flip phone (2026-10-06), whose Assassinate Mode sends the Salamanca cousins afte
   (daily gifts, reputation tiers, rotating rare stock, anything that keeps paying after the first
   day) gets its caps and cooldowns named by the dragon before granting, offered as a deal the
   summoner accepts or refuses in chat.
-- **Simple wishes:** Player Claude judges alone, against the guide values.
+- **Simple wishes:** Player Claude judges alone, against the guide values for the dragon's set.
 - **The council of 5.** Really unreasonable wishes, players complaining their wish was too weak,
   anything on the Never list, new server features, and anything else Player Claude is unsure of go
   to a council: 5 independent subagents, each given the rulebook, the wish and what the summoner
@@ -166,10 +190,14 @@ While a dragon is summoned, the summoner's chat goes to everyone as "<player> to
 also lands in the console log, one line per message:
 
 ```
-[DragonBalls] WISH <sessionId> <dragon> <wishesLeft> <playerName> (<uuid>): <message>
+[DragonBalls] WISH <sessionId> <dragon> <set> <wishesLeft> <playerName> (<uuid>): <message>
 [DragonBalls] DRAGON <sessionId>: <what the dragon said>
 [DragonBalls] GRANTED <sessionId> <count> <note>
 ```
+
+`<set>` is `overworld`, `nether` or `end`, the set the dragon was summoned from, which picks the
+guide-value column (e.g. `WISH x5pviy Shenron nether 1 Goku (...): ...` is judged at 1.5x).
+`shenron status` names it too, as `set=<set>`.
 
 The same records go to `plugins/DragonBalls/wishes.jsonl` on the server, the wish log used to revert
 or calibrate wishes later. Poll the console the same way as `[ClaudeBridge]` lines, and match WISH
@@ -184,7 +212,7 @@ Answer only through console commands (`node server/deploy/kinetic.mjs cmd "<comm
 | `shenron say <text>` | The dragon speaks to every player |
 | `shenron grant <count> <note>` | Uses up `count` wishes and logs the note; the session ends at 0 |
 | `shenron dismiss [text]` | Optional last words, then the dragon leaves and the balls scatter |
-| `shenron status` | Session id, summoner, dragon, wishes left, idle time |
+| `shenron status` | `session=<id> set=<set> summoner=<name> dragon=<dragon> wishesLeft=<n> idleSeconds=<n>` |
 | `shenron curse effect <player> <effect> <amplifier> <hours>` | An effect that comes back after death and rejoin until it expires |
 | `shenron curse nowish <player>` | The player can never summon again |
 | `shenron curse lift <player>` | Removes every curse and the wish ban |
