@@ -7,7 +7,8 @@ import {
 // menu calls them off, and Assassinate Mode (target list + confirm) broadcasts the warning, spawns them
 // ~10 blocks from the target and kills them, the owner gets the target's head, and a second hit is refused
 // for 24 hours. A stranger's phone is dead. A target on a 4-block pillar is shot from range: the bolt damage
-// is logged bare and in full Protection IV netherite, with no knockback, and the bolts can't be picked up.
+// on hard (live's difficulty) is logged bare and in full Protection IV netherite, with no knockback, and the
+// bolts can't be picked up.
 // Runs inside a Towny town with mobs off, since Towny would otherwise delete the cousins within 5 s.
 const PLATFORM_Y = 200;
 const { bx: BX, bz: BZ } = randomOrigin();
@@ -175,22 +176,25 @@ try {
       last = target.health;
     };
     target.on('health', onHealth);
-    const firstHit = async (what) => {
-      await waitFor(() => hits.length >= 1, `the target is shot (${what})`, 20_000).catch(async (error) => {
+    const shotFor = async (what, count = 1) => {
+      await waitFor(() => hits.length >= count, `the target is shot (${what})`, 25_000).catch(async (error) => {
         const arrows = await rcon.command('minecraft:execute if entity @e[type=minecraft:arrow]');
         throw new Error(`${error.message} (health ${target.health}, arrows: ${arrows}, a cousin at `
           + `${JSON.stringify(await position(`${COUSINS.slice(0, -1)},limit=1]`))}, target at ${JSON.stringify(target.entity.position)})`);
       });
-      return hits[0];
+      return hits.slice(0, count);
     };
+    // Live runs on hard, which scales a mob's bolt by 1.5 (easy halves it), so measure there.
+    const difficulty = (await rcon.command('minecraft:difficulty')).match(/difficulty is (\w+)/i)?.[1]?.toLowerCase() ?? 'easy';
+    await rcon.command('minecraft:difficulty hard');
     try {
       await confirmScreen(owner, TARGET);
       const since = target.lines.length;
       await owner.clickWindow(11, 0, 0);
       await waitForLine(target, /CartelMark, you have made enemies of the cartel\./, 5_000, since);
-      const bare = await firstHit('no armor');
-      // Power V on a pillager-speed bolt: ceil(1.6 x 5) = 8, plus a crit's random bonus of up to 5.
-      assert(bare >= 7 && bare <= 14.01, `one bolt on a bare target did 7-14 (got ${bare.toFixed(2)})`);
+      const [bare] = await shotFor('no armor');
+      // Power V on a pillager-speed bolt: ceil(~1.5 x 5) = 7-8, plus a crit's random bonus of up to 5, x1.5 on hard.
+      assert(bare >= 10.5 && bare <= 19.51, `one bolt on a bare target did 10.5-19.5 on hard (got ${bare.toFixed(2)})`);
       const at = target.entity.position;
       assert(Math.abs(at.x - (px + 0.5)) < 0.45 && Math.abs(at.z - (pz + 0.5)) < 0.45 && at.y >= PLATFORM_Y + 4.9,
         `no knockback: still on the pillar (at ${at.x.toFixed(2)} ${at.y.toFixed(2)} ${at.z.toFixed(2)})`);
@@ -205,10 +209,10 @@ try {
       await sleep(1500);
       hits = [];
       last = target.health;
-      const armored = await firstHit('Protection IV netherite');
-      assert(armored < bare, `armor cuts the bolt (${armored.toFixed(2)} vs ${bare.toFixed(2)})`);
-      console.log(`  one bolt: ${bare.toFixed(2)} damage bare, ${armored.toFixed(2)} in full Protection IV netherite; `
-        + `nearest cousin ${away.toFixed(1)} blocks off`);
+      const armored = await shotFor('Protection IV netherite', 3);
+      assert(armored.every((h) => h < bare), `armor cuts the bolts (${armored.map((h) => h.toFixed(2))} vs ${bare.toFixed(2)})`);
+      console.log(`  bolts on hard: ${bare.toFixed(2)} damage bare, ${armored.map((h) => h.toFixed(2)).join(', ')} in full `
+        + `Protection IV netherite; nearest cousin ${away.toFixed(1)} blocks off`);
 
       // A bolt that lands in a player is gone at once, so catch one in flight or in the ground.
       const arrow = `@e[type=minecraft:arrow,x=${px},y=${PLATFORM_Y},z=${pz},distance=..32,limit=1]`;
@@ -221,6 +225,7 @@ try {
     } finally {
       target.off('health', onHealth);
       await rcon.command('cartel dismiss');
+      await rcon.command(`minecraft:difficulty ${difficulty}`);
       await rcon.command(`minecraft:clear ${TARGET}`);
       await rcon.command(`minecraft:fill ${px} ${PLATFORM_Y + 1} ${pz} ${px} ${PLATFORM_Y + 4} ${pz} minecraft:air`);
       await rcon.command('minecraft:kill @e[type=minecraft:arrow]');
