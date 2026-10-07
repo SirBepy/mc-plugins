@@ -137,6 +137,10 @@ make similar wishes grantable; ask Joe.
   - an effect that stays through death for a number of hours,
   - losing named items from their inventory or ender chest,
   - never being able to wish again.
+- **Wishes that keep paying name their caps first.** A wish with a recurring or compounding payout
+  (daily gifts, reputation tiers, rotating rare stock, anything that keeps paying after the first
+  day) gets its caps and cooldowns named by the dragon before granting, offered as a deal the
+  summoner accepts or refuses in chat.
 - Really unreasonable wishes, and any player complaining their wish was too weak: ask Joe (as a
   question) before answering.
 - Feature and cosmetic requests made through `/claude` outside a wish get "find the Dragon Balls".
