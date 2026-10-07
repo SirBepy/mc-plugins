@@ -110,17 +110,35 @@ export function createBot(username) {
     bot._client.on('player_chat', (packet) => {
       if (packet.unsignedChatContent) bot.lines.push(nbtText(packet.unsignedChatContent));
     });
-    const timer = setTimeout(() => reject(new Error(`${username} did not spawn`)), 60_000);
+    // A rejected createBot() must not leave a connected bot behind: nobody is driving it from here
+    // on, so it just stands wherever it spawned (seen: repeatedly killed by a zombie for 15+
+    // minutes), and its still-open socket keeps the whole suite process alive long after the
+    // suite's own try/catch has already moved on and printed its FAIL line.
+    const fail = (error) => {
+      bot.quit();
+      reject(error);
+    };
+    const timer = setTimeout(() => fail(new Error(`${username} did not spawn`)), 60_000);
     bot.once('spawn', async () => {
       clearTimeout(timer);
-      // Teleporting a bot before its chunks arrive gets it kicked for an invalid move packet.
-      await bot.waitForChunksToLoad();
-      await sleep(500);
-      resolve(bot);
+      try {
+        // Teleporting a bot before its chunks arrive gets it kicked for an invalid move packet, and
+        // every later block lookup needs real chunk data, so this failure can't just be swallowed.
+        // This handler isn't awaited by anything, though, so an uncaught rejection here would crash
+        // the whole suite process instead of surfacing as this call's own rejection.
+        await bot.waitForChunksToLoad();
+        await sleep(500);
+        resolve(bot);
+      } catch (error) {
+        fail(new Error(`${username}: chunks never loaded after spawn: ${error.message}`));
+      }
     });
     bot.on('kicked', (reason) => console.error(`[${username}] kicked: ${JSON.stringify(reason)}`));
-    bot.once('kicked', (reason) => reject(new Error(`${username} kicked: ${JSON.stringify(reason)}`)));
-    bot.once('error', reject);
+    bot.on('kicked', (reason) => fail(new Error(`${username} kicked: ${JSON.stringify(reason)}`)));
+    // A chunk-load timeout above can itself get the bot kicked, which can emit 'error' more than
+    // once; `once` would leave the second occurrence with no listener, and Node kills the process
+    // on an unhandled 'error' event. fail() on an already-settled promise is a harmless no-op.
+    bot.on('error', fail);
   });
 }
 

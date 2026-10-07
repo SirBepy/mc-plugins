@@ -71,8 +71,11 @@ function actionBars(bot) {
   return bot.actionBars;
 }
 
-async function waitForActionBar(bot, pattern, timeoutMs = 8_000) {
-  const mark = bot.actionBars.length;
+// `mark` defaults to "now", but a caller that just triggered the change (rightClick, holdCompass)
+// should capture it BEFORE that call: the tracker's periodic readout can land during the
+// trigger's own sleeps, and a mark taken only here would already be past it, leaving nothing to
+// match until the next unrelated refresh (or never, if the readout settles and stops repeating).
+async function waitForActionBar(bot, pattern, timeoutMs = 8_000, mark = bot.actionBars.length) {
   await waitFor(() => bot.actionBars.slice(mark).some((l) => pattern.test(l)),
     `${bot.username} action bar ${pattern} (last: ${bot.actionBars.slice(-3).join(' | ')})`, timeoutMs);
 }
@@ -126,18 +129,21 @@ try {
   await rcon.command('tag set TrkA');
 
   await step('IT gets a tracker compass that points at the nearest opted-in player', async () => {
+    const mark = TrkA.actionBars.length;
     await holdCompass(TrkA);
-    await waitForActionBar(TrkA, /^TrkB - \d+m$/);
+    await waitForActionBar(TrkA, /^TrkB - \d+m$/, 8_000, mark);
     // The compass points via the client-side spawn position, so that is what must sit on TrkB.
     await waitFor(() => TrkA.spawnPoint?.distanceTo(TrkB.entity.position) < 2, 'compass target is TrkB', 5_000);
     assert(!spinning(TrkA), 'a compass with a target in this world does not spin');
   });
 
   await step('right-click cycles to the next player, skipping the opted-out one, and wraps', async () => {
+    let mark = TrkA.actionBars.length;
     await rightClick(TrkA);
-    await waitForActionBar(TrkA, /^TrkC - \d+m$/);
+    await waitForActionBar(TrkA, /^TrkC - \d+m$/, 8_000, mark);
+    mark = TrkA.actionBars.length;
     await rightClick(TrkA);
-    await waitForActionBar(TrkA, /^TrkB - \d+m$/);
+    await waitForActionBar(TrkA, /^TrkB - \d+m$/, 8_000, mark);
     assert(!actionBars(TrkA).some((l) => l.includes('TrkD')), 'the opted-out player is never shown');
   });
 
@@ -153,8 +159,9 @@ try {
     // Namespaced: EssentialsX shadows a bare `tp` even inside execute and lands it in the overworld.
     await rcon.command(`minecraft:execute in minecraft:the_nether run minecraft:tp TrkC ${BX} 120 ${BZ}`);
     await sleep(1_500);
+    const mark = TrkA.actionBars.length;
     await rightClick(TrkA);
-    await waitForActionBar(TrkA, /^TrkC - Not in this realm$/);
+    await waitForActionBar(TrkA, /^TrkC - Not in this realm$/, 8_000, mark);
     await waitFor(() => spinning(TrkA), 'compass spins for a target in another realm', 5_000);
     await teleport(rcon, TrkC, BX + 8, PLATFORM_Y + 1, BZ);
   });
