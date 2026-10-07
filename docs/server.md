@@ -215,7 +215,11 @@ Granted by a 4-1 council vote in a toned-down, server-wide form, then extended b
     it, which doubles the target. Measured on server/local (6 circling phantoms, 20 s): average
     5.6 -> 7.9 blocks/s, top 0.5 s speed about 10 -> 14-18. The controller only speeds up while it
     faces its target, so circling stays under 2x; a straight dive should get closer to 2x but needs a
-    real player to measure.
+    real player to measure. Joe accepted the ~1.4x circling on 2026-10-07. True 2x circling is out
+    of reach for any speed-only change: the controller turns at most 4 degrees a tick (a constant in
+    `Phantom$PhantomMoveControl.tick`), so a faster phantom overshoots its circle, reads as
+    misaligned and slows itself. Driving the controller's private `speed` field to 2x by reflection
+    measured only 1.29x (5.94 -> 7.68 blocks/s), so it was not shipped.
   - **Heard from 32 blocks** instead of 16: the server pack stretches every phantom sound's range
     (`server/resourcepacks/claudesmp-items/README.md`, "Phantom sounds"), and the plugin replays the
     screech for players 16-32 blocks away, since the server only sends it within 16.
