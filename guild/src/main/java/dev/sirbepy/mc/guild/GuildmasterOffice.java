@@ -103,14 +103,6 @@ public final class GuildmasterOffice {
         return !guild.config().isGuildmaster(member.id()) && member.rank().atLeast(commission.minRank());
     }
 
-    public boolean commissionDone(Player player, Member member, Commission commission) {
-        Objective o = commission.objective();
-        if (o.kind() == Objective.Kind.GATHER) {
-            return Inventories.count(player.getInventory(), Inventories.materials(o.targets())) >= o.amount();
-        }
-        return commission.progress(member.id()) >= o.amount();
-    }
-
     public Guild.Claim claimCommission(Player player, Commission commission) {
         Member member = guild.member(player);
         if (member == null || !eligibleFor(member, commission)) {
