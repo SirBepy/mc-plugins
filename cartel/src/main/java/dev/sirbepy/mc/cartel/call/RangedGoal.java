@@ -6,16 +6,23 @@ import com.destroystokyo.paper.entity.ai.GoalType;
 import com.destroystokyo.paper.entity.ai.MobGoals;
 import com.destroystokyo.paper.entity.ai.VanillaGoal;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
+import org.bukkit.FireworkEffect;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Firework;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Zombie;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
 
@@ -25,9 +32,10 @@ import java.util.function.Predicate;
 
 /**
  * A cousin's crossbow, in place of the zombie's melee goal (removed on attach): while he has a
- * target he keeps his distance and fires bolts on {@link Marksman}'s drill. The plugin fires the
- * bolts itself, a zombie having no ranged attack of its own, so the crossbow's enchantments are
- * applied here by hand (see {@link #load}). Who a bolt may hurt is {@link CousinListener}'s job.
+ * target he keeps his distance and fires bolts and firework rockets on {@link Marksman}'s drill. The
+ * plugin fires them itself, a zombie having no ranged attack of its own, so the crossbow's
+ * enchantments are applied here by hand (see {@link #load}). Who a bolt or a rocket's blast may hurt,
+ * and how much, is {@link CousinListener}'s job.
  */
 public final class RangedGoal implements Goal<Mob> {
 
@@ -36,11 +44,21 @@ public final class RangedGoal implements Goal<Mob> {
     private static final int REPATH_TICKS = 10;
     /** A pillager's crossbow bolt speed; a player's crossbow fires at 3.15. */
     static final double BOLT_SPEED = 1.6;
-    /** An arrow's base damage before Power. */
-    static final double ARROW_DAMAGE = 2.0;
-    /** Power V, +150%: vanilla's +1 base damage and +0.5 per level above I, on a 2-damage arrow. */
-    static final double POWER_V = 2.5;
     static final int PIERCING = 4;
+    /**
+     * A bolt's own damage, which {@link CousinListener#onShot} replaces with the fixed 6-8. It only
+     * has to beat the 6-8 a hit leaves behind: for half a second after a hit, vanilla ignores any hit
+     * whose own damage is no bigger than the last one's. 12 at the bolt's ~1.5 speed is 18+, still
+     * 10+ after easy difficulty halves it.
+     */
+    static final double BOLT_DAMAGE = 12.0;
+    /**
+     * A rocket with no stars has no blast at all; with any, vanilla's blast reaches every living thing
+     * in sight within 5 blocks (its damage is replaced by {@link CousinListener}'s fixed range).
+     */
+    static final int ROCKET_STARS = 3;
+    /** Flight 2 burns 20-31 ticks, 32+ blocks at the crossbow's 1.6, past {@link Marksman#RANGE}. */
+    static final int ROCKET_FLIGHT = 2;
     static final String SHOT_SOUND = "claudesmp:pollos_gun.shot";
 
     private final GoalKey<Mob> key;
@@ -100,8 +118,10 @@ public final class RangedGoal implements Goal<Mob> {
                 case BACK_OFF -> backOff(target);
             }
         }
-        if (marksman.tick(Bukkit.getCurrentTick(), at.distance(there), clear)) {
-            fire(cousin, target);
+        switch (marksman.tick(Bukkit.getCurrentTick(), at.distance(there), clear)) {
+            case BOLT -> fire(cousin, target);
+            case ROCKET -> fireRocket(cousin, target);
+            case NONE -> { }
         }
     }
 
@@ -152,12 +172,51 @@ public final class RangedGoal implements Goal<Mob> {
     }
 
     /**
-     * The crossbow's enchantments on a plugin-fired bolt. Paper launches it with no weapon, so none
-     * apply by themselves: Power V multiplies the base damage (vanilla scales it by speed at the hit),
-     * Piercing IV passes through 4 entities, and a crossbow bolt is always critical.
+     * A rocket straight at the target's chest: shot at an angle, like a crossbow's, it flies at a
+     * constant 1.6 with no drop and bursts on whatever it hits first or at the end of its flight.
+     * Spawned rather than launched: on 26.3 a rocket from {@code launchProjectile} is never ticked
+     * and hangs at the muzzle (measured on the e2e server, Life stayed 0), while a spawned one flies.
+     */
+    static void fireRocket(Mob shooter, LivingEntity target) {
+        Location from = muzzle(shooter);
+        Vector velocity = aim(target).toVector().subtract(from.toVector()).normalize().multiply(BOLT_SPEED);
+        shooter.getWorld().spawn(from, Firework.class, rocket -> {
+            arm(rocket);
+            rocket.setShotAtAngle(true);
+            rocket.setShooter(shooter);
+            rocket.setVelocity(velocity);
+        });
+        shooter.getWorld().playSound(shooter.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, SoundCategory.HOSTILE, 3.0f, 1.0f);
+    }
+
+    /** The cartel's rocket on a spawned one (setting the meta also re-rolls its flight time). */
+    static void arm(Firework rocket) {
+        rocket.setFireworkMeta((FireworkMeta) rocket().getItemMeta());
+    }
+
+    /** {@link #ROCKET_STARS} stars in red, orange and yellow, flight {@link #ROCKET_FLIGHT}. */
+    static ItemStack rocket() {
+        ItemStack rocket = new ItemStack(Material.FIREWORK_ROCKET);
+        FireworkMeta meta = (FireworkMeta) rocket.getItemMeta();
+        meta.addEffect(FireworkEffect.builder().with(FireworkEffect.Type.BALL_LARGE)
+                .withColor(Color.RED).withFade(Color.ORANGE).trail(true).build());
+        meta.addEffect(FireworkEffect.builder().with(FireworkEffect.Type.BURST)
+                .withColor(Color.ORANGE).flicker(true).build());
+        meta.addEffect(FireworkEffect.builder().with(FireworkEffect.Type.BALL)
+                .withColor(Color.YELLOW).withFade(Color.RED).build());
+        meta.setPower(ROCKET_FLIGHT);
+        rocket.setItemMeta(meta);
+        return rocket;
+    }
+
+    /**
+     * The crossbow's enchantment on a plugin-fired bolt (Paper launches it with no weapon, so it
+     * doesn't apply by itself): Piercing IV passes through 4 entities. A crossbow bolt is always
+     * critical, which now only shows as its particle trail: what a hit deals is fixed by
+     * {@link CousinListener#onShot}.
      */
     static void load(AbstractArrow bolt) {
-        bolt.setDamage(ARROW_DAMAGE * POWER_V);
+        bolt.setDamage(BOLT_DAMAGE);
         bolt.setPierceLevel(PIERCING);
         bolt.setCritical(true);
         bolt.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);

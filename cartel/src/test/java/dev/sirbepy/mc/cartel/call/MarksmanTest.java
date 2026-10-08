@@ -15,7 +15,7 @@ class MarksmanTest {
     private static List<Long> shots(Marksman marksman, long from, long to, double distance, boolean clear) {
         List<Long> fired = new ArrayList<>();
         for (long t = from; t <= to; t++) {
-            if (marksman.tick(t, distance, clear)) {
+            if (marksman.tick(t, distance, clear) != Marksman.Shot.NONE) {
                 fired.add(t);
             }
         }
@@ -29,6 +29,21 @@ class MarksmanTest {
 
         assertEquals(10, Marksman.CHARGE_TICKS, "Quick Charge III");
         assertEquals(List.of((long) perBolt, 2L * perBolt, 3L * perBolt), shots(marksman, 0, 3 * perBolt, 8, true));
+    }
+
+    @Test
+    void everyThirdShotIsAFireworkRocket() {
+        Marksman marksman = new Marksman(() -> 0);
+        List<Marksman.Shot> fired = new ArrayList<>();
+        for (long t = 0; fired.size() < 7; t++) {
+            Marksman.Shot shot = marksman.tick(t, 8, true);
+            if (shot != Marksman.Shot.NONE) {
+                fired.add(shot);
+            }
+        }
+
+        assertEquals(List.of(Marksman.Shot.BOLT, Marksman.Shot.BOLT, Marksman.Shot.ROCKET, Marksman.Shot.BOLT,
+                Marksman.Shot.BOLT, Marksman.Shot.ROCKET, Marksman.Shot.BOLT), fired);
     }
 
     @Test

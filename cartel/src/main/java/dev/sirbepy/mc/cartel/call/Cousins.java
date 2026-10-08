@@ -29,11 +29,11 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
- * Spawns Leonel and Marco Salamanca: adult zombies in a chainmail chestplate and leggings, with two
- * armorless pieces on the head and feet, all carrying the {@code claudesmp:salamanca} equipment
- * texture (server pack) that paints the cousins' bald heads, sunglasses, grey suits and boots over
- * every visible part of the zombie. Only the chainmail counts as armor (Joe, 2026-10-07). Players
- * without the pack see plain zombies with their names and crossbows.
+ * Spawns Leonel and Marco Salamanca: adult zombies in full iron armor (Joe, 2026-10-08), every piece
+ * carrying the {@code claudesmp:salamanca} equipment texture (server pack) that paints the cousins'
+ * bald heads, sunglasses, grey suits and boots over every visible part of the zombie in place of the
+ * iron. Players without the pack (and Bedrock players) see zombies in plain iron armor with their
+ * names and crossbows.
  */
 public final class Cousins {
 
@@ -99,18 +99,17 @@ public final class Cousins {
     /** Everything a cousin wears and holds, by slot. */
     public static Map<EquipmentSlot, ItemStack> outfit() {
         Map<EquipmentSlot, ItemStack> outfit = new EnumMap<>(EquipmentSlot.class);
-        outfit.put(EquipmentSlot.HEAD, look(Material.PAPER, EquipmentSlot.HEAD));
-        outfit.put(EquipmentSlot.CHEST, look(Material.CHAINMAIL_CHESTPLATE, EquipmentSlot.CHEST));
-        outfit.put(EquipmentSlot.LEGS, look(Material.CHAINMAIL_LEGGINGS, EquipmentSlot.LEGS));
-        outfit.put(EquipmentSlot.FEET, look(Material.PAPER, EquipmentSlot.FEET));
+        outfit.put(EquipmentSlot.HEAD, look(Material.IRON_HELMET, EquipmentSlot.HEAD));
+        outfit.put(EquipmentSlot.CHEST, look(Material.IRON_CHESTPLATE, EquipmentSlot.CHEST));
+        outfit.put(EquipmentSlot.LEGS, look(Material.IRON_LEGGINGS, EquipmentSlot.LEGS));
+        outfit.put(EquipmentSlot.FEET, look(Material.IRON_BOOTS, EquipmentSlot.FEET));
         outfit.put(EquipmentSlot.HAND, crossbow());
         return outfit;
     }
 
     /**
-     * {@code material} worn in {@code slot} with the Salamanca look. Paper has no armor value, so on
-     * the head and feet it is only the look: the client draws any item whose equippable component
-     * has an asset id through the armor layer, never as a held or head item.
+     * {@code material} worn in {@code slot} with the Salamanca look: the client draws a worn piece from
+     * its equippable component's asset id, so the iron keeps its armor value but shows as the suit.
      */
     private static ItemStack look(Material material, EquipmentSlot slot) {
         ItemStack item = new ItemStack(material);
@@ -126,15 +125,14 @@ public final class Cousins {
 
     /**
      * The cousins' crossbow, drawn as a black pistol by the server pack's {@code cartel_pistol} look
-     * (a plain crossbow without the pack). The enchantments are what Joe asked for; Power isn't a
-     * crossbow enchantment and the plugin fires the bolts, so {@link RangedGoal#load} is what applies
-     * all three.
+     * (a plain crossbow without the pack). The plugin fires the bolts, so {@link RangedGoal#load} and
+     * {@link Marksman}'s reload are what apply the enchantments; no Power, since a hit's damage is fixed
+     * (Joe, 2026-10-08).
      */
     public static ItemStack crossbow() {
         ItemStack crossbow = new ItemStack(Material.CROSSBOW);
         crossbow.addUnsafeEnchantment(Enchantment.PIERCING, RangedGoal.PIERCING);
         crossbow.addUnsafeEnchantment(Enchantment.QUICK_CHARGE, 3);
-        crossbow.addUnsafeEnchantment(Enchantment.POWER, 5);
         ItemMeta meta = crossbow.getItemMeta();
         meta.setUnbreakable(true);
         CustomModelDataComponent look = meta.getCustomModelDataComponent();

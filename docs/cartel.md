@@ -7,7 +7,8 @@ distance, and explicitly allowed Assassinate Mode against players: an override o
 rulebook's "never hurt another player" line for this wish only. Everything below that Joe didn't
 specify was picked by Claude and is listed under "Limits". On 2026-10-07 Joe made both cousins
 fully ranged (see "The crossbow"), replacing the dragon's council's Marco-only pistol from the same
-day.
+day. On 2026-10-08 (~19:33 UTC) Joe buffed them: exploding firework rockets, full iron armor, and a fixed
+3-4 hearts a hit that ignores armor.
 
 ## What the owner gets
 
@@ -32,18 +33,20 @@ day.
 
 ## The cousins
 
-Two adult zombies named Leonel Salamanca and Marco Salamanca, wearing a **chainmail chestplate and
-chainmail leggings** (no helmet, no boots) and holding a **crossbow drawn as a black pistol**, per
-Joe's spec of 2026-10-07 (until then: full iron armor and Sharpness X netherite swords). Every piece
-carries the server pack's `claudesmp:salamanca` equipment look, which paints their bald heads,
-wraparound sunglasses, goatees, grey suits and silver-toed boots over the whole zombie. The head and
-feet carry the look on a piece of paper (Joe's pick: the full look, with stats that are exactly
-chainmail chest and legs): paper has no armor value, and the client draws any item with an
-equipment look through the armor layer, never as an item on the head. Players without the pack see
-plain zombies with name tags and crossbows.
+Two adult zombies named Leonel Salamanca and Marco Salamanca, wearing **full iron armor** (helmet,
+chestplate, leggings, boots: 15 armor points, Joe, 2026-10-08) and holding a **crossbow drawn as a
+black pistol**. Every piece carries the server pack's `claudesmp:salamanca` equipment look, which
+paints their bald heads, wraparound sunglasses, goatees, grey suits and silver-toed boots over the
+whole zombie in place of the iron, so with the pack they look exactly as before: the iron only
+counts as armor. Players without the pack, and Bedrock players (Geyser draws worn armor by its
+item, not by the look), see zombies in plain iron armor with name tags and crossbows.
+
+History: full iron and Sharpness X netherite swords at first (2026-10-06); a chainmail chestplate
+and leggings with armorless paper on the head and feet carrying the look (2026-10-07, when they went
+ranged); full iron again since 2026-10-08.
 
 - 40 health (a plain zombie has 20), movement speed 0.33 (a zombie walks at 0.23), follow range 64.
-  No Resistance, no extra armor or toughness, no enchanted armor.
+  No Resistance, no extra toughness, no enchanted armor.
 - **Nothing drops when they die**: no gear, no XP, no zombie loot. Their gear can't be picked up
   or knocked off either (drop chance 0, armor and crossbow unbreakable).
 - They never hurt the owner or each other, and the owner can't hurt them.
@@ -60,30 +63,46 @@ about 20:50 UTC, with this:
 
 - **Both cousins, both modes, ranged only.** The zombie's melee goal is removed when they spawn, so
   they never hit anyone with their hands.
-- **The crossbow:** Piercing IV, Quick Charge III and Power V, unbreakable, with the server pack's
+- **The crossbow:** Piercing IV and Quick Charge III, unbreakable, with the server pack's
   `cartel_pistol` look (the Los Pollos Hermanos gun's side-on pistol recoloured to black gunmetal
-  with a wooden grip). Without the pack (and on Bedrock) it's a plain enchanted crossbow.
+  with a wooden grip). Without the pack (and on Bedrock) it's a plain enchanted crossbow. It had
+  Power V until 2026-10-08, when Joe fixed the damage per hit instead (see "Damage").
 - **How the enchantments work:** a zombie has no ranged attack, so the plugin fires each bolt
-  itself (Paper launches it with no weapon attached, so nothing on the crossbow applies by itself).
-  It applies all three by hand, on every bolt:
-  - **Power V** (not a crossbow enchantment in vanilla): the bolt's base damage is set to 2.5 times
-    an arrow's 2, i.e. +150%, which is also exactly what vanilla's Power V adds to a bow's arrow
-    (+1, then +0.5 per level above I). Vanilla multiplies the base by the bolt's speed when it hits.
-  - **Piercing IV:** the bolt passes through 4 entities.
-  - **Quick Charge III:** a reload takes 10 ticks (half a second), vanilla's 25 minus 5 per level.
-  - Like every vanilla crossbow bolt, it is **critical**: a random bonus on top (Joe's pick).
+  itself (Paper launches it with no weapon attached, so nothing on the crossbow applies by itself)
+  and applies them by hand: **Piercing IV**, the bolt passes through 4 entities; **Quick Charge
+  III**, a reload takes 10 ticks (half a second), vanilla's 25 minus 5 per level. Like every
+  crossbow bolt it is critical, which now only shows as its particle trail.
 - **Bolts:** fired at a pillager's bolt speed (1.6) at the target's chest, lifted for the drop the way
-  a pillager aims. That makes **8 damage (4 hearts) before armor, 8-13 with the crit's bonus**.
-  Measured on the 26.2 test server: see the e2e log line "one bolt" (bare vs full Protection IV
-  netherite). They fire with the Pollos gun's gunshot sound (silent without the pack).
+  a pillager aims, with the Pollos gun's gunshot sound (silent without the pack).
+- **Exploding firework rockets (Joe, 2026-10-08):** every 3rd shot of each cousin is a firework
+  rocket instead of a bolt (two bolts, then a rocket; Claude's pick). It flies straight at the
+  target's chest at the crossbow's 1.6 blocks per tick with no drop and bursts in red, orange and
+  yellow on whatever it hits first, or after 32+ blocks, with the vanilla launch sound. The blast is
+  vanilla's: it reaches every living thing in sight within 5 blocks and never breaks blocks. The
+  plugin spawns the rocket and sets it flying rather than using Paper's `launchProjectile`, whose
+  rockets never move on 26.3.
+- **Damage (Joe, 2026-10-08, ~19:38 UTC):** every bolt and every rocket blast that reaches someone
+  they may hurt deals a **uniform random 6.0-8.0 (3 to 4 hearts)**, whatever the bolt's speed, the
+  blast's distance or the difficulty, and **armor, Protection and Blast Protection take nothing
+  off**. Resistance, a shield and absorption hearts still count. How: at the end of the damage event
+  the plugin sets the damage and zeroes the event's armor and enchantment (Protection) reductions.
+  It also zeroes the hurt-immunity reduction, so a hit landing within half a second of another
+  still deals its full 6-8 (vanilla would take the last hit's damage off, which left a rocket on the
+  heels of a bolt doing 0), and a bolt carries 12 damage of its own (never dealt) so vanilla
+  doesn't skip it during that half second. A rocket's blast also goes through Towny, which cancels
+  explosion damage inside any town with explosions off (its default); a bolt was never stopped
+  there. Measured on hard on the 26.3 test server (e2e/cartel.mjs logs it): bolts 7.10 and 7.24 on a
+  bare target, 7.96, 7.09 and 7.04 in full Protection IV netherite; rockets 6.73 bare, 7.90 in
+  netherite. (Power V bolts did about 13.5 bare and up to 2.5 in that netherite.)
 - **Who they hurt:** in Assassinate Mode only the target; in Guard Mode only who the cousins may
   fight (monsters near the owner, anyone who hurt the owner or a cousin in the last 15 s). A bolt
-  that pierces into anyone else, or one still flying after the call ended, does nothing. No
-  knockback, no fire. Nobody can pick the bolts up. A cousin holds his shot while the other cousin or
-  the owner stands in the line of fire.
+  that pierces into anyone else, a rocket's blast reaching anyone else (the owner, the other cousin,
+  a bystander, a pet), or either one still flying after the call ended, does nothing. No knockback,
+  no fire. Nobody can pick the bolts up. A cousin holds his shot while the other cousin or the owner
+  stands in the line of fire.
 - **Rhythm (Claude's picks, copied from the pillager):** after loading, he aims for 1-2 s before
-  each bolt, so roughly one bolt per 1.5-2.5 s per cousin. He only fires with no block in the way
-  and within 16 blocks.
+  each shot, so roughly one bolt or rocket per 1.5-2.5 s per cousin. He only fires with no block in
+  the way and within 16 blocks.
 - **Keeping distance (Claude's picks, from the pillager's 8 blocks):** farther than 8 blocks, or
   with no clear shot, he walks in; inside 4 blocks (horizontally) he backs off to 8, which is also
   how he gets a line over a pillar's top from its base; in between he stands and shoots.

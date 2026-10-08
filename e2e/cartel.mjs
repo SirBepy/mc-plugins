@@ -3,17 +3,19 @@ import {
 } from './lib.mjs';
 
 // The cartel flip phone: the owner's right-click opens the phone menu, Guard Mode brings two cousins in
-// chainmail with crossbow-pistols who shoot a nearby monster dead and leave a bystander alone, the phone
+// full iron with crossbow-pistols who shoot a nearby monster dead and leave a bystander alone, the phone
 // menu calls them off, and Assassinate Mode (target list + confirm) broadcasts the warning, spawns them
 // ~10 blocks from the target and kills them, the owner gets the target's head, and a second hit is refused
-// for 24 hours. A stranger's phone is dead. A target on a 4-block pillar is shot from range: the bolt damage
-// on hard (live's difficulty) is logged bare and in full Protection IV netherite, with no knockback, and the
+// for 24 hours. A stranger's phone is dead. A target on a 4-block pillar is shot from range with bolts and
+// firework rockets that deal 6-8 a hit on hard (live's difficulty), bare and in full Protection IV netherite
+// alike, with no knockback; a bystander on the next pillar inside the blast radius is never hurt, and the
 // bolts can't be picked up.
 // Runs inside a Towny town with mobs off, since Towny would otherwise delete the cousins within 5 s.
 const PLATFORM_Y = 200;
 const { bx: BX, bz: BZ } = randomOrigin();
 const OWNER = 'CartelGus';
 const TARGET = 'CartelMark';
+const BYSTANDER = 'CartelLydia';
 const TOWN = `cartel${Date.now() % 100000}`;
 const COUSINS = '@e[tag=cartel.cousin]';
 
@@ -112,7 +114,7 @@ try {
     owner.closeWindow(menu);
   });
 
-  await step('Guard Mode brings two cousins in chainmail with enchanted crossbow-pistols', async () => {
+  await step('Guard Mode brings two cousins in full iron with enchanted crossbow-pistols', async () => {
     const menu = await openPhone(owner);
     const since = owner.lines.length;
     await owner.clickWindow(11, 0, 0);
@@ -120,7 +122,7 @@ try {
     const count = await cousinCount();
     assert(count === 2, `two cousins (got ${count}: ${await rcon.command(`minecraft:execute if entity ${COUSINS}`)}; ${await rcon.command('cartel status')})`);
     const one = `${COUSINS.slice(0, -1)},limit=1]`;
-    const slots = { head: 'paper', chest: 'chainmail_chestplate', legs: 'chainmail_leggings', feet: 'paper', mainhand: 'crossbow' };
+    const slots = { head: 'iron_helmet', chest: 'iron_chestplate', legs: 'iron_leggings', feet: 'iron_boots', mainhand: 'crossbow' };
     for (const [slot, item] of Object.entries(slots)) {
       const id = await rcon.command(`minecraft:data get entity ${one} equipment.${slot}.id`);
       assert(id.includes(`minecraft:${item}`), `${item} in ${slot} (got ${id})`);
@@ -129,7 +131,7 @@ try {
       const look = await rcon.command(`minecraft:data get entity ${one} equipment.${slot}.components."minecraft:equippable".asset_id`);
       assert(look.includes('claudesmp:salamanca'), `Salamanca look on the ${slot} (got ${look})`);
     }
-    for (const [enchantment, level] of Object.entries({ piercing: 4, quick_charge: 3, power: 5 })) {
+    for (const [enchantment, level] of Object.entries({ piercing: 4, quick_charge: 3 })) {
       const got = await rcon.command(`minecraft:data get entity ${one} equipment.mainhand.components."minecraft:enchantments"."minecraft:${enchantment}"`);
       assert(new RegExp(`: ${level}$`).test(got.trim()), `${enchantment} ${level} (got ${got})`);
     }
@@ -161,30 +163,65 @@ try {
     await waitFor(async () => (await cousinCount()) === 0, 'cousins gone', 5_000);
   });
 
-  await step('the cousins shoot a target on a pillar from range, without knockback, with bolts nobody can pick up', async () => {
+  await step('the cousins shoot a target on a pillar from range with bolts and rockets, without knockback, sparing a bystander', async () => {
     await rcon.command('cartel reset');
     const px = BX + 14;
     const pz = BZ + 8;
-    await rcon.command(`minecraft:fill ${px} ${PLATFORM_Y + 1} ${pz} ${px} ${PLATFORM_Y + 4} ${pz} minecraft:stone`);
+    // The bystander's pillar is 2 blocks off: inside a rocket blast's 5 blocks, in plain sight of it.
+    const sx = px + 2;
+    for (const x of [px, sx]) {
+      await rcon.command(`minecraft:fill ${x} ${PLATFORM_Y + 1} ${pz} ${x} ${PLATFORM_Y + 4} ${pz} minecraft:stone`);
+    }
+    const bystander = await createBot(BYSTANDER);
+    bots.push(bystander);
+    await rcon.command(`minecraft:gamemode survival ${BYSTANDER}`);
     await teleport(rcon, target, px, PLATFORM_Y + 5, pz);
+    await teleport(rcon, bystander, sx, PLATFORM_Y + 5, pz);
+    // The most health there is, to take many hits in a row without dying. The client is sent health
+    // scaled down (and not linearly), so the damage is read off the server's Health instead.
+    await rcon.command(`minecraft:attribute ${TARGET} minecraft:max_health base set 1024`);
     await rcon.command(`minecraft:effect give ${TARGET} minecraft:instant_health 1 10 true`);
+    await rcon.command(`minecraft:effect give ${BYSTANDER} minecraft:instant_health 1 10 true`);
     await sleep(1000);
+    const serverHealth = async () => Number((await rcon.command(`minecraft:data get entity ${TARGET} Health`)).match(/([\d.]+)f/)?.[1]);
     let hits = [];
-    let last = target.health;
-    const onHealth = () => {
-      if (target.health < last) hits.push(last - target.health);
-      last = target.health;
+    let sources = [];
+    // damage_event carries the damage type and the direct entity (protocol id + 1), the bolt or the rocket.
+    // A rocket is often gone on the client before its blast's event arrives, so a hit whose damage type
+    // isn't a bolt's is the rocket's. The packet can trail the RCON reply, so a drop waits 150 ms for it;
+    // two hits in one drop are kept out of the per-kind numbers.
+    let arrowType;
+    const onDamage = (packet) => {
+      if (packet.entityId !== target.entity.id) return;
+      const name = target.entities[packet.sourceDirectId - 1]?.name;
+      if (name === 'arrow') arrowType = packet.sourceTypeId;
+      sources.push({ name, type: packet.sourceTypeId });
     };
-    target.on('health', onHealth);
-    const shotFor = async (what, count = 1) => {
-      await waitFor(() => hits.length >= count, `the target is shot (${what})`, 25_000).catch(async (error) => {
-        const arrows = await rcon.command('minecraft:execute if entity @e[type=minecraft:arrow]');
-        throw new Error(`${error.message} (health ${target.health}, arrows: ${arrows}, a cousin at `
+    target._client.on('damage_event', onDamage);
+    let polling = true;
+    const poller = (async () => {
+      let last = await serverHealth();
+      while (polling) {
+        const health = await serverHealth();
+        if (health < last - 0.001) {
+          await sleep(150);
+          const kinds = sources.splice(0).map((d) => (d.name === 'arrow' || d.type === arrowType ? 'arrow' : 'firework_rocket'));
+          hits.push({ damage: last - health, source: kinds.join('+') || 'unknown' });
+        }
+        last = health;
+      }
+    })();
+    const of = (kind) => hits.filter((h) => h.source === kind).map((h) => h.damage);
+    const shotFor = async (what, bolts, rockets) => {
+      await waitFor(() => of('arrow').length >= bolts && of('firework_rocket').length >= rockets,
+        `the target is shot (${what})`, 45_000).catch(async (error) => {
+        const flying = await rcon.command('minecraft:execute if entity @e[type=#minecraft:arrows]');
+        throw new Error(`${error.message} (hits ${JSON.stringify(hits)}, arrows: ${flying}, a cousin at `
           + `${JSON.stringify(await position(`${COUSINS.slice(0, -1)},limit=1]`))}, target at ${JSON.stringify(target.entity.position)})`);
       });
-      return hits.slice(0, count);
     };
-    // Live runs on hard, which scales a mob's bolt by 1.5 (easy halves it), so measure there.
+    const fmt = (list) => list.map((h) => h.toFixed(2)).join(', ');
+    // Live runs on hard, which would scale a mob's bolt or rocket by 1.5, so measure there.
     const difficulty = (await rcon.command('minecraft:difficulty')).match(/difficulty is (\w+)/i)?.[1]?.toLowerCase() ?? 'easy';
     await rcon.command('minecraft:difficulty hard');
     try {
@@ -192,12 +229,17 @@ try {
       const since = target.lines.length;
       await owner.clickWindow(11, 0, 0);
       await waitForLine(target, /CartelMark, you have made enemies of the cartel\./, 5_000, since);
-      const [bare] = await shotFor('no armor');
-      // Power V on a pillager-speed bolt: ceil(~1.5 x 5) = 7-8, plus a crit's random bonus of up to 5, x1.5 on hard.
-      assert(bare >= 10.5 && bare <= 19.51, `one bolt on a bare target did 10.5-19.5 on hard (got ${bare.toFixed(2)})`);
+      await shotFor('no armor', 1, 1);
+      const bare = of('arrow');
+      const bareRockets = of('firework_rocket');
+      // Joe's 3-4 hearts a hit, whatever the bolt's speed, the blast's distance or the difficulty.
+      const fixed = (list) => list.every((h) => h >= 5.99 && h <= 8.01);
+      assert(fixed(bare), `a bolt on a bare target did 6-8 (got ${fmt(bare)})`);
+      assert(fixed(bareRockets), `a rocket on a bare target did 6-8 (got ${fmt(bareRockets)})`);
       const at = target.entity.position;
       assert(Math.abs(at.x - (px + 0.5)) < 0.45 && Math.abs(at.z - (pz + 0.5)) < 0.45 && at.y >= PLATFORM_Y + 4.9,
-        `no knockback: still on the pillar (at ${at.x.toFixed(2)} ${at.y.toFixed(2)} ${at.z.toFixed(2)})`);
+        `no knockback from bolts or rockets: still on the pillar (at ${at.x.toFixed(2)} ${at.y.toFixed(2)} ${at.z.toFixed(2)})`);
+      assert(bystander.health === 20, `the bystander 2 blocks away is unhurt (${bystander.health})`);
       const nearest = await position(`@e[tag=cartel.cousin,limit=1,sort=nearest,x=${px + 0.5},y=${PLATFORM_Y + 1},z=${pz + 0.5}]`);
       const away = Math.hypot(nearest.x - (px + 0.5), nearest.z - (pz + 0.5));
       assert(away >= 2.5, `the nearest cousin shoots from range, not from the pillar's base (${away.toFixed(1)} blocks)`);
@@ -208,11 +250,15 @@ try {
       await rcon.command(`minecraft:effect give ${TARGET} minecraft:instant_health 1 10 true`);
       await sleep(1500);
       hits = [];
-      last = target.health;
-      const armored = await shotFor('Protection IV netherite', 3);
-      assert(armored.every((h) => h < bare), `armor cuts the bolts (${armored.map((h) => h.toFixed(2))} vs ${bare.toFixed(2)})`);
-      console.log(`  bolts on hard: ${bare.toFixed(2)} damage bare, ${armored.map((h) => h.toFixed(2)).join(', ')} in full `
-        + `Protection IV netherite; nearest cousin ${away.toFixed(1)} blocks off`);
+      await shotFor('Protection IV netherite', 2, 1);
+      const armored = of('arrow');
+      const armoredRockets = of('firework_rocket');
+      assert(fixed(armored) && fixed(armoredRockets),
+        `armor and Protection take nothing off (bolts ${fmt(armored)}, rockets ${fmt(armoredRockets)})`);
+      assert(bystander.health === 20, `the bystander is still unhurt (${bystander.health})`);
+      console.log(`  bolts on hard: ${fmt(bare)} bare, ${fmt(armored)} in full Protection IV netherite`);
+      console.log(`  rockets on hard: ${fmt(bareRockets)} bare, ${fmt(armoredRockets)} in full Protection IV netherite; `
+        + `nearest cousin ${away.toFixed(1)} blocks off; other drops: ${JSON.stringify(hits.filter((h) => !['arrow', 'firework_rocket'].includes(h.source)))}`);
 
       // A bolt that lands in a player is gone at once, so catch one in flight or in the ground.
       const arrow = `@e[type=minecraft:arrow,x=${px},y=${PLATFORM_Y},z=${pz},distance=..32,limit=1]`;
@@ -223,12 +269,19 @@ try {
       }
       assert(/: 0b$/.test(pickup.trim()), `the bolts can't be picked up (got ${pickup})`);
     } finally {
-      target.off('health', onHealth);
+      polling = false;
+      await poller;
+      target._client.off('damage_event', onDamage);
       await rcon.command('cartel dismiss');
       await rcon.command(`minecraft:difficulty ${difficulty}`);
       await rcon.command(`minecraft:clear ${TARGET}`);
-      await rcon.command(`minecraft:fill ${px} ${PLATFORM_Y + 1} ${pz} ${px} ${PLATFORM_Y + 4} ${pz} minecraft:air`);
+      await rcon.command(`minecraft:attribute ${TARGET} minecraft:max_health base reset`);
+      for (const x of [px, sx]) {
+        await rcon.command(`minecraft:fill ${x} ${PLATFORM_Y + 1} ${pz} ${x} ${PLATFORM_Y + 4} ${pz} minecraft:air`);
+      }
       await rcon.command('minecraft:kill @e[type=minecraft:arrow]');
+      await rcon.command('minecraft:kill @e[type=minecraft:firework_rocket]');
+      await teleport(rcon, bystander, BX - 16, PLATFORM_Y + 1, BZ - 16);
     }
   });
 

@@ -1,8 +1,8 @@
 package dev.sirbepy.mc.cartel.call;
 
 import io.papermc.paper.event.entity.EntityPushedByEntityAttackEvent;
-import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Firework;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
@@ -10,29 +10,52 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityCombustByEntityEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent.DamageModifier;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.entity.EntityTransformEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.DoubleSupplier;
+
 /**
  * Keeps the cousins on the job: they only target who {@link CallManager#allowedTarget} allows, never
  * hurt their boss or each other, can't be hurt by their boss, never turn into drowned, and drop
- * nothing when they die (Joe: their gear never drops). Their crossbow bolts hurt only who the call
- * lets them fight, with no knockback or fire. A boss who was offline when a hit landed
+ * nothing when they die (Joe: their gear never drops). Their crossbow bolts and rockets hurt only who
+ * the call lets them fight, a fixed 3-4 hearts a hit through any armor, with no knockback or fire. A boss who was offline when a hit landed
  * gets the trophy head on their next join.
  */
 public final class CousinListener implements Listener {
 
+    /** Joe, 2026-10-08: 3 to 4 hearts a hit, uniform, for a bolt and a rocket's blast alike. */
+    static final double MIN_SHOT_DAMAGE = 6.0;
+    static final double MAX_SHOT_DAMAGE = 8.0;
+    /**
+     * Armor points and toughness, Protection-type enchantments (Blast Protection included), and the
+     * last hit's damage taken off a hit inside the victim's half-second of hurt immunity, which would
+     * leave nothing of a fixed 6-8 after another 6-8 (a rocket on the heels of a bolt did 0).
+     */
+    private static final List<DamageModifier> ARMOR_REDUCTIONS = List.of(
+            DamageModifier.ARMOR, DamageModifier.MAGIC, DamageModifier.INVULNERABILITY_REDUCTION);
+
     private final CallManager calls;
     private final Cousins cousins;
     private final Trophies trophies;
+    private final DoubleSupplier shotDamage;
 
     public CousinListener(CallManager calls, Cousins cousins, Trophies trophies) {
+        this(calls, cousins, trophies,
+                () -> ThreadLocalRandom.current().nextDouble(MIN_SHOT_DAMAGE, MAX_SHOT_DAMAGE));
+    }
+
+    CousinListener(CallManager calls, Cousins cousins, Trophies trophies, DoubleSupplier shotDamage) {
         this.calls = calls;
         this.cousins = cousins;
         this.trophies = trophies;
+        this.shotDamage = shotDamage;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -53,11 +76,38 @@ public final class CousinListener implements Listener {
         }
     }
 
-    /** A bolt that reaches anyone the call doesn't let the cousins fight (Piercing IV passes on) hurts nobody. */
+    /** A bolt (Piercing IV passes on) or a rocket's blast that reaches anyone the call doesn't let the cousins fight hurts nobody. */
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onShot(EntityDamageByEntityEvent event) {
         if (cousinShot(event.getDamager()) && !calls.fairGame(event.getEntity())) {
             event.setCancelled(true);
+        }
+    }
+
+    /**
+     * Anyone a bolt or a rocket's blast may hurt takes {@link #MIN_SHOT_DAMAGE}-{@link #MAX_SHOT_DAMAGE},
+     * whatever the bolt's speed, the blast's distance or the difficulty, and armor and Protection take
+     * none of it off (Joe). Resistance, a shield and absorption hearts still count. Last in line so no
+     * other plugin's damage change sticks, and a rocket's blast goes through Towny, which cancels
+     * explosion damage inside any town with explosions off (its default), as a bolt already does.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onShotHit(EntityDamageByEntityEvent event) {
+        if (!cousinShot(event.getDamager()) || !calls.fairGame(event.getEntity())) {
+            return;
+        }
+        if (event.isCancelled()) {
+            if (!(event.getDamager() instanceof Firework)) {
+                return;
+            }
+            event.setCancelled(false);
+        }
+        // Setting the base re-derives every reduction from it, so these are zeroed after.
+        event.setDamage(shotDamage.getAsDouble());
+        for (DamageModifier reduction : ARMOR_REDUCTIONS) {
+            if (event.isApplicable(reduction)) {
+                event.setDamage(reduction, 0);
+            }
         }
     }
 
@@ -105,8 +155,9 @@ public final class CousinListener implements Listener {
         }
     }
 
+    /** A bolt or a firework rocket: a rocket's blast names the rocket as both damager and pusher. */
     private boolean cousinShot(Entity entity) {
-        return entity instanceof AbstractArrow arrow && arrow.getShooter() instanceof Entity shooter
+        return entity instanceof Projectile shot && shot.getShooter() instanceof Entity shooter
                 && cousins.isCousin(shooter);
     }
 

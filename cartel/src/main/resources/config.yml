@@ -16,7 +16,7 @@ hit-distance: 10
 lose-trail-distance: 48
 retracks: 2
 
-# Each cousin. Gear is fixed by Joe's spec (chainmail chestplate and leggings, a crossbow with Piercing IV,
-# Quick Charge III and Power V) and never drops.
+# Each cousin. Gear is fixed by Joe's spec (full iron armor, a crossbow with Piercing IV and Quick Charge III
+# that also fires firework rockets) and never drops.
 health: 40
 speed: 0.33

@@ -8,21 +8,26 @@ import org.bukkit.damage.DamageType;
 import io.papermc.paper.event.entity.EntityKnockbackEvent;
 import io.papermc.paper.event.entity.EntityPushedByEntityAttackEvent;
 import org.bukkit.entity.Arrow;
+import org.bukkit.entity.Firework;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Zombie;
 import org.bukkit.event.entity.EntityCombustByEntityEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDamageEvent.DamageModifier;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
+import com.google.common.base.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,7 +39,7 @@ class CousinListenerTest extends CartelTestBase {
 
     @BeforeEach
     void setUp() {
-        listener = new CousinListener(calls, cousins, trophies);
+        listener = new CousinListener(calls, cousins, trophies, () -> 7.25);
     }
 
     @SuppressWarnings({"deprecation", "removal"})
@@ -117,15 +122,68 @@ class CousinListenerTest extends CartelTestBase {
                 damage);
     }
 
+    /**
+     * A hit on someone in full Protection IV netherite within half a second of a 7-damage hit, the
+     * way the server builds it: each reduction derived from the damage, re-derived when it changes.
+     */
+    @SuppressWarnings({"deprecation", "removal"})
+    private static EntityDamageByEntityEvent armoredHit(org.bukkit.entity.Projectile shot, org.bukkit.entity.Entity victim,
+            DamageType type, double damage) {
+        Map<DamageModifier, Double> modifiers = new EnumMap<>(DamageModifier.class);
+        Map<DamageModifier, Function<? super Double, Double>> functions = new EnumMap<>(DamageModifier.class);
+        functions.put(DamageModifier.BASE, d -> d);
+        functions.put(DamageModifier.ARMOR, d -> -0.6 * d);
+        functions.put(DamageModifier.MAGIC, d -> -0.3 * d);
+        functions.put(DamageModifier.INVULNERABILITY_REDUCTION, d -> -7.0);
+        functions.forEach((modifier, f) -> modifiers.put(modifier, f.apply(damage)));
+        return new EntityDamageByEntityEvent(shot, victim, EntityDamageEvent.DamageCause.PROJECTILE,
+                DamageSource.builder(type).withDirectEntity(shot)
+                        .withCausingEntity((org.bukkit.entity.Entity) shot.getShooter()).build(),
+                modifiers, functions);
+    }
+
     @Test
-    void aHitsBoltsHurtTheTargetAtFullDamageAndNobodyElse() {
+    void everyBoltAndRocketHitDealsTheFixedDamageThroughArmorProtectionAndHurtImmunity() {
+        calls.hit(owner, victim);
+        Arrow bolt = arrowFrom(calls.cousins().get(1));
+        Firework rocket = world.spawn(owner.getLocation().add(0, 1.5, 0), Firework.class);
+        rocket.setShooter(calls.cousins().get(0));
+
+        for (EntityDamageByEntityEvent hit : List.of(armoredHit(bolt, victim, DamageType.ARROW, 19.0),
+                armoredHit(rocket, victim, DamageType.FIREWORKS, 3.0))) {
+            listener.onShot(hit);
+            listener.onShotHit(hit);
+
+            assertFalse(hit.isCancelled());
+            assertEquals(7.25, hit.getDamage(), "the base is the fixed roll, not the bolt's or blast's own");
+            assertEquals(0.0, hit.getDamage(DamageModifier.ARMOR));
+            assertEquals(0.0, hit.getDamage(DamageModifier.MAGIC));
+            assertEquals(0.0, hit.getDamage(DamageModifier.INVULNERABILITY_REDUCTION), "the last hit takes nothing off");
+            assertEquals(7.25, hit.getFinalDamage(), 1e-9);
+        }
+    }
+
+    @Test
+    void theRealRollStaysBetweenThreeAndFourHearts() {
+        CousinListener real = new CousinListener(calls, cousins, trophies);
+        calls.hit(owner, victim);
+        Arrow bolt = arrowFrom(calls.cousins().get(1));
+
+        for (int i = 0; i < 200; i++) {
+            EntityDamageByEntityEvent hit = shot(bolt, victim, 12.0);
+            real.onShotHit(hit);
+            assertTrue(hit.getDamage() >= 6.0 && hit.getDamage() < 8.0, String.valueOf(hit.getDamage()));
+        }
+    }
+
+    @Test
+    void aHitsBoltsHurtTheTargetAndNobodyElse() {
         calls.hit(owner, victim);
         Arrow bolt = arrowFrom(calls.cousins().get(1));
 
         EntityDamageByEntityEvent onTarget = shot(bolt, victim, 12.0);
         listener.onShot(onTarget);
         assertFalse(onTarget.isCancelled());
-        assertEquals(12.0, onTarget.getDamage(), "no cap: Power V's damage stands");
 
         PlayerMock bystander = server.addPlayer("Bystander");
         EntityDamageByEntityEvent onBystander = shot(bolt, bystander, 8.0);
@@ -169,6 +227,70 @@ class CousinListenerTest extends CartelTestBase {
         assertTrue(push.isCancelled());
 
         EntityCombustByEntityEvent burn = new EntityCombustByEntityEvent(arrow, victim, 5f);
+        listener.onShotFire(burn);
+        assertTrue(burn.isCancelled());
+    }
+
+    @SuppressWarnings({"deprecation", "removal"})
+    private EntityDamageByEntityEvent blast(org.bukkit.entity.LivingEntity shooter, org.bukkit.entity.Entity victim) {
+        Firework rocket = world.spawn(shooter.getLocation().add(0, 1.5, 0), Firework.class);
+        rocket.setShooter(shooter);
+        return new EntityDamageByEntityEvent(rocket, victim, EntityDamageEvent.DamageCause.ENTITY_EXPLOSION,
+                DamageSource.builder(DamageType.FIREWORKS).withDirectEntity(rocket).withCausingEntity(shooter).build(), 11.0);
+    }
+
+    @Test
+    void aRocketsBlastHurtsTheHitsTargetAndNoBystanderOwnerOrCousin() {
+        calls.hit(owner, victim);
+        Mob leonel = calls.cousins().get(0);
+        Mob marco = calls.cousins().get(1);
+        PlayerMock bystander = server.addPlayer("Bystander");
+
+        EntityDamageByEntityEvent onTarget = blast(marco, victim);
+        listener.onShot(onTarget);
+        listener.onFriendlyFire(onTarget);
+        listener.onShotHit(onTarget);
+        assertFalse(onTarget.isCancelled());
+        assertEquals(7.25, onTarget.getDamage());
+
+        for (org.bukkit.entity.Entity spared : List.of(bystander, owner, leonel)) {
+            EntityDamageByEntityEvent event = blast(marco, spared);
+            listener.onShot(event);
+            listener.onFriendlyFire(event);
+            listener.onShotHit(event);
+            assertTrue(event.isCancelled(), spared.getName());
+        }
+    }
+
+    @Test
+    void aRocketsBlastOnTheTargetGetsThroughATownsExplosionProtectionButABoltStaysBlocked() {
+        calls.hit(owner, victim);
+        Mob marco = calls.cousins().get(1);
+
+        EntityDamageByEntityEvent rocket = blast(marco, victim);
+        rocket.setCancelled(true);
+        listener.onShotHit(rocket);
+        assertFalse(rocket.isCancelled(), "Towny cancels explosion damage in a town with explosions off");
+        assertEquals(7.25, rocket.getDamage());
+
+        EntityDamageByEntityEvent bolt = shot(arrowFrom(marco), victim, 12.0);
+        bolt.setCancelled(true);
+        listener.onShotHit(bolt);
+        assertTrue(bolt.isCancelled(), "whatever stopped a bolt (a god mode, say) still does");
+    }
+
+    @Test
+    void aRocketsBlastNeitherKnocksBackNorSetsOnFire() {
+        calls.hit(owner, victim);
+        Firework rocket = world.spawn(owner.getLocation().add(0, 1.5, 0), Firework.class);
+        rocket.setShooter(calls.cousins().getFirst());
+
+        EntityPushedByEntityAttackEvent push = new EntityPushedByEntityAttackEvent(victim,
+                EntityKnockbackEvent.Cause.ENTITY_ATTACK, rocket, new Vector(0.4, 0.4, 0));
+        listener.onShotKnockback(push);
+        assertTrue(push.isCancelled());
+
+        EntityCombustByEntityEvent burn = new EntityCombustByEntityEvent(rocket, victim, 5f);
         listener.onShotFire(burn);
         assertTrue(burn.isCancelled());
     }
