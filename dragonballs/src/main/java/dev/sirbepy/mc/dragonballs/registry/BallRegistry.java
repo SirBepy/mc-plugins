@@ -127,7 +127,12 @@ public final class BallRegistry {
      * same as a radar would find nothing for a ball tucked away in an unreachable inventory.
      */
     public List<Location> activeTargets() {
-        List<Location> targets = new ArrayList<>();
+        return new ArrayList<>(activeTargetsByStar().values());
+    }
+
+    /** {@link #activeTargets()} keyed by star, for the radar's pick-a-ball tracking. */
+    public Map<Integer, Location> activeTargetsByStar() {
+        Map<Integer, Location> targets = new TreeMap<>();
         for (Ball ball : balls.values()) {
             if (ball.stone) {
                 continue;
@@ -136,13 +141,13 @@ public final class BallRegistry {
                 case PLACED, DROPPED -> {
                     Location loc = ball.snapshot().lastKnownLocation();
                     if (loc != null) {
-                        targets.add(loc);
+                        targets.put(ball.star, loc);
                     }
                 }
                 case HELD -> {
                     Player online = ball.holderId == null ? null : Bukkit.getPlayer(ball.holderId);
                     if (online != null) {
-                        targets.add(online.getLocation());
+                        targets.put(ball.star, online.getLocation());
                     }
                 }
             }

@@ -64,18 +64,67 @@ class RadarItemsTest {
     }
 
     @Test
-    void setActiveSwapsOnlyTheModelStringLeavingPdcAndNameIntact() {
+    void showSwapsTheScreenAndNameButNeverThePdc() {
         ItemStack radar = items.create();
-        var originalName = radar.getItemMeta().displayName();
 
-        items.setActive(radar, false);
+        assertTrue(items.show(radar, null));
         assertTrue(items.isShowingIdle(radar));
         assertFalse(items.isShowingActive(radar));
         assertTrue(items.isRadar(radar));
-        assertEquals(originalName, radar.getItemMeta().displayName());
+        assertEquals("Dragon Radar", plain(radar.getItemMeta().displayName()));
 
-        items.setActive(radar, true);
+        assertTrue(items.show(radar, new RadarReading(4, RadarBand.CLOSE, false)));
         assertTrue(items.isShowingActive(radar));
+        assertTrue(items.isShowingBand(radar, RadarBand.CLOSE));
+        assertEquals(List.of("dragon_radar_close"), radar.getItemMeta().getCustomModelDataComponent().getStrings());
+        assertEquals("Dragon Radar: 4-star (nearest), Close", plain(radar.getItemMeta().displayName()));
+    }
+
+    @Test
+    void aPickedBallDropsTheNearestTag() {
+        ItemStack radar = items.create();
+
+        items.show(radar, new RadarReading(2, RadarBand.FAR, true));
+
+        assertEquals("Dragon Radar: 2-star, Far", plain(radar.getItemMeta().displayName()));
+    }
+
+    @Test
+    void showReportsNoChangeForTheSameReadingSoTheHandIsNotRewritten() {
+        ItemStack radar = items.create();
+        RadarReading reading = new RadarReading(1, RadarBand.HERE, false);
+
+        assertTrue(items.show(radar, reading));
+        assertFalse(items.show(radar, reading), "an unchanged reading must not rewrite the item");
+        assertTrue(items.show(radar, new RadarReading(1, RadarBand.CLOSE, false)));
+    }
+
+    @Test
+    void aRadarFromBeforeTheBandsGetsTheNewLoreOnItsFirstRefresh() {
+        ItemStack old = items.create();
+        ItemMeta meta = old.getItemMeta();
+        meta.lore(List.of(net.kyori.adventure.text.Component.text("Never says how far.")));
+        old.setItemMeta(meta);
+
+        assertTrue(items.show(old, new RadarReading(3, RadarBand.WARM, false)));
+
+        List<String> lore = old.getItemMeta().lore().stream().map(RadarItemsTest::plain).toList();
+        assertFalse(lore.contains("Never says how far."));
+        assertTrue(lore.contains("Sneak + right-click: track the next ball."));
+    }
+
+    @Test
+    void everyBandOfEverySetHasItsOwnModelString() {
+        java.util.Set<String> models = new java.util.HashSet<>();
+        for (BallSet set : BallSet.values()) {
+            for (RadarBand band : RadarBand.values()) {
+                models.add(RadarItems.activeModel(set, band));
+            }
+        }
+        assertEquals(BallSet.values().length * RadarBand.values().length, models.size());
+        assertTrue(models.contains("dragon_radar"), "the warm band keeps the original model so old radars still render");
+        assertTrue(models.contains("dragon_radar_nether_far"));
+        assertTrue(models.contains("dragon_radar_end_here"));
     }
 
     @Test
@@ -106,17 +155,19 @@ class RadarItemsTest {
     }
 
     @Test
-    void setActiveKeepsWhichSetTheRadarPointsAt() {
+    void showKeepsWhichSetTheRadarPointsAt() {
         ItemStack nether = items.create(BallSet.NETHER);
         assertTrue(items.isShowingActive(nether));
 
-        items.setActive(nether, false);
+        items.show(nether, null);
         assertTrue(items.isShowingIdle(nether));
         assertFalse(items.isShowingActive(nether));
-        assertEquals(BallSet.NETHER, items.setOf(nether), "setActive must not change which set the radar points at");
+        assertEquals(BallSet.NETHER, items.setOf(nether), "show must not change which set the radar points at");
 
-        items.setActive(nether, true);
+        items.show(nether, new RadarReading(5, RadarBand.FAR, false));
         assertTrue(items.isShowingActive(nether));
+        assertEquals(List.of("dragon_radar_nether_far"), nether.getItemMeta().getCustomModelDataComponent().getStrings());
+        assertEquals("Nether Dragon Radar: 5-star (nearest), Far", plain(nether.getItemMeta().displayName()));
         assertEquals(BallSet.NETHER, items.setOf(nether));
     }
 
@@ -127,5 +178,9 @@ class RadarItemsTest {
 
         assertNotEquals(overworld.getItemMeta().getCustomModelDataComponent().getStrings(),
                 end.getItemMeta().getCustomModelDataComponent().getStrings());
+    }
+
+    private static String plain(net.kyori.adventure.text.Component component) {
+        return net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(component);
     }
 }

@@ -67,8 +67,8 @@ phone, below).
   plugin as a compass with `custom_model_data` strings `["dragon_radar"]` while a ball is awake, or
   `["dragon_radar_idle"]` while none are. Approved by Joe on 2026-10-06. The needle direction comes
   from vanilla compass-target semantics (the plugin points the player's compass `target` at the
-  nearest awake ball the way a lodestone compass points at its lodestone); distance is never shown,
-  only direction. `assets/minecraft/items/compass.json`'s `fallback` is a verbatim copy of the 26.3
+  ball its holder tracks the way a lodestone compass points at its lodestone); distance shows only
+  as one of 4 bands (see "distance bands" below). `assets/minecraft/items/compass.json`'s `fallback` is a verbatim copy of the 26.3
   jar's own compass model, so every other compass (including lodestone compasses) is unaffected.
   `dragon_radar`'s 32 frames reuse vanilla's own `minecraft:compass` `range_dispatch` structure
   (`scale: 32.0`, `target: "spawn"`, the same 33 thresholds vanilla uses for its own needle, which
@@ -92,6 +92,16 @@ phone, below).
   the Overworld radar's frame with only the 3 casing shades swapped: red for the Nether (196,60,48 /
   150,38,32 / 96,22,22), purple for the End (176,120,214 / 132,82,170 / 86,48,116); screen, blip and
   blink animation are unchanged.
+
+- Radar distance bands (compass, Joe, 2026-10-08): every set's radar has 4 screens, one per distance
+  band the plugin's `RadarBand` picks: `<set>_far`, `<set>` (Getting warm, the original model string,
+  so a radar from before the bands still renders), `<set>_close` and `<set>_here`, each with its own
+  32 frames `claudesmp:item/<set>[_band]_NN` wired exactly like `dragon_radar` above. The blip is one
+  2x2 orange dot (Joe: "only 1 dot, it doesnt have to be circle"), 10 / 6.6 / 3.3 / 1.6 pixels out
+  from the screen's centre, between the grid rings; the "here" dot blinks every 4 ticks instead of
+  10. Generated (with the radar cases of `compass.json`) by `../radar_bands.py`, which paints the dot
+  onto each set's own blank screen, so re-running it is safe; this replaced the round blip of
+  `radar.py`'s original frames.
 
 - Shenron (Ender Dragon retexture): recolours vanilla's own `assets/minecraft/textures/entity/
   enderdragon/dragon.png` and `dragon_eyes.png` to Shenron's look for the Dragon Balls feature's

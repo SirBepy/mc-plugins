@@ -21,8 +21,10 @@ import org.mockbukkit.mockbukkit.world.WorldMock;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RadarTaskTest {
@@ -34,6 +36,7 @@ class RadarTaskTest {
     private BallRegistry registry;
     private BallRegistry netherRegistry;
     private RadarItems items;
+    private RadarTracking tracking;
     private RadarTask task;
     private PlayerMock player;
 
@@ -52,7 +55,8 @@ class RadarTaskTest {
                 ballItems, BallSet.END);
         sets = new BallSets(registry, netherRegistry, endRegistry, ballItems, () -> new DragonBallsConfig(new YamlConfiguration()));
         items = new RadarItems(plugin);
-        task = new RadarTask(sets, items, () -> new DragonBallsConfig(new YamlConfiguration()));
+        tracking = new RadarTracking();
+        task = new RadarTask(sets, items, tracking, () -> new DragonBallsConfig(new YamlConfiguration()));
 
         player = server.addPlayer();
         player.teleport(new Location(world, 0, 64, 0));
@@ -174,5 +178,78 @@ class RadarTaskTest {
 
         assertTrue(items.isShowingIdle(player.getInventory().getItemInMainHand()),
                 "a Nether radar must only ever point while its holder is actually in the Nether");
+    }
+
+    @Test
+    void theDotMovesInABandAsThePlayerClosesIn() {
+        registry.markPlaced(3, new Location(world, 0, 64, -2000), false);
+        player.getInventory().setItemInMainHand(items.create());
+
+        task.run();
+        assertTrue(items.isShowingBand(hand(), RadarBand.FAR));
+
+        player.teleport(new Location(world, 0, 64, -1500));
+        task.run();
+        assertTrue(items.isShowingBand(hand(), RadarBand.WARM));
+
+        player.teleport(new Location(world, 0, 64, -1800));
+        task.run();
+        assertTrue(items.isShowingBand(hand(), RadarBand.CLOSE));
+
+        player.teleport(new Location(world, 0, 64, -1980));
+        task.run();
+        assertTrue(items.isShowingBand(hand(), RadarBand.HERE));
+        assertEquals("Dragon Radar: 3-star (nearest), Right here", plain(hand()));
+    }
+
+    @Test
+    void aPickedBallStaysTrackedEvenWhenAnotherIsNearer() {
+        registry.markPlaced(1, new Location(world, 100, 64, 0), false);
+        registry.markPlaced(6, new Location(world, -900, 64, 0), false);
+        player.getInventory().setItemInMainHand(items.create());
+        tracking.cycle(player.getUniqueId(), BallSet.OVERWORLD, List.of(1, 6));
+        tracking.cycle(player.getUniqueId(), BallSet.OVERWORLD, List.of(1, 6));
+
+        task.run();
+
+        assertEquals(-900, player.getCompassTarget().getBlockX());
+        assertEquals("Dragon Radar: 6-star, Getting warm", plain(hand()));
+    }
+
+    @Test
+    void aPickedBallThatGoesOutOfReachFallsBackToTheNearest() {
+        registry.markPlaced(1, new Location(world, 100, 64, 0), false);
+        registry.markPlaced(6, new Location(world, -900, 64, 0), false);
+        player.getInventory().setItemInMainHand(items.create());
+        tracking.cycle(player.getUniqueId(), BallSet.OVERWORLD, List.of(1, 6));
+        tracking.cycle(player.getUniqueId(), BallSet.OVERWORLD, List.of(1, 6));
+        task.run();
+
+        registry.markPlaced(6, new Location(world, -900, 64, 0), true);
+        task.run();
+
+        assertEquals(100, player.getCompassTarget().getBlockX());
+        assertNull(tracking.picked(player.getUniqueId(), BallSet.OVERWORLD));
+        assertEquals("Dragon Radar: 1-star (nearest), Close", plain(hand()));
+    }
+
+    @Test
+    void starsNearestFirstListsOnlyWhatThisRadarCanSee() {
+        registry.markPlaced(2, new Location(world, 500, 64, 0), false);
+        registry.markPlaced(5, new Location(world, 50, 64, 0), false);
+        registry.markPlaced(7, new Location(world, 200, 64, 0), true);
+        registry.markHeld(4, player, false);
+
+        assertEquals(List.of(5, 2), task.starsNearestFirst(player, BallSet.OVERWORLD));
+        assertEquals(List.of(), task.starsNearestFirst(player, BallSet.NETHER), "a Nether radar sees nothing in the overworld");
+    }
+
+    private ItemStack hand() {
+        return player.getInventory().getItemInMainHand();
+    }
+
+    private String plain(ItemStack item) {
+        return net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                .serialize(item.getItemMeta().displayName());
     }
 }

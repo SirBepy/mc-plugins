@@ -213,6 +213,29 @@ class BuiltPackTest(unittest.TestCase):
                 model = self.json(asset(ref, "models", "json"))
                 self.assertIn(asset(model["textures"]["layer0"], "textures", "png"), self.entries, ref)
 
+    def test_every_radar_distance_band_has_32_frames_with_one_square_dot(self):
+        # The plugin picks a band by appending RadarBand's suffix to the set's model string.
+        band_java = (ROOT / "dragonballs/src/main/java/dev/sirbepy/mc/dragonballs/radar/RadarBand.java").read_text()
+        suffixes = re.findall(r'^\s+[A-Z]+\("(_?[a-z]*)", "', band_java, re.MULTILINE)
+        self.assertEqual(suffixes, ["_far", "", "_close", "_here"])
+        compass = {c["when"]: c["model"] for c in self.json("assets/minecraft/items/compass.json")["model"]["cases"]}
+        for base in ("dragon_radar", "dragon_radar_nether", "dragon_radar_end"):
+            dot_distance = []
+            for suffix in suffixes:
+                radar = compass[base + suffix]
+                self.assertEqual(radar["property"], "minecraft:compass", base + suffix)
+                refs = [e["model"]["model"] for e in radar["entries"]]
+                self.assertEqual(len(set(refs)), 32, base + suffix)
+                for ref in refs:
+                    model = self.json(asset(ref, "models", "json"))
+                    self.assertIn(asset(model["textures"]["layer0"], "textures", "png"), self.entries, ref)
+                # Frame 16 (the first entry) has its dot straight up: measure how far out it sits.
+                png = Image.open(io.BytesIO(self.entries[asset(refs[0], "textures", "png")])).convert("RGBA")
+                dot = [(x, y) for y in range(32) for x in range(32) if png.getpixel((x, y)) == (255, 150, 30, 255)]
+                self.assertEqual(len(dot), 4, f"{base + suffix}: one 2x2 dot, nothing else orange")
+                dot_distance.append(15.5 - sum(y for _x, y in dot) / 4)
+            self.assertEqual(dot_distance, sorted(dot_distance, reverse=True), f"{base}: far sits furthest out")
+
     def test_nether_and_end_radars_have_their_own_idle_look(self):
         self.assert_look_resolves("compass", "dragon_radar_nether_idle")
         self.assert_look_resolves("compass", "dragon_radar_end_idle")

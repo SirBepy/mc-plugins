@@ -60,7 +60,15 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
 - Picking up a ball is announced to the whole server.
 - Each **radar** (sold at the Dragon Ball station at spawn) points at the nearest awake ball of its
   own set, including balls someone is carrying, and only works in that set's dimension (elsewhere
-  it shows no signal). It never shows how far.
+  it shows no signal). It shows how far only in bands, never a number (Joe, 2026-10-08): its one
+  dot sits further out from the screen's centre the further away the ball is, and the radar's
+  name says the band and the ball, e.g. "Dragon Radar: 4-star (nearest), Close". The bands are
+  Far (1000+ blocks), Getting warm (300-1000), Close (50-300) and Right here (under 50, the dot
+  blinks fast); the Nether's are half as wide, since its balls land closer. **Sneak + right-click**
+  (in the air or on a block) tracks the next ball instead: the nearest one pinned, then each awake
+  ball from nearest to furthest, then back to the nearest. A tracked ball that goes stone, leaves
+  the dimension or ends up in your own inventory puts the radar back on the nearest, and so does
+  a rejoin or a restart.
 - Place all 7 of one set next to each other (within 2 blocks), then, **holding that set's radar in
   your main hand**, right-click or hit one and choose your dragon. Without the matching radar in
   hand the balls only stir ("The balls stir... but need a Dragon Radar", or a Nether / End Dragon

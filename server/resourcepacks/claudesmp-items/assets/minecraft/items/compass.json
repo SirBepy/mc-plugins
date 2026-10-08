@@ -5,6 +5,248 @@
     "index": 0,
     "cases": [
       {
+        "when": "dragon_radar_far",
+        "model": {
+          "type": "minecraft:range_dispatch",
+          "entries": [
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_16"
+              },
+              "threshold": 0.0
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_17"
+              },
+              "threshold": 0.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_18"
+              },
+              "threshold": 1.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_19"
+              },
+              "threshold": 2.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_20"
+              },
+              "threshold": 3.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_21"
+              },
+              "threshold": 4.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_22"
+              },
+              "threshold": 5.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_23"
+              },
+              "threshold": 6.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_24"
+              },
+              "threshold": 7.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_25"
+              },
+              "threshold": 8.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_26"
+              },
+              "threshold": 9.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_27"
+              },
+              "threshold": 10.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_28"
+              },
+              "threshold": 11.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_29"
+              },
+              "threshold": 12.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_30"
+              },
+              "threshold": 13.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_31"
+              },
+              "threshold": 14.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_00"
+              },
+              "threshold": 15.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_01"
+              },
+              "threshold": 16.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_02"
+              },
+              "threshold": 17.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_03"
+              },
+              "threshold": 18.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_04"
+              },
+              "threshold": 19.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_05"
+              },
+              "threshold": 20.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_06"
+              },
+              "threshold": 21.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_07"
+              },
+              "threshold": 22.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_08"
+              },
+              "threshold": 23.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_09"
+              },
+              "threshold": 24.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_10"
+              },
+              "threshold": 25.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_11"
+              },
+              "threshold": 26.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_12"
+              },
+              "threshold": 27.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_13"
+              },
+              "threshold": 28.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_14"
+              },
+              "threshold": 29.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_15"
+              },
+              "threshold": 30.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_far_16"
+              },
+              "threshold": 31.5
+            }
+          ],
+          "property": "minecraft:compass",
+          "scale": 32.0,
+          "target": "spawn"
+        }
+      },
+      {
         "when": "dragon_radar",
         "model": {
           "type": "minecraft:range_dispatch",
@@ -247,10 +489,736 @@
         }
       },
       {
+        "when": "dragon_radar_close",
+        "model": {
+          "type": "minecraft:range_dispatch",
+          "entries": [
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_16"
+              },
+              "threshold": 0.0
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_17"
+              },
+              "threshold": 0.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_18"
+              },
+              "threshold": 1.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_19"
+              },
+              "threshold": 2.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_20"
+              },
+              "threshold": 3.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_21"
+              },
+              "threshold": 4.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_22"
+              },
+              "threshold": 5.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_23"
+              },
+              "threshold": 6.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_24"
+              },
+              "threshold": 7.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_25"
+              },
+              "threshold": 8.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_26"
+              },
+              "threshold": 9.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_27"
+              },
+              "threshold": 10.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_28"
+              },
+              "threshold": 11.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_29"
+              },
+              "threshold": 12.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_30"
+              },
+              "threshold": 13.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_31"
+              },
+              "threshold": 14.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_00"
+              },
+              "threshold": 15.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_01"
+              },
+              "threshold": 16.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_02"
+              },
+              "threshold": 17.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_03"
+              },
+              "threshold": 18.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_04"
+              },
+              "threshold": 19.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_05"
+              },
+              "threshold": 20.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_06"
+              },
+              "threshold": 21.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_07"
+              },
+              "threshold": 22.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_08"
+              },
+              "threshold": 23.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_09"
+              },
+              "threshold": 24.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_10"
+              },
+              "threshold": 25.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_11"
+              },
+              "threshold": 26.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_12"
+              },
+              "threshold": 27.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_13"
+              },
+              "threshold": 28.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_14"
+              },
+              "threshold": 29.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_15"
+              },
+              "threshold": 30.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_close_16"
+              },
+              "threshold": 31.5
+            }
+          ],
+          "property": "minecraft:compass",
+          "scale": 32.0,
+          "target": "spawn"
+        }
+      },
+      {
+        "when": "dragon_radar_here",
+        "model": {
+          "type": "minecraft:range_dispatch",
+          "entries": [
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_16"
+              },
+              "threshold": 0.0
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_17"
+              },
+              "threshold": 0.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_18"
+              },
+              "threshold": 1.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_19"
+              },
+              "threshold": 2.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_20"
+              },
+              "threshold": 3.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_21"
+              },
+              "threshold": 4.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_22"
+              },
+              "threshold": 5.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_23"
+              },
+              "threshold": 6.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_24"
+              },
+              "threshold": 7.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_25"
+              },
+              "threshold": 8.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_26"
+              },
+              "threshold": 9.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_27"
+              },
+              "threshold": 10.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_28"
+              },
+              "threshold": 11.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_29"
+              },
+              "threshold": 12.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_30"
+              },
+              "threshold": 13.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_31"
+              },
+              "threshold": 14.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_00"
+              },
+              "threshold": 15.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_01"
+              },
+              "threshold": 16.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_02"
+              },
+              "threshold": 17.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_03"
+              },
+              "threshold": 18.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_04"
+              },
+              "threshold": 19.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_05"
+              },
+              "threshold": 20.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_06"
+              },
+              "threshold": 21.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_07"
+              },
+              "threshold": 22.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_08"
+              },
+              "threshold": 23.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_09"
+              },
+              "threshold": 24.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_10"
+              },
+              "threshold": 25.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_11"
+              },
+              "threshold": 26.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_12"
+              },
+              "threshold": 27.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_13"
+              },
+              "threshold": 28.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_14"
+              },
+              "threshold": 29.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_15"
+              },
+              "threshold": 30.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_here_16"
+              },
+              "threshold": 31.5
+            }
+          ],
+          "property": "minecraft:compass",
+          "scale": 32.0,
+          "target": "spawn"
+        }
+      },
+      {
         "when": "dragon_radar_idle",
         "model": {
           "type": "minecraft:model",
           "model": "claudesmp:item/dragon_radar_idle"
+        }
+      },
+      {
+        "when": "dragon_radar_nether_far",
+        "model": {
+          "type": "minecraft:range_dispatch",
+          "entries": [
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_16"
+              },
+              "threshold": 0.0
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_17"
+              },
+              "threshold": 0.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_18"
+              },
+              "threshold": 1.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_19"
+              },
+              "threshold": 2.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_20"
+              },
+              "threshold": 3.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_21"
+              },
+              "threshold": 4.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_22"
+              },
+              "threshold": 5.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_23"
+              },
+              "threshold": 6.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_24"
+              },
+              "threshold": 7.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_25"
+              },
+              "threshold": 8.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_26"
+              },
+              "threshold": 9.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_27"
+              },
+              "threshold": 10.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_28"
+              },
+              "threshold": 11.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_29"
+              },
+              "threshold": 12.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_30"
+              },
+              "threshold": 13.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_31"
+              },
+              "threshold": 14.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_00"
+              },
+              "threshold": 15.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_01"
+              },
+              "threshold": 16.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_02"
+              },
+              "threshold": 17.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_03"
+              },
+              "threshold": 18.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_04"
+              },
+              "threshold": 19.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_05"
+              },
+              "threshold": 20.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_06"
+              },
+              "threshold": 21.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_07"
+              },
+              "threshold": 22.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_08"
+              },
+              "threshold": 23.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_09"
+              },
+              "threshold": 24.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_10"
+              },
+              "threshold": 25.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_11"
+              },
+              "threshold": 26.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_12"
+              },
+              "threshold": 27.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_13"
+              },
+              "threshold": 28.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_14"
+              },
+              "threshold": 29.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_15"
+              },
+              "threshold": 30.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_far_16"
+              },
+              "threshold": 31.5
+            }
+          ],
+          "property": "minecraft:compass",
+          "scale": 32.0,
+          "target": "spawn"
         }
       },
       {
@@ -496,10 +1464,736 @@
         }
       },
       {
+        "when": "dragon_radar_nether_close",
+        "model": {
+          "type": "minecraft:range_dispatch",
+          "entries": [
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_16"
+              },
+              "threshold": 0.0
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_17"
+              },
+              "threshold": 0.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_18"
+              },
+              "threshold": 1.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_19"
+              },
+              "threshold": 2.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_20"
+              },
+              "threshold": 3.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_21"
+              },
+              "threshold": 4.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_22"
+              },
+              "threshold": 5.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_23"
+              },
+              "threshold": 6.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_24"
+              },
+              "threshold": 7.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_25"
+              },
+              "threshold": 8.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_26"
+              },
+              "threshold": 9.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_27"
+              },
+              "threshold": 10.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_28"
+              },
+              "threshold": 11.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_29"
+              },
+              "threshold": 12.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_30"
+              },
+              "threshold": 13.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_31"
+              },
+              "threshold": 14.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_00"
+              },
+              "threshold": 15.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_01"
+              },
+              "threshold": 16.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_02"
+              },
+              "threshold": 17.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_03"
+              },
+              "threshold": 18.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_04"
+              },
+              "threshold": 19.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_05"
+              },
+              "threshold": 20.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_06"
+              },
+              "threshold": 21.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_07"
+              },
+              "threshold": 22.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_08"
+              },
+              "threshold": 23.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_09"
+              },
+              "threshold": 24.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_10"
+              },
+              "threshold": 25.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_11"
+              },
+              "threshold": 26.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_12"
+              },
+              "threshold": 27.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_13"
+              },
+              "threshold": 28.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_14"
+              },
+              "threshold": 29.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_15"
+              },
+              "threshold": 30.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_close_16"
+              },
+              "threshold": 31.5
+            }
+          ],
+          "property": "minecraft:compass",
+          "scale": 32.0,
+          "target": "spawn"
+        }
+      },
+      {
+        "when": "dragon_radar_nether_here",
+        "model": {
+          "type": "minecraft:range_dispatch",
+          "entries": [
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_16"
+              },
+              "threshold": 0.0
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_17"
+              },
+              "threshold": 0.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_18"
+              },
+              "threshold": 1.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_19"
+              },
+              "threshold": 2.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_20"
+              },
+              "threshold": 3.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_21"
+              },
+              "threshold": 4.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_22"
+              },
+              "threshold": 5.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_23"
+              },
+              "threshold": 6.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_24"
+              },
+              "threshold": 7.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_25"
+              },
+              "threshold": 8.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_26"
+              },
+              "threshold": 9.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_27"
+              },
+              "threshold": 10.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_28"
+              },
+              "threshold": 11.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_29"
+              },
+              "threshold": 12.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_30"
+              },
+              "threshold": 13.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_31"
+              },
+              "threshold": 14.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_00"
+              },
+              "threshold": 15.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_01"
+              },
+              "threshold": 16.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_02"
+              },
+              "threshold": 17.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_03"
+              },
+              "threshold": 18.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_04"
+              },
+              "threshold": 19.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_05"
+              },
+              "threshold": 20.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_06"
+              },
+              "threshold": 21.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_07"
+              },
+              "threshold": 22.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_08"
+              },
+              "threshold": 23.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_09"
+              },
+              "threshold": 24.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_10"
+              },
+              "threshold": 25.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_11"
+              },
+              "threshold": 26.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_12"
+              },
+              "threshold": 27.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_13"
+              },
+              "threshold": 28.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_14"
+              },
+              "threshold": 29.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_15"
+              },
+              "threshold": 30.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_nether_here_16"
+              },
+              "threshold": 31.5
+            }
+          ],
+          "property": "minecraft:compass",
+          "scale": 32.0,
+          "target": "spawn"
+        }
+      },
+      {
         "when": "dragon_radar_nether_idle",
         "model": {
           "type": "minecraft:model",
           "model": "claudesmp:item/dragon_radar_nether_idle"
+        }
+      },
+      {
+        "when": "dragon_radar_end_far",
+        "model": {
+          "type": "minecraft:range_dispatch",
+          "entries": [
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_16"
+              },
+              "threshold": 0.0
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_17"
+              },
+              "threshold": 0.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_18"
+              },
+              "threshold": 1.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_19"
+              },
+              "threshold": 2.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_20"
+              },
+              "threshold": 3.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_21"
+              },
+              "threshold": 4.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_22"
+              },
+              "threshold": 5.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_23"
+              },
+              "threshold": 6.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_24"
+              },
+              "threshold": 7.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_25"
+              },
+              "threshold": 8.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_26"
+              },
+              "threshold": 9.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_27"
+              },
+              "threshold": 10.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_28"
+              },
+              "threshold": 11.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_29"
+              },
+              "threshold": 12.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_30"
+              },
+              "threshold": 13.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_31"
+              },
+              "threshold": 14.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_00"
+              },
+              "threshold": 15.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_01"
+              },
+              "threshold": 16.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_02"
+              },
+              "threshold": 17.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_03"
+              },
+              "threshold": 18.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_04"
+              },
+              "threshold": 19.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_05"
+              },
+              "threshold": 20.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_06"
+              },
+              "threshold": 21.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_07"
+              },
+              "threshold": 22.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_08"
+              },
+              "threshold": 23.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_09"
+              },
+              "threshold": 24.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_10"
+              },
+              "threshold": 25.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_11"
+              },
+              "threshold": 26.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_12"
+              },
+              "threshold": 27.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_13"
+              },
+              "threshold": 28.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_14"
+              },
+              "threshold": 29.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_15"
+              },
+              "threshold": 30.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_far_16"
+              },
+              "threshold": 31.5
+            }
+          ],
+          "property": "minecraft:compass",
+          "scale": 32.0,
+          "target": "spawn"
         }
       },
       {
@@ -735,6 +2429,490 @@
               "model": {
                 "type": "minecraft:model",
                 "model": "claudesmp:item/dragon_radar_end_16"
+              },
+              "threshold": 31.5
+            }
+          ],
+          "property": "minecraft:compass",
+          "scale": 32.0,
+          "target": "spawn"
+        }
+      },
+      {
+        "when": "dragon_radar_end_close",
+        "model": {
+          "type": "minecraft:range_dispatch",
+          "entries": [
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_16"
+              },
+              "threshold": 0.0
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_17"
+              },
+              "threshold": 0.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_18"
+              },
+              "threshold": 1.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_19"
+              },
+              "threshold": 2.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_20"
+              },
+              "threshold": 3.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_21"
+              },
+              "threshold": 4.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_22"
+              },
+              "threshold": 5.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_23"
+              },
+              "threshold": 6.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_24"
+              },
+              "threshold": 7.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_25"
+              },
+              "threshold": 8.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_26"
+              },
+              "threshold": 9.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_27"
+              },
+              "threshold": 10.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_28"
+              },
+              "threshold": 11.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_29"
+              },
+              "threshold": 12.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_30"
+              },
+              "threshold": 13.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_31"
+              },
+              "threshold": 14.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_00"
+              },
+              "threshold": 15.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_01"
+              },
+              "threshold": 16.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_02"
+              },
+              "threshold": 17.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_03"
+              },
+              "threshold": 18.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_04"
+              },
+              "threshold": 19.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_05"
+              },
+              "threshold": 20.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_06"
+              },
+              "threshold": 21.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_07"
+              },
+              "threshold": 22.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_08"
+              },
+              "threshold": 23.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_09"
+              },
+              "threshold": 24.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_10"
+              },
+              "threshold": 25.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_11"
+              },
+              "threshold": 26.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_12"
+              },
+              "threshold": 27.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_13"
+              },
+              "threshold": 28.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_14"
+              },
+              "threshold": 29.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_15"
+              },
+              "threshold": 30.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_close_16"
+              },
+              "threshold": 31.5
+            }
+          ],
+          "property": "minecraft:compass",
+          "scale": 32.0,
+          "target": "spawn"
+        }
+      },
+      {
+        "when": "dragon_radar_end_here",
+        "model": {
+          "type": "minecraft:range_dispatch",
+          "entries": [
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_16"
+              },
+              "threshold": 0.0
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_17"
+              },
+              "threshold": 0.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_18"
+              },
+              "threshold": 1.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_19"
+              },
+              "threshold": 2.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_20"
+              },
+              "threshold": 3.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_21"
+              },
+              "threshold": 4.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_22"
+              },
+              "threshold": 5.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_23"
+              },
+              "threshold": 6.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_24"
+              },
+              "threshold": 7.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_25"
+              },
+              "threshold": 8.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_26"
+              },
+              "threshold": 9.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_27"
+              },
+              "threshold": 10.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_28"
+              },
+              "threshold": 11.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_29"
+              },
+              "threshold": 12.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_30"
+              },
+              "threshold": 13.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_31"
+              },
+              "threshold": 14.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_00"
+              },
+              "threshold": 15.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_01"
+              },
+              "threshold": 16.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_02"
+              },
+              "threshold": 17.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_03"
+              },
+              "threshold": 18.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_04"
+              },
+              "threshold": 19.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_05"
+              },
+              "threshold": 20.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_06"
+              },
+              "threshold": 21.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_07"
+              },
+              "threshold": 22.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_08"
+              },
+              "threshold": 23.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_09"
+              },
+              "threshold": 24.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_10"
+              },
+              "threshold": 25.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_11"
+              },
+              "threshold": 26.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_12"
+              },
+              "threshold": 27.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_13"
+              },
+              "threshold": 28.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_14"
+              },
+              "threshold": 29.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_15"
+              },
+              "threshold": 30.5
+            },
+            {
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragon_radar_end_here_16"
               },
               "threshold": 31.5
             }

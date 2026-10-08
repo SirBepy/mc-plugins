@@ -14,7 +14,9 @@ public final class RadarModule {
 
     public static void register(JavaPlugin plugin, BallSets sets, Supplier<DragonBallsConfig> config) {
         RadarItems items = new RadarItems(plugin);
-        RadarTask task = new RadarTask(sets, items, config);
+        RadarTracking tracking = new RadarTracking();
+        RadarTask task = new RadarTask(sets, items, tracking, config);
         plugin.getServer().getScheduler().runTaskTimer(plugin, task, RadarTask.PERIOD_TICKS, RadarTask.PERIOD_TICKS);
+        plugin.getServer().getPluginManager().registerEvents(new RadarCycleListener(items, tracking, task), plugin);
     }
 }

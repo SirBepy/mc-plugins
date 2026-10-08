@@ -17,7 +17,8 @@ import java.util.List;
 /**
  * Builds and identifies the Dragon Radar compass, for any of the 3 sets. Identified ONLY by the
  * {@code dragonballs:radar} PDC marker (never by the custom-model-data string, which only drives the
- * resource pack's needle vs. no-signal screen and is swapped in place as the hunt state changes).
+ * resource pack's distance-band screens vs. the no-signal screen and is swapped in place as the
+ * hunt state changes).
  * The companion {@code dragonballs:radar_set} marker says WHICH set it points at; its absence means
  * OVERWORLD, so every radar predating this split (including a live, already-purchased one) keeps
  * acting exactly as it does today.
@@ -26,6 +27,14 @@ public final class RadarItems {
 
     static final String ACTIVE_MODEL = "dragon_radar";
     static final String IDLE_MODEL = "dragon_radar_idle";
+
+    private static final List<Component> LORE = List.of(
+            Component.text("Points at an awake Dragon Ball.", NamedTextColor.GRAY)
+                    .decoration(TextDecoration.ITALIC, false),
+            Component.text("The dot moves in as you get closer.", NamedTextColor.GRAY)
+                    .decoration(TextDecoration.ITALIC, false),
+            Component.text("Sneak + right-click: track the next ball.", NamedTextColor.GRAY)
+                    .decoration(TextDecoration.ITALIC, false));
 
     private final NamespacedKey radarKey;
     private final NamespacedKey setKey;
@@ -60,21 +69,16 @@ public final class RadarItems {
         return create(BallSet.OVERWORLD);
     }
 
-    /** The purchasable item for {@code set}: starts showing the active needle screen (swapped to
-     * idle, if there's nothing to point at, the next time {@code RadarTask} runs). */
+    /** The purchasable item for {@code set}: starts showing the "Getting warm" screen, until
+     * {@code RadarTask} restamps it with the real reading (or idle) on its next run. */
     public ItemStack create(BallSet set) {
         ItemStack item = new ItemStack(Material.COMPASS);
         ItemMeta meta = item.getItemMeta();
-        meta.displayName(Component.text(displayName(set), NamedTextColor.GOLD)
-                .decoration(TextDecoration.ITALIC, false));
-        meta.lore(List.of(
-                Component.text("Points at the nearest awake Dragon Ball.", NamedTextColor.GRAY)
-                        .decoration(TextDecoration.ITALIC, false),
-                Component.text("Never says how far.", NamedTextColor.GRAY)
-                        .decoration(TextDecoration.ITALIC, false)));
+        meta.displayName(baseName(set));
+        meta.lore(LORE);
         meta.getPersistentDataContainer().set(radarKey, PersistentDataType.BOOLEAN, true);
         meta.getPersistentDataContainer().set(setKey, PersistentDataType.STRING, set.id());
-        applyModel(meta, activeModel(set));
+        applyModel(meta, activeModel(set, RadarBand.WARM));
         item.setItemMeta(meta);
         return item;
     }
@@ -86,31 +90,70 @@ public final class RadarItems {
     }
 
     public boolean isShowingActive(ItemStack item) {
-        return hasModel(item, activeModel(setOf(item)));
+        BallSet set = setOf(item);
+        for (RadarBand band : RadarBand.values()) {
+            if (hasModel(item, activeModel(set, band))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean isShowingIdle(ItemStack item) {
         return hasModel(item, idleModel(setOf(item)));
     }
 
-    /**
-     * Swaps only the custom-model-data string (name/lore/PDC untouched, so the set it points at
-     * never changes here). Callers must only invoke this when the active/idle state actually
-     * changes: rewriting a held item's components every tick would replay the hand re-equip animation.
-     */
-    public void setActive(ItemStack item, boolean active) {
-        BallSet set = setOf(item);
-        ItemMeta meta = item.getItemMeta();
-        applyModel(meta, active ? activeModel(set) : idleModel(set));
-        item.setItemMeta(meta);
+    public boolean isShowingBand(ItemStack item, RadarBand band) {
+        return hasModel(item, activeModel(setOf(item), band));
     }
 
-    private static String activeModel(BallSet set) {
-        return switch (set) {
+    /**
+     * Restamps the radar's screen, name and lore for {@code reading} ({@code null} = no signal),
+     * leaving the PDC (and so which set it points at) alone. Returns whether anything changed:
+     * callers put the item back in the hand only then, since rewriting a held item replays the
+     * hand re-equip animation. A changed name is also what makes the client pop it up over the
+     * hotbar, which is how the holder reads the band and the ball without an action bar
+     * (AuraSkills redraws its own every 5 ticks).
+     */
+    public boolean show(ItemStack item, RadarReading reading) {
+        BallSet set = setOf(item);
+        String model = reading == null ? idleModel(set) : activeModel(set, reading.band());
+        Component name = reading == null ? baseName(set) : readingName(set, reading);
+        ItemMeta meta = item.getItemMeta();
+        if (hasModel(item, model) && name.equals(meta.displayName()) && LORE.equals(meta.lore())) {
+            return false;
+        }
+        applyModel(meta, model);
+        meta.displayName(name);
+        meta.lore(LORE);
+        item.setItemMeta(meta);
+        return true;
+    }
+
+    private static Component baseName(BallSet set) {
+        return Component.text(displayName(set), NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false);
+    }
+
+    /** e.g. "Dragon Radar: 4-star (nearest), Close" or, for a ball the holder picked, "Dragon Radar: 4-star, Close". */
+    static Component readingName(BallSet set, RadarReading reading) {
+        Component name = Component.text(displayName(set), NamedTextColor.GOLD)
+                .append(Component.text(": ", NamedTextColor.GRAY))
+                .append(Component.text(reading.star() + "-star", NamedTextColor.YELLOW));
+        if (!reading.picked()) {
+            name = name.append(Component.text(" (nearest)", NamedTextColor.GRAY));
+        }
+        return name.append(Component.text(", ", NamedTextColor.GRAY))
+                .append(Component.text(reading.band().word(), reading.band().color()))
+                .decoration(TextDecoration.ITALIC, false);
+    }
+
+    static String activeModel(BallSet set, RadarBand band) {
+        String base = switch (set) {
             case OVERWORLD -> ACTIVE_MODEL;
             case NETHER -> "dragon_radar_nether";
             case END -> "dragon_radar_end";
         };
+        return base + band.modelSuffix();
     }
 
     private static String idleModel(BallSet set) {

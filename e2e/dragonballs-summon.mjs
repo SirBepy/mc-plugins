@@ -80,6 +80,41 @@ try {
     await waitFor(() => hunter.spawnPoint && Math.floor(hunter.spawnPoint.x) === target.x
       && Math.floor(hunter.spawnPoint.z) === target.z, 'compass target moved to the lone active ball', 4_000);
 
+    // The radar names the ball and the distance band. DBHunter carries every other star, which its
+    // own radar never counts, so the lone ball is the only one in sight.
+    // The whole name component outruns RCON's reply cap, so read its parts' text one at a time.
+    const radarName = async () => {
+      let name = '';
+      for (let i = 0; i < 5; i++) {
+        const out = plain(await rcon.command(`minecraft:data get entity ${HUNTER} SelectedItem.components."minecraft:custom_name".extra[${i}].text`));
+        name += out.match(/entity data: "(.*)"\s*$/)?.[1] ?? '';
+      }
+      return name;
+    };
+    const radarModel = async () => plain(await rcon.command(`minecraft:data get entity ${HUNTER} SelectedItem.components."minecraft:custom_model_data"`));
+    // On the target's own 3x3 stone pad (off it is a 200-block drop), beside the witness.
+    await teleport(rcon, hunter, target.x + 1, target.y + 1, target.z - 1);
+    await waitFor(async () => (await radarModel()).includes('dragon_radar_here'), 'a ball a block away shows the "here" band', 4_000);
+    let lastName = '';
+    await waitFor(async () => {
+      lastName = await radarName();
+      return lastName.includes(`${radarStar}-star`) && lastName.includes('(nearest)') && lastName.includes('Right here');
+    }, `radar is named after the nearest ${radarStar}-star and its band`, 4_000)
+      .catch((e) => { throw new Error(`${e.message} (last name: ${lastName})`); });
+
+    // Sneak + right-click into the open sky: the first click pins that ball, the next (it is the
+    // only one) goes back to nearest.
+    await hunter.look(0, Math.PI / 2, true);
+    hunter.setControlState('sneak', true);
+    await sleep(300);
+    hunter.activateItem();
+    hunter.deactivateItem();
+    await waitFor(async () => !(await radarName()).includes('(nearest)'), 'sneak + right-click pins the ball', 4_000);
+    hunter.activateItem();
+    hunter.deactivateItem();
+    await waitFor(async () => (await radarName()).includes('(nearest)'), 'a second click is back on nearest', 4_000);
+    hunter.setControlState('sneak', false);
+
     // Clean up: hit it back up, return to DBHunter.
     const lone = ballHitbox(witness, target.x, target.y + 1, target.z);
     if (lone) witness.attack(lone);
