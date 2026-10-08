@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 // Shared setup and helpers for the three Dragon Balls suites: dragonballs.mjs (ball lifecycle),
 // dragonballs-summon.mjs (radar, summon and the stone phase, overworld set only) and
-// dragonballs-sets.mjs (the Nether/End sets, cross-dimension guard, and the underground scatter
+// dragonballs-sets.mjs (the Nether/End sets, cross-dimension guard, and the structure scatter
 // check). Rules and the console protocol: docs/dragonballs.md.
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const configPath = path.join(here, '..', 'testserver', 'run-e2e', 'plugins', 'DragonBalls', 'config.yml');

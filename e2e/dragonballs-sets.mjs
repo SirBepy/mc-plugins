@@ -14,7 +14,7 @@ const SUMMON_CEILING_HEIGHT = 10;
 // Dragon Balls, the Nether/End sets: status across all 3 sets, buying the Nether/End radars (price
 // and look), the cross-dimension "stays behind" guard, a real Nether summon (wrong-set radar
 // refused and not spent, a matching debug-summon starts it, a second set is refused while one is
-// active, dismiss re-scatters only that set) and the overworld scatter's underground placements.
+// active, dismiss re-scatters only that set) and the overworld scatter's structure placements.
 // Overworld lifecycle/radar/summon: dragonballs.mjs / dragonballs-summon.mjs. Rules and the console
 // protocol: docs/dragonballs.md.
 const {
@@ -283,31 +283,24 @@ try {
     await rcon.command('dragonballs reload');
   });
 
-  // --- 5. overworld scatter: at least one star lands underground, verified via the placement log ----
-  await step('dragonballs scatter puts at least one overworld ball underground', async () => {
-    let undergroundLine = null;
-    for (let attempt = 0; attempt < 5 && !undergroundLine; attempt++) {
-      const logSizeBefore = fs.existsSync(logPath) ? fs.statSync(logPath).size : 0;
-      await rcon.command('dragonballs scatter');
-      try {
-        await waitFor(() => {
-          if (!fs.existsSync(logPath)) return false;
-          const added = fs.readFileSync(logPath, 'utf8').slice(logSizeBefore);
-          return (added.match(/\[DragonBalls\] Placed overworld \d-star/g) ?? []).length >= 7;
-        }, `scatter attempt ${attempt + 1} placed all 7 overworld stars`, 30_000);
-      } catch (timeout) {
-        // A star failed to find a spot (rare, logged as a WARNING rather than a placement line);
-        // this attempt won't have an underground line either, so just try scattering again.
-        console.log(`  ${timeout.message}; retrying`);
-        continue;
-      }
+  // --- 5. overworld scatter: every star lands inside a structure, verified via the placement log ---
+  await step('dragonballs scatter puts every overworld ball inside a structure', async () => {
+    const logSizeBefore = fs.existsSync(logPath) ? fs.statSync(logPath).size : 0;
+    await rcon.command('dragonballs scatter');
+    const placedLines = () => {
+      if (!fs.existsSync(logPath)) return [];
       const added = fs.readFileSync(logPath, 'utf8').slice(logSizeBefore);
-      const match = added.match(/\[DragonBalls\] Placed overworld (\d)-star at (\S+) (-?\d+) (-?\d+) (-?\d+) \(underground\)/);
-      if (match) undergroundLine = match[0];
-    }
-    assert(undergroundLine,
-      'at least one overworld scatter (5 tries) logged an underground placement - none did; see the suite output above for what every attempt actually logged');
-    console.log(`  underground placement seen: ${undergroundLine}`);
+      return added.match(/\[DragonBalls\] Placed overworld \d-star at .*/g) ?? [];
+    };
+    // The 7 stars search one after another, a couple of structure lookups per tick each.
+    await waitFor(() => placedLines().length >= 7, 'all 7 overworld stars placed', 90_000);
+    const lines = placedLines();
+    lines.forEach((line) => console.log(`  ${line}`));
+    const inStructures = lines.filter((line) => /\(structure \S+\)/.test(line));
+    // A plain-ground fallback is legitimate when no listed structure fits the ring even widened,
+    // so one is tolerated; more means the structure search itself is broken.
+    assert(inStructures.length >= 6,
+      `at least 6 of 7 overworld balls landed in a structure (got ${inStructures.length}; lines above)`);
   });
 
   await finish();

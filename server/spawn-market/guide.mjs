@@ -68,7 +68,7 @@ export const GUIDES = {
     title: 'Dragon Balls',
     pages: [
       'Three sets of 7 Dragon Balls, 1 to 7 stars: orange in the Overworld, red in the Nether, purple in the End.\n\nGather one full set to summon a dragon.',
-      'Balls sit on the ground as heads. Some hide in villages and ruins, some at the bottom of a hole.\n\nBreak one, pick it up.\n\nThe End set sleeps until the End opens.',
+      'Balls hide inside structures: in a room, on a roof or a street of a village, tower, ruin or dungeon. Nether and End balls sit in guarded places full of mobs.\n\nBreak one, pick it up.\n\nThe End set sleeps until the End opens.',
       "Carrying rules:\nEach ball slows you 5% (all 7: 35%).\n\nNo chests, ender chests, shulkers, bundles, hoppers or item frames - and you can't wear one.",
       'Die and your balls drop where you fell, never your grave.\n\nLog off and they drop where you stood.\n\nLava or the void sends them flying off again.',
       'A ball never leaves its own world: go through a portal (or /home, /spawn) and it stays behind where you left.',
