@@ -2,31 +2,19 @@ package dev.sirbepy.mc.market;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import org.bukkit.Material;
-import org.bukkit.block.Block;
-import org.bukkit.block.Lectern;
-import org.bukkit.block.data.Directional;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.BookMeta;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.mockbukkit.mockbukkit.MockBukkit;
-import org.mockbukkit.mockbukkit.ServerMock;
-import org.mockbukkit.mockbukkit.world.WorldMock;
 
-import java.io.File;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.function.Function;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,16 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PriceListTest {
 
-    @TempDir
-    File dir;
-
-    private ServerMock server;
     private MarketLayout layout;
     private MarketConfig config;
 
     @BeforeEach
     void setUp() {
-        server = MockBukkit.mock();
+        MockBukkit.mock();
         layout = MarketLayout.load(Objects.requireNonNull(getClass().getResourceAsStream("/stalls.yml")));
         var stream = Objects.requireNonNull(getClass().getResourceAsStream("/config.yml"));
         config = new MarketConfig(YamlConfiguration.loadConfiguration(new InputStreamReader(stream, StandardCharsets.UTF_8)));
@@ -116,25 +100,6 @@ class PriceListTest {
         assertEquals(List.of("Today the spawn market buys:",
                 "Lumberjack: 64 dark oak log $13.90, 64 warped stem $36.01",
                 "Smith: 16 diamond $150.00"), lines);
-    }
-
-    // MockBukkit has no lectern block state, so this skips under unit tests; e2e/market.mjs checks the real one.
-    @Test
-    void applyPutsThePriceBookOnTheLectern() {
-        WorldMock world = server.addSimpleWorld("world");
-        Stall.Slot spot = layout.priceLectern();
-
-        new Market(layout, () -> config, () -> "minecraft-day-1", new Random(1), new File(dir, "state.yml"),
-                Logger.getLogger("market-test")).apply(world);
-
-        Block block = world.getBlockAt(spot.x(), spot.y(), spot.z());
-        assertEquals(Material.LECTERN, block.getType());
-        assertEquals(spot.facing(), ((Directional) block.getBlockData()).getFacing());
-        ItemStack book = ((Lectern) block.getState()).getInventory().getItem(0);
-        assertNotNull(book, "the lectern holds a book");
-        BookMeta meta = (BookMeta) book.getItemMeta();
-        assertEquals("Market prices", plain(Objects.requireNonNull(meta.title())));
-        assertEquals(PriceList.pages(layout, config).size(), meta.getPageCount());
     }
 
     @Test

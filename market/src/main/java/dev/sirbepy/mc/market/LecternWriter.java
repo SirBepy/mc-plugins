@@ -7,7 +7,10 @@ import org.bukkit.block.Lectern;
 import org.bukkit.block.data.Directional;
 import org.bukkit.inventory.ItemStack;
 
-/** Keeps the price book on the Guide stall's lectern, placing the lectern if it is missing. */
+/**
+ * Keeps the price book on the Guide stall's lectern, placing the lectern if it is missing.
+ * MockBukkit has no lectern block state, so e2e/market.mjs is the only test of this class.
+ */
 final class LecternWriter {
 
     private LecternWriter() {
