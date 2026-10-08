@@ -59,6 +59,16 @@ test('the price lectern is an empty lectern labelled Prices that nothing else bu
   assert.match(at(2)[0], /hanging_sign.*"Prices"/);
 });
 
+test('the Head collector spot is open floor the plugin can stand its NPC on', () => {
+  const m = readFileSync(join(here, '..', '..', 'market', 'src', 'main', 'resources', 'stalls.yml'), 'utf8')
+    .match(/^head-collector: \{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: (\w+)\}$/m);
+  assert.ok(m, 'stalls.yml has no head-collector');
+  const [, x, y, z] = m;
+  const at = (dy) => all.filter((l) => l.startsWith(`setblock ${x} ${Number(y) + dy} ${z} `));
+  assert.equal(at(-1).length, 1, 'something to stand on');
+  assert.deepEqual([...at(0), ...at(1)], [], 'two blocks of headroom');
+});
+
 test('every sign line fits on the sign', () => {
   for (const l of lines('attach').filter((l) => l.includes('_sign'))) {
     const max = l.includes('hanging_sign') ? 10 : 15; // hanging signs are narrower

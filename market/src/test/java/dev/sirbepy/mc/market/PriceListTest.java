@@ -26,11 +26,13 @@ class PriceListTest {
 
     private MarketLayout layout;
     private MarketConfig config;
+    private MobHeads heads;
 
     @BeforeEach
     void setUp() {
         MockBukkit.mock();
         layout = MarketLayout.load(Objects.requireNonNull(getClass().getResourceAsStream("/stalls.yml")));
+        heads = MobHeads.load(Objects.requireNonNull(getClass().getResourceAsStream("/heads.yml")));
         var stream = Objects.requireNonNull(getClass().getResourceAsStream("/config.yml"));
         config = new MarketConfig(YamlConfiguration.loadConfiguration(new InputStreamReader(stream, StandardCharsets.UTF_8)));
     }
@@ -68,11 +70,12 @@ class PriceListTest {
         assertEquals(List.of("Farmer", "Lumberjack", "Fishmonger", "Smith", "Mob drops", "Rare goods"),
                 layout.stalls().stream().map(Stall::name).toList());
         assertNotNull(layout.priceLectern(), "stalls.yml has a price-lectern");
+        assertNotNull(layout.headCollector(), "stalls.yml has a head-collector spot");
     }
 
     @Test
     void bookListsEveryStallItemAtItsBasePriceOnPagesThatFit() {
-        List<Component> pages = PriceList.pages(layout, config);
+        List<Component> pages = PriceList.pages(layout, heads, config);
         assertTrue(plain(pages.getFirst()).contains("20%"), plain(pages.getFirst()));
         String all = pages.stream().map(PriceListTest::plain).collect(Collectors.joining("\n"));
         for (Stall stall : layout.stalls()) {
@@ -84,6 +87,11 @@ class PriceListTest {
         }
         assertTrue(all.contains("Dark oak log\n  64 for $14.40"), "a tall log at half the $28.80 a normal log pays");
         assertTrue(all.contains("Wither skeleton skull\n  1 for $20.00"), "the withersskull sign alias spelled out");
+        for (MobHeads.Mob mob : heads.mobs()) {
+            assertTrue(all.contains(PriceList.headsName(mob) + "\n  1 for "), mob.id());
+        }
+        assertTrue(all.contains("Head collector\nAllay head\n  1 for $2.50"), "the collector's pages start with a heading");
+        assertTrue(all.contains("Axolotl heads\n  1 for $0.50 to $2.50"), "a mob with several looks shows its range");
         for (Component page : pages.subList(1, pages.size())) {
             assertTrue(plain(page).split("\n").length <= 14, plain(page));
         }
@@ -98,12 +106,22 @@ class PriceListTest {
                 "rare_goods", List.of(new Offer("withersskull", 1, new BigDecimal("21.5"))));
         Function<String, List<Offer>> buying = id -> picks.getOrDefault(id, List.of());
 
-        List<String> lines = PriceList.today(layout, buying, config).stream().map(PriceListTest::plain).toList();
+        List<MobHeads.Mob> wanted = List.of(heads.mob("breeze"), heads.mob("axolotl"));
+        Function<MobHeads.Head, BigDecimal> headPrice = h -> h.price().multiply(new BigDecimal("1.1"));
+
+        List<String> lines = PriceList.today(layout, buying, wanted, headPrice, config).stream().map(PriceListTest::plain).toList();
 
         assertEquals(List.of("Today the spawn market buys:",
-                "Lumberjack: 64 dark oak log $13.90, 64 warped stem $36.01",
-                "Smith: 16 diamond $150.00",
-                "Rare goods: 1 wither skeleton skull $21.50"), lines);
+                "Lumberjack",
+                " - 64 dark oak log $13.90",
+                " - 64 warped stem $36.01",
+                "Smith",
+                " - 16 diamond $150.00",
+                "Rare goods",
+                " - 1 wither skeleton skull $21.50",
+                "Head collector",
+                " - Breeze head $5.50",
+                " - Axolotl heads $0.55 to $2.75"), lines);
     }
 
     @Test

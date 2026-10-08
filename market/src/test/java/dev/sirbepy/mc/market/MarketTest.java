@@ -50,11 +50,13 @@ class MarketTest {
     private final AtomicReference<String> period = new AtomicReference<>("minecraft-day-100");
     private MarketLayout layout;
     private MarketConfig config;
+    private MobHeads heads;
 
     @BeforeEach
     void setUp() {
         server = MockBukkit.mock();
         layout = MarketLayout.load(Objects.requireNonNull(getClass().getResourceAsStream("/stalls.yml")));
+        heads = MobHeads.load(Objects.requireNonNull(getClass().getResourceAsStream("/heads.yml")));
         var stream = Objects.requireNonNull(getClass().getResourceAsStream("/config.yml"));
         config = new MarketConfig(YamlConfiguration.loadConfiguration(new InputStreamReader(stream, StandardCharsets.UTF_8)));
     }
@@ -65,7 +67,7 @@ class MarketTest {
     }
 
     private Market market(long seed) {
-        return new Market(layout, () -> config, period::get, new Random(seed), new File(dir, "state.yml"), LOG);
+        return new Market(layout, heads, () -> config, period::get, new Random(seed), new File(dir, "state.yml"), LOG);
     }
 
     @Test
@@ -261,6 +263,30 @@ class MarketTest {
     }
 
     @Test
+    void headCollectorWantsAFewMobsADayAtRolledPricesThatSurviveARestart() {
+        Market market = market(3);
+        market.refresh();
+        List<MobHeads.Mob> wanted = market.wantedMobs();
+        assertEquals(config.headsPerDay(), wanted.size());
+        assertEquals(wanted.size(), new HashSet<>(wanted).size(), "distinct mobs");
+        for (MobHeads.Mob mob : wanted) {
+            for (MobHeads.Head head : mob.heads()) {
+                BigDecimal price = market.headPrice(head);
+                assertTrue(price.compareTo(head.price().multiply(new BigDecimal("0.8")).setScale(2, java.math.RoundingMode.HALF_UP)) >= 0
+                        && price.compareTo(head.price().multiply(new BigDecimal("1.2")).setScale(2, java.math.RoundingMode.HALF_UP)) <= 0,
+                        head.name() + " " + price);
+            }
+        }
+        MobHeads.Mob unwanted = heads.mobs().stream().filter(m -> !wanted.contains(m)).findFirst().orElseThrow();
+        assertEquals(null, market.headPrice(unwanted.heads().getFirst()), "a mob not wanted today has no price");
+
+        Market restarted = market(99);
+        assertFalse(restarted.refresh(), "same day");
+        assertEquals(wanted, restarted.wantedMobs());
+        assertEquals(market.headPrice(wanted.getFirst().heads().getFirst()), restarted.headPrice(wanted.getFirst().heads().getFirst()));
+    }
+
+    @Test
     void priceTextMatchesTheSignFormat() {
         assertEquals("$3.2", new Offer("wheat", 64, new BigDecimal("3.20")).priceText());
         assertEquals("$16", new Offer("iron_ingot", 64, new BigDecimal("16.0")).priceText());
@@ -298,7 +324,7 @@ class MarketTest {
     void applyUsesTodaysPicksForEveryStall() {
         WorldMock world = server.addSimpleWorld("world");
         // MockBukkit has no lectern block state, so this test leaves the price lectern to e2e/market.mjs.
-        layout = new MarketLayout(layout.signBlock(), null, layout.stalls());
+        layout = new MarketLayout(layout.signBlock(), null, null, layout.stalls());
         Market market = market(5);
         market.refresh();
         market.apply(world);

@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -24,13 +25,15 @@ import java.util.logging.Logger;
  * The current market day's buyers per stall, each at a price rolled around its base. A market day is
  * whatever the {@code period} supplier says (an in-game day by default). Picks and prices are random
  * and saved to {@code state.yml}, so a restart keeps the day's market and nothing about the next one
- * can be worked out in advance.
+ * can be worked out in advance. The Head collector's wanted mobs rotate with the stalls, each with
+ * its own price factor for the day.
  */
 public final class Market {
 
     private static final BigDecimal MIN_PRICE = new BigDecimal("0.01");
 
     private final MarketLayout layout;
+    private final MobHeads heads;
     private final Supplier<MarketConfig> config;
     private final Supplier<String> period;
     private final Random random;
@@ -39,10 +42,12 @@ public final class Market {
 
     private String day;
     private Map<String, List<Offer>> picks = Map.of();
+    private Map<String, BigDecimal> headFactors = Map.of();
 
-    public Market(MarketLayout layout, Supplier<MarketConfig> config, Supplier<String> period, Random random,
-                  File stateFile, Logger logger) {
+    public Market(MarketLayout layout, MobHeads heads, Supplier<MarketConfig> config, Supplier<String> period,
+                  Random random, File stateFile, Logger logger) {
         this.layout = layout;
+        this.heads = heads;
         this.config = config;
         this.period = period;
         this.random = random;
@@ -74,16 +79,48 @@ public final class Market {
             chosen.sort(Comparator.comparingInt(stall.buys()::indexOf));
             next.put(stall.id(), chosen.stream().map(o -> roll(o, cfg.priceSpread())).toList());
         }
+        // After the stalls, so a seed's stall picks don't depend on the head catalogue.
+        List<MobHeads.Mob> mobs = new ArrayList<>(heads.mobs());
+        Collections.shuffle(mobs, random);
+        List<MobHeads.Mob> wanted = new ArrayList<>(mobs.subList(0, Math.min(cfg.headsPerDay(), mobs.size())));
+        wanted.sort(Comparator.comparingInt(heads.mobs()::indexOf));
+        Map<String, BigDecimal> factors = new LinkedHashMap<>();
+        for (MobHeads.Mob mob : wanted) {
+            factors.put(mob.id(), BigDecimal.valueOf(factor(cfg.priceSpread())).setScale(4, RoundingMode.HALF_UP));
+        }
         day = period.get();
         picks = next;
+        headFactors = factors;
         save();
     }
 
-    /** The offer at its base price times a uniform factor in [1 - spread, 1 + spread], to the cent, never below $0.01. */
+    /** A uniform factor in [1 - spread, 1 + spread]. */
+    private double factor(double spread) {
+        return 1 + spread * (2 * random.nextDouble() - 1);
+    }
+
+    /** The offer at its base price times a {@link #factor}, to the cent, never below $0.01. */
     private Offer roll(Offer offer, double spread) {
-        double factor = 1 + spread * (2 * random.nextDouble() - 1);
-        BigDecimal price = offer.price().multiply(BigDecimal.valueOf(factor)).setScale(2, RoundingMode.HALF_UP);
-        return new Offer(offer.item(), offer.amount(), price.max(MIN_PRICE));
+        return new Offer(offer.item(), offer.amount(), scaled(offer.price(), BigDecimal.valueOf(factor(spread))));
+    }
+
+    private static BigDecimal scaled(BigDecimal base, BigDecimal factor) {
+        return base.multiply(factor).setScale(2, RoundingMode.HALF_UP).max(MIN_PRICE);
+    }
+
+    /** Today's wanted mobs for the Head collector, in catalogue order. */
+    public List<MobHeads.Mob> wantedMobs() {
+        return headFactors.keySet().stream().map(heads::mob).filter(Objects::nonNull).toList();
+    }
+
+    /** What the Head collector pays today for one of this head, or null when its mob isn't wanted today. */
+    public BigDecimal headPrice(MobHeads.Head head) {
+        BigDecimal factor = headFactors.get(head.mob());
+        return factor == null ? null : scaled(head.price(), factor);
+    }
+
+    public MobHeads heads() {
+        return heads;
     }
 
     /** Writes today's buyers onto every stall's signs, clears the unused sign spots and refreshes the price book's lectern. */
@@ -92,7 +129,7 @@ public final class Market {
             SignWriter.write(world, layout.signBlock(), stall, picks.getOrDefault(stall.id(), List.of()));
         }
         if (layout.priceLectern() != null) {
-            LecternWriter.write(world, layout.priceLectern(), PriceList.book(layout, config.get()));
+            LecternWriter.write(world, layout.priceLectern(), PriceList.book(layout, heads, config.get()));
         }
     }
 
@@ -137,6 +174,21 @@ public final class Market {
             loaded.put(stall.id(), List.copyOf(offers));
         }
         picks = loaded;
+        Map<String, BigDecimal> factors = new LinkedHashMap<>();
+        ConfigurationSection saved = yaml.getConfigurationSection("heads");
+        // A mob dropped from the catalogue since the pick just stops being wanted.
+        for (MobHeads.Mob mob : heads.mobs()) {
+            String factor = saved == null ? null : saved.getString(mob.id());
+            if (factor != null) {
+                try {
+                    factors.put(mob.id(), new BigDecimal(factor));
+                } catch (NumberFormatException e) {
+                    logger.warning("Bad head price factor for " + mob.id() + " in " + stateFile + "; using its base price");
+                    factors.put(mob.id(), BigDecimal.ONE);
+                }
+            }
+        }
+        headFactors = factors;
     }
 
     private void save() {
@@ -147,6 +199,7 @@ public final class Market {
                 yaml.set("buying." + entry.getKey() + "." + offer.item(), offer.price().toPlainString());
             }
         }
+        headFactors.forEach((mob, factor) -> yaml.set("heads." + mob, factor.toPlainString()));
         try {
             YamlFiles.saveAtomically(yaml, stateFile);
         } catch (IOException e) {

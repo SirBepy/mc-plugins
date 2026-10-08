@@ -96,6 +96,7 @@ export function emit(model, { MARKET }) {
     '# The Market plugin picks a few of each stall\'s buys every day and writes them onto its slots.',
     'sign-block: spruce_wall_sign',
     ...(MARKET.priceLectern ? [`price-lectern: {x: ${MARKET.priceLectern.x}, y: ${MARKET.priceLectern.y}, z: ${MARKET.priceLectern.z}, facing: ${MARKET.priceLectern.facing}}`] : []),
+    ...(MARKET.headCollector ? [`head-collector: {x: ${MARKET.headCollector.x}, y: ${MARKET.headCollector.y}, z: ${MARKET.headCollector.z}, facing: ${MARKET.headCollector.facing}}`] : []),
     'stalls:',
     ...MARKET.stalls.flatMap(({ id, name, color, slots, buys }) => [
       `  ${id}:`,

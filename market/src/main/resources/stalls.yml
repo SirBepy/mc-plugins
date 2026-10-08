@@ -2,6 +2,7 @@
 # The Market plugin picks a few of each stall's buys every day and writes them onto its slots.
 sign-block: spruce_wall_sign
 price-lectern: {x: 415, y: 115, z: -865, facing: north}
+head-collector: {x: 430, y: 115, z: -856, facing: north}
 stalls:
   farmer:
     name: Farmer

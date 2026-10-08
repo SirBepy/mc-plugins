@@ -64,6 +64,10 @@ export function buildStalls(model, { GUIDES, lecternState }) {
         // diamond's price (heads added at Joe's request, 2026-10-08). Never player_head: the cartel's trophies and every
         // custom head (Dragon Balls included) are player heads, and MarketLayout refuses one.
         ...['zombie_head', 'skeleton_skull', 'creeper_head', 'piglin_head'].map((head) => buy(1, head, 10))],
+      // The Market plugin's Head collector NPC stands here, under the eaves at the open front, and
+      // buys More Mob Heads' textured heads that no [Sell] sign can take. Only the spot is exported:
+      // the plugin spawns the NPC, so the floor stays empty here.
+      headCollector: [5, 0],
       props: [['bone_block[axis=y]', -1, 1], ['bone_block[axis=AXIS]', -1, 2], ['skeleton_skull[rotation=0]', -1, 1, 1],
         ['barrel[facing=up]', 5, 1]],
     },
@@ -137,12 +141,13 @@ export function buildStalls(model, { GUIDES, lecternState }) {
     },
   ];
 
-  // Market plugin sign spots per selling stall and its price-book lectern, in absolute coordinates.
-  const MARKET = { stalls: [], priceLectern: null };
+  // Market plugin sign spots per selling stall, its price-book lectern and the Head collector's
+  // spot, in absolute coordinates.
+  const MARKET = { stalls: [], priceLectern: null, headCollector: null };
 
   // A 5-wide, 3-deep open-front stall: a (0..4) along the side, d (0..3) away from the plaza,
   // back wall at d = 3.
-  function stall({ id, side: sideName, a0, name, wool, buys = [], props, stations = [], guides = [], priceLectern }) {
+  function stall({ id, side: sideName, a0, name, wool, buys = [], props, stations = [], guides = [], priceLectern, headCollector }) {
     const S = side(sideName);
     const at = (a, d, y, state, phase) => { const [u, v] = S.at(a0 + a, d); set(u, y, v, state, phase); };
     const inward = S.inward;
@@ -198,6 +203,11 @@ export function buildStalls(model, { GUIDES, lecternState }) {
       const facing = lectern(a, d, 'Prices', (f) => `lectern[facing=${f}]`);
       const [u, v] = S.at(a0 + a, d);
       MARKET.priceLectern = { x: CX + u, y: Y + 1, z: CZ + v, facing };
+    }
+    if (headCollector) {
+      // Faces the plaza, like the [Sell] signs.
+      const [u, v] = S.at(a0 + headCollector[0], headCollector[1]);
+      MARKET.headCollector = { x: CX + u, y: Y + 1, z: CZ + v, facing: inward };
     }
     if (buys.length) {
       const slots = [1, 2, 3].map((a) => {

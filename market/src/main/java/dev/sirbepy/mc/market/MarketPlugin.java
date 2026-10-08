@@ -2,7 +2,9 @@ package dev.sirbepy.mc.market;
 
 import com.mojang.brigadier.Command;
 import io.papermc.paper.command.brigadier.Commands;
+import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import net.milkbowl.vault.economy.Economy;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -24,6 +26,7 @@ public final class MarketPlugin extends JavaPlugin {
 
     private final AtomicReference<MarketConfig> config = new AtomicReference<>();
     private Market market;
+    private HeadCollector collector;
 
     @Override
     public void onEnable() {
@@ -39,8 +42,16 @@ public final class MarketPlugin extends JavaPlugin {
         } catch (Exception e) {
             throw new IllegalStateException("Could not load stalls.yml", e);
         }
-        market = new Market(layout, config::get, this::period, new SecureRandom(),
+        MobHeads heads;
+        try (InputStream stream = Objects.requireNonNull(getResource("heads.yml"), "heads.yml missing from the jar")) {
+            heads = MobHeads.load(stream);
+        } catch (Exception e) {
+            throw new IllegalStateException("Could not load heads.yml", e);
+        }
+        market = new Market(layout, heads, config::get, this::period, new SecureRandom(),
                 new File(getDataFolder(), "state.yml"), getLogger());
+        collector = new HeadCollector(this, market, config::get, BedrockForms.create(this)::isBedrock, this::pay);
+        getServer().getPluginManager().registerEvents(collector, this);
         PriceCommand price;
         try (InputStream stream = Objects.requireNonNull(getResource("prices.yml"), "prices.yml missing from the jar")) {
             price = new PriceCommand(PriceBook.load(stream), config::get, ItemStack::effectiveName);
@@ -56,6 +67,10 @@ public final class MarketPlugin extends JavaPlugin {
             if (market.refresh()) {
                 applyIfWorldLoaded();
                 config.get().messages().send(getServer(), "rotated");
+            }
+            World world = getServer().getWorld(config.get().world());
+            if (world != null) {
+                collector.ensure(world);
             }
         }, CHECK_TICKS, CHECK_TICKS);
 
@@ -75,7 +90,7 @@ public final class MarketPlugin extends JavaPlugin {
                         .then(Commands.literal("prices")
                                 .requires(src -> src.getExecutor() instanceof Player)
                                 .executes(ctx -> {
-                                    ((Player) ctx.getSource().getExecutor()).openBook(PriceList.book(market.layout(), config.get()));
+                                    ((Player) ctx.getSource().getExecutor()).openBook(PriceList.book(market.layout(), market.heads(), config.get()));
                                     return Command.SINGLE_SUCCESS;
                                 }))
                         .then(Commands.literal("rotate")
@@ -98,8 +113,19 @@ public final class MarketPlugin extends JavaPlugin {
     }
 
     private int today(CommandSender sender) {
-        PriceList.today(market.layout(), market::buying, config.get()).forEach(sender::sendMessage);
+        PriceList.today(market.layout(), market::buying, market.wantedMobs(), market::headPrice, config.get())
+                .forEach(sender::sendMessage);
         return Command.SINGLE_SUCCESS;
+    }
+
+    /** Pays through whatever classic Vault Economy is registered (VaultUnlocked on the server), looked up on each sale. */
+    private boolean pay(Player player, double amount) {
+        var registration = getServer().getServicesManager().getRegistration(Economy.class);
+        if (registration == null) {
+            getLogger().warning("Head collector: no Vault Economy provider registered; nothing bought.");
+            return false;
+        }
+        return registration.getProvider().depositPlayer(player, amount).transactionSuccess();
     }
 
     // stalls.yml and prices.yml ship inside the jar, so only config.yml can change without a restart.

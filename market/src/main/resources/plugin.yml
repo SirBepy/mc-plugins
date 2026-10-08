@@ -3,6 +3,8 @@ version: ${version}
 main: dev.sirbepy.mc.market.MarketPlugin
 api-version: "26.2"
 author: sirbepy
+# The Head collector pays through Vault and shows Bedrock players (Floodgate) their own body.
+softdepend: [Vault, VaultUnlocked, floodgate]
 
 permissions:
   market.price:

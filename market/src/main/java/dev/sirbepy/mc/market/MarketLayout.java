@@ -16,10 +16,10 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * The generated {@code stalls.yml}: sign block type, the price-book lectern's spot (null when the
- * file has none) and every stall, in file order.
+ * The generated {@code stalls.yml}: sign block type, the price-book lectern's and the Head collector's
+ * spots (each null when the file has none) and every stall, in file order.
  */
-public record MarketLayout(Material signBlock, Stall.Slot priceLectern, List<Stall> stalls) {
+public record MarketLayout(Material signBlock, Stall.Slot priceLectern, Stall.Slot headCollector, List<Stall> stalls) {
 
     public static MarketLayout load(InputStream stream) {
         return from(YamlConfiguration.loadConfiguration(new InputStreamReader(stream, StandardCharsets.UTF_8)));
@@ -30,9 +30,8 @@ public record MarketLayout(Material signBlock, Stall.Slot priceLectern, List<Sta
         if (signBlock == null) {
             throw new IllegalArgumentException("Unknown sign-block in stalls.yml: " + root.getString("sign-block"));
         }
-        ConfigurationSection lectern = root.getConfigurationSection("price-lectern");
-        Stall.Slot priceLectern = lectern == null ? null : new Stall.Slot(lectern.getInt("x"), lectern.getInt("y"),
-                lectern.getInt("z"), BlockFace.valueOf(lectern.getString("facing", "north").toUpperCase(Locale.ROOT)));
+        Stall.Slot priceLectern = spot(root.getConfigurationSection("price-lectern"));
+        Stall.Slot headCollector = spot(root.getConfigurationSection("head-collector"));
         List<Stall> stalls = new ArrayList<>();
         ConfigurationSection section = root.getConfigurationSection("stalls");
         if (section != null) {
@@ -59,7 +58,12 @@ public record MarketLayout(Material signBlock, Stall.Slot priceLectern, List<Sta
                 stalls.add(new Stall(id, stall.getString("name", id), color, List.copyOf(slots), List.copyOf(buys)));
             }
         }
-        return new MarketLayout(signBlock, priceLectern, List.copyOf(stalls));
+        return new MarketLayout(signBlock, priceLectern, headCollector, List.copyOf(stalls));
+    }
+
+    private static Stall.Slot spot(ConfigurationSection section) {
+        return section == null ? null : new Stall.Slot(section.getInt("x"), section.getInt("y"), section.getInt("z"),
+                BlockFace.valueOf(section.getString("facing", "north").toUpperCase(Locale.ROOT)));
     }
 
     /**
