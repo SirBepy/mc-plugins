@@ -14,6 +14,7 @@ import dev.sirbepy.mc.tweaks.seagifts.SeaGifts;
 import dev.sirbepy.mc.tweaks.seagifts.SeaGiftsCommand;
 import dev.sirbepy.mc.tweaks.seagifts.SeaGiftsStore;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import org.bukkit.configuration.Configuration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -69,8 +70,19 @@ public final class TweaksPlugin extends JavaPlugin {
     }
 
     private UUID ownerAt(String path) {
+        return ownerAt(getConfig(), path);
+    }
+
+    /**
+     * saveDefaultConfig() never touches an existing config.yml, so a live file older than a wish lacks its
+     * owner key. getString(path) without a fallback reads the jar's config.yml defaults for it; an explicit
+     * fallback would skip them and leave the wish with no owner.
+     */
+    static UUID ownerAt(Configuration config, String path) {
+        String value = config.getString(path);
+        if (value == null) return null;
         try {
-            return UUID.fromString(getConfig().getString(path, ""));
+            return UUID.fromString(value);
         } catch (IllegalArgumentException e) {
             return null;
         }
