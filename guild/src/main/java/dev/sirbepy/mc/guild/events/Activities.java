@@ -108,7 +108,11 @@ final class Activities {
         ConfigurationSection section = state().getConfigurationSection("activity.score");
         if (section != null) {
             for (String key : section.getKeys(false)) {
-                scores.put(UUID.fromString(key), section.getInt(key));
+                try {
+                    scores.put(UUID.fromString(key), section.getInt(key));
+                } catch (IllegalArgumentException ignored) {
+                    // a hand-edited key; skip it
+                }
             }
         }
         int best = scores.values().stream().mapToInt(Integer::intValue).max().orElse(0);

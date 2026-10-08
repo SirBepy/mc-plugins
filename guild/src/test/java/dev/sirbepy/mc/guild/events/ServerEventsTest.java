@@ -146,6 +146,21 @@ class ServerEventsTest extends GuildTestBase {
     }
 
     @Test
+    void aHandEditedActivityScoreKeyIsSkipped() {
+        join(alice);
+        join(gm);
+        events().startActivity(gm, ServerEvents.ActivityKind.FISH, 100, 30);
+        guild.progress(alice, Objective.Kind.FISH, Set.of("COD"), 3);
+        store.events().set("activity.score.not-a-uuid", 50);
+        double before = bank.balance(alice);
+        clock.plusHours(1);
+        events().tick();
+
+        assertEquals(null, events().activity());
+        assertEquals(before + 100, bank.balance(alice));
+    }
+
+    @Test
     void eventStateSurvivesASave() {
         Member member = join(alice);
         member.setRank(Rank.A);
