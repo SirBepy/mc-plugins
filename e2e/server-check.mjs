@@ -239,6 +239,16 @@ report('Towny default wild regen excludes TNT', !/\bTNT(_MINECART)?\b/.test(rege
 const worldRegen = fs.readFileSync(path.join(localDir, 'plugins/Towny/data/worlds/world.txt'), 'utf8')
   .match(/^PlotManagementWildRegenEntities=(.*)$/m)?.[1] ?? '';
 report('Towny world wild regen excludes TNT', !/\btnt(_minecart)?\b/i.test(worldRegen), worldRegen);
+// Bed and respawn anchor bombs (mining ancient debris) stay blown up too: block explosions are only
+// ever those two, always player-made, so their wild revert is off in every world.
+const blockRevertDefault = townyConfig.match(/wild_revert_on_block_explosion:[\s\S]*?enabled: '(\w+)'/)?.[1];
+report('Towny default wild regen leaves bed/anchor explosions', blockRevertDefault === 'false',
+  `enabled ${blockRevertDefault}`);
+const blockRevertWorlds = ['world', 'world_nether', 'world_the_end']
+  .filter((world) => !/^usingPlotManagementWildRegenBlocks=false\s*$/m.test(
+    fs.readFileSync(path.join(localDir, `plugins/Towny/data/worlds/${world}.txt`), 'utf8')));
+report('Towny worlds leave bed/anchor explosions', blockRevertWorlds.length === 0,
+  blockRevertWorlds.join(', ') || 'off in all 3');
 
 await rcon.command('stop');
 rcon.close();

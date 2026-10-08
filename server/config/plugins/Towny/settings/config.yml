@@ -553,7 +553,7 @@ new_world_settings:
   
       # Enabling this will slowly regenerate holes created in the wilderness by exploding blocks like beds.
       # You can adjust this setting for an existing world using /townyworld toggle revertblockexpl
-      enabled: 'true'
+      enabled: 'false'
   
       # The list of blocks whose explosions should be reverted.
       blocks: BEDS,RESPAWN_ANCHOR
