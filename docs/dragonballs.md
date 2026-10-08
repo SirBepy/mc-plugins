@@ -59,7 +59,14 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
   offline (from before that rule) drop where they logged out when the server starts, and the copy
   left in their inventory vanishes when they rejoin. There is no offline timer. A ball lost to lava,
   the void or anything else flies away.
-- Picking up a ball is announced to the whole server.
+- A ball always really is with whoever it says it's held by. If something moves it out of your
+  inventory without the plugin seeing it (opening your grave puts your old items back into their
+  slots and pushes whatever was there onto the ground; `/clear`), the plugin checks every second:
+  a ball lying loose is tracked again and stays yours to pick up, and a ball that's simply gone
+  drops at your feet with a chat line (within 2 seconds; 10 in creative, where dragging items around
+  can briefly look the same).
+- Picking up a ball is announced to the whole server, from the ground or by hitting a floating
+  one, except taking back a ball you set down yourself in the last 30 seconds.
 - Each **radar** (sold at the Dragon Ball station at spawn) points at the nearest awake ball of its
   own set, including balls someone is carrying, and only works in that set's dimension (elsewhere
   it shows no signal). It shows how far only in bands, never a number (Joe, 2026-10-08): its one
@@ -90,18 +97,10 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
 
 - The set's balls shoot into the sky and fly off, always within their own dimension. Watch where
   they go.
-- They land 1000+ blocks from where the dragon was summoned, further with every wish of that set
-  (each set counts its own wishes; Joe raised the first band from 2000 to 3000 on 2026-10-07):
-
-  | Wishes so far (this set) | Overworld distance | Nether distance |
-  | --- | --- | --- |
-  | 0 | 1000-3000 | 250-750 |
-  | 1 | 1500-3500 | 375-875 |
-  | 2 | 1500-4000 | 375-1000 |
-  | 3+ | 2000-4500 | 500-1125 |
-
-  Nether distances are the overworld ones at the Nether's 1/8 scale, doubled (Joe, 2026-10-08:
-  the Nether hunt was too short a walk). The End set always lands
+- They land 1000-2000 blocks from where the dragon was summoned, the same distance after every
+  wish (Joe, 2026-10-08: flat; it used to grow with each wish up to 2000-4500). In the Nether
+  they land 250-500 blocks away: the overworld distance at the Nether's 1/8 scale, doubled (Joe,
+  2026-10-08: the Nether hunt was too short a walk). The End set always lands
   1000-3000 blocks from the End's centre, on the outer islands.
 - For 3 Minecraft days the set's balls are **stone**: you can find, pick up and carry them, but the
   radar can't see them and they can't summon. Then they wake up wherever they are. Other sets are
