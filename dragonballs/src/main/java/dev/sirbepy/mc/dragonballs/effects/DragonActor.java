@@ -191,10 +191,6 @@ final class DragonActor {
         world.spawnParticle(Particle.LAVA, body, 1, spread, spread * 0.5, spread, 0);
     }
 
-    boolean burning() {
-        return burning;
-    }
-
     private void startAuraTask(World world, EffectsConfig config) {
         if (look == null || (!look.smokeColumn() && !look.purpleAura())) {
             return;
