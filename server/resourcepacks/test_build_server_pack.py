@@ -231,6 +231,39 @@ class BuiltPackTest(unittest.TestCase):
         compass = self.json("assets/minecraft/items/compass.json")["model"]
         self.assertEqual(compass["fallback"], VANILLA_COMPASS)
 
+    def test_every_dragon_ball_look_resolves_to_a_3d_model(self):
+        definition = self.json("assets/minecraft/items/player_head.json")["model"]
+        self.assertEqual(definition["property"], "minecraft:custom_model_data")
+        looks = {c["when"]: c["model"]["model"] for c in definition["cases"]}
+        wanted = {f"dragonball_{s}_{n}" for s in ("overworld", "nether", "end") for n in range(1, 8)}
+        wanted.add("dragonball_stone")
+        self.assertEqual(set(looks), wanted)
+        for ref in looks.values():
+            model = self.json(asset(ref, "models", "json"))
+            # Same 8x8x8 box and display transforms as a vanilla head, so it sits where one would.
+            self.assertEqual(model["parent"], "minecraft:item/template_skull")
+            self.assertGreater(len(model["elements"]), 20)
+            for el in model["elements"]:
+                for lo, hi in zip(el["from"], el["to"]):
+                    self.assertTrue(0 <= lo < hi <= 12, el)
+            png = Image.open(io.BytesIO(self.entries[asset(model["textures"]["ball"], "textures", "png")]))
+            self.assertEqual(png.size, (64, 64))
+
+    def test_other_player_heads_stay_vanilla(self):
+        fallback = self.json("assets/minecraft/items/player_head.json")["model"]["fallback"]
+        # The 26.3 client jar's own assets/minecraft/items/player_head.json model.
+        self.assertEqual(fallback, {
+            "type": "minecraft:special",
+            "base": "minecraft:item/template_skull",
+            "model": {"type": "minecraft:player_head"},
+            "transformation": {
+                "left_rotation": [1.0, 0.0, 0.0, -0.0],
+                "right_rotation": [0.0, 0.0, 0.0, 1.0],
+                "scale": [1.0, 1.0, 1.0],
+                "translation": [0.5, 0.0, 0.5],
+            },
+        })
+
     def test_dragon_wings_are_transparent_and_body_is_not(self):
         png = Image.open(io.BytesIO(self.entries["assets/minecraft/textures/entity/enderdragon/dragon.png"]))
         px = png.convert("RGBA").load()

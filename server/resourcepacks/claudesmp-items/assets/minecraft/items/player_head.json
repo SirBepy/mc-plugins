@@ -1,0 +1,194 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "cases": [
+      {
+        "when": "dragonball_overworld_1",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/overworld_1"
+        }
+      },
+      {
+        "when": "dragonball_overworld_2",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/overworld_2"
+        }
+      },
+      {
+        "when": "dragonball_overworld_3",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/overworld_3"
+        }
+      },
+      {
+        "when": "dragonball_overworld_4",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/overworld_4"
+        }
+      },
+      {
+        "when": "dragonball_overworld_5",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/overworld_5"
+        }
+      },
+      {
+        "when": "dragonball_overworld_6",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/overworld_6"
+        }
+      },
+      {
+        "when": "dragonball_overworld_7",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/overworld_7"
+        }
+      },
+      {
+        "when": "dragonball_nether_1",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/nether_1"
+        }
+      },
+      {
+        "when": "dragonball_nether_2",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/nether_2"
+        }
+      },
+      {
+        "when": "dragonball_nether_3",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/nether_3"
+        }
+      },
+      {
+        "when": "dragonball_nether_4",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/nether_4"
+        }
+      },
+      {
+        "when": "dragonball_nether_5",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/nether_5"
+        }
+      },
+      {
+        "when": "dragonball_nether_6",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/nether_6"
+        }
+      },
+      {
+        "when": "dragonball_nether_7",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/nether_7"
+        }
+      },
+      {
+        "when": "dragonball_end_1",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/end_1"
+        }
+      },
+      {
+        "when": "dragonball_end_2",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/end_2"
+        }
+      },
+      {
+        "when": "dragonball_end_3",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/end_3"
+        }
+      },
+      {
+        "when": "dragonball_end_4",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/end_4"
+        }
+      },
+      {
+        "when": "dragonball_end_5",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/end_5"
+        }
+      },
+      {
+        "when": "dragonball_end_6",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/end_6"
+        }
+      },
+      {
+        "when": "dragonball_end_7",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/end_7"
+        }
+      },
+      {
+        "when": "dragonball_stone",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/dragonball/stone"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:special",
+      "base": "minecraft:item/template_skull",
+      "model": {
+        "type": "minecraft:player_head"
+      },
+      "transformation": {
+        "left_rotation": [
+          1.0,
+          0.0,
+          0.0,
+          -0.0
+        ],
+        "right_rotation": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "translation": [
+          0.5,
+          0.0,
+          0.5
+        ]
+      }
+    }
+  }
+}
