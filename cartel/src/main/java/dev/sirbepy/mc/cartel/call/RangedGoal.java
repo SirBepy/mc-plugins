@@ -174,8 +174,8 @@ public final class RangedGoal implements Goal<Mob> {
     /**
      * A rocket straight at the target's chest: shot at an angle, like a crossbow's, it flies at a
      * constant 1.6 with no drop and bursts on whatever it hits first or at the end of its flight.
-     * Spawned rather than launched: on 26.3 a rocket from {@code launchProjectile} is never ticked
-     * and hangs at the muzzle (measured on the e2e server, Life stayed 0), while a spawned one flies.
+     * Spawned rather than launched: on the 26.3 e2e server a rocket from {@code launchProjectile}
+     * never left the muzzle (Life stayed 0, cause not pinned down), while a spawned one flies.
      */
     static void fireRocket(Mob shooter, LivingEntity target) {
         Location from = muzzle(shooter);

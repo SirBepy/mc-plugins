@@ -80,7 +80,7 @@ about 20:50 UTC, with this:
   yellow on whatever it hits first, or after 32+ blocks, with the vanilla launch sound. The blast is
   vanilla's: it reaches every living thing in sight within 5 blocks and never breaks blocks. The
   plugin spawns the rocket and sets it flying rather than using Paper's `launchProjectile`, whose
-  rockets never move on 26.3.
+  rockets never left the muzzle on the 26.3 test server.
 - **Damage (Joe, 2026-10-08, ~19:38 UTC):** every bolt and every rocket blast that reaches someone
   they may hurt deals a **uniform random 6.0-8.0 (3 to 4 hearts)**, whatever the bolt's speed, the
   blast's distance or the difficulty, and **armor, Protection and Blast Protection take nothing
