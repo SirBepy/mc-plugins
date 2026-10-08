@@ -73,6 +73,9 @@ export class Rcon {
 
   #request(type, body) {
     const id = this.#nextId++;
+    // A forceload of never-generated chunks (fresh Nether regions especially) blocks the main
+    // thread while they generate; 14 s was measured on a loaded machine, past the 10 s default.
+    const timeoutMs = /\bforceload add\b/.test(body) ? 60_000 : 10_000;
     const payload = Buffer.from(body, 'utf8');
     const packet = Buffer.alloc(14 + payload.length);
     packet.writeInt32LE(10 + payload.length, 0);
@@ -84,7 +87,7 @@ export class Rcon {
       this.#socket.write(packet);
       setTimeout(() => {
         if (this.#pending.delete(id)) reject(new Error(`RCON timeout: ${body}`));
-      }, 10_000);
+      }, timeoutMs);
     });
   }
 

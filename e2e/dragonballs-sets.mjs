@@ -19,6 +19,7 @@ const SUMMON_CEILING_HEIGHT = 10;
 // protocol: docs/dragonballs.md.
 const {
   rcon, BX, BZ, STAND, hunter, witness, step, plain, status, balance, collectAllSeven, shortenSummonConfig, finish,
+  placeBallAt,
 } = await openSuite('DragonBalls sets');
 
 // A second platform, inside the Nether, at the same flat (x, z) as the overworld one openSuite
@@ -150,6 +151,14 @@ try {
     await rcon.command('dragonballs reload');
 
     await rcon.command(`minecraft:clear ${HUNTER} minecraft:player_head`);
+    // The second-set refusal below needs an Overworld ball placed to summon from, and an earlier
+    // suite's cleanup can leave the whole Overworld set held by an offline bot, so place one here.
+    await rcon.command(`dragonballs give ${HUNTER} 1`);
+    await sleep(200);
+    await teleport(rcon, hunter, STAND.x, STAND.y, STAND.z);
+    await hunter.equip(hunter.inventory.items().find((it) => it.name === 'player_head'), 'hand');
+    await placeBallAt(hunter, 0);
+    await waitFor(async () => (await status()).overworld[1].state === 'placed', 'the Overworld 1-star registered as placed', 5_000);
     await collectAllSeven(hunter, HUNTER, 'nether');
     await crossDimensionTeleport(rcon, hunter, 'minecraft:the_nether', NETHER_STAND.x, NETHER_STAND.y, NETHER_STAND.z);
     for (let i = 0; i < 7; i++) {
@@ -256,7 +265,7 @@ try {
       const afterNether = (await status()).nether;
       return Object.values(afterNether).every((v) => v.stone
         && (v.state !== 'placed' || Math.max(Math.abs(v.x - BX), Math.abs(v.z - BZ)) > 100));
-    }, 'all 7 Nether balls are stone and have moved away from the summon cluster', 45_000);
+    }, 'all 7 Nether balls are stone and have moved away from the summon cluster', 90_000);
 
     const overworldAfter = (await status()).overworld;
     assert(JSON.stringify(overworldAfter) === JSON.stringify(overworldBefore),
