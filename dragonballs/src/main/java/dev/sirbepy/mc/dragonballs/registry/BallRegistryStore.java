@@ -58,7 +58,6 @@ final class BallRegistryStore {
             ball.holderId = holder == null ? null : UUID.fromString(holder);
             ball.holderName = section.getString("holderName");
             ball.heldSinceMillis = section.getLong("heldSince", 0);
-            ball.lastSeenMillis = section.getLong("lastSeen", 0);
             String entity = section.getString("entityId");
             ball.entityId = entity == null ? null : UUID.fromString(entity);
         }
@@ -90,7 +89,6 @@ final class BallRegistryStore {
             yaml.set(path + ".holderId", ball.holderId == null ? null : ball.holderId.toString());
             yaml.set(path + ".holderName", ball.holderName);
             yaml.set(path + ".heldSince", ball.heldSinceMillis);
-            yaml.set(path + ".lastSeen", ball.lastSeenMillis);
             yaml.set(path + ".entityId", ball.entityId == null ? null : ball.entityId.toString());
         }
         if (global.lastSummonWorld() != null) {

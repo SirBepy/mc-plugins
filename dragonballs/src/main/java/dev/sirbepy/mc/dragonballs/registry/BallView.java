@@ -21,7 +21,6 @@ public record BallView(
         UUID holderId,
         String holderName,
         long heldSinceMillis,
-        long lastSeenMillis,
         UUID entityId
 ) {
 

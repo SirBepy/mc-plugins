@@ -190,7 +190,6 @@ public final class BallRegistry {
         ball.holderId = holder.getUniqueId();
         ball.holderName = holder.getName();
         ball.heldSinceMillis = now;
-        ball.lastSeenMillis = now;
         setLocation(ball, holder.getLocation());
         ball.entityId = null;
         save();

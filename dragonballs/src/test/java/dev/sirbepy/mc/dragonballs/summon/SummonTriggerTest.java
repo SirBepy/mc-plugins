@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class SummonTriggerTest {
 
     private static BallView placed(int star, String world, double x, double y, double z) {
-        return new BallView(star, BallState.PLACED, false, world, x, y, z, null, null, 0, 0, null);
+        return new BallView(star, BallState.PLACED, false, world, x, y, z, null, null, 0, null);
     }
 
     private static List<BallView> sevenAt(String world, double cx, double cy, double cz) {
@@ -43,7 +43,7 @@ class SummonTriggerTest {
         List<BallView> balls = sevenAt("world", 100, 64, 100);
         BallView stoneBall = balls.get(0);
         balls.set(0, new BallView(stoneBall.star(), BallState.PLACED, true, stoneBall.worldName(),
-                stoneBall.x(), stoneBall.y(), stoneBall.z(), null, null, 0, 0, null));
+                stoneBall.x(), stoneBall.y(), stoneBall.z(), null, null, 0, null));
         assertFalse(SummonTrigger.allWithinRadius(balls, "world", 100, 64, 100, 2));
     }
 
@@ -52,7 +52,7 @@ class SummonTriggerTest {
         List<BallView> balls = sevenAt("world", 100, 64, 100);
         BallView held = balls.get(0);
         balls.set(0, new BallView(held.star(), BallState.HELD, false, held.worldName(),
-                held.x(), held.y(), held.z(), null, "Someone", 0, 0, null));
+                held.x(), held.y(), held.z(), null, "Someone", 0, null));
         assertFalse(SummonTrigger.allWithinRadius(balls, "world", 100, 64, 100, 2));
     }
 
@@ -61,7 +61,7 @@ class SummonTriggerTest {
         List<BallView> balls = sevenAt("world", 100, 64, 100);
         BallView wrongWorld = balls.get(0);
         balls.set(0, new BallView(wrongWorld.star(), BallState.PLACED, false, "world_nether",
-                wrongWorld.x(), wrongWorld.y(), wrongWorld.z(), null, null, 0, 0, null));
+                wrongWorld.x(), wrongWorld.y(), wrongWorld.z(), null, null, 0, null));
         assertFalse(SummonTrigger.allWithinRadius(balls, "world", 100, 64, 100, 2));
     }
 

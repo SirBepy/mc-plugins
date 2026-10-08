@@ -15,7 +15,6 @@ final class Ball {
     UUID holderId;
     String holderName;
     long heldSinceMillis;
-    long lastSeenMillis;
     UUID entityId;
 
     Ball(int star) {
@@ -24,6 +23,6 @@ final class Ball {
 
     BallView snapshot() {
         return new BallView(star, state, stone, worldName, x, y, z, holderId, holderName, heldSinceMillis,
-                lastSeenMillis, entityId);
+                entityId);
     }
 }
