@@ -3,7 +3,6 @@ package dev.sirbepy.mc.cartel.call;
 import dev.sirbepy.mc.cartel.CartelTestBase;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Zombie;
 import org.junit.jupiter.api.Test;
