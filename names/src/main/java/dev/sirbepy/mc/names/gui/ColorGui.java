@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.names.gui;
 
+import dev.sirbepy.mc.core.ItemNames;
 import dev.sirbepy.mc.core.Messages;
 import dev.sirbepy.mc.names.config.NamesConfig;
 import dev.sirbepy.mc.names.data.ColorChoice;
@@ -16,7 +17,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -101,15 +101,10 @@ public final class ColorGui implements InventoryHolder {
 
     private static String labelFor(ColorChoice choice) {
         return switch (choice) {
-            case ColorChoice.Named named -> capitalize(named.key());
+            case ColorChoice.Named named -> ItemNames.sentence(named.key());
             case ColorChoice.Hex hex -> hex.label();
             case ColorChoice.Gradient gradient -> gradient.name();
         };
-    }
-
-    private static String capitalize(String key) {
-        String spaced = key.replace('_', ' ').toLowerCase(Locale.ROOT);
-        return Character.toUpperCase(spaced.charAt(0)) + spaced.substring(1);
     }
 
     public Optional<ColorChoice> choiceAt(int slot) {

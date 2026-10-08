@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.market;
 
+import dev.sirbepy.mc.core.ItemNames;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -77,7 +78,7 @@ class PriceListTest {
         for (Stall stall : layout.stalls()) {
             assertTrue(all.contains(stall.name()), stall.name());
             for (Offer offer : stall.buys()) {
-                String entry = PriceList.itemName(offer.item()) + "\n  " + offer.amount() + " for " + PriceList.money(offer.price());
+                String entry = ItemNames.sentence(offer.item()) + "\n  " + offer.amount() + " for " + PriceList.money(offer.price());
                 assertTrue(all.contains(entry), entry);
             }
         }
@@ -104,7 +105,7 @@ class PriceListTest {
 
     @Test
     void itemNamesReadAsWords() {
-        assertEquals("Dark oak log", PriceList.itemName("dark_oak_log"));
-        assertEquals("Membrane", PriceList.itemName("membrane"));
+        assertEquals("Dark oak log", ItemNames.sentence("dark_oak_log"));
+        assertEquals("Membrane", ItemNames.sentence("membrane"));
     }
 }

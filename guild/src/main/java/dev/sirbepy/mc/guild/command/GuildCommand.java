@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import dev.sirbepy.mc.core.ItemNames;
 import dev.sirbepy.mc.guild.Chat;
 import dev.sirbepy.mc.guild.Guild;
 import dev.sirbepy.mc.guild.contract.Objective;
@@ -195,7 +196,7 @@ public final class GuildCommand {
                 if (!type.isAlive() || type == EntityType.PLAYER) {
                     return null;
                 }
-                return new Objective(Objective.Kind.HUNT, Set.of(type.name()), amount, "Hunt " + amount + " " + pretty(type.name()));
+                return new Objective(Objective.Kind.HUNT, Set.of(type.name()), amount, "Hunt " + amount + " " + ItemNames.title(type.name()));
             }
             case "gather" -> {
                 Material material = Material.matchMaterial(upper);
@@ -203,7 +204,7 @@ public final class GuildCommand {
                     return null;
                 }
                 return new Objective(Objective.Kind.GATHER, Set.of(material.name()), amount,
-                        "Deliver " + amount + " " + pretty(material.name()));
+                        "Deliver " + amount + " " + ItemNames.title(material.name()));
             }
             case "mine" -> {
                 Material material = Material.matchMaterial(upper);
@@ -215,7 +216,7 @@ public final class GuildCommand {
                 if (material.name().endsWith("_ORE") && deepslate != null) {
                     targets.add(deepslate.name());
                 }
-                return new Objective(Objective.Kind.MINE, targets, amount, "Mine " + amount + " " + pretty(material.name()));
+                return new Objective(Objective.Kind.MINE, targets, amount, "Mine " + amount + " " + ItemNames.title(material.name()));
             }
             case "fish" -> {
                 if (upper.equals("ANY")) {
@@ -225,7 +226,7 @@ public final class GuildCommand {
                 if (material == null || !material.isItem()) {
                     return null;
                 }
-                return new Objective(Objective.Kind.FISH, Set.of(material.name()), amount, "Catch " + amount + " " + pretty(material.name()));
+                return new Objective(Objective.Kind.FISH, Set.of(material.name()), amount, "Catch " + amount + " " + ItemNames.title(material.name()));
             }
             default -> {
                 return null;
@@ -310,17 +311,6 @@ public final class GuildCommand {
         String typed = builder.getRemainingLowerCase();
         options.stream().filter(o -> o.toLowerCase(Locale.ROOT).startsWith(typed)).sorted().forEach(builder::suggest);
         return builder.buildFuture();
-    }
-
-    static String pretty(String name) {
-        String lower = name.toLowerCase(Locale.ROOT).replace('_', ' ');
-        StringBuilder out = new StringBuilder();
-        for (String word : lower.split(" ")) {
-            if (!word.isEmpty()) {
-                out.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1)).append(' ');
-            }
-        }
-        return out.toString().trim();
     }
 
     private static Player player(CommandContext<CommandSourceStack> c) {

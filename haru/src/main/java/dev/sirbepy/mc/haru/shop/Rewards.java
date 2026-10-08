@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.haru.shop;
 
+import dev.sirbepy.mc.core.ItemNames;
 import dev.sirbepy.mc.haru.data.OwnerState;
 import dev.sirbepy.mc.haru.effect.Blessings;
 import dev.sirbepy.mc.haru.item.Bound;
@@ -10,7 +11,6 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.function.LongSupplier;
 
 /** Hands a {@link Reward} to a player and describes what was given, for the chat line. */
@@ -44,11 +44,11 @@ public final class Rewards {
                 long now = nowMillis.getAsLong();
                 long from = Math.max(now, state.charms().getOrDefault(charm.id(), 0L));
                 state.charms().put(charm.id(), from + charm.days() * 86_400_000L);
-                given.add(pretty(charm.id()) + " for " + charm.days() + " days");
+                given.add(ItemNames.title(charm.id()) + " for " + charm.days() + " days");
             }
             case Reward.Blessing blessing -> {
                 blessings.grant(player, state, blessing.effect(), blessing.amplifier(), blessing.minutes());
-                given.add(pretty(blessing.effect()) + " for " + blessing.minutes() + " minutes");
+                given.add(ItemNames.title(blessing.effect()) + " for " + blessing.minutes() + " minutes");
             }
             case Reward.Unlock unlock -> state.unlocks().add(unlock.id());
             case Reward.Petals petals -> {
@@ -71,23 +71,8 @@ public final class Rewards {
             Component display = item.getItemMeta().displayName();
             name = PlainTextComponentSerializer.plainText().serialize(display);
         } else {
-            name = pretty(item.getType().getKey().getKey());
+            name = ItemNames.title(item.getType().getKey().getKey());
         }
         return item.getAmount() > 1 ? item.getAmount() + " " + name : name;
-    }
-
-    public static String pretty(String key) {
-        String[] words = key.toLowerCase(Locale.ROOT).split("_");
-        StringBuilder out = new StringBuilder();
-        for (String word : words) {
-            if (word.isEmpty()) {
-                continue;
-            }
-            if (!out.isEmpty()) {
-                out.append(' ');
-            }
-            out.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
-        }
-        return out.toString();
     }
 }

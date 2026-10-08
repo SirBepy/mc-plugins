@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.market;
 
+import dev.sirbepy.mc.core.ItemNames;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -56,7 +57,7 @@ final class PriceList {
                     page = Component.text().append(heading);
                     lines = 1;
                 }
-                page.append(Component.newline(), Component.text(itemName(offer.item())), Component.newline(),
+                page.append(Component.newline(), Component.text(ItemNames.sentence(offer.item())), Component.newline(),
                         Component.text("  " + offer.amount() + " for " + money(offer.price()), NamedTextColor.DARK_GRAY));
                 lines += 2;
             }
@@ -77,18 +78,12 @@ final class PriceList {
                 continue;
             }
             String text = offers.stream()
-                    .map(o -> o.amount() + " " + itemName(o.item()).toLowerCase(Locale.ROOT) + " " + money(o.price()))
+                    .map(o -> o.amount() + " " + ItemNames.sentence(o.item()).toLowerCase(Locale.ROOT) + " " + money(o.price()))
                     .collect(Collectors.joining(", "));
             lines.add(config.messages().render("today-stall",
                     Placeholder.unparsed("stall", stall.name()), Placeholder.unparsed("offers", text)));
         }
         return lines;
-    }
-
-    /** {@code dark_oak_log} reads as {@code Dark oak log}. */
-    static String itemName(String item) {
-        String words = item.replace('_', ' ');
-        return words.isEmpty() ? words : Character.toUpperCase(words.charAt(0)) + words.substring(1);
     }
 
     static String money(BigDecimal price) {

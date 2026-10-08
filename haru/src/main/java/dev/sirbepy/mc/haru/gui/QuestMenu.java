@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.haru.gui;
 
+import dev.sirbepy.mc.core.ItemNames;
 import dev.sirbepy.mc.core.gui.Menu;
 import dev.sirbepy.mc.haru.HaruContext;
 import dev.sirbepy.mc.haru.data.ActiveQuest;
@@ -20,7 +21,6 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /** The current three Spirit Requests: left-click claims, right-click asks Haru for a different one. */
 final class QuestMenu {
@@ -65,7 +65,7 @@ final class QuestMenu {
             return new ItemStack(Material.BARRIER);
         }
         List<String> lore = new ArrayList<>();
-        lore.add(capitalize(def.difficulty().name()) + " request");
+        lore.add(ItemNames.sentence(def.difficulty().name()) + " request");
         boolean ready;
         if (def.type() == QuestDef.Type.DELIVER) {
             int carried = Math.min(def.amount(), Payment.count(player.getInventory(), def.deliverMaterial()));
@@ -117,10 +117,5 @@ final class QuestMenu {
             case NOT_REROLLABLE -> Speech.say(player, "That one is finished. Claim it instead.");
             case NOTHING_ELSE -> Speech.say(player, "I have no other request of that kind right now.");
         }
-    }
-
-    private static String capitalize(String value) {
-        String lower = value.toLowerCase(Locale.ROOT);
-        return Character.toUpperCase(lower.charAt(0)) + lower.substring(1);
     }
 }
