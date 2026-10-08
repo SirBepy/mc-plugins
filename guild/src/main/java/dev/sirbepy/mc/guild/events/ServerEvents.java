@@ -126,6 +126,16 @@ public final class ServerEvents {
         return grandQuests.threshold();
     }
 
+    /** The most one adventurer's part of the Grand Quest can count for. */
+    public int shareCap() {
+        return grandQuests.shareCap();
+    }
+
+    /** Voids this week's Grand Quest and starts another (ops repair: {@code guildadmin grandquest reroll}). */
+    public GrandQuest rerollGrandQuest() {
+        return grandQuests.reroll();
+    }
+
     public boolean grandClaimed(Member member) {
         return grandQuests.claimedBy(member);
     }
@@ -165,7 +175,7 @@ public final class ServerEvents {
     /** Counts a member's deed toward the bounty, the Grand Quest and a running activity. */
     public void progress(Player player, Member member, Kind kind, Collection<String> facts, int amount) {
         bounties.progress(player, member, kind, facts, amount);
-        grandQuests.progress(member, kind, facts, amount);
+        grandQuests.progress(player, member, kind, facts, amount);
         activities.progress(member, kind, facts, amount);
     }
 

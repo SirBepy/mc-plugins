@@ -13,6 +13,7 @@ import dev.sirbepy.mc.guild.staff.StaffListener;
 import dev.sirbepy.mc.guild.staff.StaffNpcs;
 import dev.sirbepy.mc.guild.listener.BossCredit;
 import dev.sirbepy.mc.guild.listener.ExploreTracker;
+import dev.sirbepy.mc.guild.listener.FarmGuard;
 import dev.sirbepy.mc.guild.listener.ProgressListener;
 import dev.sirbepy.mc.guild.time.ZoneClock;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
@@ -39,6 +40,7 @@ public final class GuildPlugin extends JavaPlugin {
         Guild guild = new Guild(config::get, clock, store, new VaultBank(getServer()), new Random());
         GuildMenus menus = new GuildMenus(guild);
         BossCredit bosses = new BossCredit(clock::nowMillis);
+        FarmGuard farms = new FarmGuard(config::get, clock::nowMillis);
         ExploreTracker explore = new ExploreTracker(guild);
 
         StaffNpcs staff = new StaffNpcs(this, store);
@@ -46,13 +48,15 @@ public final class GuildPlugin extends JavaPlugin {
         var pm = getServer().getPluginManager();
         pm.registerEvents(new MenuListener(), this);
         pm.registerEvents(bosses, this);
-        pm.registerEvents(new ProgressListener(guild, bosses), this);
+        pm.registerEvents(farms, this);
+        pm.registerEvents(new ProgressListener(guild, bosses, farms), this);
         pm.registerEvents(new HallGuard(store), this);
         pm.registerEvents(new StaffListener(staff, guild, menus, new Dialogue(guild, new Random())), this);
 
         var scheduler = getServer().getScheduler();
         scheduler.runTaskTimer(this, () -> explore.tick(getServer().getOnlinePlayers()), 40L, 40L);
         scheduler.runTaskTimer(this, bosses::sweep, 1200L, 1200L);
+        scheduler.runTaskTimer(this, farms::sweep, 1200L, 1200L);
         scheduler.runTaskTimer(this, store::flush, 600L, 600L);
         scheduler.runTaskTimer(this, staff::ensure, 60L, 100L);
         scheduler.runTaskTimer(this, staff::lookAtVisitors, 20L, 10L);

@@ -68,6 +68,8 @@ public final class GuildAdminCommand {
                     send(c, "The Guildmaster may announce again now.");
                     return Command.SINGLE_SUCCESS;
                 }))
+                .then(Commands.literal("grandquest")
+                        .then(Commands.literal("reroll").executes(this::rerollGrand)))
                 .then(Commands.literal("treasury")
                         .then(Commands.argument("amount", IntegerArgumentType.integer()).executes(this::treasury)))
                 .then(Commands.literal("staff")
@@ -254,6 +256,18 @@ public final class GuildAdminCommand {
         }
         guild.store().save();
         send(c, m.name() + "'s " + active.defId() + " is complete apart from any hand-ins.");
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int rerollGrand(CommandContext<CommandSourceStack> c) {
+        var events = guild.events();
+        var old = events.grandQuest();
+        String before = old == null ? "none" : old.id() + " (" + events.grandTotal() + "/" + old.goal()
+                + (events.grandDone() ? ", done" : "") + ")";
+        var next = events.rerollGrandQuest();
+        guild.store().save();
+        send(c, "Voided Grand Quest " + before + "; this week's is now " + next.id() + ": " + next.title()
+                + ", goal " + next.goal() + ". Shares already claimed stay paid.");
         return Command.SINGLE_SUCCESS;
     }
 

@@ -30,15 +30,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-/** Turns gameplay events into contract progress for whoever did them. Bosses go through {@link BossCredit}. */
+/**
+ * Turns gameplay events into contract progress for whoever did them. Bosses go through {@link BossCredit};
+ * every other kill passes {@link FarmGuard} first.
+ */
 public final class ProgressListener implements Listener {
 
     private final Guild guild;
     private final BossCredit bosses;
+    private final FarmGuard farms;
 
-    public ProgressListener(Guild guild, BossCredit bosses) {
+    public ProgressListener(Guild guild, BossCredit bosses, FarmGuard farms) {
         this.guild = guild;
         this.bosses = bosses;
+        this.farms = farms;
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -49,10 +54,12 @@ public final class ProgressListener implements Listener {
         }
         String type = entity.getType().name();
         Player killer = entity.getKiller();
-        if (killer != null) {
+        boolean boss = BossCredit.BOSSES.contains(entity.getType());
+        FarmGuard.Verdict verdict = killer == null || boss ? FarmGuard.Verdict.COUNTS : farms.judge(entity);
+        if (killer != null && verdict != FarmGuard.Verdict.NONE) {
             List<String> facts = new ArrayList<>();
             facts.add(type);
-            if (entity instanceof Enemy) {
+            if (entity instanceof Enemy && verdict == FarmGuard.Verdict.COUNTS) {
                 facts.add("#HOSTILE");
             }
             guild.progress(killer, Kind.HUNT, facts, 1);
@@ -61,7 +68,7 @@ public final class ProgressListener implements Listener {
                 guild.progress(killer, Kind.NAMED_HUNT, Set.of(key), 1);
             }
         }
-        if (BossCredit.BOSSES.contains(entity.getType())) {
+        if (boss) {
             for (Player credited : bosses.credited(entity, killer)) {
                 guild.progress(credited, Kind.BOSS, Set.of(type), 1);
                 var member = guild.store().member(credited.getUniqueId());

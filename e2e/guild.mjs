@@ -157,6 +157,52 @@ try {
     hero.closeWindow(menu);
   });
 
+  // Farm rules (docs/guild.md): a mob that took most of its damage from a fall, like a grinder's drop,
+  // earns nothing even when the player lands the last hit; a fresh mob killed by the player still counts.
+  await step('a zombie softened by a fall earns nothing, a fought one counts', async () => {
+    const since = gm.lines.length;
+    gm.chat('/guild commission hunt zombie 1 50 E');
+    await waitForLine(gm, /Commission posted/, 10_000, since);
+
+    // One at a time on the commission step's spot, within the hero's reach.
+    const summon = async (tag, health) => {
+      await rcon.command(`minecraft:summon minecraft:zombie ${BX + 5} ${PLATFORM_Y + 1} ${BZ} {NoAI:1b,Health:${health}f,PersistenceRequired:1b,Tags:["guild_e2e","${tag}"],equipment:{head:{id:"minecraft:leather_helmet",count:1}}}`);
+      const spot = { x: BX + 5.5, y: PLATFORM_Y + 1, z: BZ + 0.5 };
+      let zombie;
+      await waitFor(() => (zombie = Object.values(hero.entities)
+        .find((e) => e.name === 'zombie' && e.position.distanceTo(spot) < 1.5)), 'hero sees the zombie');
+      return zombie;
+    };
+    const slay = async (zombie) => {
+      for (let i = 0; i < 10 && hero.entities[zombie.id]; i++) {
+        await hero.lookAt(zombie.position.offset(0, 1, 0));
+        hero.attack(zombie);
+        await sleep(700);
+      }
+      assert(!hero.entities[zombie.id], 'the zombie died');
+    };
+
+    const grinder = await summon('guild_e2e_grinder', 20);
+    const hurt = await rcon.command(`minecraft:damage @e[tag=guild_e2e_grinder,limit=1] 19 minecraft:fall`);
+    assert(/Applied 19/.test(hurt), `fall damage applied (${hurt.trim()})`);
+    let heroSince = hero.lines.length;
+    await slay(grinder);
+    await sleep(3_000);
+    assert(!hero.lines.slice(heroSince).some((l) => /commission/i.test(l)), 'the grinder kill made no commission progress');
+
+    const fought = await summon('guild_e2e_fought', 1);
+    heroSince = hero.lines.length;
+    await slay(fought);
+    await waitForLine(hero, /commission/i, 10_000, heroSince);
+  });
+
+  await step('an op rerolls the Grand Quest and the server is told', async () => {
+    const since = hero.lines.length;
+    const out = plain(await rcon.command('guildadmin grandquest reroll'));
+    assert(/Voided Grand Quest .*; this week's is now gq_/.test(out), `reroll reply (got ${out.trim()})`);
+    await waitForLine(hero, /The Guild has set a new Grand Quest for this week/, 5_000, since);
+  });
+
   await step('the Guildmaster withdraws from his office', async () => {
     const before = await balance(GM);
     const treasuryBefore = await treasury();

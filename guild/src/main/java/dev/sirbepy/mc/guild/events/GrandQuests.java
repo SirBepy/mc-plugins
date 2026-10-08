@@ -68,20 +68,43 @@ final class GrandQuests {
         return state().getBoolean("grand.claimed." + member.id());
     }
 
+    /** The most one adventurer's part can count for: the configured share of the goal, rounded up. */
+    int shareCap() {
+        GrandQuest quest = current();
+        return quest == null ? 0 : (int) Math.ceil(quest.goal() * guild.config().grandQuestShareCap());
+    }
+
     void rotate() {
         String week = guild.clock().weekKey();
         if (week.equals(state().getString("grand.week")) && current() != null) {
             return;
         }
+        GrandQuest next = start();
+        Bukkit.getServer().broadcast(Chat.line("This week's Grand Quest: " + next.title() + ", " + next.goal()
+                + " together. Everyone who helps shares the reward. See /guild."));
+    }
+
+    /**
+     * Voids this week's Grand Quest, done or not, and starts a different one for the rest of the week.
+     * Shares already claimed stay paid; contributions and claims start over with the new quest.
+     */
+    GrandQuest reroll() {
+        GrandQuest next = start();
+        Bukkit.getServer().broadcast(Chat.line("The Guild has set a new Grand Quest for this week: " + next.title() + ", "
+                + next.goal() + " together. Everyone who helps shares the reward. See /guild."));
+        return next;
+    }
+
+    /** Clears the Grand Quest state and starts one other than the last, for the current week. */
+    private GrandQuest start() {
         String last = state().getString("grand.id");
         List<GrandQuest> options = EventPools.GRAND_QUESTS.stream().filter(q -> !q.id().equals(last)).toList();
         GrandQuest next = options.get(random.nextInt(options.size()));
         state().set("grand", null);
         state().set("grand.id", next.id());
-        state().set("grand.week", week);
+        state().set("grand.week", guild.clock().weekKey());
         guild.store().markDirty();
-        Bukkit.getServer().broadcast(Chat.line("This week's Grand Quest: " + next.title() + ", " + next.goal()
-                + " together. Everyone who helps shares the reward. See /guild."));
+        return next;
     }
 
     Guild.Claim claim(Player player) {
@@ -147,15 +170,28 @@ final class GrandQuests {
         return out;
     }
 
-    /** Counts a member's deed toward the Grand Quest, if one is running and it matches. */
-    void progress(Member member, Kind kind, Collection<String> facts, int amount) {
+    /**
+     * Counts a member's deed toward the Grand Quest, if one is running and it matches, up to their
+     * {@link #shareCap()}: a quest always needs several adventurers, however big one player's farm is.
+     */
+    void progress(Player player, Member member, Kind kind, Collection<String> facts, int amount) {
         GrandQuest quest = current();
         if (quest == null || done() || quest.kind() != kind || !quest.objective().matches(facts)) {
             return;
         }
-        state().set("grand.contrib." + member.id(), contributionOf(member) + amount);
-        state().set("grand.total", total() + amount);
+        int cap = shareCap();
+        int before = contributionOf(member);
+        int counted = Math.min(amount, cap - before);
+        if (counted <= 0) {
+            return;
+        }
+        state().set("grand.contrib." + member.id(), before + counted);
+        state().set("grand.total", total() + counted);
         guild.store().markDirty();
+        if (before + counted >= cap && player != null) {
+            Chat.send(player, "You have given your full share to the Grand Quest (" + cap
+                    + "). The rest is up to the other adventurers.", NamedTextColor.GOLD);
+        }
         if (total() >= quest.goal()) {
             complete(quest);
         }

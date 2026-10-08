@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -85,20 +86,68 @@ class ServerEventsTest extends GuildTestBase {
     void aGrandQuestCompletesTogetherAndSharesItsReward() {
         Member a = join(alice);
         Member g = join(gm);
+        var bob = server.addPlayer("Bob");
+        var carol = server.addPlayer("Carol");
+        var dave = server.addPlayer("Dave");
+        join(bob);
+        join(carol);
+        join(dave);
         events().tick();
         EventPools.GrandQuest quest = events().grandQuest();
         Set<String> facts = quest.targets().isEmpty() ? Set.of("ANY") : Set.of(quest.targets().iterator().next());
-        guild.progress(alice, quest.kind(), facts, quest.goal() - 5);
+        int cap = events().shareCap();
+        guild.progress(alice, quest.kind(), facts, cap);
+        guild.progress(bob, quest.kind(), facts, cap);
+        guild.progress(carol, quest.kind(), facts, cap);
+        guild.progress(dave, quest.kind(), facts, quest.goal() - 3 * cap - 5);
         assertEquals(Guild.ClaimResult.NOT_DONE, events().claimGrand(alice).result());
         guild.progress(gm, quest.kind(), facts, 5);
         assertTrue(events().grandDone());
-        assertTrue(a.titles().contains("champion"), "the biggest contributor is the champion");
+        assertTrue(a.titles().contains("champion"), "on a tie at the cap, the earliest contributor is the champion");
 
         assertEquals(Guild.ClaimResult.CLAIMED, events().claimGrand(alice).result());
         assertEquals(Guild.ClaimResult.ALREADY_CLAIMED, events().claimGrand(alice).result());
         assertEquals(Guild.ClaimResult.NOT_ELIGIBLE, events().claimGrand(gm).result(), "5 is under the share threshold");
         assertEquals(1, a.stat("grand-quests"));
         assertEquals(0, g.stat("grand-quests"));
+    }
+
+    @Test
+    void oneAdventurerCountsForAtMostAQuarterOfTheGoal() {
+        Member a = join(alice);
+        store.events().set("grand.id", "gq_hunt");
+        store.events().set("grand.week", clock.weekKey());
+        assertEquals(250, events().shareCap());
+        guild.progress(alice, Objective.Kind.HUNT, Set.of("#HOSTILE"), 240);
+        guild.progress(alice, Objective.Kind.HUNT, Set.of("#HOSTILE"), 1000);
+        assertEquals(250, events().contribution(a));
+        assertEquals(250, events().grandTotal(), "the rest of the deed adds nothing to the server's total");
+        assertFalse(events().grandDone());
+    }
+
+    @Test
+    void aRerollVoidsTheQuestButKeepsWhatWasPaid() {
+        Member a = join(alice);
+        events().tick();
+        EventPools.GrandQuest first = events().grandQuest();
+        store.events().set("grand.done", true);
+        store.events().set("grand.contrib." + a.id(), first.goal());
+        store.events().set("grand.total", first.goal());
+        assertEquals(Guild.ClaimResult.CLAIMED, events().claimGrand(alice).result());
+        double paid = bank.balance(alice);
+
+        EventPools.GrandQuest next = events().rerollGrandQuest();
+
+        assertNotEquals(first.id(), next.id());
+        assertEquals(next.id(), events().grandQuest().id());
+        assertEquals(0, events().grandTotal());
+        assertEquals(0, events().contribution(a));
+        assertFalse(events().grandDone());
+        assertEquals(Guild.ClaimResult.NOT_DONE, events().claimGrand(alice).result());
+        assertEquals(paid, bank.balance(alice));
+        assertEquals(1, a.stat("grand-quests"));
+        events().tick();
+        assertEquals(next.id(), events().grandQuest().id(), "the weekly rotation keeps the rerolled quest");
     }
 
     @Test

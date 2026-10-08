@@ -18,3 +18,14 @@ commissions-per-week: 3
 commission-min-reward: 10
 commission-max-reward: 1000
 announcement-cooldown-minutes: 30
+
+# One adventurer's part of a Grand Quest counts up to this share of its goal (0.25 of 1,000 = 250).
+grand-quest-share-cap: 0.25
+
+# Mob farms (docs/guild.md, "Farm rules"). A player's kill counts for nothing when more than this share of
+# the mob's damage came from anything but a player (falls, lava, fire, suffocation, cramming...).
+farm-environment-share: 0.5
+# Once more than farm-chunk-kill-limit mobs have died to players in one chunk within
+# farm-chunk-window-minutes, further kills there count for nothing until the window clears.
+farm-chunk-kill-limit: 30
+farm-chunk-window-minutes: 10

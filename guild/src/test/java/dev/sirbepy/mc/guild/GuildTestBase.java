@@ -112,6 +112,10 @@ public abstract class GuildTestBase {
             this.now = now;
         }
 
+        public void plusMinutes(long minutes) {
+            now = now.plusMinutes(minutes);
+        }
+
         public void plusHours(long hours) {
             now = now.plusHours(hours);
         }

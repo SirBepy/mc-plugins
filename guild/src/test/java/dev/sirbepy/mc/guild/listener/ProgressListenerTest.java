@@ -6,6 +6,7 @@ import dev.sirbepy.mc.guild.contract.ContractPool;
 import dev.sirbepy.mc.guild.data.ActiveContract;
 import dev.sirbepy.mc.guild.data.Member;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.enchantments.Enchantment;
@@ -15,10 +16,12 @@ import org.bukkit.entity.Zombie;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockbukkit.mockbukkit.entity.EntityMock;
 
 import java.util.ArrayList;
 
@@ -28,12 +31,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ProgressListenerTest extends GuildTestBase {
 
     private BossCredit bosses;
+    private FarmGuard farms;
     private ProgressListener listener;
 
     @BeforeEach
     void setUpListener() {
         bosses = new BossCredit(clock::nowMillis);
-        listener = new ProgressListener(guild, bosses);
+        farms = new FarmGuard(config::get, clock::nowMillis);
+        listener = new ProgressListener(guild, bosses, farms);
     }
 
     private ActiveContract place(Member member, String id) {
@@ -135,5 +140,109 @@ class ProgressListenerTest extends GuildTestBase {
         clock.plusHours(1);
         kill(elder, alice);
         assertEquals(0, gmElder.progress(0));
+    }
+
+    // ---- farm rules ----
+
+    private Zombie zombie(Location at, SpawnReason reason) {
+        Zombie zombie = (Zombie) world.spawnEntity(at, EntityType.ZOMBIE);
+        ((EntityMock) zombie).setSpawnReason(reason);
+        return zombie;
+    }
+
+    private void hurt(LivingEntity mob, double amount) {
+        farms.onDamage(new EntityDamageEvent(mob, EntityDamageEvent.DamageCause.FALL,
+                org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.FALL).build(), amount));
+    }
+
+    private void hitByAlice(LivingEntity mob, double amount) {
+        farms.onDamage(new EntityDamageByEntityEvent(alice, mob, EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.PLAYER_ATTACK).withDirectEntity(alice).build(), amount));
+    }
+
+    private void huntGrandQuest() {
+        store.events().set("grand.id", "gq_hunt");
+        store.events().set("grand.week", clock.weekKey());
+    }
+
+    @Test
+    void aSpawnerMobCountsForNothing() {
+        Member member = join(alice);
+        ActiveContract daily = place(member, "e_zombies");
+        kill(zombie(alice.getLocation(), SpawnReason.SPAWNER), alice);
+        assertEquals(0, daily.progress(0));
+        kill(zombie(alice.getLocation(), SpawnReason.NATURAL), alice);
+        assertEquals(1, daily.progress(0));
+    }
+
+    @Test
+    void aTrialSpawnerMobCountsWhereItIsNamedButNotAsAnyHostileMob() {
+        Member member = join(alice);
+        ActiveContract zombies = place(member, "e_zombies");
+        ContractDef patrolDef = ContractPool.byId("we_patrol");
+        ActiveContract patrol = ActiveContract.fresh(patrolDef, patrolDef.rank());
+        member.dailies().set(2, patrol);
+        huntGrandQuest();
+        kill(zombie(alice.getLocation(), SpawnReason.TRIAL_SPAWNER), alice);
+        assertEquals(1, zombies.progress(0), "Defeat Zombies names the zombie");
+        assertEquals(0, patrol.progress(0), "Defeat hostile mobs does not");
+        assertEquals(0, guild.events().grandTotal());
+    }
+
+    @Test
+    void aMobThatTookMostOfItsDamageFromAFallCountsForNothing() {
+        Member member = join(alice);
+        ActiveContract daily = place(member, "e_zombies");
+        Zombie grinder = zombie(alice.getLocation(), SpawnReason.NATURAL);
+        hurt(grinder, 17);
+        hitByAlice(grinder, 3);
+        kill(grinder, alice);
+        assertEquals(0, daily.progress(0));
+
+        Zombie fought = zombie(alice.getLocation(), SpawnReason.NATURAL);
+        hurt(fought, 4);
+        hitByAlice(fought, 16);
+        kill(fought, alice);
+        assertEquals(1, daily.progress(0), "a fall during a real fight doesn't spoil the kill");
+    }
+
+    @Test
+    void aHugeFallWeighsNoMoreThanTheHealthItTook() {
+        Member member = join(alice);
+        ActiveContract daily = place(member, "e_zombies");
+        Zombie mob = zombie(alice.getLocation(), SpawnReason.NATURAL);
+        hitByAlice(mob, 15);
+        mob.setHealth(5);
+        hurt(mob, 100);
+        kill(mob, alice);
+        assertEquals(1, daily.progress(0), "the fall took 5 health, not 100");
+    }
+
+    @Test
+    void killsPastTheChunkLimitStopCountingUntilTheWindowClears() {
+        join(alice);
+        huntGrandQuest();
+        int limit = config.get().farmChunkKillLimit();
+        for (int i = 0; i < limit + 5; i++) {
+            kill(zombie(alice.getLocation(), SpawnReason.NATURAL), alice);
+        }
+        assertEquals(limit, guild.events().grandTotal());
+
+        kill(zombie(alice.getLocation().add(64, 0, 64), SpawnReason.NATURAL), alice);
+        assertEquals(limit + 1, guild.events().grandTotal(), "another chunk is unaffected");
+
+        clock.plusMinutes(config.get().farmChunkWindowMinutes() + 1);
+        kill(zombie(alice.getLocation(), SpawnReason.NATURAL), alice);
+        assertEquals(limit + 2, guild.events().grandTotal());
+    }
+
+    @Test
+    void aBossCountsWhateverItsSpawn() {
+        Member member = join(alice);
+        ActiveContract elder = place(member, "s_elder");
+        LivingEntity boss = (LivingEntity) world.spawnEntity(alice.getLocation(), EntityType.ELDER_GUARDIAN);
+        ((EntityMock) boss).setSpawnReason(SpawnReason.SPAWNER);
+        kill(boss, alice);
+        assertEquals(1, elder.progress(0));
     }
 }

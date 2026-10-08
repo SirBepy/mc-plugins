@@ -123,6 +123,39 @@ vanilla, Dungeons and Taverns `nova_structures:*`, Structory, Structory Towers, 
 **boss** (Wither, Elder Guardian, Warden; everyone who hurt it in its last 60 seconds is credited, so
 bosses can be done together). The full pool lives in `ContractPool.java`.
 
+### Farm rules (hunting, since 2026-10-08)
+
+ImMijo reported on 2026-10-08 that the week's Great Hunt (1,000 hostile mobs) was finished with a mob
+farm; Joe set these rules the same day (`listener/FarmGuard.java`). They apply to every hunt and named
+hunt kill: contracts, trials, commissions, bounties, the Grand Quest and Hunting Season. Bosses (Wither,
+Elder Guardian, Warden, Ender Dragon) skip all of them and are credited as before.
+
+- **Spawners**: a mob a monster spawner made counts for nothing. Paper keeps a mob's spawn reason in its
+  save data, so this holds for mobs spawned before a restart too.
+- **Trial spawners**: their mobs count only toward objectives that name the mob (Defeat 3 Breezes, Wanted:
+  Breezes, Defeat Zombies...), never as "any hostile mob" (the Great Hunt, The Long Patrol and other
+  `#HOSTILE` objectives, Hunting Season). Breezes come from nowhere else, and a trial spawner can't be
+  AFK-farmed (each player triggers one once per 30-minute cooldown). Joe chose this over a flat ban.
+- **Environment**: a kill counts for nothing when more than half (`farm-environment-share: 0.5`) of the
+  damage the mob took came from anything but a player: falls, lava, fire and burning, suffocation,
+  drowning, cramming, cactus and other mobs. A player's damage includes their arrows, tridents and other
+  projectiles, and their tamed pets. Each hit counts at most the health the mob had left, so a 40-block
+  drop onto a mob with 1 heart weighs 2, not 40. The tally lives on the mob (PDC `guild:player-damage`,
+  `guild:other-damage`). Known edge: a zombie burning in daylight that a player finishes off may not
+  count, and Fire Aspect's burn counts as environment (the sword hits themselves still win in practice).
+- **Chunk limit**: once more than 30 mobs (`farm-chunk-kill-limit`) have died to players in one chunk within
+  10 minutes (`farm-chunk-window-minutes`), further kills there count for nothing until the window clears.
+  Refused kills are remembered too, so a farm that keeps running keeps its chunk shut, while the next
+  chunk over is unaffected. Estimated, not measured: a big cave fight is well under 30, and a raid's
+  raiders arrive in waves and die across several village chunks, so neither normally reaches it. A
+  grinder that passed the other rules is held to 30 counted kills per 10 minutes per chunk at most.
+- **Grand Quest share cap**: one adventurer's part counts up to 25% of the goal (`grand-quest-share-cap`,
+  rounded up: 250 of the Great Hunt, 500 crops, 200 ores, 75 catches, 63 animals), every Grand Quest
+  kind. Past that their deeds add nothing to the server's total, so a Grand Quest always needs at least
+  four adventurers; they're told once in chat when they reach it.
+
+Not changed (todo 80): mine, harvest, fish, breed, trade and smelt have their own farm loopholes.
+
 Rerolls: E 1, D 1, C 2, B 2, A 3, S 3 a day, free, dailies only.
 
 Iron-tier supply bundles (rare contracts and trials only): iron ingots, bread, cooked meat, arrows,
@@ -170,6 +203,9 @@ in `/guild`, or a right-click on Silas the treasurer) has:
 - `/guildadmin` (ops, console, RCON): `status`, `member <player>`, `rep <player> <n>`, `contracts <player> <n>`,
   `newday <player>`, `newweek <player>`, `setrank <player> <rank>` and `resettrial <player>` (repairs only),
   `complete <player> <0|1|2|weekly|trial>` (testing), `treasury <n>`, `resetannounce`, `guildmaster <player>`,
+  `grandquest reroll` (voids this week's Grand Quest, done or not, and starts a different one for the
+  rest of the week with a server-wide announcement; shares already claimed stay paid, contributions and
+  claims start over),
   `probe <world> <x> <y> <z>` (the biome and structures exploration contracts see there), `staff ...` and
   `hall guard ...` (above), `reload`.
 
@@ -237,7 +273,8 @@ what the adventurer has earned. Each new one shows a title card and a line to it
 - **Grand Quests**: one a week (Monday), the whole server's progress counted together: 1,000 hostile
   mobs, 2,000 ripe crops, 800 ores, 300 catches or 250 animals bred. Once done, everyone who gave at
   least 2% of the goal (10 minimum) claims 150 coins + 30 reputation + 3 levels inside their caps; the
-  biggest contributor earns Champion of the Guild.
+  biggest contributor earns Champion of the Guild (on a tie, whoever started contributing first). One adventurer
+  counts for at most 25% of the goal (Farm rules above).
 - **Guildmaster activities**: `/guild activity <hunt|fish|mine> <prize> [minutes]`, once a real day,
   10-60 minutes (30 by default), prize 50-500 coins escrowed from the Treasury. Members (not the
   Guildmaster) score hostile kills, catches or ore; the top score takes the prize (split on a tie,
@@ -282,5 +319,5 @@ rerolls, the trial state and time left, the Guildmaster, night and thunder. Snea
 
 - Unit tests (`./gradlew :guild:test`): ranks and promotion, board drawing, every contract kind's
   progress, caps and clipping, commission math, Treasury and withdrawal limits, commissions, trials,
-  persistence round-trip, menus.
+  persistence round-trip, menus, every farm rule and the Grand Quest share cap and reroll.
 - Not testable by Claude: how menus look in a real 26.3 client.
