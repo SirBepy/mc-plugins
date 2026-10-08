@@ -162,19 +162,38 @@ class BallItemsTest {
     }
 
     @Test
-    void markBlockRoundTripsStarAndSetAndNoSetBlockIsOverworld() {
+    void aLegacyBallHeadBlockIsRecognisedByItsStarMarker() {
         Location loc = new Location(world, 10, 65, 10);
         loc.getBlock().setType(Material.PLAYER_HEAD);
         Skull skull = (Skull) loc.getBlock().getState();
+        assertFalse(items.isBallBlock(skull), "a plain head block is not a ball");
 
-        // Before marking: a plain head block is not a ball block at all.
-        assertFalse(items.isBallBlock(skull));
-        assertEquals(BallSet.OVERWORLD, items.setOfBlock(skull), "no set PDC entry defaults to overworld");
-
-        items.markBlock(skull, BallSet.NETHER, 6);
+        skull.getPersistentDataContainer().set(items.starKey(), org.bukkit.persistence.PersistentDataType.INTEGER, 6);
 
         assertTrue(items.isBallBlock(skull));
-        assertEquals(6, items.starOfBlock(skull).orElseThrow());
-        assertEquals(BallSet.NETHER, items.setOfBlock(skull));
+    }
+
+    @Test
+    void everyBallItemCarriesItsOwnThreeDLook() {
+        ItemStack nether = items.createItem(BallSet.NETHER, 4);
+        ItemStack stone = items.createStoneItem(BallSet.END, 2);
+
+        assertEquals(java.util.List.of("dragonball_nether_4"), nether.getItemMeta().getCustomModelDataComponent().getStrings());
+        assertEquals(java.util.List.of("dragonball_stone"), stone.getItemMeta().getCustomModelDataComponent().getStrings());
+        assertTrue(items.hasCurrentLook(nether));
+        assertTrue(items.hasCurrentLook(stone));
+    }
+
+    @Test
+    void aBallMadeBeforeTheThreeDLookIsFlaggedForRemaking() {
+        ItemStack old = items.createItem(BallSet.OVERWORLD, 3);
+        var meta = old.getItemMeta();
+        var look = meta.getCustomModelDataComponent();
+        look.setStrings(java.util.List.of());
+        meta.setCustomModelDataComponent(look);
+        old.setItemMeta(meta);
+
+        assertFalse(items.hasCurrentLook(old));
+        assertTrue(items.hasCurrentLook(new ItemStack(Material.DIRT)), "only balls are ever remade");
     }
 }

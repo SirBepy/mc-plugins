@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { Vec3 } from 'vec3';
 import { assert, nbtText, sleep, teleport, waitFor, waitForLine } from './lib.mjs';
 import {
-  HUNTER, PLATFORM_Y, SIGN, WITNESS, configPath, logPath, openSuite, wishesPath,
+  HUNTER, PLATFORM_Y, SIGN, WITNESS, ballHitbox, configPath, logPath, openSuite, placeBallOn, wishesPath,
 } from './dragonballs-lib.mjs';
 
 // Dragon Balls, radar and summon: buying and pointing the radar, a full summon, the dormant refusal
@@ -74,19 +74,16 @@ try {
     await teleport(rcon, witness, target.x, target.y + 1, target.z + 1);
     await rcon.command(`dragonballs give ${WITNESS} ${radarStar}`);
     await sleep(200);
-    const ball = witness.inventory.items().find((i) => i.name === 'player_head');
-    await witness.equip(ball, 'hand');
-    const targetBlock = witness.blockAt(new Vec3(target.x, target.y, target.z));
-    await witness.placeBlock(targetBlock, new Vec3(0, 1, 0));
-    await sleep(300);
+    await placeBallOn(witness, target.x, target.y, target.z);
 
     await hunter.equip(radar, 'hand');
     await waitFor(() => hunter.spawnPoint && Math.floor(hunter.spawnPoint.x) === target.x
       && Math.floor(hunter.spawnPoint.z) === target.z, 'compass target moved to the lone active ball', 4_000);
 
-    // Clean up: break it back, return to DBHunter.
-    const block = witness.blockAt(new Vec3(target.x, target.y + 1, target.z));
-    await witness.dig(block).catch(() => {});
+    // Clean up: hit it back up, return to DBHunter.
+    const lone = ballHitbox(witness, target.x, target.y + 1, target.z);
+    if (lone) witness.attack(lone);
+    await sleep(300);
     await rcon.command(`dragonballs give ${HUNTER} ${radarStar}`);
   });
 
@@ -116,7 +113,8 @@ try {
 
     // A ready set only stirs without a Dragon Radar in the main hand.
     const ballSpot = Object.values(placed)[0];
-    const ballBlock = hunter.blockAt(new Vec3(ballSpot.x, ballSpot.y, ballSpot.z));
+    const ball = ballHitbox(hunter, ballSpot.x, ballSpot.y, ballSpot.z);
+    assert(ball, 'DBHunter sees the floating ball');
     const emptySlot = hunter.inventory.slots.findIndex((s, i) => i >= 36 && i <= 44 && !s);
     assert(emptySlot >= 0, 'DBHunter has an empty hotbar slot');
     hunter.setQuickBarSlot(emptySlot - 36);
@@ -127,7 +125,7 @@ try {
     };
     hunter._client.on('action_bar', recordActionBar);
     hunter._client.on('system_chat', recordActionBar);
-    await hunter.activateBlock(ballBlock);
+    await hunter.activateEntity(ball);
     await waitForLine(hunter, /The balls stir\.\.\. but need a Dragon Radar/, 5_000, hintSince);
     hunter._client.removeListener('action_bar', recordActionBar);
     hunter._client.removeListener('system_chat', recordActionBar);
@@ -143,6 +141,9 @@ try {
 
     await waitFor(async () => /passed/i.test(await rcon.command('execute if entity @e[type=ender_dragon,tag=dragonballs.shenron]')),
       'the Shenron/Porunga dragon entity exists', 5_000);
+    const glowing = plain(await rcon.command(
+      `minecraft:execute if entity @e[type=minecraft:item_display,tag=dragonballs.placed_ball,nbt={Glowing:1b},x=${BX},y=${PLATFORM_Y + 1},z=${BZ},distance=..4]`));
+    assert(/count: 7/i.test(glowing), `all 7 summoning balls glow (got "${glowing.trim()}")`);
 
     const wishSince = witness.lines.length;
     const logSizeBefore = fs.existsSync(logPath) ? fs.statSync(logPath).size : 0;
@@ -186,6 +187,9 @@ try {
     await waitForLine(witness, /Farewell\./, 5_000, byeSince);
     await waitFor(async () => !/passed/i.test(await rcon.command('execute if entity @e[type=ender_dragon,tag=dragonballs.shenron]')),
       'the dragon despawns once dismissed', 12_000);
+    const left = plain(await rcon.command(
+      `minecraft:execute if entity @e[tag=dragonballs.placed_ball,x=${BX},y=${PLATFORM_Y + 1},z=${BZ},distance=..4]`));
+    assert(!/passed/i.test(left), `the 7 floating balls left the summon spot (got "${left.trim()}")`);
     // Scattering loads (often generates) each destination chunk asynchronously, so the registry can
     // take well over 20 s to catch up on a fresh e2e world; an instrumented run measured one star
     // still short of "flown away" at the old 45s cutoff, settling at 42-50s depending on the run.
@@ -211,21 +215,20 @@ try {
       'still no dragon', 2_000);
   });
 
-  // --- 11. a stone ball can still be found, broken and carried -------------------------------------
-  await step('a stone ball can be broken and picked up as its stone item', async () => {
+  // --- 11. a stone ball can still be found, hit and carried ----------------------------------------
+  await step('a stone ball can be hit and picked up as its stone item', async () => {
     const s = await status();
     const overworldBall = Object.entries(s).find(([, v]) => v.state === 'placed' && v.world === 'world');
     assert(overworldBall, `at least one stone ball landed in the overworld (got ${JSON.stringify(s)})`);
     const [starStr, loc] = overworldBall;
     const star = Number(starStr);
     await rcon.command(`minecraft:forceload add ${loc.x - 8} ${loc.z - 8} ${loc.x + 8} ${loc.z + 8}`);
-    await teleport(rcon, hunter, loc.x, loc.y + 1, loc.z);
-    const block = hunter.blockAt(new Vec3(loc.x, loc.y, loc.z));
+    await teleport(rcon, hunter, loc.x + 1.5, loc.y, loc.z + 0.5);
+    await waitFor(() => ballHitbox(hunter, loc.x, loc.y, loc.z), 'DBHunter sees the floating stone ball', 5_000);
     const countBefore = hunter.inventory.items().filter((i) => i.name === 'player_head').length;
-    await hunter.dig(block);
-    await sleep(500);
-    const countAfter = hunter.inventory.items().filter((i) => i.name === 'player_head').length;
-    assert(countAfter === countBefore + 1, 'breaking a stone ball gives an item back');
+    hunter.attack(ballHitbox(hunter, loc.x, loc.y, loc.z));
+    await waitFor(() => hunter.inventory.items().filter((i) => i.name === 'player_head').length === countBefore + 1,
+      'hitting a stone ball gives an item back', 3_000);
     const after = await status();
     assert(after[star].state === 'held' && after[star].holder === HUNTER && after[star].stone,
       `star ${star} held, still stone (got ${JSON.stringify(after[star])})`);

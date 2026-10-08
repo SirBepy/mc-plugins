@@ -54,6 +54,36 @@ export async function releaseNetherPlatform(rcon, bx, bz) {
 /** A thin solid layer `height` blocks above the Nether platform's floor, so a summon's ceiling
  * scan has a known, deterministic distance to clamp against (real cavern terrain above the
  * platform's own carved-out air isn't predictable). Paired with removeNetherCeiling. */
+/** A placed ball's hitbox: the Interaction entity floating in block (x, y, z), 0.125 above its floor. */
+export function ballHitbox(bot, x, y, z) {
+  return Object.values(bot.entities).find((e) => e.name === 'interaction'
+    && Math.abs(e.position.x - (x + 0.5)) < 0.1 && Math.abs(e.position.z - (z + 0.5)) < 0.1
+    && Math.floor(e.position.y) === y);
+}
+
+/** Right-clicks the top of the floor block at (x, y, z) with a ball in hand, the way a player
+ * places a head; the plugin floats the ball in the block above instead, so this waits for its
+ * hitbox (Mineflayer's placeBlock waits for a block that never comes). A column a prior pickup just
+ * vacated can still hold the dropped-item entity for a tick or two and refuse the placement, so a
+ * short retry rides that out instead of failing the whole suite on one unlucky tick. */
+export async function placeBallOn(bot, x, y, z) {
+  const ref = bot.blockAt(new Vec3(x, y, z));
+  for (let attempt = 1; ; attempt++) {
+    try {
+      // The caller may already have equipped it, but a retry needs its own: a refused attempt can
+      // leave the hand desynced from the server's view of it.
+      const ball = bot.inventory.items().find((it) => it.name === 'player_head');
+      if (ball) await bot.equip(ball, 'hand');
+      await bot.activateBlock(ref, new Vec3(0, 1, 0));
+      await waitFor(() => ballHitbox(bot, x, y + 1, z), `a ball floats above ${x} ${y} ${z}`, 3_000);
+      return;
+    } catch (error) {
+      if (attempt >= 3) throw error;
+      await sleep(250);
+    }
+  }
+}
+
 export async function addNetherCeiling(rcon, bx, bz, y, height) {
   await rcon.command(`minecraft:execute in minecraft:the_nether run fill ${bx - 8} ${y + height} ${bz - 8} ${bx + 8} ${y + height} ${bz + 8} minecraft:netherrack`);
 }
@@ -156,26 +186,10 @@ export async function openSuite(suiteName) {
   }
 
   /** Hunter stands at STAND (one block outside the cluster, within reach of all 7 columns) and
-   * places `star` (must already be in hand) on top of the floor block at ballOffset(index).
-   * A column a prior pickup just vacated can still hold the dropped-item entity for a tick or
-   * two, which gets BlockPlaceEvent refused ("the block is still air"); a short retry rides that
-   * out instead of failing the whole suite on one unlucky tick. */
+   * floats a ball over the floor block at ballOffset(index). */
   async function placeBallAt(bot, index) {
     const { x, y, z } = ballOffset(index);
-    const ref = bot.blockAt(new Vec3(x, y, z));
-    for (let attempt = 1; ; attempt++) {
-      try {
-        // The caller already equips before calling, but a retry needs its own: the refused
-        // attempt below can leave the hand desynced from the server's view of it.
-        const ball = bot.inventory.items().find((it) => it.name === 'player_head');
-        if (ball) await bot.equip(ball, 'hand');
-        await bot.placeBlock(ref, new Vec3(0, 1, 0));
-        return;
-      } catch (error) {
-        if (attempt >= 3) throw error;
-        await sleep(250);
-      }
-    }
+    await placeBallOn(bot, x, y, z);
   }
 
   // A toss flies about 4 blocks, and each re-pickup leaves the bot where the ball landed, so tossing

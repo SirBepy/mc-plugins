@@ -13,7 +13,8 @@ import org.bukkit.inventory.PlayerInventory;
  * On join: delete any ball item the owning set's registry doesn't actually have HELD by this player
  * (a stray dupe from creative or a duplication glitch), and swap any stone item whose cooldown
  * already ended while they were offline (the lazy half of {@link BallRegistry#clearStone}'s sweep,
- * which only reaches online players at the moment stone ends). Each item is checked against its OWN
+ * which only reaches online players at the moment stone ends), and re-make a ball carried since
+ * before the 3D look existed so it shows the model. Each item is checked against its OWN
  * set's registry, never a different set's.
  */
 public final class BallJoinDupeListener implements Listener {
@@ -38,6 +39,8 @@ public final class BallJoinDupeListener implements Listener {
                 inventory.setItemInOffHand(null);
             } else if (sets.items().isStoneItem(offHand) && !registry.isStone(star)) {
                 inventory.setItemInOffHand(registry.createItem(star));
+            } else if (!sets.items().hasCurrentLook(offHand)) {
+                inventory.setItemInOffHand(sets.items().itemFor(registry.set(), star, sets.items().isStoneItem(offHand)));
             }
         });
     }
@@ -49,6 +52,8 @@ public final class BallJoinDupeListener implements Listener {
                 inventory.setItem(slot, null);
             } else if (sets.items().isStoneItem(item) && !registry.isStone(star)) {
                 inventory.setItem(slot, registry.createItem(star));
+            } else if (!sets.items().hasCurrentLook(item)) {
+                inventory.setItem(slot, sets.items().itemFor(registry.set(), star, sets.items().isStoneItem(item)));
             }
         });
     }

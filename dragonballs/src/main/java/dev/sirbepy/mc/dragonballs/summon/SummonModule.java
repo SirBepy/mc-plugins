@@ -3,6 +3,7 @@ package dev.sirbepy.mc.dragonballs.summon;
 import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.effects.SummonEffects;
+import dev.sirbepy.mc.dragonballs.placed.FloatingBalls;
 import dev.sirbepy.mc.dragonballs.radar.RadarItems;
 import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import dev.sirbepy.mc.dragonballs.summon.curse.CurseListener;
@@ -31,8 +32,8 @@ public final class SummonModule {
         void shutdown();
     }
 
-    public static Handle register(JavaPlugin plugin, BallSets sets, Supplier<DragonBallsConfig> config,
-                                    SummonEffects effects) {
+    public static Handle register(JavaPlugin plugin, BallSets sets, FloatingBalls balls,
+                                    Supplier<DragonBallsConfig> config, SummonEffects effects) {
         Supplier<SummonConfig> summonConfig = () -> SummonConfig.from(plugin.getConfig());
         File dataFolder = plugin.getDataFolder();
         CurseStore curses = new CurseStore(new File(dataFolder, "curses.yml"), plugin.getLogger());
@@ -43,7 +44,7 @@ public final class SummonModule {
 
         BedrockForms bedrockForms = BedrockForms.create(plugin);
         CurseListener curseListener = new CurseListener(curses, System::currentTimeMillis);
-        SummonTriggerListener trigger = new SummonTriggerListener(plugin, sets, sessions, bedrockForms,
+        SummonTriggerListener trigger = new SummonTriggerListener(plugin, sets, balls, sessions, bedrockForms,
                 new RadarItems(plugin), config);
         SummonChatListener chat = new SummonChatListener(plugin, sessions);
 

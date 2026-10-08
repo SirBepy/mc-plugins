@@ -3,9 +3,7 @@ package dev.sirbepy.mc.dragonballs.registry;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
-import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.Skull;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.AfterEach;
@@ -79,16 +77,6 @@ class BallSetsTest {
     @Test
     void registryForANonBallItemIsEmpty() {
         assertTrue(sets.registryFor(new ItemStack(Material.DIRT)).isEmpty());
-    }
-
-    @Test
-    void registryForABlockFindsTheRegistryOwningItsSet() {
-        Location loc = new Location(world, 5, 65, 5);
-        loc.getBlock().setType(Material.PLAYER_HEAD);
-        Skull skull = (Skull) loc.getBlock().getState();
-        items.markBlock(skull, BallSet.END, 2);
-
-        assertEquals(end, sets.registryFor(skull).orElseThrow());
     }
 
     @Test

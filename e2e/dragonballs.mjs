@@ -1,6 +1,6 @@
 import { Vec3 } from 'vec3';
 import { assert, sleep, teleport, waitFor, waitForLine } from './lib.mjs';
-import { HUNTER, PLATFORM_Y, WITNESS, openSuite } from './dragonballs-lib.mjs';
+import { HUNTER, PLATFORM_Y, WITNESS, ballHitbox, openSuite } from './dragonballs-lib.mjs';
 
 // Dragon Balls, ball lifecycle: status, the dupe guard, slowness while carrying, the container and
 // hopper guards, death drops and place/break. Radar and summon live in dragonballs-summon.mjs.
@@ -185,27 +185,39 @@ try {
     await sleep(300);
   });
 
-  // --- 7. place/break: breaking a placed ball gives the ball item back, not a plain head ------------
-  await step('placing then breaking a ball gives the exact same ball back', async () => {
+  // --- 7. place/pick up: a placed ball floats (no head block) and hitting it gives it back ----------
+  await step('a placed ball floats, spins and hitting it gives the exact same ball back', async () => {
     await teleport(rcon, hunter, STAND.x, STAND.y, STAND.z);
     const ball = hunter.inventory.items().find((i) => i.name === 'player_head');
     await hunter.equip(ball, 'hand');
+    const countBefore = hunter.inventory.items().filter((i) => i.name === 'player_head').length;
     await placeBallAt(hunter, 0);
-    await sleep(300);
-    // placeBallAt puts the head on top of the floor block at ballOffset, one block above it.
+    // placeBallAt floats the ball in the block above the floor block at ballOffset.
     const { x, z } = ballOffset(0);
     const y = ballOffset(0).y + 1;
-    const pbv = plain(await rcon.command(`minecraft:data get block ${x} ${y} ${z} PublicBukkitValues`));
-    assert(/dragonballs:star/.test(pbv), `placed block carries the dragonballs:star PDC tag (got ${pbv})`);
+    const blockThere = plain(await rcon.command(`minecraft:execute if block ${x} ${y} ${z} minecraft:air`));
+    assert(/passed/i.test(blockThere), `no head block is left where the ball floats (got ${blockThere.trim()})`);
+    const display = plain(await rcon.command(
+      `minecraft:execute if entity @e[type=minecraft:item_display,tag=dragonballs.placed_ball,x=${x + 0.5},y=${y + 0.5},z=${z + 0.5},distance=..0.1]`));
+    assert(/passed/i.test(display), `a ball display floats in the block's centre (got ${display.trim()})`);
+    assert(hunter.inventory.items().filter((i) => i.name === 'player_head').length === countBefore - 1,
+      'placing took the ball out of the inventory');
     const before = await status();
     const placedStar = Object.entries(before).find(([, v]) => v.state === 'placed' && v.x === x && v.z === z)[0];
 
-    const block = hunter.blockAt(new Vec3(x, y, z));
-    const countBefore = hunter.inventory.items().filter((i) => i.name === 'player_head').length;
-    await hunter.dig(block);
-    await sleep(500);
-    const countAfter = hunter.inventory.items().filter((i) => i.name === 'player_head').length;
-    assert(countAfter === countBefore + 1, `breaking it returns exactly one ball item (before=${countBefore} after=${countAfter})`);
+    const spinBefore = plain(await rcon.command(
+      `minecraft:data get entity @e[type=minecraft:item_display,tag=dragonballs.placed_ball,limit=1,x=${x + 0.5},y=${y + 0.5},z=${z + 0.5},distance=..0.1] transformation.left_rotation`));
+    await sleep(2_200);
+    const spinAfter = plain(await rcon.command(
+      `minecraft:data get entity @e[type=minecraft:item_display,tag=dragonballs.placed_ball,limit=1,x=${x + 0.5},y=${y + 0.5},z=${z + 0.5},distance=..0.1] transformation.left_rotation`));
+    assert(spinBefore !== spinAfter, `the ball turned (before ${spinBefore.trim()}, after ${spinAfter.trim()})`);
+
+    hunter.attack(ballHitbox(hunter, x, y, z));
+    await waitFor(() => hunter.inventory.items().filter((i) => i.name === 'player_head').length === countBefore,
+      'hitting it returns exactly one ball item', 3_000);
+    const gone = plain(await rcon.command(
+      `minecraft:execute if entity @e[tag=dragonballs.placed_ball_hitbox,x=${x + 0.5},y=${y},z=${z + 0.5},distance=..1]`));
+    assert(!/passed/i.test(gone), `the floating ball is gone once picked up (got ${gone.trim()})`);
     const after = await status();
     assert(after[placedStar].state === 'held' && after[placedStar].holder === HUNTER,
       `star ${placedStar} is held by DBHunter again (got ${JSON.stringify(after[placedStar])})`);

@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.dragonballs.station;
 
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
+import dev.sirbepy.mc.dragonballs.placed.FloatingBalls;
 import dev.sirbepy.mc.dragonballs.radar.RadarItems;
 import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import org.bukkit.plugin.PluginManager;
@@ -14,18 +15,17 @@ public final class StationModule {
     private StationModule() {
     }
 
-    public static void register(JavaPlugin plugin, BallSets sets, Supplier<DragonBallsConfig> config) {
+    public static void register(JavaPlugin plugin, BallSets sets, FloatingBalls balls, Supplier<DragonBallsConfig> config) {
         Supplier<StationConfig> stationConfig = () -> StationConfig.from(plugin.getConfig());
         RadarItems radarItems = new RadarItems(plugin);
-        StationDisplay display = new StationDisplay(plugin, config, stationConfig);
+        StationDisplay display = new StationDisplay(plugin, stationConfig, balls, sets.items());
         RadarShop shop = new RadarShop(plugin, stationConfig, config, radarItems, sets);
 
         PluginManager pluginManager = plugin.getServer().getPluginManager();
         pluginManager.registerEvents(display, plugin);
-        pluginManager.registerEvents(new StationProtectionListener(display), plugin);
         pluginManager.registerEvents(shop, plugin);
 
-        // Worlds aren't guaranteed loaded yet during onEnable; placeAll() quietly skips any head
+        // Worlds aren't guaranteed loaded yet during onEnable; placeAll() quietly skips any pedestal
         // whose world isn't up, and StationDisplay.onChunkLoad() catches it once that world does load.
         plugin.getServer().getScheduler().runTask(plugin, display::placeAll);
     }

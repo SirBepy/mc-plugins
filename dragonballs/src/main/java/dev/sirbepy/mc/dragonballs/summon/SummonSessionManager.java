@@ -16,9 +16,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.block.Skull;
 import org.bukkit.entity.Player;
 
 import java.io.File;
@@ -150,6 +148,7 @@ public final class SummonSessionManager {
                 clock.getAsLong());
 
         effects.onSummon(scene);
+        registry.glowPlaced(true);
         Bukkit.broadcast(Component.text(summoner.getName() + " has summoned " + dragon.displayName(set) + "!", NamedTextColor.GOLD)
                 .decorate(TextDecoration.BOLD));
         String opening = dragon == DragonType.SHENRON
@@ -302,7 +301,8 @@ public final class SummonSessionManager {
             return;
         }
         BallRegistry registry = sets.registry(s.set);
-        removeHeadBlocks(s.scene.ballOrigins());
+        registry.glowPlaced(false);
+        s.scene.ballOrigins().keySet().forEach(registry::hidePlaced);
         if (s.grantedAny) {
             registry.incrementWishCount();
         }
@@ -327,14 +327,6 @@ public final class SummonSessionManager {
             registry.setStoneUntil(StoneMode.MINECRAFT_DAYS, currentDay + cfg.stoneDays());
         } else {
             registry.setStoneUntil(StoneMode.REAL_HOURS, clock.getAsLong() + Duration.ofHours(cfg.stoneRealHours()).toMillis());
-        }
-    }
-
-    private void removeHeadBlocks(Map<Integer, Location> origins) {
-        for (Location loc : origins.values()) {
-            if (loc.getBlock().getState() instanceof Skull) {
-                loc.getBlock().setType(Material.AIR);
-            }
         }
     }
 

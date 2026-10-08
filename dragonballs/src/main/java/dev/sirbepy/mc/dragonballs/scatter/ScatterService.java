@@ -4,7 +4,6 @@ import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DifficultySchedule;
 import dev.sirbepy.mc.dragonballs.config.DifficultyTier;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
-import dev.sirbepy.mc.dragonballs.item.BallItems;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
 import dev.sirbepy.mc.dragonballs.registry.BallScatterer;
 import dev.sirbepy.mc.dragonballs.registry.BallView;
@@ -14,8 +13,6 @@ import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.block.Block;
-import org.bukkit.block.Skull;
 import org.bukkit.generator.structure.GeneratedStructure;
 import org.bukkit.generator.structure.Structure;
 import org.bukkit.generator.structure.StructurePiece;
@@ -109,20 +106,17 @@ public final class ScatterService implements BallScatterer {
 
     private final JavaPlugin plugin;
     private final Supplier<DragonBallsConfig> config;
-    private final BallItems items;
     private final Random random = new Random();
     private final ScatterTownyGuard townyGuard;
     private final Executor mainThread;
-    // "<set>:<star>" of every ball whose placement is still running. Until it lands, the registry
-    // still points at the ball's old (already removed) head, and a chunk load there makes the
-    // self-heal ask for a second scatter of the same star: measured on the test server, 2026-10-08,
-    // 3 of 21 balls got two heads before this guard.
+    // "<set>:<star>" of every ball whose placement is still running, so a second scatter of the same
+    // star (a void respawn, an admin re-roll) can't race it: before this guard the old chunk-load
+    // self-heal did exactly that on the test server, 2026-10-08, 3 of 21 balls landing twice.
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
 
-    public ScatterService(JavaPlugin plugin, Supplier<DragonBallsConfig> config, BallItems items) {
+    public ScatterService(JavaPlugin plugin, Supplier<DragonBallsConfig> config) {
         this.plugin = plugin;
         this.config = config;
-        this.items = items;
         // Built once at startup, not per scatter: Towny being (dis/en)abled only changes on a server
         // restart, same lifetime as every other soft-dependency guard in this codebase (see carry).
         this.townyGuard = ScatterTownyGuard.load(plugin);
@@ -591,13 +585,7 @@ public final class ScatterService implements BallScatterer {
     }
 
     private void placeHead(int star, World world, int x, int y, int z, boolean stone, BallRegistry registry, String kind) {
-        Block block = world.getBlockAt(x, y, z);
-        block.setType(Material.PLAYER_HEAD);
-        Skull skull = (Skull) block.getState();
-        items.markBlock(skull, registry.set(), star);
-        items.applyBlockTexture(skull, registry.set(), star, stone);
-        skull.update(true);
-        registry.markPlaced(star, block.getLocation(), stone);
+        registry.markPlaced(star, world.getBlockAt(x, y, z).getLocation(), stone);
         plugin.getLogger().info("Placed " + registry.set().id() + " " + star + "-star at "
                 + world.getName() + " " + x + " " + y + " " + z + " (" + kind + ")");
     }

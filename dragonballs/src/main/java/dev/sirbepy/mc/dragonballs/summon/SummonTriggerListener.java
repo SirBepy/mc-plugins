@@ -4,10 +4,12 @@ import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.effects.DragonType;
+import dev.sirbepy.mc.dragonballs.placed.FloatingBalls;
 import dev.sirbepy.mc.dragonballs.radar.RadarItems;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
 import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import io.papermc.paper.dialog.Dialog;
+import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import io.papermc.paper.registry.data.dialog.ActionButton;
 import io.papermc.paper.registry.data.dialog.DialogBase;
 import io.papermc.paper.registry.data.dialog.action.DialogAction;
@@ -23,13 +25,10 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
-import org.bukkit.block.Block;
-import org.bukkit.block.Skull;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -38,16 +37,15 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 /**
- * Right-click (or hit) on a placed ball head: either hints why nothing happened (incomplete set,
- * dormant, no matching Dragon Radar in hand), or offers the choice of dragon. The clicked head's own
- * set is resolved through {@link BallSets#registryFor(Skull)}, so a Nether ball is judged against
- * the Nether 7 and a Nether radar, never the Overworld's. A summon costs the Dragon Radar held in
+ * Right-click (or hit) on a floating ball: either hints why nothing happened (incomplete set,
+ * dormant, no matching Dragon Radar in hand), or offers the choice of dragon. The clicked ball's own
+ * set comes from its hitbox ({@link FloatingBalls#ballOf}), so a Nether ball is judged against the
+ * Nether 7 and a Nether radar, never the Overworld's. A summon costs the Dragon Radar held in
  * the main hand - but only one matching the clicked ball's own set; a radar of a different set is
  * never spent, same as holding no radar at all - the spent radar shatters when the dragon appears
  * (Joe, 2026-10-06). The choice UI itself (Dialog/Bedrock form/chat fallback) is not
@@ -61,16 +59,18 @@ public final class SummonTriggerListener implements Listener {
 
     private final JavaPlugin plugin;
     private final BallSets sets;
+    private final FloatingBalls balls;
     private final SummonSessionManager sessions;
     private final BedrockForms bedrockForms;
     private final RadarItems radars;
     private final Supplier<DragonBallsConfig> config;
     private final Map<UUID, Long> lastHintMillis = new ConcurrentHashMap<>();
 
-    public SummonTriggerListener(JavaPlugin plugin, BallSets sets, SummonSessionManager sessions,
+    public SummonTriggerListener(JavaPlugin plugin, BallSets sets, FloatingBalls balls, SummonSessionManager sessions,
                                   BedrockForms bedrockForms, RadarItems radars, Supplier<DragonBallsConfig> config) {
         this.plugin = plugin;
         this.sets = sets;
+        this.balls = balls;
         this.sessions = sessions;
         this.bedrockForms = bedrockForms;
         this.radars = radars;
@@ -78,37 +78,41 @@ public final class SummonTriggerListener implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true)
-    public void onInteract(PlayerInteractEvent event) {
+    public void onUse(PlayerInteractEntityEvent event) {
         if (event.getHand() != EquipmentSlot.HAND) {
             return;
         }
-        boolean slap = event.getAction() == Action.LEFT_CLICK_BLOCK;
-        if (!slap && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
-            return;
+        balls.ballOf(event.getRightClicked()).ifPresent(ref -> {
+            event.setCancelled(true);
+            clicked(event.getPlayer(), ref, false);
+        });
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onHit(PrePlayerAttackEntityEvent event) {
+        balls.ballOf(event.getAttacked()).ifPresent(ref -> {
+            if (clicked(event.getPlayer(), ref, true)) {
+                event.setCancelled(true);
+            }
+        });
+    }
+
+    /** @return true when the click was taken as a summon attempt (so a hit must not also pick the
+     * ball up). */
+    boolean clicked(Player player, FloatingBalls.BallRef ref, boolean slap) {
+        BallSet set = ref.set();
+        BallRegistry registry = sets.registry(set);
+        Location clicked = ref.block();
+        if (!registry.isPlacedAt(ref.star(), clicked)) {
+            return false;
         }
-        Block block = event.getClickedBlock();
-        if (block == null || !(block.getState() instanceof Skull skull)) {
-            return;
-        }
-        BallRegistry registry = sets.registryFor(skull).orElse(null);
-        if (registry == null) {
-            return;
-        }
-        BallSet set = registry.set();
-        OptionalInt star = sets.items().starOfBlock(skull);
-        if (star.isEmpty() || !registry.isPlacedAt(star.getAsInt(), block.getLocation())) {
-            return;
-        }
-        Player player = event.getPlayer();
-        Location clicked = block.getLocation();
         boolean holdingMatchingRadar = isHoldingMatchingRadar(player, set);
         SummonTrigger.Readiness readiness = sessions.evaluate(player.getUniqueId(), clicked, set);
-        // Hitting a ball is also how it gets broken and carried, so a hit only summons when it
+        // Hitting a ball is also how it gets picked up and carried, so a hit only summons when it
         // couldn't mean anything else: the matching radar in hand and the set ready.
         if (slap && (!holdingMatchingRadar || readiness != SummonTrigger.Readiness.READY)) {
-            return;
+            return false;
         }
-        event.setCancelled(true);
 
         switch (readiness) {
             case READY -> {
@@ -121,10 +125,11 @@ public final class SummonTriggerListener implements Listener {
             case INCOMPLETE -> hint(player, "<gray>The ball glows faintly... you need all 7, within 2 blocks.");
             case DORMANT -> hint(player, "<gray>The balls are stone. They sleep.");
             case SESSION_ACTIVE, BANNED -> {
-                // No hint defined by the rulebook for either case; the interaction is still
-                // cancelled above so nothing vanilla happens either.
+                // No hint defined by the rulebook for either case; the click is still consumed so
+                // nothing else happens either.
             }
         }
+        return true;
     }
 
     private boolean isHoldingMatchingRadar(Player player, BallSet set) {

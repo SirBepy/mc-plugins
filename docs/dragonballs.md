@@ -29,7 +29,7 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
   apart). Porunga keeps his name in every set. The End set
   sleeps (no balls, no radar sales) until the End opens; it scatters the first time the server
   starts with the End open.
-- Every ball sits as a head inside a structure (Joe, 2026-10-08): in a room, on a roof or on a
+- Every ball sits inside a structure (Joe, 2026-10-08): in a room, on a roof or on a
   street of a village, tower, manor, ruin, camp or dungeon (vanilla, Terralith, Structory, Structory:
   Towers, Dungeons and Taverns; never an ocean structure or a mineshaft). Nether balls only land in
   structures that come with their own mobs (fortresses, bastions, Incendium's piglin villages,
@@ -37,7 +37,14 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
   halls); End balls in end cities and Dungeons and Taverns' End castle and lighthouse. The lists are
   `scatter.structures` in config.yml. Only if no listed structure fits a set's distance ring, even
   widened, does a ball land on plain ground. Overworld balls scattered before this rule keep their
-  spots until that set's next scatter. No ball ever lands inside a Towny town. Walk up, break one, pick it up.
+  spots until that set's next scatter. No ball ever lands inside a Towny town. Walk up and hit it to pick it up.
+- A placed ball floats in its block, slowly spinning and bobbing, 3/4 of a block wide and lit even
+  in a dark room (Joe, 2026-10-08). Java players see a round 3D ball from the server pack, which is
+  required to join since then; Bedrock players see the ball as a head. Placing a ball sets it
+  floating where the head would have gone; nothing else can be placed into its block, and
+  explosions, water, pistons and fire can't touch it. Hit it to pick it up; inside a town only
+  someone allowed to break blocks there can take it. The 7 balls over the spawn station's pedestals
+  float the same way, as decoration only.
 - A ball never leaves its own dimension: go through a portal, `/home`, `/spawn` or any other
   cross-dimension teleport and it drops where you left (e.g. at the Nether portal). Dropped balls
   can't be carried through a portal either.
@@ -59,10 +66,11 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
   hand the balls only stir ("The balls stir... but need a Dragon Radar", or a Nether / End Dragon
   Radar). The radar shatters when the dragon appears, so every summon costs one (Joe, 2026-10-06);
   a radar of the wrong set is never used up. A hit without a radar, or on a set that isn't ready,
-  still just breaks the ball so it can be carried.
+  still just picks the ball up so it can be carried.
 - Only one dragon at a time: while one is summoned, no other set can summon.
-- When the 7 balls are placed, each lights up one after another over about 2 seconds before the
-  dragon appears: harmless effect-only lightning for the Overworld and End, a burst of flame for
+- While a dragon is summoned, its 7 balls glow in their set's colour (the only time a ball glows:
+  the outline shows through walls). When the 7 balls are placed, each lights up one after another
+  over about 2 seconds before the dragon appears: harmless effect-only lightning for the Overworld and End, a burst of flame for
   the Nether (never a real strike or a real fire). The dragon itself looks the same size in the
   Overworld; in the End it keeps that size and trails a purple aura for the whole session; in the
   Nether it's half-size, low enough to clear the cavern ceiling, and wrapped in a column of black
@@ -85,7 +93,7 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
   Nether distances are the overworld ones at the Nether's 1/8 scale, doubled (Joe, 2026-10-08:
   the Nether hunt was too short a walk). The End set always lands
   1000-3000 blocks from the End's centre, on the outer islands.
-- For 3 Minecraft days the set's balls are **stone**: you can find, break and carry them, but the
+- For 3 Minecraft days the set's balls are **stone**: you can find, pick up and carry them, but the
   radar can't see them and they can't summon. Then they wake up wherever they are. Other sets are
   not affected.
 

@@ -14,10 +14,12 @@ import org.bukkit.inventory.PlayerInventory;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -44,6 +46,10 @@ public final class BallRegistry {
     private long wishCount;
 
     private BallScatterer scatterer;
+    private PlacedBallLook look = PlacedBallLook.NONE;
+    // Stars still PLACED on paper but already flying off after a wish, until their new spot lands;
+    // never shown again at the old spot (memory only: a restart mid-flight just shows the old spot).
+    private final Set<Integer> hidden = new HashSet<>();
 
     public BallRegistry(File file, Logger logger, BallItems items, BallSet set) {
         this.store = new BallRegistryStore(file, logger);
@@ -64,6 +70,36 @@ public final class BallRegistry {
     /** Set once at startup; late-bound so {@code ScatterService} can depend on this registry too. */
     public void setScatterer(BallScatterer scatterer) {
         this.scatterer = scatterer;
+    }
+
+    /** Set once at startup, before {@link #showPlaced}. */
+    public void setLook(PlacedBallLook look) {
+        this.look = look;
+    }
+
+    /** Shows every PLACED ball's look; called once at startup, after {@link #setLook}. */
+    public void showPlaced() {
+        for (Ball ball : balls.values()) {
+            if (ball.state == BallState.PLACED && !hidden.contains(ball.star)) {
+                Location block = blockLocation(ball);
+                if (block != null) {
+                    look.show(set, ball.star, block, ball.stone);
+                }
+            }
+        }
+    }
+
+    /** The ball leaves its spot after a wish: its look goes now, its registry entry when it lands. */
+    public void hidePlaced(int star) {
+        Ball ball = balls.get(star);
+        if (ball != null && ball.state == BallState.PLACED) {
+            hidden.add(star);
+            look.hide(set, star);
+        }
+    }
+
+    public void glowPlaced(boolean on) {
+        look.glow(set, on);
     }
 
     public boolean hasSavedState() {
@@ -139,12 +175,15 @@ public final class BallRegistry {
         ball.holderName = null;
         ball.entityId = null;
         save();
+        hidden.remove(star);
+        look.show(set, star, location, stone);
     }
 
     /** {@code stone} carries over the item's own look: a stone ball stays stone while held, same as
      * placed/dropped, until the global stone-ends sweep (or its own lazy catch-up) swaps it back. */
     public void markHeld(int star, Player holder, boolean stone) {
         Ball ball = require(star);
+        leavePlaced(ball);
         long now = System.currentTimeMillis();
         ball.state = BallState.HELD;
         ball.stone = stone;
@@ -159,6 +198,7 @@ public final class BallRegistry {
 
     public void markDropped(int star, Item entity, boolean stone) {
         Ball ball = require(star);
+        leavePlaced(ball);
         ball.state = BallState.DROPPED;
         ball.stone = stone;
         ball.entityId = entity.getUniqueId();
@@ -216,7 +256,7 @@ public final class BallRegistry {
         int minX = chunkX * 16;
         int minZ = chunkZ * 16;
         for (Ball ball : balls.values()) {
-            if (ball.state != BallState.PLACED || !worldName.equals(ball.worldName)) {
+            if (ball.state != BallState.PLACED || hidden.contains(ball.star) || !worldName.equals(ball.worldName)) {
                 continue;
             }
             int bx = (int) Math.floor(ball.x);
@@ -286,9 +326,9 @@ public final class BallRegistry {
 
     /**
      * Ends the cooldown and sweeps every already-reachable stone ball back to active: online
-     * players' inventories, placed heads in loaded chunks, and dropped item entities in loaded
-     * chunks. A ball that's offline-held or in an unloaded chunk is swept lazily instead, on join or
-     * chunk load, by the listeners that already run then. One sweep at the moment stone ends is
+     * players' inventories, placed balls (their look is re-shown active), and dropped item entities
+     * in loaded chunks. A ball that's offline-held or dropped in an unloaded chunk is swept lazily
+     * instead, on join or chunk load, by the listeners that already run then. One sweep at the moment stone ends is
      * enough; nothing here runs on a tick loop.
      */
     public void clearStone() {
@@ -303,7 +343,12 @@ public final class BallRegistry {
                 case HELD -> {
                     // Live inventory swap happens below, once per online player (cheaper than per ball).
                 }
-                case PLACED -> swapPlacedBlockIfLoaded(ball);
+                case PLACED -> {
+                    Location block = blockLocation(ball);
+                    if (block != null && !hidden.contains(ball.star)) {
+                        look.show(set, ball.star, block, false);
+                    }
+                }
                 case DROPPED -> swapDroppedEntityIfLoaded(ball);
             }
         }
@@ -311,24 +356,6 @@ public final class BallRegistry {
             sweepInventory(player.getInventory());
         }
         save();
-    }
-
-    private void swapPlacedBlockIfLoaded(Ball ball) {
-        var world = Bukkit.getWorld(ball.worldName);
-        if (world == null) {
-            return;
-        }
-        int bx = (int) Math.floor(ball.x);
-        int bz = (int) Math.floor(ball.z);
-        if (!world.isChunkLoaded(bx >> 4, bz >> 4)) {
-            return;
-        }
-        var block = world.getBlockAt(bx, (int) Math.floor(ball.y), bz);
-        if (block.getState() instanceof org.bukkit.block.Skull skull && items.isBallBlock(skull)
-                && items.starOfBlock(skull).orElse(-1) == ball.star) {
-            items.applyBlockTexture(skull, set, ball.star, false);
-            skull.update(true);
-        }
     }
 
     private void swapDroppedEntityIfLoaded(Ball ball) {
@@ -373,6 +400,19 @@ public final class BallRegistry {
             throw new IllegalStateException("BallRegistry.setScatterer was never called");
         }
         return scatterer;
+    }
+
+    private void leavePlaced(Ball ball) {
+        if (ball.state == BallState.PLACED) {
+            hidden.remove(ball.star);
+            look.hide(set, ball.star);
+        }
+    }
+
+    private static Location blockLocation(Ball ball) {
+        var world = ball.worldName == null ? null : Bukkit.getWorld(ball.worldName);
+        return world == null ? null
+                : new Location(world, Math.floor(ball.x), Math.floor(ball.y), Math.floor(ball.z));
     }
 
     private static void setLocation(Ball ball, Location location) {

@@ -3,13 +3,14 @@ package dev.sirbepy.mc.dragonballs.command;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
+import dev.sirbepy.mc.dragonballs.placed.FloatingBalls;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
 import dev.sirbepy.mc.dragonballs.registry.BallScatterer;
 import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Interaction;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DragonBallsCommandTest {
 
@@ -69,15 +71,18 @@ class DragonBallsCommandTest {
     }
 
     @Test
-    void scatterRemovesTheOldHeadsBeforeMovingTheSet() {
-        Block oldHead = world.getBlockAt(10, 40, 10);
-        oldHead.setType(Material.PLAYER_HEAD);
-        nether.markPlaced(1, oldHead.getLocation(), false);
+    void scatterTakesTheOldBallsAwayBeforeMovingTheSet() {
+        FloatingBalls balls = new FloatingBalls(MockBukkit.createMockPlugin(), items, id -> false);
+        nether.setLook(balls);
+        Block oldSpot = world.getBlockAt(10, 40, 10);
+        world.getChunkAt(oldSpot).load();
+        nether.markPlaced(1, oldSpot.getLocation(), false);
         nether.setLastSummon(new Location(world, 0, 40, 0));
 
         command.scatter(server.getConsoleSender(), BallSet.NETHER, false);
 
-        assertEquals(Material.AIR, oldHead.getType());
+        assertTrue(balls.displayOf(BallSet.NETHER, 1).isEmpty(), "the old ball doesn't linger until the new spot lands");
+        assertTrue(world.getEntitiesByClass(Interaction.class).isEmpty());
         assertEquals(1, scatterCenters.size());
     }
 }

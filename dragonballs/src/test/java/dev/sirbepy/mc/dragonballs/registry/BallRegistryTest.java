@@ -347,4 +347,95 @@ class BallRegistryTest {
         assertEquals(1, reloadedOverworld.get(1).orElseThrow().x(), 0.001);
         assertEquals(2, reloadedNether.get(1).orElseThrow().x(), 0.001);
     }
+
+    /** Records what the registry asks the world to show, in order. */
+    private static final class RecordingLook implements PlacedBallLook {
+        final List<String> calls = new java.util.ArrayList<>();
+
+        @Override
+        public void show(dev.sirbepy.mc.dragonballs.ball.BallSet set, int star, Location block, boolean stone) {
+            calls.add("show " + star + " " + block.getBlockX() + "," + block.getBlockY() + "," + block.getBlockZ()
+                    + (stone ? " stone" : ""));
+        }
+
+        @Override
+        public void hide(dev.sirbepy.mc.dragonballs.ball.BallSet set, int star) {
+            calls.add("hide " + star);
+        }
+
+        @Override
+        public void glow(dev.sirbepy.mc.dragonballs.ball.BallSet set, boolean on) {
+            calls.add("glow " + on);
+        }
+    }
+
+    @Test
+    void placingShowsTheBallAndTakingItHidesIt() {
+        BallRegistry registry = newRegistry();
+        RecordingLook look = new RecordingLook();
+        registry.setLook(look);
+        PlayerMock player = server.addPlayer();
+
+        registry.markPlaced(3, new Location(world, 10.7, 64, -4.2), false);
+        registry.markHeld(3, player, false);
+        registry.markHeld(3, player, false);
+
+        assertEquals(List.of("show 3 10,64,-5", "hide 3"), look.calls, "holding an already-held ball hides nothing");
+    }
+
+    @Test
+    void aBallFlyingOffStaysHiddenUntilItLands() {
+        BallRegistry registry = newRegistry();
+        RecordingLook look = new RecordingLook();
+        registry.setLook(look);
+        registry.markPlaced(1, new Location(world, 16, 64, 16), false);
+
+        registry.hidePlaced(1);
+
+        assertEquals("hide 1", look.calls.get(look.calls.size() - 1));
+        assertTrue(registry.placedBallsInChunk("world", 1, 1).isEmpty(), "a hidden ball never respawns at its old spot");
+        registry.markPlaced(1, new Location(world, 40, 70, 40), true);
+        assertEquals("show 1 40,70,40 stone", look.calls.get(look.calls.size() - 1));
+    }
+
+    @Test
+    void showPlacedShowsEveryPlacedBallAtStartup() {
+        BallRegistry registry = newRegistry();
+        for (int star = 1; star <= 7; star++) {
+            registry.markPlaced(star, new Location(world, star, 64, 0), false);
+        }
+        RecordingLook look = new RecordingLook();
+        BallRegistry reloaded = newRegistry();
+        reloaded.setLook(look);
+
+        reloaded.showPlaced();
+
+        assertEquals(7, look.calls.size());
+        assertEquals("show 4 4,64,0", look.calls.get(3));
+    }
+
+    @Test
+    void endingStoneShowsPlacedBallsAwakeAgain() {
+        BallRegistry registry = newRegistry();
+        RecordingLook look = new RecordingLook();
+        registry.setLook(look);
+        registry.markPlaced(2, new Location(world, 5, 64, 5), true);
+        registry.setStoneUntil(StoneMode.REAL_HOURS, 0);
+
+        registry.clearStone();
+
+        assertEquals("show 2 5,64,5", look.calls.get(look.calls.size() - 1));
+    }
+
+    @Test
+    void glowIsPassedThroughToTheLook() {
+        BallRegistry registry = newRegistry();
+        RecordingLook look = new RecordingLook();
+        registry.setLook(look);
+
+        registry.glowPlaced(true);
+        registry.glowPlaced(false);
+
+        assertEquals(List.of("glow true", "glow false"), look.calls);
+    }
 }

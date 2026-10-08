@@ -6,20 +6,20 @@ import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.config.StoneMode;
 import dev.sirbepy.mc.dragonballs.effects.DragonType;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
+import dev.sirbepy.mc.dragonballs.placed.FloatingBalls;
 import dev.sirbepy.mc.dragonballs.radar.RadarItems;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
 import dev.sirbepy.mc.dragonballs.registry.BallScatterer;
 import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import dev.sirbepy.mc.dragonballs.summon.curse.CurseStore;
+import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.block.Skull;
-import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.entity.Interaction;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.AfterEach;
@@ -94,13 +94,20 @@ class SummonTriggerListenerTest {
                 BallSet.END);
         endRegistry.setScatterer(noopScatterer);
         sets = new BallSets(registry, netherRegistry, endRegistry, items, () -> new DragonBallsConfig(configYaml));
+        FloatingBalls balls = new FloatingBalls(plugin, items, id -> false);
+        for (BallRegistry r : sets.all()) {
+            r.setLook(balls);
+        }
+        world.getChunkAt(50 >> 4, 50 >> 4).load();
+        world.getChunkAt(100 >> 4, 100 >> 4).load();
+        netherWorld.getChunkAt(100 >> 4, 100 >> 4).load();
         sessions = new SummonSessionManager(plugin.getLogger(), sets, () -> new DragonBallsConfig(configYaml),
                 () -> new SummonConfig(2, 600, 180), dev.sirbepy.mc.dragonballs.effects.SummonEffects.NONE,
                 new CurseStore(new File(tempDir.toFile(), "curses.yml"), plugin.getLogger()),
                 new File(tempDir.toFile(), "wishes.jsonl"), System::currentTimeMillis, new Random(1));
         BedrockForms bedrockForms = BedrockForms.create(plugin);
         radars = new RadarItems(plugin);
-        listener = new SummonTriggerListener(plugin, sets, sessions, bedrockForms, radars,
+        listener = new SummonTriggerListener(plugin, sets, balls, sessions, bedrockForms, radars,
                 () -> new DragonBallsConfig(configYaml));
         player = server.addPlayer();
     }
@@ -110,25 +117,27 @@ class SummonTriggerListenerTest {
         MockBukkit.unmock();
     }
 
-    /** Places a real head block for {@code star} and marks the registry's authoritative state to
-     * match, exactly like {@code BallPlaceBreakListener.onPlace} does. */
+    /** Places star {@code star} in the block, exactly like {@code BallPlaceBreakListener.onPlace}
+     * does: the registry marks it placed and the floating look spawns its hitbox there. */
     private Block placeHead(int star, int x, int y, int z, boolean stone) {
         Block block = world.getBlockAt(x, y, z);
-        block.setType(Material.PLAYER_HEAD);
-        Skull skull = (Skull) block.getState();
-        items.markBlock(skull, dev.sirbepy.mc.dragonballs.ball.BallSet.OVERWORLD, star);
-        skull.update(true);
         registry.markPlaced(star, block.getLocation(), stone);
         return block;
     }
 
-    private PlayerInteractEvent rightClick(Block block) {
-        return new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null, block, BlockFace.UP, EquipmentSlot.HAND);
+    private static Interaction hitboxAt(Block block) {
+        return block.getWorld().getEntitiesByClass(Interaction.class).stream()
+                .filter(i -> i.getLocation().getBlockX() == block.getX() && i.getLocation().getBlockY() == block.getY()
+                        && i.getLocation().getBlockZ() == block.getZ())
+                .findFirst().orElseThrow();
     }
 
-    private PlayerInteractEvent hit(Block block) {
-        return new PlayerInteractEvent(player, Action.LEFT_CLICK_BLOCK, player.getInventory().getItemInMainHand(),
-                block, BlockFace.UP, EquipmentSlot.HAND);
+    private PlayerInteractEntityEvent rightClick(Block block) {
+        return new PlayerInteractEntityEvent(player, hitboxAt(block), EquipmentSlot.HAND);
+    }
+
+    private PrePlayerAttackEntityEvent hit(Block block) {
+        return new PrePlayerAttackEntityEvent(player, hitboxAt(block), true);
     }
 
     /** All 7 placed side by side, awake: a set that is READY for a summon. */
@@ -144,8 +153,8 @@ class SummonTriggerListenerTest {
         Block clicked = placeReadySet();
         assertEquals(SummonTrigger.Readiness.READY, sessions.evaluate(player.getUniqueId(), clicked.getLocation(), BallSet.OVERWORLD));
 
-        PlayerInteractEvent event = rightClick(clicked);
-        listener.onInteract(event);
+        PlayerInteractEntityEvent event = rightClick(clicked);
+        listener.onUse(event);
 
         assertTrue(event.isCancelled());
         assertFalse(sessions.hasActiveSession());
@@ -205,30 +214,30 @@ class SummonTriggerListenerTest {
     }
 
     @Test
-    void hittingABallWithoutARadarLeavesItBreakable() {
+    void hittingABallWithoutARadarLeavesItForPickup() {
         Block clicked = placeReadySet();
 
-        PlayerInteractEvent event = hit(clicked);
-        listener.onInteract(event);
+        PrePlayerAttackEntityEvent event = hit(clicked);
+        listener.onHit(event);
 
-        assertFalse(event.isCancelled(), "a plain hit is how a ball gets broken and carried");
+        assertFalse(event.isCancelled(), "a plain hit is how a ball gets picked up and carried");
         assertFalse(sessions.hasActiveSession());
     }
 
     @Test
-    void hittingAnIncompleteSetWithARadarLeavesItBreakable() {
+    void hittingAnIncompleteSetWithARadarLeavesItForPickup() {
         Block clicked = placeHead(1, 50, 64, 50, false);
         player.getInventory().setItemInMainHand(radars.create());
 
-        PlayerInteractEvent event = hit(clicked);
-        listener.onInteract(event);
+        PrePlayerAttackEntityEvent event = hit(clicked);
+        listener.onHit(event);
 
         assertFalse(event.isCancelled());
         assertTrue(radars.isRadar(player.getInventory().getItemInMainHand()));
     }
 
     @Test
-    void clickingABallHeadWithAnIncompleteSetCancelsAndHintsWithoutStartingASession() {
+    void clickingABallWithAnIncompleteSetCancelsAndHintsWithoutStartingASession() {
         Block clicked = null;
         for (int star = 1; star <= 6; star++) {
             Block block = placeHead(star, 100 + star, 64, 100, false);
@@ -239,35 +248,34 @@ class SummonTriggerListenerTest {
         // Star 7 is never placed at all (stays at the registry's default, world-less state):
         // the set stays incomplete no matter how close the other 6 are.
 
-        PlayerInteractEvent event = rightClick(clicked);
-        listener.onInteract(event);
+        PlayerInteractEntityEvent event = rightClick(clicked);
+        listener.onUse(event);
 
-        assertTrue(event.isCancelled(), "right-clicking a ball head must always cancel the vanilla interaction");
+        assertTrue(event.isCancelled(), "right-clicking a ball must always cancel the vanilla interaction");
         assertFalse(sessions.hasActiveSession());
     }
 
     @Test
-    void clickingABallHeadWhileDormantCancelsAndHintsWithoutStartingASession() {
+    void clickingABallWhileDormantCancelsAndHintsWithoutStartingASession() {
         for (int star = 1; star <= 7; star++) {
             placeHead(star, 100, 64, 100, true);
         }
         registry.setStoneUntil(StoneMode.MINECRAFT_DAYS, 999);
         Block clicked = world.getBlockAt(100, 64, 100);
 
-        PlayerInteractEvent event = rightClick(clicked);
-        listener.onInteract(event);
+        PlayerInteractEntityEvent event = rightClick(clicked);
+        listener.onUse(event);
 
         assertTrue(event.isCancelled());
         assertFalse(sessions.hasActiveSession());
     }
 
     @Test
-    void clickingAnUnrelatedBlockDoesNothing() {
-        Block plain = world.getBlockAt(0, 64, 0);
-        plain.setType(Material.STONE);
+    void clickingSomeOtherInteractionDoesNothing() {
+        Interaction other = world.spawn(new Location(world, 0.5, 64, 0.5), Interaction.class);
 
-        PlayerInteractEvent event = rightClick(plain);
-        listener.onInteract(event);
+        PlayerInteractEntityEvent event = new PlayerInteractEntityEvent(player, other, EquipmentSlot.HAND);
+        listener.onUse(event);
 
         assertFalse(event.isCancelled());
     }
@@ -275,21 +283,16 @@ class SummonTriggerListenerTest {
     @Test
     void offHandRightClickIsIgnored() {
         Block clicked = placeHead(1, 50, 64, 50, false);
-        PlayerInteractEvent event = new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null, clicked,
-                BlockFace.UP, EquipmentSlot.OFF_HAND);
+        PlayerInteractEntityEvent event = new PlayerInteractEntityEvent(player, hitboxAt(clicked), EquipmentSlot.OFF_HAND);
 
-        listener.onInteract(event);
+        listener.onUse(event);
 
         assertFalse(event.isCancelled(), "only the main-hand interaction should be handled (Bukkit fires both)");
     }
 
-    /** Places a real head block for star N of the Nether set in {@code netherWorld}. */
+    /** Places star N of the Nether set in {@code netherWorld}. */
     private Block placeNetherHead(int star, int x, int y, int z, boolean stone) {
         Block block = netherWorld.getBlockAt(x, y, z);
-        block.setType(Material.PLAYER_HEAD);
-        Skull skull = (Skull) block.getState();
-        items.markBlock(skull, BallSet.NETHER, star);
-        skull.update(true);
         netherRegistry.markPlaced(star, block.getLocation(), stone);
         return block;
     }
@@ -337,11 +340,11 @@ class SummonTriggerListenerTest {
         Block netherClicked = placeReadyNetherSet();
         player.getInventory().setItemInMainHand(radars.create(BallSet.NETHER));
         PlayerMock secondPlayer = server.addPlayer();
-        PlayerInteractEvent event = new PlayerInteractEvent(secondPlayer, Action.RIGHT_CLICK_BLOCK, null,
-                netherClicked, BlockFace.UP, EquipmentSlot.HAND);
+        PlayerInteractEntityEvent event = new PlayerInteractEntityEvent(secondPlayer, hitboxAt(netherClicked),
+                EquipmentSlot.HAND);
         secondPlayer.getInventory().setItemInMainHand(radars.create(BallSet.NETHER));
 
-        listener.onInteract(event);
+        listener.onUse(event);
 
         assertTrue(event.isCancelled(), "a ball click is always cancelled once its own set resolves");
         assertEquals(player.getUniqueId(), sessions.activeSummoner(), "the active Overworld session must be untouched");

@@ -1,11 +1,11 @@
 package dev.sirbepy.mc.dragonballs;
 
+import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.command.DragonBallsCommand;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.effects.SpectacleEffects;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
-import dev.sirbepy.mc.dragonballs.listener.BallChunkLoadListener;
 import dev.sirbepy.mc.dragonballs.listener.BallContainerGuardListener;
 import dev.sirbepy.mc.dragonballs.listener.BallDeathListener;
 import dev.sirbepy.mc.dragonballs.listener.BallDimensionGuardListener;
@@ -14,9 +14,10 @@ import dev.sirbepy.mc.dragonballs.listener.BallJoinDupeListener;
 import dev.sirbepy.mc.dragonballs.listener.BallLogoutDropListener;
 import dev.sirbepy.mc.dragonballs.listener.BallPickupListener;
 import dev.sirbepy.mc.dragonballs.listener.BallPlaceBreakListener;
-import dev.sirbepy.mc.dragonballs.listener.BallProtectionListener;
 import dev.sirbepy.mc.dragonballs.listener.BallSlowness;
 import dev.sirbepy.mc.dragonballs.listener.BallSlownessListener;
+import dev.sirbepy.mc.dragonballs.placed.FloatingBalls;
+import dev.sirbepy.mc.dragonballs.placed.PickupGuard;
 import dev.sirbepy.mc.dragonballs.radar.RadarModule;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
 import dev.sirbepy.mc.dragonballs.registry.BallSets;
@@ -38,6 +39,7 @@ public final class DragonBallsPlugin extends JavaPlugin {
     private SpectacleEffects effects;
     private SummonModule.Handle summon;
     private BallLogoutDropListener logoutDrop;
+    private FloatingBalls floatingBalls;
 
     @Override
     public void onEnable() {
@@ -53,7 +55,7 @@ public final class DragonBallsPlugin extends JavaPlugin {
                 items, BallSet.NETHER);
         BallRegistry endRegistry = new BallRegistry(new File(getDataFolder(), "balls-end.yml"), getLogger(), items,
                 BallSet.END);
-        ScatterService scatterService = new ScatterService(this, config::get, items);
+        ScatterService scatterService = new ScatterService(this, config::get);
         overworldRegistry.setScatterer(scatterService);
         netherRegistry.setScatterer(scatterService);
         endRegistry.setScatterer(scatterService);
@@ -61,15 +63,19 @@ public final class DragonBallsPlugin extends JavaPlugin {
 
         BallSlowness slowness = new BallSlowness(this, overworldRegistry, config::get);
 
+        floatingBalls = new FloatingBalls(this, items, BedrockForms.create(this)::isBedrock);
+        for (BallRegistry registry : sets.all()) {
+            registry.setLook(floatingBalls);
+        }
+
         var pm = getServer().getPluginManager();
+        pm.registerEvents(floatingBalls, this);
         pm.registerEvents(new BallPickupListener(sets, config::get), this);
         pm.registerEvents(new BallSlownessListener(slowness), this);
         pm.registerEvents(new BallContainerGuardListener(overworldRegistry), this);
         pm.registerEvents(new BallDeathListener(sets), this);
-        pm.registerEvents(new BallPlaceBreakListener(sets), this);
-        pm.registerEvents(new BallProtectionListener(overworldRegistry), this);
+        pm.registerEvents(new BallPlaceBreakListener(sets, floatingBalls, PickupGuard.load(this)), this);
         pm.registerEvents(new BallItemLifecycleListener(sets), this);
-        pm.registerEvents(new BallChunkLoadListener(sets), this);
         pm.registerEvents(new BallJoinDupeListener(sets), this);
         pm.registerEvents(new BallDimensionGuardListener(sets, config::get, slowness), this);
         logoutDrop = new BallLogoutDropListener(sets, config::get, slowness);
@@ -82,10 +88,12 @@ public final class DragonBallsPlugin extends JavaPlugin {
                 new DragonBallsCommand(sets, config::get, this::reload).registerInto(event.registrar()));
 
         RadarModule.register(this, sets, config::get);
-        StationModule.register(this, sets, config::get);
+        StationModule.register(this, sets, floatingBalls, config::get);
         effects = new SpectacleEffects(this, items);
-        summon = SummonModule.register(this, sets, config::get, effects);
+        summon = SummonModule.register(this, sets, floatingBalls, config::get, effects);
 
+        floatingBalls.start();
+        getServer().getScheduler().runTask(this, () -> sets.all().forEach(BallRegistry::showPlaced));
         bootstrapInitialScatter();
     }
 
@@ -99,6 +107,9 @@ public final class DragonBallsPlugin extends JavaPlugin {
         }
         if (effects != null) {
             effects.shutdown();
+        }
+        if (floatingBalls != null) {
+            floatingBalls.shutdown();
         }
     }
 

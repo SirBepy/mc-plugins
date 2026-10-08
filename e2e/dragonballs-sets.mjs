@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import { Vec3 } from 'vec3';
 import { assert, nbtText, sleep, teleport, waitFor, waitForLine } from './lib.mjs';
 import {
-  HUNTER, NETHER_PLATFORM_Y, OFFSETS, SIGNS, WITNESS, addNetherCeiling, buildNetherPlatform, configPath,
-  crossDimensionTeleport, logPath, openSuite, releaseNetherPlatform, removeNetherCeiling,
+  HUNTER, NETHER_PLATFORM_Y, OFFSETS, SIGNS, WITNESS, addNetherCeiling, ballHitbox, buildNetherPlatform, configPath,
+  crossDimensionTeleport, logPath, openSuite, placeBallOn, releaseNetherPlatform, removeNetherCeiling,
 } from './dragonballs-lib.mjs';
 
 // Ceiling height for the summon-dragon headroom check in step 4: tall enough that the dragon's
@@ -31,25 +31,9 @@ function netherBallOffset(index) {
   return { x: BX + dx, y: NETHER_PLATFORM_Y, z: BZ + dz };
 }
 
-// Same transient refusal placeBallAt (dragonballs-lib.mjs) guards against: a column a prior pickup
-// just vacated can still hold the dropped-item entity for a tick or two, getting BlockPlaceEvent
-// refused ("the block is still air").
 async function placeNetherBallAt(bot, index) {
   const { x, y, z } = netherBallOffset(index);
-  const ref = bot.blockAt(new Vec3(x, y, z));
-  for (let attempt = 1; ; attempt++) {
-    try {
-      // The caller already equips before calling, but a retry needs its own: the refused attempt
-      // below can leave the hand desynced from the server's view of it.
-      const ball = bot.inventory.items().find((it) => it.name === 'player_head');
-      if (ball) await bot.equip(ball, 'hand');
-      await bot.placeBlock(ref, new Vec3(0, 1, 0));
-      return;
-    } catch (error) {
-      if (attempt >= 3) throw error;
-      await sleep(250);
-    }
-  }
+  await placeBallOn(bot, x, y, z);
 }
 
 async function buildSign(pos) {
@@ -191,7 +175,8 @@ try {
     assert(overworldRadar, 'DBHunter still holds the Overworld radar bought in step 2');
     await hunter.equip(overworldRadar, 'hand');
     const ballSpot = Object.values(placed)[0];
-    const ballBlock = hunter.blockAt(new Vec3(ballSpot.x, ballSpot.y, ballSpot.z));
+    const ball = ballHitbox(hunter, ballSpot.x, ballSpot.y, ballSpot.z);
+    assert(ball, 'DBHunter sees the floating Nether ball');
     const hintSince = hunter.lines.length;
     // Mineflayer's own actionBar event never fires for ViaBackwards' NBT action bar (see tracker.mjs).
     const recordActionBar = (packet) => {
@@ -199,7 +184,7 @@ try {
     };
     hunter._client.on('action_bar', recordActionBar);
     hunter._client.on('system_chat', recordActionBar);
-    await hunter.activateBlock(ballBlock);
+    await hunter.activateEntity(ball);
     await waitForLine(hunter, /The balls stir\.\.\. but need a Nether Dragon Radar/, 5_000, hintSince);
     hunter._client.removeListener('action_bar', recordActionBar);
     hunter._client.removeListener('system_chat', recordActionBar);
@@ -218,7 +203,8 @@ try {
     const reply = plain(await rcon.command(`shenron summon ${HUNTER} shenron nether`));
     assert(!/Cannot summon|not online|No placed|Unknown dragon|Unknown set/.test(reply),
       `Nether summon via RCON reports no error (got "${reply.trim()}")`);
-    await waitForLine(witness, /DBHunter has summoned Shenron!/, 5_000, since);
+    // A Nether-set Shenron is Nuova Shenron to players (docs/dragonballs.md).
+    await waitForLine(witness, /DBHunter has summoned Nuova Shenron!/, 5_000, since);
     await waitFor(async () => /passed/i.test(await rcon.command('execute if entity @e[type=ender_dragon,tag=dragonballs.shenron]')),
       'the Shenron dragon entity exists', 5_000);
 

@@ -15,8 +15,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.block.Block;
-import org.bukkit.block.Skull;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -137,8 +135,8 @@ public final class DragonBallsCommand {
             sender.sendMessage(Component.text("No last-summon location yet; its world hasn't loaded."));
             return Command.SINGLE_SUCCESS;
         }
-        // The scatter only moves the registry's record, so the old heads (and carried copies) have to
-        // go first: a live re-scatter on 2026-10-07 left 2 duplicate Nether heads behind.
+        // The scatter only moves the registry's record once each new spot lands, so the old balls (and
+        // carried copies) go first: a live re-scatter on 2026-10-07 left 2 duplicate Nether heads behind.
         for (BallView view : registry.getBalls()) {
             teardown(registry, view);
         }
@@ -176,18 +174,10 @@ public final class DragonBallsCommand {
         return Command.SINGLE_SUCCESS;
     }
 
-    /** Removes a ball from wherever it currently is (block or world item), before /give relocates it. */
+    /** Removes a ball from wherever it currently is (world item or inventory), before /give relocates it. */
     private void teardown(BallRegistry registry, BallView view) {
         switch (view.state()) {
-            case PLACED -> {
-                Location loc = view.lastKnownLocation();
-                if (loc != null) {
-                    Block block = loc.getBlock();
-                    if (block.getState() instanceof Skull) {
-                        block.setType(org.bukkit.Material.AIR);
-                    }
-                }
-            }
+            case PLACED -> registry.hidePlaced(view.star());
             case DROPPED -> {
                 if (view.entityId() != null && Bukkit.getEntity(view.entityId()) instanceof Item item) {
                     item.remove();

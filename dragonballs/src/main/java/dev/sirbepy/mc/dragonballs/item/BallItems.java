@@ -13,6 +13,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.block.Skull;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -94,24 +95,9 @@ public final class BallItems {
                 && item.getItemMeta().getPersistentDataContainer().has(stoneKey, PersistentDataType.BOOLEAN);
     }
 
+    /** A head block left by a ball placed before balls floated; only ever cleared, never made. */
     public boolean isBallBlock(Skull skull) {
         return skull != null && skull.getPersistentDataContainer().has(starKey, PersistentDataType.INTEGER);
-    }
-
-    public OptionalInt starOfBlock(Skull skull) {
-        if (!isBallBlock(skull)) {
-            return OptionalInt.empty();
-        }
-        return OptionalInt.of(skull.getPersistentDataContainer().get(starKey, PersistentDataType.INTEGER));
-    }
-
-    /** Which of the 3 sets a placed head block belongs to; {@link BallSet#OVERWORLD} for a non-ball
-     * block or one with no {@code set} PDC entry (every block predating this split). */
-    public BallSet setOfBlock(Skull skull) {
-        if (skull == null) {
-            return BallSet.OVERWORLD;
-        }
-        return fromId(skull.getPersistentDataContainer().get(setKey, PersistentDataType.STRING));
     }
 
     private static BallSet fromId(String id) {
@@ -159,8 +145,28 @@ public final class BallItems {
         }
         meta.getPersistentDataContainer().set(starKey, PersistentDataType.INTEGER, star);
         meta.getPersistentDataContainer().set(setKey, PersistentDataType.STRING, set.id());
+        CustomModelDataComponent look = meta.getCustomModelDataComponent();
+        look.setStrings(List.of(modelId(set, star, stone)));
+        meta.setCustomModelDataComponent(look);
         item.setItemMeta(meta);
         return item;
+    }
+
+    /** The server pack's player_head select key: the rounded 3D ball model, while a client without
+     * the pack (and Bedrock) falls back to the plain head with this item's skin. */
+    public static String modelId(BallSet set, int star, boolean stone) {
+        return stone ? "dragonball_stone" : "dragonball_" + set.id() + "_" + star;
+    }
+
+    /** False for a ball item made before the 3D look existed (no model id, or a stale one). */
+    public boolean hasCurrentLook(ItemStack item) {
+        if (!isBall(item)) {
+            return true;
+        }
+        var meta = item.getItemMeta();
+        int star = starOf(item).getAsInt();
+        return meta.hasCustomModelDataComponent()
+                && meta.getCustomModelDataComponent().getStrings().contains(modelId(setOf(item), star, isStoneItem(item)));
     }
 
     /** "<n>-Star Dragon Ball" for overworld (byte-identical to before this split), "<n>-Star Nether
@@ -168,23 +174,6 @@ public final class BallItems {
     private static String ballName(BallSet set, int star) {
         String word = set.displayWord();
         return star + "-Star " + (word.isEmpty() ? "" : word + " ") + "Dragon Ball";
-    }
-
-    /** Marks a placed head block as star N of {@code set}, so the radar/summon logic can find it by
-     * world scan and route it to the right set's registry. */
-    public void markBlock(Skull skull, BallSet set, int star) {
-        skull.getPersistentDataContainer().set(starKey, PersistentDataType.INTEGER, star);
-        skull.getPersistentDataContainer().set(setKey, PersistentDataType.STRING, set.id());
-    }
-
-    /** Swaps a placed block's texture between its star look and the stone (cooling-down) look. */
-    public void applyBlockTexture(Skull skull, BallSet set, int star, boolean stone) {
-        String texture = stone ? config.get().stoneTexture() : config.get().texture(set, star);
-        UUID profileId = stone ? STONE_PROFILE_ID : profileId(set, star);
-        PlayerProfile profile = Heads.texturedProfile(profileId, texture);
-        if (profile != null) {
-            skull.setPlayerProfile(profile);
-        }
     }
 
     /** Overworld keeps its original hardcoded UUIDs; nether/end derive a deterministic (stable
