@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.guild.data;
 
 import dev.sirbepy.mc.core.YamlFiles;
+import dev.sirbepy.mc.guild.config.GuildConfig;
 import dev.sirbepy.mc.guild.contract.Objective;
 import dev.sirbepy.mc.guild.rank.Rank;
 import org.bukkit.configuration.ConfigurationSection;
@@ -458,7 +459,9 @@ public final class GuildStore {
             }
             Objective objective = new Objective(Objective.Kind.valueOf(String.valueOf(map.get("kind"))),
                     new HashSet<>(targets), asInt(map.get("amount")), String.valueOf(map.get("text")));
-            Commission c = new Commission(String.valueOf(map.get("id")), UUID.fromString(String.valueOf(map.get("poster"))),
+            // Commissions saved before the poster was recorded could only have come from ImMijo.
+            UUID poster = parseUuid(map.get("poster") == null ? null : String.valueOf(map.get("poster")));
+            Commission c = new Commission(String.valueOf(map.get("id")), poster == null ? GuildConfig.IMMIJO : poster,
                     objective, asInt(map.get("reward")),
                     Rank.parse(String.valueOf(map.get("min-rank")), Rank.D), asLong(map.get("posted")),
                     String.valueOf(map.get("week")));

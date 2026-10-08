@@ -62,6 +62,28 @@ class GuildStoreTest extends GuildTestBase {
     }
 
     @Test
+    void aPhaseOneCommissionWithoutAPosterStillLoads() throws Exception {
+        File file = new File(dataDir.toFile(), "guild.yml");
+        Files.writeString(file.toPath(), """
+                commissions:
+                - id: c1
+                  kind: HUNT
+                  targets: [ZOMBIE]
+                  amount: 5
+                  text: Hunt 5 Zombie
+                  reward: 100
+                  min-rank: D
+                  posted: 0
+                  week: '2026-10-05'
+                  status: OPEN
+                  progress: {}
+                """);
+        Commission c = newStore().commission("c1");
+        assertNotNull(c, "the escrowed commission is not dropped");
+        assertEquals(dev.sirbepy.mc.guild.config.GuildConfig.IMMIJO, c.poster());
+    }
+
+    @Test
     void aCorruptFileIsNeverOverwritten() throws Exception {
         File file = new File(dataDir.toFile(), "guild.yml");
         Files.writeString(file.toPath(), "members: [this is: not: valid");
