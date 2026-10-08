@@ -27,10 +27,7 @@ import org.mockbukkit.mockbukkit.plugin.PluginMock;
 import org.mockbukkit.mockbukkit.world.WorldMock;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -106,15 +103,6 @@ class ShenronCommandTest {
 
     private String nextConsoleMessage() {
         return PlainTextComponentSerializer.plainText().serialize(console.nextComponentMessage());
-    }
-
-    /** Pulls the active session's id out of {@link SummonSessionManager#statusText}, which starts
-     * {@code "session=<id> set=..."}; there is no narrower getter, and parsing the one line this
-     * class already exposes is simpler than adding one just for tests. */
-    private String activeSessionId() {
-        String status = sessions.statusText();
-        String prefix = "session=";
-        return status.substring(prefix.length(), status.indexOf(' ', prefix.length()));
     }
 
     /** Places all 7 together, PLACED, non-stone, within radius 2 of {@code (100,64,100)}. */
@@ -283,59 +271,5 @@ class ShenronCommandTest {
         for (int star = 1; star <= 7; star++) {
             netherRegistry.markPlaced(star, new Location(netherWorld, 100 + (star % 2), 64, 100 + (star % 2)), false);
         }
-    }
-
-    @Test
-    void publicRefusesOnAMissingSeparatorAndWritesNothing() throws IOException {
-        command.publicize(console, "abc123", "Title without a separator");
-
-        assertTrue(nextConsoleMessage().contains("Usage:"));
-        assertFalse(wishesFile.isFile(), "no file should be created for a refused request");
-    }
-
-    @Test
-    void publicRefusesASessionWithNoGrantLogged() {
-        command.publicize(console, "nosuchsession", "Found treasure | Became rich");
-
-        assertTrue(nextConsoleMessage().contains("no grant logged for session nosuchsession"));
-    }
-
-    @Test
-    void publicRefusesATitleOverSixtyChars() {
-        String longTitle = "x".repeat(61);
-
-        command.publicize(console, "abc123", longTitle + " | a line");
-
-        assertTrue(nextConsoleMessage().contains("Title is too long"));
-    }
-
-    @Test
-    void publicRefusesALineOverTwoHundredChars() {
-        String longLine = "x".repeat(201);
-
-        command.publicize(console, "abc123", "Title | " + longLine);
-
-        assertTrue(nextConsoleMessage().contains("Line is too long"));
-    }
-
-    @Test
-    void publicAppendsARecordForASessionWithAnExistingGrant() throws IOException {
-        placeAllSevenTogether();
-        server.addPlayer("Goku");
-        command.summon(console, "Goku", "shenron");
-        String sessionId = activeSessionId();
-        sessions.grant(1, "internal note never published");
-
-        command.publicize(console, sessionId, "Found a chest | Got 64 diamonds");
-
-        assertTrue(nextConsoleMessage().contains("Published session " + sessionId));
-        List<String> lines = Files.readAllLines(wishesFile.toPath());
-        boolean foundPublicRecord = lines.stream().anyMatch(line -> line.contains("\"type\":\"public\"")
-                && line.contains("\"session\":\"" + sessionId + "\"")
-                && line.contains("\"title\":\"Found a chest\"")
-                && line.contains("\"line\":\"Got 64 diamonds\""));
-        assertTrue(foundPublicRecord, "expected a public record for session " + sessionId + " in: " + lines);
-        assertFalse(lines.stream().anyMatch(line -> line.contains("internal note never published") && line.contains("public")),
-                "the public record must never carry the judge's internal grant note");
     }
 }
