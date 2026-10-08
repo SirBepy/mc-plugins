@@ -236,6 +236,12 @@ class BuiltPackTest(unittest.TestCase):
         px = png.convert("RGBA").load()
         self.assertEqual(px[20, 100][3], 0, "wing membrane should be transparent")
         self.assertEqual(px[150, 95][3], 0, "wing bone strut should be transparent")
+        # The wing-tip bone's box-UV footprint runs to x=232; its last 8 columns sit beside
+        # front_leg_tip's unused corner and must go too, or bits of wing show in game.
+        for x in range(112, 232):
+            for y in range(136, 144):
+                self.assertEqual(px[x, y][3], 0, f"wing-tip bone pixel {x},{y} should be transparent")
+        self.assertGreater(px[240, 150][3], 0, "front leg tip should still be opaque")
         self.assertGreater(px[70, 70][3], 0, "body should still be opaque")
 
     def test_dragon_body_is_bright_green_not_near_black(self):
