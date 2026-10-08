@@ -16,6 +16,7 @@
 //   cmd "<console command>"           send a console command
 //   log [n]                           last n lines of logs/latest.log (default 100)
 //   ls <dir>                          list files in a server directory
+//   cat <file>                        print one server file (e.g. a plugin config, to check before a replace)
 //   prop <key> [value]                get/set one line in /server.properties (most keys need a restart)
 //   replace <file> <old> <new>        swap one exact, unique piece of text in a server file (e.g. a plugin config line)
 //   upload <local-file> <remote-dir>  upload one file into a server directory (overwrites)
@@ -382,6 +383,10 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
         break;
       case "ls":
         await cmdLs(args[0] ?? "/");
+        break;
+      case "cat":
+        if (!args[0]) throw new Error("cat requires <file>");
+        process.stdout.write(await filesContents(await serverIdentifier(), args[0]));
         break;
       case "prop":
         await cmdProp(args[0], args.length > 1 ? args.slice(1).join(" ") : undefined);
