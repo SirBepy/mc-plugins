@@ -11,10 +11,12 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.generator.structure.GeneratedStructure;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.BoundingBox;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -150,9 +152,41 @@ public final class ScatterService implements BallScatterer {
         if (!inFlight.add(key)) {
             return;
         }
-        structurePlacement.placeInStructure(star, ring, new Claims(otherBallFlatLocations(star, registry, ring.world())),
-                stone, registry)
+        List<double[]> otherBalls = otherBallFlatLocations(star, registry, ring.world());
+        // A sibling ball's structure must stay off-limits here the same way scatterAll keeps it off
+        // limits for the balls placed after it; a lookup failure (chunk load error, etc.) just means
+        // this re-scatter falls back to spacing-only claims instead of blocking the placement.
+        siblingStructureFootprints(otherBalls, ring.world())
+                .exceptionally(error -> List.of())
+                .thenCompose(footprints -> {
+                    Claims claims = new Claims(otherBalls);
+                    claims.structures.addAll(footprints);
+                    return structurePlacement.placeInStructure(star, ring, claims, stone, registry);
+                })
                 .whenComplete((done, error) -> inFlight.remove(key));
+    }
+
+    /** The bounding box of every generated structure, around any of {@code otherBalls}, that
+     * actually contains one of them, so {@link #scatterOne} can seed a fresh {@link Claims} with the
+     * structures a sibling ball already sits in. */
+    private CompletableFuture<List<BoundingBox>> siblingStructureFootprints(List<double[]> otherBalls, World world) {
+        if (otherBalls.isEmpty()) {
+            return CompletableFuture.completedFuture(List.of());
+        }
+        List<CompletableFuture<Collection<GeneratedStructure>>> loads = new ArrayList<>();
+        for (double[] point : otherBalls) {
+            loads.add(loadChunkFor(world, point[0], point[1])
+                    .thenApplyAsync(chunk -> world.getStructures(chunk.getX(), chunk.getZ()), mainThread));
+        }
+        return CompletableFuture.allOf(loads.toArray(CompletableFuture[]::new)).thenApply(ignored -> {
+            List<BoundingBox> candidates = new ArrayList<>();
+            for (CompletableFuture<Collection<GeneratedStructure>> load : loads) {
+                for (GeneratedStructure generated : load.join()) {
+                    candidates.add(generated.getBoundingBox());
+                }
+            }
+            return StructurePlacement.occupiedFootprints(otherBalls, candidates);
+        });
     }
 
     private static String flightKey(BallRegistry registry, int star) {

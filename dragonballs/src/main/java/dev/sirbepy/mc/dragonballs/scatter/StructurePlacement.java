@@ -46,6 +46,22 @@ final class StructurePlacement {
     private record Search(ScatterService.Ring ring, double originX, double originZ, Structure structure) {
     }
 
+    /** Boxes from {@code candidateBoxes} that contain at least one of {@code ballPoints} (x, z pairs),
+     * by the same inclusive x/z test {@link ScatterService.Claims#structureTaken} uses. */
+    static List<BoundingBox> occupiedFootprints(List<double[]> ballPoints, Collection<BoundingBox> candidateBoxes) {
+        List<BoundingBox> occupied = new ArrayList<>();
+        for (BoundingBox box : candidateBoxes) {
+            for (double[] point : ballPoints) {
+                if (point[0] >= box.getMinX() && point[0] <= box.getMaxX()
+                        && point[1] >= box.getMinZ() && point[1] <= box.getMaxZ()) {
+                    occupied.add(box);
+                    break;
+                }
+            }
+        }
+        return occupied;
+    }
+
     /** The block a ball goes in, and the footprint of the structure it's in. */
     private record StructureSpot(int x, int y, int z, String structureId, BoundingBox footprint) {
     }
