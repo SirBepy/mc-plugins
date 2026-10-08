@@ -8,6 +8,8 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Block;
 import org.bukkit.block.Skull;
 import org.bukkit.entity.ArmorStand;
@@ -62,6 +64,11 @@ public final class FloatingBalls implements PlacedBallLook, Listener {
     // item_display's FIXED context draws the head-sized model half a block wide; x1.5 is 0.75 (Joe).
     static final float SCALE = 1.5f;
     static final float HITBOX_SIZE = 0.75f;
+    // Bedrock's stand wears the head ~1.73 of its height above its feet at 1.19x a head's size
+    // (Geyser's skull attachable), so x0.75 shows a 0.45-block ball ~1.3 above the block's floor.
+    // A bigger centred ball would need the feet sunk into the floor, where Bedrock may light the
+    // head as if it were inside the block (Joe chose medium-and-higher, 2026-10-08).
+    static final double BEDROCK_STAND_SCALE = 0.75;
     public static final long SPIN_PERIOD_TICKS = 40;
     // A step stays under half a turn, or the interpolation would spin the short way back.
     private static final float SPIN_STEP = (float) Math.toRadians(120);
@@ -277,11 +284,15 @@ public final class FloatingBalls implements PlacedBallLook, Listener {
             i.getPersistentDataContainer().set(setKey, PersistentDataType.STRING, placement.set().id());
             i.getPersistentDataContainer().set(starKey, PersistentDataType.INTEGER, placement.star());
         });
-        ArmorStand stand = world.spawn(base.clone().add(0, 0.1, 0), ArmorStand.class, s -> {
+        ArmorStand stand = world.spawn(base, ArmorStand.class, s -> {
             s.setInvisible(true);
             s.setMarker(true);
-            s.setSmall(true);
             s.setGravity(false);
+            // Paper's stands always carry SCALE; MockBukkit has no SCALE attribute at all.
+            AttributeInstance scale = s.getAttribute(Attribute.SCALE);
+            if (scale != null) {
+                scale.setBaseValue(BEDROCK_STAND_SCALE);
+            }
             s.setInvulnerable(true);
             s.setPersistent(false);
             s.addScoreboardTag(BEDROCK_TAG);

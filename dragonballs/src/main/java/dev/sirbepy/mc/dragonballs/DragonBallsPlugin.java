@@ -2,6 +2,7 @@ package dev.sirbepy.mc.dragonballs;
 
 import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
+import dev.sirbepy.mc.dragonballs.bedrock.GeyserSkullMappings;
 import dev.sirbepy.mc.dragonballs.command.DragonBallsCommand;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.effects.SpectacleEffects;
@@ -30,7 +31,9 @@ import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 
 public final class DragonBallsPlugin extends JavaPlugin {
 
@@ -40,6 +43,19 @@ public final class DragonBallsPlugin extends JavaPlugin {
     private SummonModule.Handle summon;
     private BallLogoutDropListener logoutDrop;
     private FloatingBalls floatingBalls;
+
+    // onLoad, not onEnable: Geyser reads its skull mappings while it enables, and every plugin's
+    // onLoad runs before any onEnable, so the file is there whichever order the two enable in.
+    @Override
+    public void onLoad() {
+        saveDefaultConfig();
+        try {
+            GeyserSkullMappings.write(getDataFolder().toPath().resolveSibling("Geyser-Spigot"),
+                    new DragonBallsConfig(getConfig()));
+        } catch (IOException e) {
+            getLogger().log(Level.WARNING, "Couldn't write Geyser's Dragon Ball skull mappings; Bedrock sees Steve heads", e);
+        }
+    }
 
     @Override
     public void onEnable() {

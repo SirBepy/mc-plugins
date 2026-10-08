@@ -94,6 +94,18 @@ class FloatingBallsTest {
     }
 
     @Test
+    void theBedrockHeadIsMediumSizedWithItsFeetInTheBallsOwnBlock() {
+        balls.show(BallSet.OVERWORLD, 6, block, false);
+
+        ArmorStand stand = balls.bedrockStandOf(BallSet.OVERWORLD, 6).orElseThrow();
+        // Its x0.75 SCALE can't be read back here (MockBukkit has no SCALE attribute); the local
+        // server check covers it.
+        assertFalse(stand.isSmall(), "a small stand's head is a quarter block");
+        assertEquals(new Location(world, 20.5, 70, -29.5), stand.getLocation(),
+                "feet in the air block, not the floor, so Bedrock lights the head normally");
+    }
+
+    @Test
     void hidingLeavesNothingBehind() {
         balls.show(BallSet.OVERWORLD, 1, block, false);
 
