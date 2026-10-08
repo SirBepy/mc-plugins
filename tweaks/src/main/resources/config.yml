@@ -30,3 +30,11 @@ phantoms:
 sea-gifts:
   enabled: true
   owner: 3e0a4456-e2a3-4ea8-9bfa-8e38ee4c863d
+
+# CoffiebagSupreme's Nether Porunga wishes (2026-10-08, session n97wtc), matched by `owner`: fully grown crops
+# he breaks replant from a seed in his inventory (AutoReplant); zombies, zombie villagers, husks and drowned
+# leave him alone unless he hurt that one in the last 5 minutes, plugin-spawned mobs excepted (ZombieTruce);
+# food he makes fills twice as much (HeartyFood). `netherwishes owner <player>` moves all three.
+nether-wishes:
+  enabled: true
+  owner: 7dca8f8e-2981-4925-a7d7-128395ca11b9

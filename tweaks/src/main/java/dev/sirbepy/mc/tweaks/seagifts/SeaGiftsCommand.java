@@ -5,10 +5,10 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
+import dev.sirbepy.mc.tweaks.OwnerArgument;
 import io.papermc.paper.command.brigadier.Commands;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
@@ -54,18 +54,8 @@ public final class SeaGiftsCommand {
 
     private int owner(CommandContext<CommandSourceStack> c) {
         String arg = StringArgumentType.getString(c, "player");
-        UUID uuid;
-        try {
-            uuid = UUID.fromString(arg);
-        } catch (IllegalArgumentException notUuid) {
-            Player online = Bukkit.getPlayerExact(arg);
-            OfflinePlayer cached = online != null ? online : Bukkit.getOfflinePlayerIfCached(arg);
-            if (cached == null) {
-                c.getSource().getSender().sendMessage(Component.text(arg + " has never joined this server."));
-                return Command.SINGLE_SUCCESS;
-            }
-            uuid = cached.getUniqueId();
-        }
+        UUID uuid = OwnerArgument.resolve(c.getSource().getSender(), arg);
+        if (uuid == null) return Command.SINGLE_SUCCESS;
         setOwner.accept(uuid);
         // The command tree was sent at join with the old owner's view of it.
         Bukkit.getOnlinePlayers().forEach(Player::updateCommands);

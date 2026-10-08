@@ -243,3 +243,39 @@ the pre-ruled bundle and he didn't take it.
   both gifts start on, which carried over the console's interim `effect give ... infinite` at the grant.
 - `seagifts owner <player|uuid>` (console or op) moves the gifts; the e2e suite (`e2e/sea-gifts.mjs`)
   borrows them for a bot and hands them back to ItsLogiks.
+
+## Nether wishes (CoffiebagSupreme's Porunga wishes, 2026-10-08)
+
+Granted by Porunga (Nether set, session `n97wtc`), all three for CoffiebagSupreme alone
+(`nether-wishes.owner` in Tweaks' `config.yml`, matched by UUID; switch: `nether-wishes.enabled`). No
+command for him: all three are always on.
+
+- **Auto-replant** (`AutoReplant`): a fully grown wheat, carrot, potato, beetroot, nether wart or cocoa he
+  breaks replants itself (cocoa on the same side of the log) and uses up one matching plain seed from
+  anywhere in his inventory, offhand included. No seed, an unripe crop, or the farmland/soul sand/log gone:
+  nothing is planted. No mana. It runs 6 ticks after the break, after AuraSkills' Replenish (Farming 6,
+  free replant 4 ticks after the break, `replant_delay` in `mana_abilities.yml`), so a crop Replenish put
+  back is left alone and costs no seed: the two never double-plant or eat two seeds. A renamed or custom
+  seed item is never used.
+- **Zombie truce** (`ZombieTruce`): zombies, zombie villagers, husks and drowned never target him. One he
+  hurts (melee, or an arrow, trident or other projectile he shot) may fight him for **5 minutes after his
+  latest hit**, or until it dies; the grudge is a timestamp in the mob's data, so it survives chunk unloads
+  and restarts. Only the one he hit: the reinforcements a zombie calls and the zombies it alerts hold no
+  grudge. Every second a covered mob still chasing him without a grudge is made to drop him (a grudge that
+  ran out mid-chase). Mobs a plugin spawned (spawn reason `CUSTOM`, kept by Paper across restarts) are
+  outside the truce, including the cartel's Salamanca cousins. Zombified piglins are not covered.
+- **Hearty food** (`HeartyFood`): food he makes restores twice the hunger and twice the saturation for
+  whoever eats it. The item's own food component is doubled, so effects are untouched (golden apple,
+  suspicious stew, rotten flesh's Hunger). Marked food carries a gold "Made by CoffiebagSupreme: twice
+  as filling" line and does not stack with plain food of the same kind. What counts as his:
+  - a crafting result he takes (bread, stews, pies, cookies, cake, golden apples...);
+  - a furnace or smoker result he takes out of the output slot by hand, whoever filled it; what a hopper
+    pulls out is plain, and whatever a click leaves in the slot goes back to plain so the furnace keeps
+    stacking;
+  - campfire food whose raw item he put on that campfire (counted per item type under the campfire's spot
+    in the chunk's data; placing any block on the spot forgets it);
+  - a cake he crafted: its block remembers it when placed, and every slice gives anyone 4 hunger and
+    0.8 saturation instead of 2 and 0.4.
+  Food he buys, picks up or is given is never marked.
+- `netherwishes owner <player|uuid>` (console or op) moves all three; the e2e suite
+  (`e2e/nether-wishes.mjs`) borrows them for a bot and hands them back to CoffiebagSupreme.
