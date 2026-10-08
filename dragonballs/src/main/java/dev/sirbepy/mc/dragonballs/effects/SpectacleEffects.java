@@ -1,13 +1,18 @@
 package dev.sirbepy.mc.dragonballs.effects;
 
+import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Map;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * The real {@link SummonEffects}: a per-ball strike sequence, a dark stormy sky (Overworld only -
@@ -25,9 +30,18 @@ public final class SpectacleEffects implements SummonEffects {
     private final BallStrikeSequence strikes;
 
     public SpectacleEffects(JavaPlugin plugin, BallItems ballItems) {
+        this(plugin, ballItems, new DragonActor(plugin, BedrockForms.create(plugin)::isBedrock));
+    }
+
+    /** For tests: MockBukkit has no Floodgate and no {@code Display#setBillboard}. */
+    SpectacleEffects(JavaPlugin plugin, BallItems ballItems, Predicate<UUID> isBedrock, Consumer<TextDisplay> faceViewers) {
+        this(plugin, ballItems, new DragonActor(plugin, isBedrock, faceViewers));
+    }
+
+    private SpectacleEffects(JavaPlugin plugin, BallItems ballItems, DragonActor dragon) {
         this.plugin = plugin;
         this.sky = new SkyEffect(plugin);
-        this.dragon = new DragonActor(plugin);
+        this.dragon = dragon;
         this.flyingBalls = new FlyingBalls(plugin, ballItems);
         this.strikes = new BallStrikeSequence(plugin);
 
@@ -49,7 +63,7 @@ public final class SpectacleEffects implements SummonEffects {
         }
         EffectsConfig config = EffectsConfig.from(plugin.getConfig());
         strikes.play(world, scene.ballOrigins(), scene.set(),
-                () -> dragon.spawn(scene.center(), scene.dragon(), scene.set(), config));
+                () -> dragon.spawn(scene.center(), scene.dragon(), scene.set(), config, scene.summoner()));
     }
 
     @Override

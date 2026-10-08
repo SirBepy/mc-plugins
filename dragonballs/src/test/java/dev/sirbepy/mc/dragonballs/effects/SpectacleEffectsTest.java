@@ -49,7 +49,7 @@ class SpectacleEffectsTest {
         world = server.addSimpleWorld("world");
         plugin = MockBukkit.createMockPlugin();
         BallItems ballItems = new BallItems(plugin, () -> new DragonBallsConfig(new YamlConfiguration()));
-        effects = new SpectacleEffects(plugin, ballItems);
+        effects = new SpectacleEffects(plugin, ballItems, uuid -> false, name -> { });
         Map<Integer, Location> origins = Map.of(1, new Location(world, 0, 70, 0));
         scene = new SummonScene(UUID.randomUUID(), "Goku", DragonType.SHENRON, BallSet.OVERWORLD,
                 new Location(world, 0, 70, 0), origins);

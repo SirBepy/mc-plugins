@@ -1,5 +1,5 @@
 """Checks the built join pack: the Pollos gun and katana looks resolve to a model and texture inside
-the zip, the gunshot Tweaks plays resolves to an .ogg inside it, the Dragon Radar and Shenron looks
+the zip, the gunshot Tweaks plays resolves to an .ogg inside it, the Dragon Radar and dragon models
 are wired up and have the expected pixels, phantom sounds carry 32 blocks, the Salamanca cousins'
 pistol resolves, and every other crossbow, netherite sword, compass and vanilla sound still uses the
 vanilla 26.3 definition (bows are left alone).
@@ -287,48 +287,42 @@ class BuiltPackTest(unittest.TestCase):
             },
         })
 
-    def test_dragon_wings_are_transparent_and_body_is_not(self):
-        png = Image.open(io.BytesIO(self.entries["assets/minecraft/textures/entity/enderdragon/dragon.png"]))
-        px = png.convert("RGBA").load()
-        self.assertEqual(px[20, 100][3], 0, "wing membrane should be transparent")
-        self.assertEqual(px[150, 95][3], 0, "wing bone strut should be transparent")
-        # The wing-tip bone's box-UV footprint runs to x=232; its last 8 columns sit beside
-        # front_leg_tip's unused corner and must go too, or bits of wing show in game.
-        for x in range(112, 232):
-            for y in range(136, 144):
-                self.assertEqual(px[x, y][3], 0, f"wing-tip bone pixel {x},{y} should be transparent")
-        self.assertGreater(px[240, 150][3], 0, "front leg tip should still be opaque")
-        self.assertGreater(px[70, 70][3], 0, "body should still be opaque")
+    def test_the_vanilla_ender_dragon_keeps_its_own_look(self):
+        # The summon dragons are item-display models now (Joe, 2026-10-08: "the actual normal ender
+        # dragon isn't affected by the skin"), so nothing may retexture the Ender Dragon.
+        retextured = [n for n in self.entries if n.startswith("assets/minecraft/textures/entity/enderdragon/")]
+        self.assertEqual(retextured, [])
 
-    def test_dragon_body_is_bright_green_not_near_black(self):
-        # Vanilla's body luminance sits in a narrow near-black band; the pack stretches it
-        # across a jade gradient so the scale pattern stays visible but the body reads bright.
-        png = Image.open(io.BytesIO(self.entries["assets/minecraft/textures/entity/enderdragon/dragon.png"]))
-        px = png.convert("RGBA").load()
-        r, g, b, _a = px[70, 70]
-        self.assertGreater(g, r)
-        self.assertGreater(g, b)
-        self.assertGreater(g, 120, "body should read as bright green, not near-black")
+    def test_every_dragon_part_resolves_and_takes_the_set_tints(self):
+        parts = sorted(n for n in self.entries if n.startswith("assets/claudesmp/items/dragon/"))
+        names = [n.rsplit("/", 1)[1][:-len(".json")] for n in parts]
+        self.assertEqual(names, [
+            "porunga_arm_left", "porunga_arm_right", "porunga_head", "porunga_tail", "porunga_tail_tip",
+            "porunga_torso", "shenron_body", "shenron_body_legs", "shenron_head", "shenron_tail",
+        ])
+        accent = []
+        for name in parts:
+            model = self.json(name)["model"]
+            self.assertEqual([(t["type"], t["index"]) for t in model["tints"]],
+                             [("minecraft:custom_model_data", 0), ("minecraft:custom_model_data", 1)], name)
+            body = self.json(asset(model["model"], "models", "json"))
+            tints = set()
+            for el in body["elements"]:
+                for v in el["from"] + el["to"]:
+                    self.assertTrue(-16 <= v <= 32, f"{name}: {el['from']}..{el['to']} leaves the model range")
+                tints |= {f.get("tintindex") for f in el["faces"].values()}
+            self.assertIn(0, tints, f"{name} should take the set's body colour")
+            if 1 in tints:
+                accent.append(name)
+            png = Image.open(io.BytesIO(self.entries[asset(body["textures"]["t"], "textures", "png")]))
+            self.assertEqual(png.size, (64, 64))
+        self.assertTrue(any("shenron" in n for n in accent) and any("porunga" in n for n in accent),
+                        "both dragons should show the set's belly/accent colour somewhere")
 
-    def test_dragon_png_eyes_are_red_to_match_the_glow_overlay(self):
-        # dragon.png itself bakes in a handful of non-gray eye pixels (same 4 clusters, same
-        # colours, as dragon_eyes.png's opaque pixels) that must be re-hued too, or the base
-        # skin shows vanilla's purple under the red glow overlay.
-        png = Image.open(io.BytesIO(self.entries["assets/minecraft/textures/entity/enderdragon/dragon.png"]))
-        px = png.convert("RGBA").load()
-        for x, y in [(131, 50), (208, 44), (197, 67), (133, 58)]:
-            r, g, b, _a = px[x, y]
-            self.assertGreater(r, g, f"eye pixel at {(x, y)} should be red, not green/purple")
-            self.assertGreater(r, b, f"eye pixel at {(x, y)} should be red, not green/purple")
-
-    def test_dragon_eyes_are_red_not_vanilla_purple(self):
-        png = Image.open(io.BytesIO(self.entries["assets/minecraft/textures/entity/enderdragon/dragon_eyes.png"]))
-        px = png.convert("RGBA").load()
-        opaque = [px[x, y] for x in range(png.width) for y in range(png.height) if px[x, y][3] > 0]
-        self.assertTrue(opaque)
-        r, g, b, _a = opaque[0]
-        self.assertGreater(r, b, "eyes should be re-hued red, not vanilla's blue-leaning purple")
-        self.assertGreater(r, g)
+    def test_dragon_eyes_glow(self):
+        for name in ("shenron_head", "porunga_head"):
+            body = self.json(f"assets/claudesmp/models/item/dragon/{name}.json")
+            self.assertTrue(any(el.get("light_emission") == 15 for el in body["elements"]), name)
 
     def test_haru_skin_and_cape_are_in_the_pack(self):
         # The haru plugin's config.yml points its Mannequin at claudesmp:entity/haru and haru_cape.

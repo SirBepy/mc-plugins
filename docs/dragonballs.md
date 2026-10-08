@@ -24,11 +24,17 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
   dragon grants about 1.5x what an Overworld one does, an End dragon 2x (Joe, 2026-10-07: "not
   muuuch better, but definitely better"; see Guide values). Shenron from the Nether set appears as
   **Nuova Shenron**, Dragon Ball GT's fire Shadow Dragon (Joe, 2026-10-08): his chat tag, floating
-  name and the summon and wish broadcasts say so, and he glows red and leaves a fire trail as he
-  circles (the pack's green skin covers every Ender Dragon, so glow and particles are what set him
-  apart). Porunga keeps his name in every set; from the Nether set he glows purple, with a purple
-  name and a purple particle trail (Joe, 2026-10-08), while the Overworld and End Porunga keep the
-  default look (the End set already wraps every dragon in a purple aura). The End set
+  name and the summon and wish broadcasts say so. Porunga keeps his name in every set.
+  The two dragons are their own 3D models from the server pack (Joe, 2026-10-08), not reskinned
+  Ender Dragons, so the real Ender Dragon looks vanilla: Shenron is a ~45-block serpent whose
+  S-curved neck sways up out of a slowly turning coil, head leaning over the summoner; Porunga is
+  a hulking upper body (pale chest, black shoulder spikes and horns, a crest down his back) over a
+  serpent tail that curls toward the balls, turning to face his summoner. The set colours them:
+  both green from the Overworld, Nuova Shenron red (red glow, fire trail) and Porunga purple
+  (purple glow, purple trail) from the Nether, both gold from the End, like Dragon Ball Super's
+  Super Shenron. Porunga glows white in the other sets; Shenron doesn't glow there. Bedrock
+  players can't see these models (Geyser has no item displays), so they see a plain Ender Dragon
+  with the dragon's name circling above the balls instead. The End set
   sleeps (no balls, no radar sales) until the End opens; it scatters the first time the server
   starts with the End open.
 - Every ball sits inside a structure (Joe, 2026-10-08): in a room, on a roof or on a

@@ -1,0 +1,18 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "claudesmp:item/dragon/shenron_tail",
+    "tints": [
+      {
+        "type": "minecraft:custom_model_data",
+        "index": 0,
+        "default": 4102714
+      },
+      {
+        "type": "minecraft:custom_model_data",
+        "index": 1,
+        "default": 14272378
+      }
+    ]
+  }
+}

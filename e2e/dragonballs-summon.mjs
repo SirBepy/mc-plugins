@@ -176,6 +176,22 @@ try {
 
     await waitFor(async () => /passed/i.test(await rcon.command('execute if entity @e[type=ender_dragon,tag=dragonballs.shenron]')),
       'the Shenron/Porunga dragon entity exists', 5_000);
+    // Java players see Porunga as the server pack's item-display model (torso, head, 2 arms, 12 tail
+    // segments) with a floating name; the Ender Dragon is Bedrock's stand-in, hidden from Java.
+    const parts = plain(await rcon.command('minecraft:execute if entity @e[type=minecraft:item_display,tag=dragonballs.shenron]'));
+    assert(/count: 16/i.test(parts), `Porunga is 16 model parts (got "${parts.trim()}")`);
+    const torso = plain(await rcon.command(
+      'minecraft:execute if entity @e[type=minecraft:item_display,tag=dragonballs.shenron,nbt={item:{components:{"minecraft:item_model":"claudesmp:dragon/porunga_torso"}}}]'));
+    assert(/count: 1/i.test(torso), `one display draws claudesmp:dragon/porunga_torso (got "${torso.trim()}")`);
+    const name = plain(await rcon.command('minecraft:execute if entity @e[type=minecraft:text_display,tag=dragonballs.shenron]'));
+    assert(/count: 1/i.test(name), `the model has one floating name (got "${name.trim()}")`);
+    const torsoPos = async () => plain(await rcon.command(
+      'minecraft:data get entity @e[type=minecraft:item_display,tag=dragonballs.shenron,limit=1,nbt={item:{components:{"minecraft:item_model":"claudesmp:dragon/porunga_torso"}}}] Pos'));
+    const posBefore = await torsoPos();
+    await sleep(1_000);
+    assert(posBefore !== await torsoPos(), `Porunga bobs as he hovers (Pos stayed ${posBefore.trim()})`);
+    assert(!Object.values(hunter.entities).some((e) => e.name === 'ender_dragon'),
+      'the Java bot is never sent the Ender Dragon stand-in');
     const glowing = plain(await rcon.command(
       `minecraft:execute if entity @e[type=minecraft:item_display,tag=dragonballs.placed_ball,nbt={Glowing:1b},x=${BX},y=${PLATFORM_Y + 1},z=${BZ},distance=..4]`));
     assert(/count: 7/i.test(glowing), `all 7 summoning balls glow (got "${glowing.trim()}")`);
@@ -222,6 +238,8 @@ try {
     await waitForLine(witness, /Farewell\./, 5_000, byeSince);
     await waitFor(async () => !/passed/i.test(await rcon.command('execute if entity @e[type=ender_dragon,tag=dragonballs.shenron]')),
       'the dragon despawns once dismissed', 12_000);
+    const modelLeft = plain(await rcon.command('minecraft:execute if entity @e[tag=dragonballs.shenron]'));
+    assert(!/passed/i.test(modelLeft), `no model part or name outlives the dragon (got "${modelLeft.trim()}")`);
     const left = plain(await rcon.command(
       `minecraft:execute if entity @e[tag=dragonballs.placed_ball,x=${BX},y=${PLATFORM_Y + 1},z=${BZ},distance=..4]`));
     assert(!/passed/i.test(left), `the 7 floating balls left the summon spot (got "${left.trim()}")`);
