@@ -6,7 +6,7 @@ import org.bukkit.potion.PotionEffectType;
 import java.util.Locale;
 import java.util.Optional;
 
-/** The two effects of ItsLogiks' Porunga wish, each switched on and off on its own. */
+/** The two effects of Porunga's sea gifts wish, each switched on and off on its own. */
 public enum SeaGift {
     DOLPHIN(PotionEffectType.DOLPHINS_GRACE, "Dolphin's Grace"),
     CONDUIT(PotionEffectType.CONDUIT_POWER, "Conduit Power");

@@ -19,11 +19,16 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
 public final class TweaksPlugin extends JavaPlugin {
+
+    private static final String SEA_GIFTS_OWNERS = "sea-gifts.owners";
+    private static final String SEA_GIFTS_OWNER = "sea-gifts.owner";
 
     @Override
     public void onEnable() {
@@ -51,11 +56,11 @@ public final class TweaksPlugin extends JavaPlugin {
         if (getConfig().getBoolean("sea-gifts.enabled", true)) {
             SeaGifts seaGifts = new SeaGifts(getServer(),
                     new SeaGiftsStore(new File(getDataFolder(), "sea-gifts.yml"), getLogger()),
-                    () -> ownerAt("sea-gifts.owner"), System::currentTimeMillis);
+                    () -> ownersAt(getConfig(), SEA_GIFTS_OWNERS, SEA_GIFTS_OWNER), System::currentTimeMillis);
             getServer().getPluginManager().registerEvents(seaGifts, this);
             getServer().getScheduler().runTaskTimer(this, seaGifts::tick, 20L, 20L);
             getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
-                    new SeaGiftsCommand(seaGifts, owner -> setOwnerAt("sea-gifts.owner", owner)).registerInto(event.registrar()));
+                    new SeaGiftsCommand(seaGifts, this::setSeaGiftsOwner).registerInto(event.registrar()));
         }
         if (getConfig().getBoolean("nether-wishes.enabled", true)) {
             Supplier<UUID> coffie = () -> ownerAt("nether-wishes.owner");
@@ -79,7 +84,25 @@ public final class TweaksPlugin extends JavaPlugin {
      * fallback would skip them and leave the wish with no owner.
      */
     static UUID ownerAt(Configuration config, String path) {
-        String value = config.getString(path);
+        return parse(config.getString(path));
+    }
+
+    /**
+     * Every UUID in the list at {@code listPath} (the jar's list when the server's file has none), plus the
+     * single owner at {@code legacyPath} from before the wish had more than one owner.
+     */
+    static Set<UUID> ownersAt(Configuration config, String listPath, String legacyPath) {
+        Set<UUID> owners = new LinkedHashSet<>();
+        for (String value : config.getStringList(listPath)) {
+            UUID owner = parse(value);
+            if (owner != null) owners.add(owner);
+        }
+        UUID legacy = ownerAt(config, legacyPath);
+        if (legacy != null) owners.add(legacy);
+        return owners;
+    }
+
+    private static UUID parse(String value) {
         if (value == null) return null;
         try {
             return UUID.fromString(value);
@@ -91,5 +114,15 @@ public final class TweaksPlugin extends JavaPlugin {
     private void setOwnerAt(String path, UUID owner) {
         getConfig().set(path, owner.toString());
         saveConfig();
+    }
+
+    /** Adds or removes one sea gifts owner; false when that changed nothing. Folds the legacy key into the list. */
+    private boolean setSeaGiftsOwner(UUID owner, boolean isOwner) {
+        Set<UUID> owners = ownersAt(getConfig(), SEA_GIFTS_OWNERS, SEA_GIFTS_OWNER);
+        if (!(isOwner ? owners.add(owner) : owners.remove(owner))) return false;
+        getConfig().set(SEA_GIFTS_OWNERS, owners.stream().map(UUID::toString).toList());
+        getConfig().set(SEA_GIFTS_OWNER, null);
+        saveConfig();
+        return true;
     }
 }

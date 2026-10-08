@@ -6,7 +6,7 @@ softdepend: [AuraSkills]
 
 permissions:
   tweaks.seagifts.admin:
-    description: Move ItsLogiks' sea gifts (/seagifts owner) to another player.
+    description: Add or remove a sea gifts owner (/seagifts add|remove).
     default: op
   tweaks.netherwishes.admin:
     description: Move CoffiebagSupreme's Nether wishes (/netherwishes owner) to another player.

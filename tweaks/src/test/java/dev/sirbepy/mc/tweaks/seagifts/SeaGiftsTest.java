@@ -14,6 +14,8 @@ import org.mockbukkit.mockbukkit.entity.PlayerMock;
 import java.io.File;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -33,6 +35,7 @@ class SeaGiftsTest {
     private ServerMock server;
     private PlayerMock owner;
     private PlayerMock stranger;
+    private final Set<UUID> owners = new LinkedHashSet<>();
     private File file;
     private SeaGiftsStore store;
     private SeaGifts gifts;
@@ -46,7 +49,8 @@ class SeaGiftsTest {
         stranger = server.addPlayer("Someone");
         file = dir.resolve("sea-gifts.yml").toFile();
         store = new SeaGiftsStore(file, Logger.getLogger("test"));
-        gifts = new SeaGifts(server, store, owner::getUniqueId, () -> now);
+        owners.add(owner.getUniqueId());
+        gifts = new SeaGifts(server, store, () -> owners, () -> now);
         server.getPluginManager().registerEvents(gifts, MockBukkit.createMockPlugin());
     }
 
@@ -100,6 +104,32 @@ class SeaGiftsTest {
         gifts.flip(owner, SeaGift.DOLPHIN);
         assertTrue(store.isOn(id(), SeaGift.DOLPHIN));
         assertTrue(owner.hasPotionEffect(PotionEffectType.DOLPHINS_GRACE));
+    }
+
+    @Test
+    void everyOwnerHasTheGiftsWithHisOwnSwitchesAndHour() {
+        PlayerMock second = server.addPlayer("SirBepy");
+        owners.add(second.getUniqueId());
+        gifts.tick();
+        for (PlayerMock player : new PlayerMock[] {owner, second}) {
+            assertTrue(player.hasPotionEffect(PotionEffectType.DOLPHINS_GRACE), player.getName());
+            assertTrue(player.hasPotionEffect(PotionEffectType.CONDUIT_POWER), player.getName());
+        }
+        assertFalse(stranger.hasPotionEffect(PotionEffectType.DOLPHINS_GRACE));
+
+        gifts.flip(owner, SeaGift.DOLPHIN);
+        assertFalse(owner.hasPotionEffect(PotionEffectType.DOLPHINS_GRACE));
+        assertTrue(second.hasPotionEffect(PotionEffectType.DOLPHINS_GRACE), "his flip is his alone");
+        assertTrue(store.isOn(second.getUniqueId(), SeaGift.DOLPHIN));
+
+        now += 60_000;
+        gifts.flip(second, SeaGift.DOLPHIN);
+        assertFalse(store.isOn(second.getUniqueId(), SeaGift.DOLPHIN), "the first owner's hour doesn't hold him");
+        assertFalse(second.hasPotionEffect(PotionEffectType.DOLPHINS_GRACE));
+
+        second.setHealth(0);
+        assertFalse(store.isOn(second.getUniqueId(), SeaGift.CONDUIT));
+        assertTrue(store.isOn(id(), SeaGift.CONDUIT), "his death takes only his gifts");
     }
 
     @Test

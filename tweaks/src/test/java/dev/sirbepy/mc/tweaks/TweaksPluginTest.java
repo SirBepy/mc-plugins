@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -15,6 +16,7 @@ class TweaksPluginTest {
 
     private static final UUID COFFIE = UUID.fromString("7dca8f8e-2981-4925-a7d7-128395ca11b9");
     private static final UUID LOGIKS = UUID.fromString("3e0a4456-e2a3-4ea8-9bfa-8e38ee4c863d");
+    private static final UUID BEPY = UUID.fromString("a6f30e22-f8d5-4ae8-a69c-2f81662b1950");
 
     /** What getConfig() hands the plugin: the server's config.yml with the jar's config.yml as its defaults. */
     private YamlConfiguration serverConfig(String yaml) throws InvalidConfigurationException {
@@ -30,7 +32,27 @@ class TweaksPluginTest {
         // Live's config.yml on 2026-10-08 held only the motd section.
         YamlConfiguration config = serverConfig("motd:\n  enabled: true\n");
         assertEquals(COFFIE, TweaksPlugin.ownerAt(config, "nether-wishes.owner"));
-        assertEquals(LOGIKS, TweaksPlugin.ownerAt(config, "sea-gifts.owner"));
+        assertEquals(Set.of(LOGIKS, BEPY), seaGiftsOwners(config));
+    }
+
+    @Test
+    void liveSeaGiftsConfigWithItsSingleOwnerKeepsHimAndGainsTheJarsList() throws Exception {
+        // Live's config.yml since 2026-10-08 18:40 UTC: `seagifts owner` saved ItsLogiks under the old key.
+        YamlConfiguration config = serverConfig("sea-gifts:\n  owner: " + LOGIKS + "\n");
+        assertEquals(Set.of(LOGIKS, BEPY), seaGiftsOwners(config));
+        UUID bot = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        config = serverConfig("sea-gifts:\n  owner: " + bot + "\n");
+        assertEquals(Set.of(LOGIKS, BEPY, bot), seaGiftsOwners(config));
+    }
+
+    @Test
+    void aSeaGiftsListInTheServerConfigReplacesTheJars() throws Exception {
+        YamlConfiguration config = serverConfig("sea-gifts:\n  owners:\n    - " + BEPY + "\n    - not-a-uuid\n");
+        assertEquals(Set.of(BEPY), seaGiftsOwners(config));
+    }
+
+    private static Set<UUID> seaGiftsOwners(YamlConfiguration config) {
+        return TweaksPlugin.ownersAt(config, "sea-gifts.owners", "sea-gifts.owner");
     }
 
     @Test

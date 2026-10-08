@@ -15,32 +15,34 @@ import org.bukkit.event.player.PlayerJoinEvent;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
- * ItsLogiks' Porunga wish (2026-10-08, session jam0yw): permanent Dolphin's Grace and Conduit Power on him
- * alone, each switched on and off with {@code /seagifts}, at most once per real hour; death switches both
- * off until he calls them back. While a gift is on the plugin keeps it on him: on join, every second (so
- * a totem or {@code /effect clear} can't strip it for good) and by refusing milk's clear outright.
+ * Porunga's sea gifts (ItsLogiks, session jam0yw, and SirBepy, session ay4gtv, both 2026-10-08): permanent
+ * Dolphin's Grace and Conduit Power on each owner, each switched on and off by that owner with
+ * {@code /seagifts}, at most once per real hour; death switches both off until he calls them back. Every
+ * owner has his own switches and hours. While a gift is on the plugin keeps it on him: on join, every
+ * second (so a totem or {@code /effect clear} can't strip it for good) and by refusing milk's clear outright.
  */
 public final class SeaGifts implements Listener {
 
     private final Server server;
     private final SeaGiftsStore store;
-    private final Supplier<UUID> owner;
+    private final Supplier<Set<UUID>> owners;
     private final LongSupplier clock;
 
-    public SeaGifts(Server server, SeaGiftsStore store, Supplier<UUID> owner, LongSupplier clock) {
+    public SeaGifts(Server server, SeaGiftsStore store, Supplier<Set<UUID>> owners, LongSupplier clock) {
         this.server = server;
         this.store = store;
-        this.owner = owner;
+        this.owners = owners;
         this.clock = clock;
     }
 
     public boolean isOwner(Entity entity) {
-        return entity instanceof Player && entity.getUniqueId().equals(owner.get());
+        return entity instanceof Player && owners.get().contains(entity.getUniqueId());
     }
 
     public void flip(Player player, SeaGift gift) {
@@ -73,11 +75,12 @@ public final class SeaGifts implements Listener {
         }
     }
 
-    /** Puts every gift that is on back on the owner if anything took it off. */
+    /** Puts every gift that is on back on each online owner if anything took it off. */
     public void tick() {
-        UUID id = owner.get();
-        Player player = id == null ? null : server.getPlayer(id);
-        if (player != null && !player.isDead()) apply(player);
+        for (UUID id : owners.get()) {
+            Player player = server.getPlayer(id);
+            if (player != null && !player.isDead()) apply(player);
+        }
     }
 
     private void apply(Player player) {

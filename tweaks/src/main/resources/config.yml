@@ -24,12 +24,18 @@ motd:
 phantoms:
   enabled: true
 
-# ItsLogiks' Porunga wish (2026-10-08, session jam0yw): permanent Dolphin's Grace and Conduit Power that
-# only he switches with /seagifts dolphin|conduit, each at most once per real hour; death switches both
-# off. Switches and cooldowns live in plugins/Tweaks/sea-gifts.yml. `seagifts owner <player>` moves it.
+# Porunga's sea gifts: permanent Dolphin's Grace and Conduit Power that each owner switches for himself
+# with /seagifts dolphin|conduit, each at most once per real hour; death switches both off. Owners:
+# ItsLogiks (2026-10-08, session jam0yw) and SirBepy (2026-10-08, session ay4gtv). Switches and cooldowns
+# live per owner in plugins/Tweaks/sea-gifts.yml. `seagifts add|remove <player>` edits the list. A single
+# `owner:` key from before the list (live's config has one) still counts as an owner; add/remove drop it.
+# No `owner:` default here: the jar's defaults are read for any key the server's file lacks, so one here
+# would keep that player an owner past every `seagifts remove`.
 sea-gifts:
   enabled: true
-  owner: 3e0a4456-e2a3-4ea8-9bfa-8e38ee4c863d
+  owners:
+    - 3e0a4456-e2a3-4ea8-9bfa-8e38ee4c863d
+    - a6f30e22-f8d5-4ae8-a69c-2f81662b1950
 
 # CoffiebagSupreme's Nether Porunga wishes (2026-10-08, session n97wtc), matched by `owner`: fully grown crops
 # he breaks replant from a seed in his inventory (AutoReplant); zombies, zombie villagers, husks and drowned
