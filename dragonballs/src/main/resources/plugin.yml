@@ -4,6 +4,9 @@ main: dev.sirbepy.mc.dragonballs.DragonBallsPlugin
 api-version: "26.2"
 author: sirbepy
 softdepend: [Towny]
+# Enables before Geyser so it can register the Bedrock summon dragons while Geyser starts up
+# (bedrock/GeyserDragons).
+loadbefore: [Geyser-Spigot]
 
 permissions:
   dragonballs.admin:

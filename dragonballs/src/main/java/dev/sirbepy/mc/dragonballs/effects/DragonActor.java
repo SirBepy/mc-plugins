@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.dragonballs.effects;
 
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
+import dev.sirbepy.mc.dragonballs.bedrock.BedrockDragons;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -33,11 +34,12 @@ import java.util.function.Predicate;
 
 /**
  * Owns the one summon dragon: Java players see {@link DragonModel}, Shenron or Porunga built from
- * the server pack's item models and posed by {@link DragonPose}; Bedrock players, who can't see
- * item displays, see a harmless scaled Ender Dragon circling above the balls instead (Joe,
- * 2026-10-08), each hidden from the other edition. Also roars on a rate limit, drives the per-set
- * particles (Nether smoke column, End aura, Nuova's fire trail, the Nether Porunga's purple trail)
- * for as long as the dragon lives, and cleans up strays left by a crash.
+ * the server pack's item models and posed by {@link DragonPose}. Bedrock players, who can't see
+ * item displays, see the same model through {@link BedrockDragonModel} while the Geyser hook is
+ * active, and otherwise a harmless scaled Ender Dragon circling above the balls (Joe, 2026-10-08),
+ * each hidden from the other edition. Also roars on a rate limit, drives the per-set particles
+ * (Nether smoke column, End aura, Nuova's fire trail, the Nether Porunga's purple trail) for as
+ * long as the dragon lives, and cleans up strays left by a crash.
  */
 final class DragonActor {
 
@@ -67,9 +69,11 @@ final class DragonActor {
     private final NamespacedKey effectKey;
     private final Predicate<UUID> isBedrock;
     private final Consumer<TextDisplay> faceViewers;
+    private final BedrockDragons bedrockDragons;
 
     private EnderDragon current;
     private DragonModel model;
+    private BedrockDragonModel bedrockModel;
     private DragonType type;
     private UUID summoner;
     private double modelSize;
@@ -87,16 +91,22 @@ final class DragonActor {
     private boolean burning;
     private boolean purpleTrail;
 
-    DragonActor(JavaPlugin plugin, Predicate<UUID> isBedrock) {
-        this(plugin, isBedrock, name -> name.setBillboard(Display.Billboard.CENTER));
+    DragonActor(JavaPlugin plugin, Predicate<UUID> isBedrock, BedrockDragons bedrockDragons) {
+        this(plugin, isBedrock, name -> name.setBillboard(Display.Billboard.CENTER), bedrockDragons);
+    }
+
+    DragonActor(JavaPlugin plugin, Predicate<UUID> isBedrock, Consumer<TextDisplay> faceViewers) {
+        this(plugin, isBedrock, faceViewers, BedrockDragons.NONE);
     }
 
     /** {@code faceViewers} turns the floating name toward whoever looks at it; injectable because
      * MockBukkit leaves {@code Display#setBillboard} unimplemented. */
-    DragonActor(JavaPlugin plugin, Predicate<UUID> isBedrock, Consumer<TextDisplay> faceViewers) {
+    DragonActor(JavaPlugin plugin, Predicate<UUID> isBedrock, Consumer<TextDisplay> faceViewers,
+                BedrockDragons bedrockDragons) {
         this.plugin = plugin;
         this.isBedrock = isBedrock;
         this.faceViewers = faceViewers;
+        this.bedrockDragons = bedrockDragons;
         this.effectKey = new NamespacedKey(plugin, "effect-dragon");
         removeLegacyGlowTeams();
     }
@@ -129,9 +139,11 @@ final class DragonActor {
         this.purpleTrail = type.isPurplePorunga(set);
 
         Component name = Component.text(type.displayName(set), nameColor(type, set));
-        Location spawnAt = center.clone().add(0, height, 0);
-        this.current = world.spawn(spawnAt, EnderDragon.class, CreatureSpawnEvent.SpawnReason.CUSTOM,
-                dragon -> configure(dragon, type, name, look));
+        if (!bedrockDragons.active()) {
+            Location spawnAt = center.clone().add(0, height, 0);
+            this.current = world.spawn(spawnAt, EnderDragon.class, CreatureSpawnEvent.SpawnReason.CUSTOM,
+                    dragon -> configure(dragon, type, name, look));
+        }
 
         // The model's top sits where the old dragon's body top did, so the Nether's ceiling scan
         // (which already left room for that body) keeps it under the rock.
@@ -145,7 +157,11 @@ final class DragonActor {
             this.modelSize = SHENRON_SIZE * look.scale();
             this.modelHeight = top + lift(DragonPose.shenron(0, modelSize, top));
         }
-        this.model = DragonModel.spawn(center, type, set, pose(0), name, faceViewers, (int) CIRCLE_PERIOD_TICKS);
+        List<DragonPose.Part> initial = pose(0);
+        this.model = DragonModel.spawn(center, type, set, initial, name, faceViewers, (int) CIRCLE_PERIOD_TICKS);
+        if (current == null) {
+            this.bedrockModel = BedrockDragonModel.spawn(center, set, initial, bedrockDragons);
+        }
         refreshVisibility();
 
         playGrowlForWorld(world);
@@ -221,19 +237,31 @@ final class DragonActor {
         return type == DragonType.PORUNGA ? NamedTextColor.AQUA : NamedTextColor.GREEN;
     }
 
-    /** Java players see the model and its name; Bedrock players see the Ender Dragon, whose own
-     * name tag replaces the model's (Geyser does show text displays, so it would double up). */
+    /** Java players see the model and its name. Bedrock players see the model's name and its
+     * Bedrock carriers, or with no Geyser hook the Ender Dragon, whose own name tag then replaces
+     * the model's (Geyser does show text displays, so it would double up). */
     private void refreshVisibility() {
-        if (current == null || model == null) {
+        if (model == null || circleCenter == null) {
             return;
         }
-        for (Player player : current.getWorld().getPlayers()) {
+        for (Player player : circleCenter.getWorld().getPlayers()) {
             if (isBedrock.test(player.getUniqueId())) {
-                player.hideEntity(plugin, model.name());
-            } else {
+                if (current != null) {
+                    player.hideEntity(plugin, model.name());
+                }
+            } else if (current != null) {
                 player.hideEntity(plugin, current);
+            } else if (bedrockModel != null) {
+                for (TextDisplay carrier : bedrockModel.carriers()) {
+                    player.hideEntity(plugin, carrier);
+                }
             }
         }
+    }
+
+    /** Whether a dragon is up (the Ender Dragon stand-in, or the models without one). */
+    private boolean alive() {
+        return current != null ? current.isValid() : model != null;
     }
 
     private static void removeLegacyGlowTeams() {
@@ -254,23 +282,29 @@ final class DragonActor {
     }
 
     private void circleTick() {
-        if (current == null || !current.isValid() || circleCenter == null) {
+        if (!alive() || circleCenter == null) {
             return;
         }
         circleAngleTicks++;
-        double angle = circleAngleTicks * ANGLE_STEP_RADIANS;
-        double x = circleCenter.getX() + circleRadius * Math.cos(angle);
-        double z = circleCenter.getZ() + circleRadius * Math.sin(angle);
-        double y = circleCenter.getY() + circleHeight + Math.sin(angle * 2) * bobAmplitude;
-        Location next = new Location(circleCenter.getWorld(), x, y, z);
-        double towardCenterX = circleCenter.getX() - x;
-        double towardCenterZ = circleCenter.getZ() - z;
-        next.setDirection(new org.bukkit.util.Vector(towardCenterX, 0, towardCenterZ));
-        current.teleport(next);
+        if (current != null) {
+            double angle = circleAngleTicks * ANGLE_STEP_RADIANS;
+            double x = circleCenter.getX() + circleRadius * Math.cos(angle);
+            double z = circleCenter.getZ() + circleRadius * Math.sin(angle);
+            double y = circleCenter.getY() + circleHeight + Math.sin(angle * 2) * bobAmplitude;
+            Location next = new Location(circleCenter.getWorld(), x, y, z);
+            double towardCenterX = circleCenter.getX() - x;
+            double towardCenterZ = circleCenter.getZ() - z;
+            next.setDirection(new org.bukkit.util.Vector(towardCenterX, 0, towardCenterZ));
+            current.teleport(next);
+        }
 
         if (model != null) {
             porungaYaw = facing(circleCenter, summoner, porungaYaw);
-            model.move(circleCenter, pose(circleAngleTicks * CIRCLE_PERIOD_TICKS / 20.0));
+            List<DragonPose.Part> next = pose(circleAngleTicks * CIRCLE_PERIOD_TICKS / 20.0);
+            model.move(circleCenter, next);
+            if (bedrockModel != null) {
+                bedrockModel.move(circleCenter, next);
+            }
         }
         if (circleAngleTicks % (VISIBILITY_PERIOD_TICKS / CIRCLE_PERIOD_TICKS) == 0) {
             refreshVisibility();
@@ -367,7 +401,7 @@ final class DragonActor {
 
     /** A purple swirl on the dragon's body, following it as it moves. */
     private void emitEndAura(World world, EffectsConfig config) {
-        if (current == null || !current.isValid()) {
+        if (!alive()) {
             return;
         }
         Location at = bodySpot();
@@ -380,7 +414,7 @@ final class DragonActor {
 
     /** The dragon said something: a rate-limited roar plus particles near its head. */
     void speak() {
-        if (current == null || !current.isValid()) {
+        if (!alive()) {
             return;
         }
         long now = System.currentTimeMillis();
@@ -388,7 +422,7 @@ final class DragonActor {
             return;
         }
         lastGrowlMillis = now;
-        World world = current.getWorld();
+        World world = circleCenter.getWorld();
         playGrowlForWorld(world);
         Location head = model != null && model.size() > 0
                 ? model.head(circleCenter) : current.getLocation().add(0, 2.0, 0);
@@ -397,11 +431,11 @@ final class DragonActor {
 
     /** Animated removal: particle burst + sound, then gone. */
     void despawnWithEffects() {
-        if (current == null) {
+        if (!alive()) {
             despawnImmediate();
             return;
         }
-        World world = current.getWorld();
+        World world = circleCenter.getWorld();
         Location at = model != null && model.size() > 0 ? model.head(circleCenter) : current.getLocation();
         world.spawnParticle(Particle.EXPLOSION, at, 1);
         world.spawnParticle(Particle.END_ROD, at, 40, 0.8, 0.8, 0.8, 0.1);
@@ -420,6 +454,10 @@ final class DragonActor {
         if (model != null) {
             model.remove();
             model = null;
+        }
+        if (bedrockModel != null) {
+            bedrockModel.remove();
+            bedrockModel = null;
         }
         burning = false;
         purpleTrail = false;
@@ -448,7 +486,8 @@ final class DragonActor {
         }
     }
 
-    /** The Bedrock players' Ender Dragon. */
+    /** The Bedrock players' Ender Dragon, or null with none (no dragon up, or the Geyser hook
+     * showing them the model instead). */
     EnderDragon current() {
         return current;
     }
@@ -458,15 +497,22 @@ final class DragonActor {
         return model;
     }
 
-    /** Startup/chunk-load sweep: removes any marked dragon entity (Ender Dragon, model part or
-     * name) left behind by a crash. Never removes the dragon this actor is currently showing. */
+    /** What Bedrock players see through the Geyser hook, or null. */
+    BedrockDragonModel bedrockModel() {
+        return bedrockModel;
+    }
+
+    /** Startup/chunk-load sweep: removes any marked dragon entity (Ender Dragon, model part, name
+     * or Bedrock carrier) left behind by a crash. Never removes the dragon this actor is currently
+     * showing. */
     void removeStray(World world) {
         UUID keep = current != null ? current.getUniqueId() : null;
         for (Entity entity : world.getEntities()) {
             if (!entity.getScoreboardTags().contains(EffectMarkers.DRAGON_TAG)) {
                 continue;
             }
-            if (entity.getUniqueId().equals(keep) || (model != null && model.owns(entity))) {
+            if (entity.getUniqueId().equals(keep) || (model != null && model.owns(entity))
+                    || (bedrockModel != null && bedrockModel.owns(entity))) {
                 continue;
             }
             entity.remove();

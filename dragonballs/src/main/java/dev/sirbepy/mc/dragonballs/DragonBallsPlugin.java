@@ -2,6 +2,7 @@ package dev.sirbepy.mc.dragonballs;
 
 import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
+import dev.sirbepy.mc.dragonballs.bedrock.BedrockDragons;
 import dev.sirbepy.mc.dragonballs.bedrock.GeyserSkullMappings;
 import dev.sirbepy.mc.dragonballs.command.DragonBallsCommand;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
@@ -108,7 +109,7 @@ public final class DragonBallsPlugin extends JavaPlugin {
 
         RadarModule.register(this, sets, config::get);
         StationModule.register(this, sets, floatingBalls, config::get);
-        effects = new SpectacleEffects(this, items);
+        effects = new SpectacleEffects(this, items, BedrockDragons.hook(this));
         summon = SummonModule.register(this, sets, floatingBalls, config::get, effects);
 
         floatingBalls.start();

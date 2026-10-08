@@ -2,6 +2,7 @@ package dev.sirbepy.mc.dragonballs.effects;
 
 import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
+import dev.sirbepy.mc.dragonballs.bedrock.BedrockDragons;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -29,8 +30,8 @@ public final class SpectacleEffects implements SummonEffects {
     private final FlyingBalls flyingBalls;
     private final BallStrikeSequence strikes;
 
-    public SpectacleEffects(JavaPlugin plugin, BallItems ballItems) {
-        this(plugin, ballItems, new DragonActor(plugin, BedrockForms.create(plugin)::isBedrock));
+    public SpectacleEffects(JavaPlugin plugin, BallItems ballItems, BedrockDragons bedrockDragons) {
+        this(plugin, ballItems, new DragonActor(plugin, BedrockForms.create(plugin)::isBedrock, bedrockDragons));
     }
 
     /** For tests: MockBukkit has no Floodgate and no {@code Display#setBillboard}. */
