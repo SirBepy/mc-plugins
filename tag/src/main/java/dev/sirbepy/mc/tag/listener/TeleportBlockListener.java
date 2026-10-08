@@ -3,6 +3,7 @@ package dev.sirbepy.mc.tag.listener;
 import dev.sirbepy.mc.core.Messages;
 import dev.sirbepy.mc.tag.TagService;
 import dev.sirbepy.mc.tag.config.TeleportBlockConfig;
+import dev.sirbepy.mc.tag.teleport.TeleportBlockService;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -19,6 +20,7 @@ import java.math.BigDecimal;
 public final class TeleportBlockListener implements Listener {
 
     private final TagService service;
+    private final TeleportBlockService teleportBlock = new TeleportBlockService();
 
     public TeleportBlockListener(TagService service) {
         this.service = service;
@@ -31,7 +33,8 @@ public final class TeleportBlockListener implements Listener {
             return;
         }
         Player player = event.getPlayer();
-        Player it = service.itBlockingTeleport(player, event.getFrom());
+        Player it = teleportBlock.itBlockingTeleport(player, event.getFrom(), service.config().teleportBlock,
+                service.onlineIt(), service::isIt, service::isOptedOut, service::isAfk);
         if (it == null) {
             return;
         }

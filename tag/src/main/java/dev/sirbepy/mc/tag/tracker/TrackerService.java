@@ -2,6 +2,7 @@ package dev.sirbepy.mc.tag.tracker;
 
 import dev.sirbepy.mc.core.Messages;
 import dev.sirbepy.mc.tag.config.TrackerConfig;
+import dev.sirbepy.mc.tag.logic.Playability;
 import dev.sirbepy.mc.tag.logic.TrackerTargets;
 import dev.sirbepy.mc.tag.logic.TrackerTargets.Candidate;
 import io.papermc.paper.datacomponent.DataComponentTypes;
@@ -10,7 +11,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -149,13 +149,9 @@ public final class TrackerService {
                     boolean sameWorld = p.getWorld().equals(it.getWorld());
                     return new Candidate(p.getUniqueId(), p.getName(), sameWorld,
                             sameWorld ? p.getLocation().distance(here) : 0.0, isAfk.test(p.getUniqueId()),
-                            isOptedOut.test(p.getUniqueId()), playable(p));
+                            isOptedOut.test(p.getUniqueId()), Playability.playable(p));
                 })
                 .toList());
-    }
-
-    private static boolean playable(Player player) {
-        return player.getGameMode() == GameMode.SURVIVAL || player.getGameMode() == GameMode.ADVENTURE;
     }
 
     /** Gives IT the tracker, or takes it away when {@code config.enabled} is off (e.g. after a reload). */

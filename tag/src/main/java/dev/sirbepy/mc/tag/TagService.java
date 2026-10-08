@@ -18,7 +18,6 @@ import dev.sirbepy.mc.tag.state.TagState;
 import dev.sirbepy.mc.tag.tracker.TrackerService;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
@@ -291,34 +290,11 @@ public final class TagService {
         tracker.cycleAndUpdate(player, config.tracker, this::isAfk, this::isOptedOut);
     }
 
-    // --- teleport block ----------------------------------------------------------------------
-
-    /**
-     * The IT that pins {@code player} in place for a teleport starting at {@code from}, or null when
-     * they're free to go. An AFK or non-playing IT can't chase anyone, so it pins nobody.
-     */
-    public Player itBlockingTeleport(Player player, Location from) {
-        UUID id = player.getUniqueId();
-        if (!config.teleportBlock.enabled || isIt(id) || isOptedOut(id) || !playable(player)) {
-            return null;
-        }
-        Player it = onlineIt();
-        if (it == null || !playable(it) || isAfk(it.getUniqueId()) || !it.getWorld().equals(from.getWorld())) {
-            return null;
-        }
-        double radius = config.teleportBlock.radius;
-        return it.getLocation().distanceSquared(from) <= radius * radius ? it : null;
-    }
-
-    private static boolean playable(Player player) {
-        return player.getGameMode() == GameMode.SURVIVAL || player.getGameMode() == GameMode.ADVENTURE;
-    }
-
-    private Player onlineIt() {
+    /** Teleport-block's decision lives in {@link dev.sirbepy.mc.tag.teleport.TeleportBlockService}; this supplies IT. */
+    public Player onlineIt() {
         UUID itId = state.currentIt;
         return itId == null ? null : Bukkit.getPlayer(itId);
     }
-
     // --- AFK -----------------------------------------------------------------------------------
 
     /** Records player activity (movement, chat, commands, blocks, interaction, inventory). */

@@ -3,9 +3,9 @@ package dev.sirbepy.mc.tag.afk;
 import dev.sirbepy.mc.core.Messages;
 import dev.sirbepy.mc.tag.config.AfkConfig;
 import dev.sirbepy.mc.tag.logic.AfkEligibility;
+import dev.sirbepy.mc.tag.logic.Playability;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 
 import java.util.List;
@@ -77,7 +77,7 @@ public final class AfkService {
         List<AfkEligibility.Candidate> candidates = Bukkit.getOnlinePlayers().stream()
                 .filter(p -> !p.getUniqueId().equals(it.getUniqueId()))
                 .map(p -> new AfkEligibility.Candidate(p.getUniqueId(), tracker.isAfk(p.getUniqueId()),
-                        isOptedOut.test(p.getUniqueId()), playable(p)))
+                        isOptedOut.test(p.getUniqueId()), Playability.playable(p)))
                 .toList();
         List<UUID> eligible = AfkEligibility.eligible(candidates, previousTagger);
         if (eligible.isEmpty()) {
@@ -89,11 +89,5 @@ public final class AfkService {
             return;
         }
         passIt.accept(it, chosen);
-    }
-
-    // Mirrors TagService#playable: survival/adventure is "can actually play tag", needed both
-    // here and for tracker candidates. Duplicated rather than shared across packages for one line.
-    private static boolean playable(Player player) {
-        return player.getGameMode() == GameMode.SURVIVAL || player.getGameMode() == GameMode.ADVENTURE;
     }
 }

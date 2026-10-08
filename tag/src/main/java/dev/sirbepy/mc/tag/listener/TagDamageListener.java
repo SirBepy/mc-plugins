@@ -1,7 +1,7 @@
 package dev.sirbepy.mc.tag.listener;
 
 import dev.sirbepy.mc.tag.TagService;
-import org.bukkit.GameMode;
+import dev.sirbepy.mc.tag.logic.Playability;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -33,7 +33,7 @@ public final class TagDamageListener implements Listener {
         if (attacker == null || !service.isIt(attacker.getUniqueId())) {
             return;
         }
-        if (!inPlayableMode(attacker) || !inPlayableMode(victim)) {
+        if (!Playability.playable(attacker) || !Playability.playable(victim)) {
             return;
         }
         TagService.TagResult result = service.attemptTag(attacker, victim);
@@ -59,9 +59,5 @@ public final class TagDamageListener implements Listener {
             return shooter;
         }
         return null;
-    }
-
-    private boolean inPlayableMode(Player player) {
-        return player.getGameMode() == GameMode.SURVIVAL || player.getGameMode() == GameMode.ADVENTURE;
     }
 }
