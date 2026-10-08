@@ -140,15 +140,39 @@ for (const s of ['angler', 'archer', 'arms_up', 'blade', 'brewer', 'burn', 'dang
 // nothing to add here for COLORS today.
 void COLORS;
 
-/** Per enchantment level, added on enchanted gear and books. */
-export const ENCHANTMENTS = {
-  aqua_affinity: 2, bane_of_arthropods: 1, binding_curse: 0, blast_protection: 2, breach: 4, channeling: 5,
-  density: 3, depth_strider: 3, efficiency: 3, feather_falling: 2, fire_aspect: 4, fire_protection: 2,
-  flame: 4, fortune: 8, frost_walker: 3, impaling: 2, infinity: 15, knockback: 1, looting: 6, loyalty: 3,
-  luck_of_the_sea: 3, lunge: 3, lure: 2, mending: 20, multishot: 5, piercing: 2, power: 3, projectile_protection: 2,
-  protection: 3, punch: 2, quick_charge: 3, respiration: 2, riptide: 3, sharpness: 3, silk_touch: 10, smite: 2,
-  soul_speed: 4, sweeping_edge: 2, swift_sneak: 6, thorns: 2, unbreaking: 3, vanishing_curse: 0, wind_burst: 6,
-};
+// What an enchantment adds at its max level (Sharpness V, Protection IV, Fortune III), by how rarely
+// the enchanting table rolls it: its `weight` in the jar's data/minecraft/enchantment/*.json. Next
+// to a $20 diamond: Sharpness V is a diamond, Fortune III two, Silk Touch three.
+const ENCHANT_TIERS = [[10, 20], [5, 30], [2, 40], [1, 60]];
+// Treasure enchantments (the jar's #minecraft:treasure tag) never come from a table: only loot,
+// villagers, bartering or vaults, so they are worth more than their weight says.
+const TREASURE_MARKUP = 1.5;
+// Hand-set max-level prices that beat the tier: Mending is the one every player wants on everything.
+const ENCHANT_OVERRIDES = { mending: 100 };
+
+/**
+ * Curses multiply the whole item's price, enchantments included: Binding can never be taken off,
+ * Vanishing only loses the item on death. Every enchantment in the jar's #minecraft:curse tag needs
+ * a factor here.
+ */
+export const CURSES = { binding_curse: 0.5, vanishing_curse: 0.75 };
+
+/**
+ * Max level and max-level price for every non-curse enchantment. `defs` maps an id to its jar JSON
+ * (`weight`, `max_level`); `treasure` and `curses` are ids from those tags.
+ */
+export function enchantmentPrices(defs, treasure, curses) {
+  const out = {};
+  for (const [id, def] of [...defs].sort(([a], [b]) => a.localeCompare(b))) {
+    if (curses.has(id)) {
+      if (!(id in CURSES)) throw new Error(`curse ${id} has no factor in CURSES`);
+      continue;
+    }
+    const tier = (ENCHANT_TIERS.find(([weight]) => def.weight >= weight) ?? ENCHANT_TIERS.at(-1))[1];
+    out[id] = { maxLevel: def.max_level, price: ENCHANT_OVERRIDES[id] ?? tier * (treasure.has(id) ? TREASURE_MARKUP : 1) };
+  }
+  return out;
+}
 
 const POTION_BASE = {
   water: 0, mundane: 0.1, thick: 0.1, awkward: 0.2, night_vision: 1, invisibility: 2, leaping: 1,

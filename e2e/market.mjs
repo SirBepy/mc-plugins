@@ -146,6 +146,22 @@ try {
     await waitForLine(bot, /Suggested price for Diamond: \$20\.00/, 5_000, since);
   });
 
+  await step('/suggested-price prices an enchanted book\'s enchantments and breaks them down', async () => {
+    const [bot] = bots;
+    await rcon.command(`minecraft:clear ${SELLER}`);
+    await rcon.command(`minecraft:give ${SELLER} minecraft:enchanted_book[stored_enchantments={"minecraft:sharpness":4,"minecraft:mending":1,"minecraft:vanishing_curse":1}] 1`);
+    await waitFor(() => bot.inventory.items().some((i) => i.name === 'enchanted_book'), `${SELLER} holds an enchanted book`, 5_000);
+    await bot.equip(bot.inventory.items().find((i) => i.name === 'enchanted_book'), 'hand');
+    const since = bot.lines.length;
+    bot.chat('/suggested-price');
+    // prices.yml: book $0.50, Sharpness V $20 so IV $10, Mending $100, then Vanishing cuts 25%: $110.50 x 0.75.
+    await waitForLine(bot, /Suggested price for Enchanted Book: \$82\.88\./, 5_000, since);
+    await waitForLine(bot, /^ - Enchanted book \$0\.50$/, 5_000, since);
+    await waitForLine(bot, /^ - Sharpness IV \+\$10\.00$/, 5_000, since);
+    await waitForLine(bot, /^ - Mending \+\$100\.00$/, 5_000, since);
+    await waitForLine(bot, /^ - Curse of Vanishing -25%$/, 5_000, since);
+  });
+
   await step('the Head collector buys a wanted mob head from a non-op and refuses a player\'s head', async () => {
     const [bot] = bots;
     await rcon.command(`deop ${SELLER}`);

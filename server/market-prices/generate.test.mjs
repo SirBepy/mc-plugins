@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FUEL, computePrices, resolveTags } from './pricing.mjs';
+import { CURSES, enchantmentPrices } from './raw-prices.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const tags = resolveTags(new Map([
@@ -90,4 +91,33 @@ test('creative-only items are untradeable, not priced', () => {
     assert.ok(untradeable.includes(`  - ${id}\n`), id);
     assert.ok(!(id in items), id);
   }
+});
+
+test('an enchantment is priced at its max level by table rarity, treasure 1.5x, Mending by hand, curses skipped', () => {
+  const defs = new Map([
+    ['sharpness', { weight: 10, max_level: 5 }], ['unbreaking', { weight: 5, max_level: 3 }],
+    ['fortune', { weight: 2, max_level: 3 }], ['silk_touch', { weight: 1, max_level: 1 }],
+    ['swift_sneak', { weight: 1, max_level: 3 }], ['mending', { weight: 2, max_level: 1 }],
+    ['vanishing_curse', { weight: 1, max_level: 1 }],
+  ]);
+  const prices = enchantmentPrices(defs, new Set(['swift_sneak', 'mending', 'vanishing_curse']), new Set(['vanishing_curse']));
+  assert.deepEqual(prices, {
+    fortune: { maxLevel: 3, price: 40 }, mending: { maxLevel: 1, price: 100 }, sharpness: { maxLevel: 5, price: 20 },
+    silk_touch: { maxLevel: 1, price: 60 }, swift_sneak: { maxLevel: 3, price: 90 }, unbreaking: { maxLevel: 3, price: 30 },
+  });
+  assert.throws(() => enchantmentPrices(new Map([['new_curse', { weight: 1, max_level: 1 }]]), new Set(), new Set(['new_curse'])));
+});
+
+test('prices.yml prices every vanilla enchantment by max level, and only the curses multiply', () => {
+  const enchants = Object.fromEntries([...yml.split('\nenchantments:\n')[1].split(/\n[a-z#]/)[0]
+    .matchAll(/^ {2}([a-z_]+): \{max-level: (\d+), price: ([\d.]+)\}$/gm)].map((m) => [m[1], { max: Number(m[2]), price: Number(m[3]) }]));
+  assert.ok(Object.keys(enchants).length >= 40, `only ${Object.keys(enchants).length} enchantments`);
+  assert.deepEqual(enchants.mending, { max: 1, price: 100 });
+  assert.deepEqual(enchants.sharpness, { max: 5, price: 20 });
+  assert.deepEqual(enchants.protection, { max: 4, price: 20 });
+  assert.deepEqual(enchants.silk_touch, { max: 1, price: 60 });
+  for (const curse of Object.keys(CURSES)) assert.ok(!(curse in enchants), curse);
+  assert.deepEqual(section('curses'), CURSES);
+  // A max-level enchantment never costs less than a diamond, so it always shows in a quote.
+  for (const [id, { price }] of Object.entries(enchants)) assert.ok(price >= items.diamond, `${id} ${price}`);
 });

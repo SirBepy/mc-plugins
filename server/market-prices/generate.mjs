@@ -6,15 +6,16 @@
 // the stall's base price, so a player selling to another player can beat the server.
 //
 // Usage: node server/market-prices/generate.mjs [path-to-26.3-client.jar]
-// The jar defaults to the Modrinth launcher's copy; recipes, item tags and the item list are read
-// from it. Pass --check to list items that still have no price instead of writing the file.
+// The jar defaults to the Modrinth launcher's copy; recipes, item tags, the item list and the
+// enchantments (weight, max level, treasure and curse tags) are read from it. Pass --check to list
+// items that still have no price instead of writing the file.
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { computePrices, resolveTags } from './pricing.mjs';
-import { ENCHANTMENTS, POTIONS, RAW, UNTRADEABLE, derive } from './raw-prices.mjs';
+import { CURSES, POTIONS, RAW, UNTRADEABLE, derive, enchantmentPrices } from './raw-prices.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const OUT = join(here, '..', '..', 'market', 'src', 'main', 'resources', 'prices.yml');
@@ -30,7 +31,8 @@ const jar = args.find((a) => !a.startsWith('--'))
 
 const tmp = mkdtempSync(join(tmpdir(), 'mc-prices-'));
 try {
-  const wanted = ['data/minecraft/recipe/*', 'data/minecraft/tags/item/*', 'assets/minecraft/items/*'];
+  const wanted = ['data/minecraft/recipe/*', 'data/minecraft/tags/item/*', 'assets/minecraft/items/*',
+    'data/minecraft/enchantment/*', 'data/minecraft/tags/enchantment/*'];
   // Windows' own bsdtar reads zips; Git Bash's GNU tar (often first on PATH) does not.
   const untar = process.platform === 'win32'
     ? spawnSync(join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe'), ['-xf', jar, '-C', tmp, ...wanted])
@@ -42,6 +44,9 @@ try {
   const recipes = json('data/minecraft/recipe').map(([, r]) => r);
   const tags = resolveTags(new Map(json('data/minecraft/tags/item').map(([name, t]) => [name, t.values])));
   const items = json('assets/minecraft/items').map(([name]) => name).sort();
+  const enchantTag = (name) => new Set(JSON.parse(readFileSync(join(tmp, 'data/minecraft/tags/enchantment', `${name}.json`), 'utf8'))
+    .values.map((v) => v.replace(/^minecraft:/, '')));
+  const enchantments = enchantmentPrices(new Map(json('data/minecraft/enchantment')), enchantTag('treasure'), enchantTag('curse'));
 
   // Market items: twice the stall's base price per item.
   const market = {};
@@ -75,9 +80,14 @@ try {
     '# Suggested price per single item, for /suggested-price. Edit raw-prices.mjs and rerun.',
     'items:',
     ...items.filter((i) => prices.has(i) && !untradeable.has(i)).map((i) => `  ${i}: ${fmt(prices.get(i))}`),
-    '# Per enchantment level, on top of an enchanted item or book.',
+    '# Per enchantment, on top of an enchanted item or book (stored enchantments too): its price at',
+    '# max-level. Each level below halves it (two books of a level make the next one in an anvil),',
+    '# each level past max adds it once more.',
     'enchantments:',
-    ...Object.entries(ENCHANTMENTS).sort().map(([e, p]) => `  ${e}: ${fmt(p)}`),
+    ...Object.entries(enchantments).map(([e, { maxLevel, price }]) => `  ${e}: {max-level: ${maxLevel}, price: ${fmt(price)}}`),
+    '# Curses multiply the whole price, enchantments included.',
+    'curses:',
+    ...Object.entries(CURSES).sort().map(([c, f]) => `  ${c}: ${fmt(f)}`),
     '# Per potion type, on top of the bottle for a potion, splash potion, lingering potion or tipped arrow.',
     'potions:',
     ...Object.entries(POTIONS).sort().map(([p, v]) => `  ${p}: ${fmt(v)}`),

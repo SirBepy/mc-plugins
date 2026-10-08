@@ -1535,51 +1535,55 @@ items:
   yellow_wool_slab: 0.225
   yellow_wool_stairs: 0.65
   zombie_head: 20
-# Per enchantment level, on top of an enchanted item or book.
+# Per enchantment, on top of an enchanted item or book (stored enchantments too): its price at
+# max-level. Each level below halves it (two books of a level make the next one in an anvil),
+# each level past max adds it once more.
 enchantments:
-  aqua_affinity: 2
-  bane_of_arthropods: 1
-  binding_curse: 0
-  blast_protection: 2
-  breach: 4
-  channeling: 5
-  density: 3
-  depth_strider: 3
-  efficiency: 3
-  feather_falling: 2
-  fire_aspect: 4
-  fire_protection: 2
-  flame: 4
-  fortune: 8
-  frost_walker: 3
-  impaling: 2
-  infinity: 15
-  knockback: 1
-  looting: 6
-  loyalty: 3
-  luck_of_the_sea: 3
-  lunge: 3
-  lure: 2
-  mending: 20
-  multishot: 5
-  piercing: 2
-  power: 3
-  projectile_protection: 2
-  protection: 3
-  punch: 2
-  quick_charge: 3
-  respiration: 2
-  riptide: 3
-  sharpness: 3
-  silk_touch: 10
-  smite: 2
-  soul_speed: 4
-  sweeping_edge: 2
-  swift_sneak: 6
-  thorns: 2
-  unbreaking: 3
-  vanishing_curse: 0
-  wind_burst: 6
+  aqua_affinity: {max-level: 1, price: 40}
+  bane_of_arthropods: {max-level: 5, price: 30}
+  blast_protection: {max-level: 4, price: 40}
+  breach: {max-level: 4, price: 40}
+  channeling: {max-level: 1, price: 60}
+  density: {max-level: 5, price: 30}
+  depth_strider: {max-level: 3, price: 40}
+  efficiency: {max-level: 5, price: 20}
+  feather_falling: {max-level: 4, price: 30}
+  fire_aspect: {max-level: 2, price: 40}
+  fire_protection: {max-level: 4, price: 30}
+  flame: {max-level: 1, price: 40}
+  fortune: {max-level: 3, price: 40}
+  frost_walker: {max-level: 2, price: 60}
+  impaling: {max-level: 5, price: 40}
+  infinity: {max-level: 1, price: 60}
+  knockback: {max-level: 2, price: 30}
+  looting: {max-level: 3, price: 40}
+  loyalty: {max-level: 3, price: 30}
+  luck_of_the_sea: {max-level: 3, price: 40}
+  lunge: {max-level: 3, price: 30}
+  lure: {max-level: 3, price: 40}
+  mending: {max-level: 1, price: 100}
+  multishot: {max-level: 1, price: 40}
+  piercing: {max-level: 4, price: 20}
+  power: {max-level: 5, price: 20}
+  projectile_protection: {max-level: 4, price: 30}
+  protection: {max-level: 4, price: 20}
+  punch: {max-level: 2, price: 40}
+  quick_charge: {max-level: 3, price: 30}
+  respiration: {max-level: 3, price: 40}
+  riptide: {max-level: 3, price: 40}
+  sharpness: {max-level: 5, price: 20}
+  silk_touch: {max-level: 1, price: 60}
+  smite: {max-level: 5, price: 30}
+  soul_speed: {max-level: 3, price: 90}
+  sweeping_edge: {max-level: 3, price: 40}
+  swift_sneak: {max-level: 3, price: 90}
+  thorns: {max-level: 3, price: 60}
+  unbreaking: {max-level: 3, price: 30}
+  wind_burst: {max-level: 3, price: 60}
+# Curses multiply the whole price, enchantments included.
+curses:
+  binding_curse: 0.5
+  vanishing_curse: 0.75
 # Per potion type, on top of the bottle for a potion, splash potion, lingering potion or tipped arrow.
 potions:
   awkward: 0.2

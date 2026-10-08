@@ -7,6 +7,7 @@ import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -54,7 +55,7 @@ public final class MarketPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(collector, this);
         PriceCommand price;
         try (InputStream stream = Objects.requireNonNull(getResource("prices.yml"), "prices.yml missing from the jar")) {
-            price = new PriceCommand(PriceBook.load(stream), config::get, ItemStack::effectiveName);
+            price = new PriceCommand(PriceBook.load(stream), config::get, ItemStack::effectiveName, Enchantment::displayName);
         } catch (Exception e) {
             throw new IllegalStateException("Could not load prices.yml", e);
         }

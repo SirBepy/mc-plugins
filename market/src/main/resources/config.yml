@@ -43,6 +43,12 @@ messages:
   price-unknown: "<gray>No suggested price for <item> yet."
   price-each: "<gold>Suggested price for <item>: <white><each></white>."
   price-stack: "<gold>Suggested price for <item>: <white><each></white> each, <white><stack></white> for a stack of <size>."
+  # Under an enchanted item's price: the bare item, then each enchantment. Curses cut the whole price.
+  price-part-item: " <dark_gray>-</dark_gray> <white><item></white> <gold><price></gold>"
+  price-part-worn-item: " <dark_gray>-</dark_gray> <white><item></white> <gray>(<worn> worn)</gray> <gold><price></gold>"
+  price-part-enchant: " <dark_gray>-</dark_gray> <enchant> <gold>+<price></gold>"
+  price-part-curse: " <dark_gray>-</dark_gray> <enchant> <red>-<cut></red>"
+  price-part-unpriced: " <dark_gray>-</dark_gray> <enchant> <gray>no suggested price</gray>"
   # The Head collector. <mobs> is today's wanted mobs, <head> the head's name.
   collector-name: "<gold>Head collector"
   collector-hold: "<gray>The Head collector buys mob heads. Today it wants <white><mobs></white> heads."

@@ -1,5 +1,7 @@
 package dev.sirbepy.mc.market;
 
+import dev.sirbepy.mc.core.ItemNames;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -18,6 +20,9 @@ import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,22 +66,62 @@ class PriceBookTest {
         assertEquals(180.0, each(new ItemStack(Material.DIAMOND_BLOCK)), 1e-9);
     }
 
+    private static ItemStack book(Enchantment enchantment, int level) {
+        ItemStack book = new ItemStack(Material.ENCHANTED_BOOK);
+        EnchantmentStorageMeta meta = (EnchantmentStorageMeta) book.getItemMeta();
+        meta.addStoredEnchant(enchantment, level, true);
+        book.setItemMeta(meta);
+        return book;
+    }
+
     @Test
-    void enchantmentsAddPerLevel() {
+    void enchantmentsAddTheirMaxLevelPriceByRarity() {
         ItemStack plain = new ItemStack(Material.DIAMOND_PICKAXE);
         ItemStack enchanted = new ItemStack(Material.DIAMOND_PICKAXE);
-        enchanted.addUnsafeEnchantment(Enchantment.EFFICIENCY, 5);
-        enchanted.addUnsafeEnchantment(Enchantment.MENDING, 1);
-        assertEquals(each(plain) + 5 * 3 + 20, each(enchanted), 1e-9);
+        enchanted.addUnsafeEnchantment(Enchantment.EFFICIENCY, 5); // common: a diamond
+        enchanted.addUnsafeEnchantment(Enchantment.UNBREAKING, 3); // uncommon
+        enchanted.addUnsafeEnchantment(Enchantment.FORTUNE, 3); // rare
+        enchanted.addUnsafeEnchantment(Enchantment.MENDING, 1); // treasure, set by hand
+        assertEquals(each(plain) + 20 + 30 + 40 + 100, each(enchanted), 1e-9);
     }
 
     @Test
     void enchantedBooksCountTheirStoredEnchantments() {
-        ItemStack book = new ItemStack(Material.ENCHANTED_BOOK);
-        EnchantmentStorageMeta meta = (EnchantmentStorageMeta) book.getItemMeta();
-        meta.addStoredEnchant(Enchantment.MENDING, 1, true);
-        book.setItemMeta(meta);
-        assertEquals(0.5 + 20, each(book), 1e-9);
+        assertEquals(0.5 + 100, each(book(Enchantment.MENDING, 1)), 1e-9);
+        assertEquals(0.5 + 60, each(book(Enchantment.SILK_TOUCH, 1)), 1e-9); // very rare
+        assertEquals(0.5 + 90, each(book(Enchantment.SWIFT_SNEAK, 3)), 1e-9); // very rare treasure, 1.5x
+    }
+
+    @Test
+    void eachLevelBelowMaxHalvesAndEachLevelPastMaxAddsItAgain() {
+        assertEquals(0.5 + 20, each(book(Enchantment.SHARPNESS, 5)), 1e-9);
+        assertEquals(0.5 + 10, each(book(Enchantment.SHARPNESS, 4)), 1e-9);
+        assertEquals(0.5 + 1.25, each(book(Enchantment.SHARPNESS, 1)), 1e-9);
+        assertEquals(0.5 + 20 * 6, each(book(Enchantment.SHARPNESS, 10)), 1e-9);
+    }
+
+    @Test
+    void cursesCutTheWholePrice() {
+        ItemStack sword = new ItemStack(Material.DIAMOND_SWORD);
+        double plain = each(sword);
+        sword.addUnsafeEnchantment(Enchantment.SHARPNESS, 5);
+        sword.addUnsafeEnchantment(Enchantment.VANISHING_CURSE, 1);
+        assertEquals((plain + 20) * 0.75, each(sword), 1e-9);
+        sword.addUnsafeEnchantment(Enchantment.BINDING_CURSE, 1);
+        assertEquals((plain + 20) * 0.75 * 0.5, each(sword), 1e-9);
+    }
+
+    @Test
+    void wearOnlyScalesTheItemNotItsEnchantments() {
+        ItemStack worn = new ItemStack(Material.DIAMOND_PICKAXE);
+        worn.addUnsafeEnchantment(Enchantment.MENDING, 1);
+        Damageable meta = (Damageable) worn.getItemMeta();
+        meta.setDamage(Material.DIAMOND_PICKAXE.getMaxDurability() / 2);
+        worn.setItemMeta(meta);
+        PriceBook.Quote quote = book.quote(worn);
+        assertEquals(each(new ItemStack(Material.DIAMOND_PICKAXE)) / 2, quote.item(), 0.05);
+        assertEquals(quote.item() + 100, quote.each(), 1e-9);
+        assertEquals(0.5, quote.wear(), 0.001);
     }
 
     @Test
@@ -119,18 +164,25 @@ class PriceBookTest {
         assertEquals("under $0.01", PriceCommand.money(0.004));
     }
 
-    // MockBukkit doesn't implement ItemStack.effectiveName(); the bot e2e covers the real name.
+    // MockBukkit doesn't implement ItemStack.effectiveName() or Enchantment.displayName(); the bot
+    // e2e covers the real names.
     private PriceCommand command() {
-        return new PriceCommand(book, () -> config, stack -> net.kyori.adventure.text.Component.text(
-                stack.getType() == Material.DIAMOND ? "Diamond" : "Elytra"));
+        return new PriceCommand(book, () -> config,
+                stack -> Component.text(ItemNames.title(stack.getType().getKey().getKey())),
+                (enchantment, level) -> Component.text(ItemNames.title(enchantment.getKey().getKey()) + " " + level));
+    }
+
+    private List<String> messages(PlayerMock player) {
+        List<String> all = new ArrayList<>();
+        for (var c = player.nextComponentMessage(); c != null; c = player.nextComponentMessage()) {
+            all.add(PlainTextComponentSerializer.plainText().serialize(c));
+        }
+        return all;
     }
 
     private String lastMessage(PlayerMock player) {
-        String last = null;
-        for (var c = player.nextComponentMessage(); c != null; c = player.nextComponentMessage()) {
-            last = PlainTextComponentSerializer.plainText().serialize(c);
-        }
-        return last;
+        List<String> all = messages(player);
+        return all.isEmpty() ? null : all.getLast();
     }
 
     @Test
@@ -147,6 +199,46 @@ class PriceBookTest {
         player.getInventory().setItemInMainHand(new ItemStack(Material.ELYTRA));
         command().run(player);
         assertEquals("Suggested price for Elytra: $100.00.", lastMessage(player));
+    }
+
+    @Test
+    void commandBreaksDownAnEnchantedItem() {
+        PlayerMock player = server.addPlayer("Pricer");
+        ItemStack sword = new ItemStack(Material.DIAMOND_SWORD);
+        sword.addUnsafeEnchantment(Enchantment.SHARPNESS, 5);
+        sword.addUnsafeEnchantment(Enchantment.MENDING, 1);
+        sword.addUnsafeEnchantment(Enchantment.VANISHING_CURSE, 1);
+        Damageable meta = (Damageable) sword.getItemMeta();
+        meta.setDamage(Material.DIAMOND_SWORD.getMaxDurability() / 4);
+        sword.setItemMeta(meta);
+        player.getInventory().setItemInMainHand(sword);
+        PriceBook.Quote quote = book.quote(sword);
+        command().run(player);
+        List<String> lines = messages(player);
+        assertEquals(List.of(
+                "Suggested price for Diamond Sword: " + PriceCommand.money(quote.each()) + ".",
+                " - Diamond sword (25% worn) " + PriceCommand.money(quote.item()),
+                " - Sharpness 5 +$20.00",
+                " - Mending 1 +$100.00",
+                " - Vanishing Curse 1 -25%"), sortedEnchantLines(lines));
+    }
+
+    // An item's enchantments come back in no promised order; the curse always comes last.
+    private static List<String> sortedEnchantLines(List<String> lines) {
+        List<String> out = new ArrayList<>(lines.subList(0, 2));
+        List<String> adds = new ArrayList<>(lines.subList(2, lines.size() - 1));
+        adds.sort(Comparator.comparing((String l) -> !l.contains("Sharpness")));
+        out.addAll(adds);
+        out.add(lines.getLast());
+        return out;
+    }
+
+    @Test
+    void commandShowsNoBreakdownForAPlainItem() {
+        PlayerMock player = server.addPlayer("Pricer");
+        player.getInventory().setItemInMainHand(new ItemStack(Material.DIAMOND_SWORD));
+        command().run(player);
+        assertEquals(1, messages(player).size());
     }
 
     @Test
