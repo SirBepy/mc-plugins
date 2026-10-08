@@ -2,6 +2,7 @@ package dev.sirbepy.mc.guild.hall;
 
 import dev.sirbepy.mc.guild.data.GuildStore;
 import dev.sirbepy.mc.guild.data.Place;
+import dev.sirbepy.mc.guild.listener.Responsible;
 import io.papermc.paper.event.player.PlayerOpenSignEvent;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -11,7 +12,6 @@ import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Hanging;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -136,7 +136,7 @@ public final class HallGuard implements Listener {
     public void onHangingBreak(HangingBreakEvent event) {
         if (inHall(event.getEntity().getLocation())) {
             Player player = event instanceof org.bukkit.event.hanging.HangingBreakByEntityEvent byEntity
-                    ? playerBehind(byEntity.getRemover()) : null;
+                    ? Responsible.player(byEntity.getRemover()) : null;
             if (player == null || !player.isOp()) {
                 event.setCancelled(true);
             }
@@ -146,7 +146,7 @@ public final class HallGuard implements Listener {
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onDecorDamage(EntityDamageByEntityEvent event) {
         Entity hit = event.getEntity();
-        if ((hit instanceof ArmorStand || hit instanceof Hanging) && guarded(playerBehind(event.getDamager()), hit.getLocation())) {
+        if ((hit instanceof ArmorStand || hit instanceof Hanging) && guarded(Responsible.player(event.getDamager()), hit.getLocation())) {
             event.setCancelled(true);
         }
     }
@@ -181,15 +181,5 @@ public final class HallGuard implements Listener {
         if (!(event.getEntity() instanceof Player) && inHall(event.getBlock().getLocation())) {
             event.setCancelled(true);
         }
-    }
-
-    static Player playerBehind(Entity damager) {
-        if (damager instanceof Player player) {
-            return player;
-        }
-        if (damager instanceof Projectile projectile && projectile.getShooter() instanceof Player player) {
-            return player;
-        }
-        return null;
     }
 }

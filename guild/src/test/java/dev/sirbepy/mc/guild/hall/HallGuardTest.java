@@ -5,8 +5,15 @@ import dev.sirbepy.mc.guild.data.Place;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.damage.DamageSource;
+import org.bukkit.damage.DamageType;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Wolf;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -93,5 +100,18 @@ class HallGuardTest extends GuildTestBase {
         guardBox();
         store.save();
         assertEquals(store.guard(), newStore().guard());
+    }
+
+    @Test
+    void aTamedPetsOwnerStandsInForTheGuard() {
+        guardBox();
+        gm.setOp(true);
+        Wolf wolf = world.spawn(new Location(world, 5, 64, 5), Wolf.class);
+        wolf.setOwner(gm);
+        ArmorStand stand = (ArmorStand) world.spawnEntity(new Location(world, 5, 64, 5), EntityType.ARMOR_STAND);
+        EntityDamageByEntityEvent event = new EntityDamageByEntityEvent(wolf, stand, EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                DamageSource.builder(DamageType.MOB_ATTACK).withDirectEntity(wolf).build(), 1);
+        guard.onDecorDamage(event);
+        assertFalse(event.isCancelled());
     }
 }

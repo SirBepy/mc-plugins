@@ -4,8 +4,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Projectile;
-import org.bukkit.entity.Tameable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -40,7 +38,7 @@ public final class BossCredit implements Listener {
         if (!BOSSES.contains(event.getEntityType())) {
             return;
         }
-        Player attacker = attacker(event.getDamager());
+        Player attacker = Responsible.player(event.getDamager());
         if (attacker != null) {
             hits.computeIfAbsent(event.getEntity().getUniqueId(), id -> new HashMap<>())
                     .put(attacker.getUniqueId(), now.getAsLong());
@@ -71,18 +69,5 @@ public final class BossCredit implements Listener {
         long cutoff = now.getAsLong() - WINDOW_MILLIS;
         hits.values().forEach(m -> m.values().removeIf(time -> time < cutoff));
         hits.values().removeIf(Map::isEmpty);
-    }
-
-    static Player attacker(Entity damager) {
-        if (damager instanceof Player player) {
-            return player;
-        }
-        if (damager instanceof Projectile projectile && projectile.getShooter() instanceof Player player) {
-            return player;
-        }
-        if (damager instanceof Tameable pet && pet.getOwner() instanceof Player player) {
-            return player;
-        }
-        return null;
     }
 }
