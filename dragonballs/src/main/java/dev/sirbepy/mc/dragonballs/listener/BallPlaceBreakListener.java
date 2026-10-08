@@ -7,6 +7,7 @@ import dev.sirbepy.mc.dragonballs.placed.PickupGuard;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
 import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import dev.sirbepy.mc.dragonballs.registry.BallView;
+import dev.sirbepy.mc.dragonballs.scatter.ScatterTownyGuard;
 import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -35,7 +36,9 @@ import java.util.function.Supplier;
  * head cancelled in favour of the floating ball. Stone balls place and pick up like active ones;
  * which set a ball belongs to comes from its own PDC marker. Picking one up announces it server-wide
  * like a ground pickup, unless the same player set it down in the last 30 s (adjusting a summon
- * cluster shouldn't spam chat).
+ * cluster shouldn't spam chat). A ball can't be placed inside a Towny town at all (Joe, 2026-10-08:
+ * "dragon balls can never be placed in a town"), so summons happen in the wilderness; it stays in
+ * hand.
  */
 public final class BallPlaceBreakListener implements Listener {
 
@@ -50,20 +53,24 @@ public final class BallPlaceBreakListener implements Listener {
     private final BallSets sets;
     private final FloatingBalls balls;
     private final PickupGuard guard;
+    private final ScatterTownyGuard towns;
     private final FoundAnnouncer announcer;
     // "<set>:<star>" -> who last set that ball down and when, for the self-placed announce suppression.
     private final Map<String, UUID> lastPlacer = new HashMap<>();
     private final Map<String, Long> lastPlacedAt = new HashMap<>();
 
-    public BallPlaceBreakListener(BallSets sets, FloatingBalls balls, PickupGuard guard,
+    public BallPlaceBreakListener(BallSets sets, FloatingBalls balls, PickupGuard guard, ScatterTownyGuard towns,
                                   Supplier<DragonBallsConfig> config) {
-        this(sets, balls, guard, (finder, set, star) -> BallPickupListener.announceFound(config.get(), finder, set, star));
+        this(sets, balls, guard, towns,
+                (finder, set, star) -> BallPickupListener.announceFound(config.get(), finder, set, star));
     }
 
-    BallPlaceBreakListener(BallSets sets, FloatingBalls balls, PickupGuard guard, FoundAnnouncer announcer) {
+    BallPlaceBreakListener(BallSets sets, FloatingBalls balls, PickupGuard guard, ScatterTownyGuard towns,
+                           FoundAnnouncer announcer) {
         this.sets = sets;
         this.balls = balls;
         this.guard = guard;
+        this.towns = towns;
         this.announcer = announcer;
     }
 
@@ -80,6 +87,10 @@ public final class BallPlaceBreakListener implements Listener {
         }
         event.setCancelled(true);
         if (balls.isOccupied(block.getLocation())) {
+            return;
+        }
+        if (!towns.isWilderness(block.getLocation().add(0.5, 0.5, 0.5))) {
+            event.getPlayer().sendActionBar(Component.text("Dragon Balls can't be placed inside a town.", NamedTextColor.RED));
             return;
         }
         BallSet set = sets.items().setOf(placed);

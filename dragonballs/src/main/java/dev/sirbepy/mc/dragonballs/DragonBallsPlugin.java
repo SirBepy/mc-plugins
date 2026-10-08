@@ -21,10 +21,12 @@ import dev.sirbepy.mc.dragonballs.listener.BallSlowness;
 import dev.sirbepy.mc.dragonballs.listener.BallSlownessListener;
 import dev.sirbepy.mc.dragonballs.placed.FloatingBalls;
 import dev.sirbepy.mc.dragonballs.placed.PickupGuard;
+import dev.sirbepy.mc.dragonballs.placed.TownEviction;
 import dev.sirbepy.mc.dragonballs.radar.RadarModule;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
 import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import dev.sirbepy.mc.dragonballs.scatter.ScatterService;
+import dev.sirbepy.mc.dragonballs.scatter.ScatterTownyGuard;
 import dev.sirbepy.mc.dragonballs.station.StationModule;
 import dev.sirbepy.mc.dragonballs.summon.SummonModule;
 import dev.sirbepy.mc.dragonballs.task.BallMaintenanceTask;
@@ -93,7 +95,8 @@ public final class DragonBallsPlugin extends JavaPlugin {
         pm.registerEvents(new BallSlownessListener(slowness), this);
         pm.registerEvents(new BallContainerGuardListener(overworldRegistry), this);
         pm.registerEvents(new BallDeathListener(sets), this);
-        pm.registerEvents(new BallPlaceBreakListener(sets, floatingBalls, PickupGuard.load(this), config::get), this);
+        ScatterTownyGuard towns = ScatterTownyGuard.load(this);
+        pm.registerEvents(new BallPlaceBreakListener(sets, floatingBalls, PickupGuard.load(this), towns, config::get), this);
         pm.registerEvents(new BallItemLifecycleListener(sets), this);
         pm.registerEvents(new BallJoinDupeListener(sets), this);
         pm.registerEvents(new BallDimensionGuardListener(sets, config::get, slowness), this);
@@ -102,6 +105,9 @@ public final class DragonBallsPlugin extends JavaPlugin {
 
         getServer().getScheduler().runTaskTimer(this, new BallMaintenanceTask(sets, config::get,
                 logoutDrop::dropForOfflineHolders), 1L, BallMaintenanceTask.PERIOD_TICKS);
+        // From tick 40, after the maintenance task's startup drops of offline holders' balls.
+        getServer().getScheduler().runTaskTimer(this, new TownEviction(sets, floatingBalls, towns, config::get,
+                getLogger()), 40L, TownEviction.PERIOD_TICKS);
         getServer().getScheduler().runTaskTimer(this, heldBallCheck, HeldBallCheck.PERIOD_TICKS, HeldBallCheck.PERIOD_TICKS);
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->

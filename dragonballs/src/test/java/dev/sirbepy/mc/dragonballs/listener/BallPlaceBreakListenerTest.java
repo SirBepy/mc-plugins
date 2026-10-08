@@ -7,6 +7,7 @@ import dev.sirbepy.mc.dragonballs.placed.FloatingBalls;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
 import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import dev.sirbepy.mc.dragonballs.registry.BallState;
+import dev.sirbepy.mc.dragonballs.scatter.ScatterTownyGuard;
 import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -34,6 +35,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -50,6 +52,8 @@ class BallPlaceBreakListenerTest {
     private FloatingBalls balls;
     private PlayerMock player;
     private boolean mayPickUp = true;
+    // Blocks with x >= 100 are inside a town.
+    private final ScatterTownyGuard towns = location -> location.getBlockX() < 100;
     private BallPlaceBreakListener listener;
     private final List<String> announced = new ArrayList<>();
 
@@ -66,7 +70,7 @@ class BallPlaceBreakListenerTest {
                 items, () -> new DragonBallsConfig(new YamlConfiguration()));
         balls = new FloatingBalls(plugin, items, id -> false);
         sets.all().forEach(registry -> registry.setLook(balls));
-        listener = new BallPlaceBreakListener(sets, balls, (who, where) -> mayPickUp,
+        listener = new BallPlaceBreakListener(sets, balls, (who, where) -> mayPickUp, towns,
                 (finder, set, star) -> announced.add(finder.getName() + " " + set + " " + star));
         player = server.addPlayer();
         world.getChunkAt(0, 0).load();
@@ -103,6 +107,20 @@ class BallPlaceBreakListenerTest {
         assertEquals(3, (int) view.x());
         assertEquals(65, (int) view.y());
         assertTrue(balls.displayOf(BallSet.NETHER, 5).isPresent());
+    }
+
+    @Test
+    void aBallCantBePlacedInsideATown() {
+        world.getChunkAt(6, 0).load();
+        Block block = world.getBlockAt(103, 65, 4);
+        BlockPlaceEvent event = place(block, items.createItem(BallSet.OVERWORLD, 4));
+
+        listener.onPlace(event);
+
+        assertTrue(event.isCancelled(), "no head block either");
+        assertEquals(4, items.starOf(player.getInventory().getItemInMainHand()).orElseThrow(), "the ball stays in hand");
+        assertNotEquals(103, (int) sets.registry(BallSet.OVERWORLD).get(4).orElseThrow().x(), "never registered there");
+        assertFalse(balls.isOccupied(block.getLocation()));
     }
 
     @Test

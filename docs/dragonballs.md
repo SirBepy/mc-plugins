@@ -52,8 +52,11 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
   in a dark room (Joe, 2026-10-08). Java players see a round 3D ball from the server pack, which is
   required to join since then; Bedrock players see the ball as a head. Placing a ball sets it
   floating where the head would have gone; nothing else can be placed into its block, and
-  explosions, water, pistons and fire can't touch it. Hit it to pick it up; inside a town only
-  someone allowed to break blocks there can take it. The 7 balls over the spawn station's pedestals
+  explosions, water, pistons and fire can't touch it. Hit it to pick it up. A ball can't be placed
+  inside a Towny town, so summons happen in the wilderness (Joe, 2026-10-08), and a ball that ends
+  up lying in a town anyway (dropped there on death or logout, tossed in, or a town claims the land
+  around it) moves itself within 5 seconds to the nearest free wilderness spot past the border,
+  telling players within 64 blocks where it went. The 7 balls over the spawn station's pedestals
   float the same way, as decoration only.
 - A ball never leaves its own dimension: go through a portal, `/home`, `/spawn` or any other
   cross-dimension teleport and it drops where you left (e.g. at the Nether portal). Dropped balls

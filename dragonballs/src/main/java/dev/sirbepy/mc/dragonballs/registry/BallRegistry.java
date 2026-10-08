@@ -98,6 +98,11 @@ public final class BallRegistry {
         }
     }
 
+    /** Whether {@code star} is still PLACED on paper but already flying off after a wish. */
+    public boolean isFlying(int star) {
+        return hidden.contains(star);
+    }
+
     public void glowPlaced(boolean on) {
         look.glow(set, on);
     }
