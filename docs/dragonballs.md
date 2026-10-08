@@ -225,6 +225,7 @@ Answer only through console commands (`node server/deploy/kinetic.mjs cmd "<comm
 | --- | --- |
 | `shenron say <text>` | The dragon speaks to every player |
 | `shenron grant <count> <note>` | Uses up `count` wishes and logs the note; the session ends at 0 |
+| `shenron public <session> <title> \| <line>` | Logs a player-safe title (max 60 chars) and line (max 200) for a granted session; the public website lists it under Wishes granted (latest one per session wins) |
 | `shenron dismiss [text]` | Optional last words, then the dragon leaves and the balls scatter |
 | `shenron status` | `session=<id> set=<set> summoner=<name> dragon=<dragon> wishesLeft=<n> idleSeconds=<n>` |
 | `shenron curse effect <player> <effect> <amplifier> <hours>` | An effect that comes back after death and rejoin until it expires |
@@ -242,7 +243,10 @@ ready set).
 Granting a wish: run the vanilla commands that deliver it (`minecraft:give`, `minecraft:item modify`,
 `minecraft:attribute`, `minecraft:xp`, `eco give` for money, and so on; `minecraft:` prefixes because
 Essentials shadows `/give` and `/item`), then `shenron grant <count> <note>` naming exactly what was
-given, so the log can undo it. For item curses use `minecraft:clear` or `minecraft:item replace`.
+given, so the log can undo it. Then run `shenron public <session> <title> | <line>` once for the
+session: the grant note stays internal, this pair is what the public site shows, so name the player
+and the wish without hidden rewards, coordinates or anything the summoner asked to keep secret.
+Porunga's three wishes share one public line. For item curses use `minecraft:clear` or `minecraft:item replace`.
 Builds, custom item looks and new features can't be done from the console: say the dragon will
 deliver them, grant the wish with a note, and start a new build chat for the work, not a question
 to Joe.
