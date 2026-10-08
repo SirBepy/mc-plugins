@@ -46,7 +46,7 @@ public final class RangedGoal implements Goal<Mob> {
     static final double BOLT_SPEED = 1.6;
     static final int PIERCING = 4;
     /**
-     * A bolt's own damage, which {@link CousinListener#onShot} replaces with the fixed 6-8. It only
+     * A bolt's own damage, which {@link CousinListener#onShotHit} replaces with the fixed 6-8. It only
      * has to beat the 6-8 a hit leaves behind: for half a second after a hit, vanilla ignores any hit
      * whose own damage is no bigger than the last one's. 12 at the bolt's ~1.5 speed is 18+, still
      * 10+ after easy difficulty halves it.
@@ -213,7 +213,7 @@ public final class RangedGoal implements Goal<Mob> {
      * The crossbow's enchantment on a plugin-fired bolt (Paper launches it with no weapon, so it
      * doesn't apply by itself): Piercing IV passes through 4 entities. A crossbow bolt is always
      * critical, which now only shows as its particle trail: what a hit deals is fixed by
-     * {@link CousinListener#onShot}.
+     * {@link CousinListener#onShotHit}.
      */
     static void load(AbstractArrow bolt) {
         bolt.setDamage(BOLT_DAMAGE);

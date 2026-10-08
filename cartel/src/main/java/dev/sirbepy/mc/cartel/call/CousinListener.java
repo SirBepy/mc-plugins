@@ -88,8 +88,9 @@ public final class CousinListener implements Listener {
      * Anyone a bolt or a rocket's blast may hurt takes {@link #MIN_SHOT_DAMAGE}-{@link #MAX_SHOT_DAMAGE},
      * whatever the bolt's speed, the blast's distance or the difficulty, and armor and Protection take
      * none of it off (Joe). Resistance, a shield and absorption hearts still count. Last in line so no
-     * other plugin's damage change sticks, and a rocket's blast goes through Towny, which cancels
-     * explosion damage inside any town with explosions off (its default), as a bolt already does.
+     * other plugin's damage change sticks. A rocket's blast is un-cancelled whoever cancelled it: the
+     * case it is for is Towny, which cancels explosion damage inside any town with explosions off (its
+     * default) while a bolt there gets through.
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onShotHit(EntityDamageByEntityEvent event) {
