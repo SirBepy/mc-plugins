@@ -26,7 +26,9 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
   **Nuova Shenron**, Dragon Ball GT's fire Shadow Dragon (Joe, 2026-10-08): his chat tag, floating
   name and the summon and wish broadcasts say so, and he glows red and leaves a fire trail as he
   circles (the pack's green skin covers every Ender Dragon, so glow and particles are what set him
-  apart). Porunga keeps his name in every set. The End set
+  apart). Porunga keeps his name in every set; from the Nether set he glows purple, with a purple
+  name and a purple particle trail (Joe, 2026-10-08), while the Overworld and End Porunga keep the
+  default look (the End set already wraps every dragon in a purple aura). The End set
   sleeps (no balls, no radar sales) until the End opens; it scatters the first time the server
   starts with the End open.
 - Every ball sits inside a structure (Joe, 2026-10-08): in a room, on a roof or on a

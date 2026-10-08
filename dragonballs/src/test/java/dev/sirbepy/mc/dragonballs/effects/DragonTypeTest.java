@@ -41,4 +41,12 @@ class DragonTypeTest {
         assertFalse(DragonType.SHENRON.isNuova(BallSet.END));
         assertFalse(DragonType.PORUNGA.isNuova(BallSet.NETHER));
     }
+
+    @Test
+    void onlyANetherPorungaIsPurple() {
+        assertTrue(DragonType.PORUNGA.isPurplePorunga(BallSet.NETHER));
+        assertFalse(DragonType.PORUNGA.isPurplePorunga(BallSet.OVERWORLD));
+        assertFalse(DragonType.PORUNGA.isPurplePorunga(BallSet.END));
+        assertFalse(DragonType.SHENRON.isPurplePorunga(BallSet.NETHER));
+    }
 }

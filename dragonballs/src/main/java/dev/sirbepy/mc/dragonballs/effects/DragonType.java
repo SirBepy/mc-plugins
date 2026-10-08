@@ -36,6 +36,12 @@ public enum DragonType {
         return this == SHENRON && set == BallSet.NETHER;
     }
 
+    /** A Nether Porunga is purple: a purple glow, name and particle trail (Joe, 2026-10-08). The End
+     * Porunga keeps the default look, so purple stays the Nether's mark. */
+    public boolean isPurplePorunga(BallSet set) {
+        return this == PORUNGA && set == BallSet.NETHER;
+    }
+
     public int wishes() {
         return wishes;
     }

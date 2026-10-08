@@ -246,4 +246,55 @@ class DragonActorTest {
         Team team = server.getScoreboardManager().getMainScoreboard().getTeam(DragonActor.NUOVA_TEAM);
         assertFalse(team.hasEntry(entry));
     }
+
+    @Test
+    void netherPorungaIsPurpleAndOtherPorungasAreNot() {
+        actor.spawn(center, DragonType.PORUNGA, BallSet.NETHER, DEFAULT_CONFIG);
+        EnderDragon purple = actor.current();
+        Team team = server.getScoreboardManager().getMainScoreboard().getTeam(DragonActor.PURPLE_PORUNGA_TEAM);
+
+        assertTrue(purple.isGlowing());
+        assertTrue(team != null && team.hasEntry(purple.getUniqueId().toString()), "purple team carries the glow colour");
+        assertEquals(NamedTextColor.DARK_PURPLE, team.color());
+        assertEquals(NamedTextColor.LIGHT_PURPLE, purple.customName().color());
+
+        for (BallSet set : new BallSet[] {BallSet.OVERWORLD, BallSet.END}) {
+            actor.spawn(center, DragonType.PORUNGA, set, DEFAULT_CONFIG);
+            assertFalse(team.hasEntry(actor.current().getUniqueId().toString()), set + " Porunga keeps the default glow");
+            assertEquals(NamedTextColor.AQUA, actor.current().customName().color(), set + " Porunga keeps his aqua name");
+        }
+        assertFalse(team.hasEntry(purple.getUniqueId().toString()), "the replaced purple Porunga left the team");
+    }
+
+    @Test
+    void onlyANetherPorungaLeavesAPurpleTrail() {
+        actor.spawn(center, DragonType.PORUNGA, BallSet.NETHER, DEFAULT_CONFIG);
+        server.getScheduler().performTicks(4);
+        assertTrue(world.getSpawnedParticles().stream().anyMatch(p -> p.particle() == Particle.WITCH),
+            "a Nether Porunga should trail purple as he circles");
+
+        for (BallSet set : new BallSet[] {BallSet.OVERWORLD, BallSet.END}) {
+            actor.spawn(center, DragonType.PORUNGA, set, DEFAULT_CONFIG);
+            world.clearSpawnedParticles();
+            server.getScheduler().performTicks(20);
+            assertFalse(world.getSpawnedParticles().stream().anyMatch(p -> p.particle() == Particle.WITCH),
+                set + " Porunga gets no purple trail");
+        }
+        actor.spawn(center, DragonType.SHENRON, BallSet.NETHER, DEFAULT_CONFIG);
+        world.clearSpawnedParticles();
+        server.getScheduler().performTicks(20);
+        assertFalse(world.getSpawnedParticles().stream().anyMatch(p -> p.particle() == Particle.WITCH),
+            "Nuova trails fire, not purple");
+    }
+
+    @Test
+    void despawningAPurplePorungaTakesHimOffThePurpleTeam() {
+        actor.spawn(center, DragonType.PORUNGA, BallSet.NETHER, DEFAULT_CONFIG);
+        String entry = actor.current().getUniqueId().toString();
+
+        actor.despawnImmediate();
+
+        Team team = server.getScoreboardManager().getMainScoreboard().getTeam(DragonActor.PURPLE_PORUNGA_TEAM);
+        assertFalse(team.hasEntry(entry));
+    }
 }
