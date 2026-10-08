@@ -85,9 +85,7 @@ public final class BallLogoutDropListener implements Listener {
             ItemStack item = view.stone()
                     ? sets.items().createStoneItem(registry.set(), view.star())
                     : sets.items().createItem(registry.set(), view.star());
-            Item entity = home.dropItem(at, item);
-            lifecycleFlags.accept(entity);
-            registry.markDropped(view.star(), entity, view.stone());
+            dropAndMark(registry, view.star(), at, item, view.stone());
         }
     }
 
@@ -130,11 +128,15 @@ public final class BallLogoutDropListener implements Listener {
             return 0;
         }
         clearSlot.accept(null);
+        dropAndMark(registry, star, at, item, sets.items().isStoneItem(item));
+        return 1;
+    }
+
+    private void dropAndMark(BallRegistry registry, int star, Location at, ItemStack item, boolean stone) {
         Item entity = at.getWorld().dropItem(at, item);
         // Applied directly as well as via ItemSpawnEvent: during onDisable this plugin's own
         // listeners no longer fire, and an unflagged ball item would despawn after 5 minutes.
         lifecycleFlags.accept(entity);
-        registry.markDropped(star, entity, sets.items().isStoneItem(item));
-        return 1;
+        registry.markDropped(star, entity, stone);
     }
 }
