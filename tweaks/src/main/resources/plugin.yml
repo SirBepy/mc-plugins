@@ -3,3 +3,8 @@ main: dev.sirbepy.mc.tweaks.TweaksPlugin
 version: ${version}
 api-version: "26.2"
 softdepend: [AuraSkills]
+
+permissions:
+  tweaks.seagifts.admin:
+    description: Move ItsLogiks' sea gifts (/seagifts owner) to another player.
+    default: op

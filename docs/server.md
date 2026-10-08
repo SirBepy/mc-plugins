@@ -225,3 +225,21 @@ Granted by a 4-1 council vote in a toned-down, server-wide form, then extended b
     screech for players 16-32 blocks away, since the server only sends it within 16.
   - Cost per tick: one velocity read and write per loaded phantom; the screech check runs once a
     second.
+
+## Sea gifts (ItsLogiks' Porunga wish, 2026-10-08)
+
+Granted by Porunga (Overworld set, session `jam0yw`): permanent Dolphin's Grace and Conduit Power on
+ItsLogiks alone (`sea-gifts.owner` in Tweaks' `config.yml`, matched by UUID). No Night Vision: it was in
+the pre-ruled bundle and he didn't take it.
+
+- `/seagifts` shows both switches; `/seagifts dolphin` and `/seagifts conduit` flip one. Only he sees
+  the command. Each gift flips at most once per real hour, counted on its own; a refusal says how long
+  is left.
+- While a gift is on, Tweaks keeps it on him as an infinite level I effect without particles: on join,
+  every second, and milk can't clear it.
+- Death switches both off and they stay off until he flips them back. That first flip after a death is
+  never refused by the hour (death isn't his flip), but it starts a new hour.
+- Switches and cooldowns are in `plugins/Tweaks/sea-gifts.yml`, so a restart keeps them. With no record
+  both gifts start on, which carried over the console's interim `effect give ... infinite` at the grant.
+- `seagifts owner <player|uuid>` (console or op) moves the gifts; the e2e suite (`e2e/sea-gifts.mjs`)
+  borrows them for a bot and hands them back to ItsLogiks.

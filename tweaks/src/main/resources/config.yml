@@ -23,3 +23,10 @@ motd:
 # The 2-night trigger and doubled spawn rate live in config/paper-world-defaults.yml, not here.
 phantoms:
   enabled: true
+
+# ItsLogiks' Porunga wish (2026-10-08, session jam0yw): permanent Dolphin's Grace and Conduit Power that
+# only he switches with /seagifts dolphin|conduit, each at most once per real hour; death switches both
+# off. Switches and cooldowns live in plugins/Tweaks/sea-gifts.yml. `seagifts owner <player>` moves it.
+sea-gifts:
+  enabled: true
+  owner: 3e0a4456-e2a3-4ea8-9bfa-8e38ee4c863d
