@@ -3,6 +3,7 @@ package dev.sirbepy.mc.dragonballs.effects;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -17,6 +18,8 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 
 import java.util.UUID;
 
@@ -34,6 +37,9 @@ final class DragonActor {
     private static final long CIRCLE_PERIOD_TICKS = 2;
     private static final long AURA_PERIOD_TICKS = 10; // 0.5s; keeps the column/aura at a lag-safe rate
     private static final long GROWL_COOLDOWN_MILLIS = 5_000;
+    static final String NUOVA_TEAM = "dragonballs_nuova";
+    // Spawned every circle tick at the body, so the flames' own lifetime draws the trail behind it.
+    private static final int TRAIL_FLAMES = 4;
 
     private final JavaPlugin plugin;
     private final NamespacedKey effectKey;
@@ -48,6 +54,7 @@ final class DragonActor {
     private BukkitTask auraTask;
     private long circleAngleTicks;
     private long lastGrowlMillis;
+    private boolean burning;
 
     DragonActor(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -120,10 +127,31 @@ final class DragonActor {
         NamedTextColor color = type == DragonType.PORUNGA ? NamedTextColor.AQUA : NamedTextColor.GREEN;
         dragon.customName(Component.text(type.displayName(set), color));
         dragon.setCustomNameVisible(true);
-        // Porunga's only cosmetic difference from Shenron: a glow outline (no team assigned, so it
-        // renders in the client's default outline colour) - a coloured glow needs a scoreboard team,
-        // left for a follow-up if the owner wants one.
-        dragon.setGlowing(type == DragonType.PORUNGA);
+        // The pack skin covers every Ender Dragon alike, so Porunga and Nuova stand out by glow only:
+        // Porunga in the client's default outline colour (no team), Nuova in red via a team. A player
+        // shown another plugin's scoreboard (Tag's sidebar) lacks that team and sees Nuova glow white.
+        this.burning = type.isNuova(set);
+        dragon.setGlowing(type == DragonType.PORUNGA || burning);
+        if (burning) {
+            nuovaTeam().addEntry(dragon.getUniqueId().toString());
+        }
+    }
+
+    private static Team nuovaTeam() {
+        Scoreboard main = Bukkit.getScoreboardManager().getMainScoreboard();
+        Team team = main.getTeam(NUOVA_TEAM);
+        if (team == null) {
+            team = main.registerNewTeam(NUOVA_TEAM);
+        }
+        team.color(NamedTextColor.RED);
+        return team;
+    }
+
+    private static void leaveNuovaTeam(EnderDragon dragon) {
+        Team team = Bukkit.getScoreboardManager().getMainScoreboard().getTeam(NUOVA_TEAM);
+        if (team != null) {
+            team.removeEntry(dragon.getUniqueId().toString());
+        }
     }
 
     private void startCircleTask() {
@@ -147,6 +175,24 @@ final class DragonActor {
         double towardCenterZ = circleCenter.getZ() - z;
         next.setDirection(new org.bukkit.util.Vector(towardCenterX, 0, towardCenterZ));
         current.teleport(next);
+        if (burning) {
+            emitFireTrail();
+        }
+    }
+
+    /** Nuova's fire trail: flames and embers at the body, left behind as he circles. */
+    private void emitFireTrail() {
+        double scale = look != null ? look.scale() : 1.0;
+        Location body = current.getLocation().add(0, DragonPlacement.BODY_HEIGHT_AT_SCALE_1 * scale * 0.4, 0);
+        double spread = 1.5 * scale;
+        World world = current.getWorld();
+        world.spawnParticle(Particle.FLAME, body, TRAIL_FLAMES, spread, spread * 0.5, spread, 0.01);
+        world.spawnParticle(Particle.SMALL_FLAME, body, TRAIL_FLAMES / 2, spread, spread * 0.5, spread, 0.01);
+        world.spawnParticle(Particle.LAVA, body, 1, spread, spread * 0.5, spread, 0);
+    }
+
+    boolean burning() {
+        return burning;
     }
 
     private void startAuraTask(World world, EffectsConfig config) {
@@ -230,8 +276,10 @@ final class DragonActor {
         for (Player player : world.getPlayers()) {
             player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 0.6f);
         }
+        leaveNuovaTeam(current);
         current.remove();
         current = null;
+        burning = false;
         stopCircleTask();
         stopAuraTask();
     }
@@ -239,9 +287,11 @@ final class DragonActor {
     /** Immediate removal, no animation (shutdown, or a safety re-spawn). */
     void despawnImmediate() {
         if (current != null) {
+            leaveNuovaTeam(current);
             current.remove();
             current = null;
         }
+        burning = false;
         stopCircleTask();
         stopAuraTask();
     }
@@ -280,6 +330,7 @@ final class DragonActor {
                 continue;
             }
             if (dragon.getScoreboardTags().contains(EffectMarkers.DRAGON_TAG)) {
+                leaveNuovaTeam(dragon);
                 dragon.remove();
             }
         }

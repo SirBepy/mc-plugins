@@ -1,11 +1,13 @@
 package dev.sirbepy.mc.dragonballs.effects;
 
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.entity.EnderDragon;
+import org.bukkit.scoreboard.Team;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -203,5 +205,45 @@ class DragonActorTest {
         server.getScheduler().performTicks(30);
 
         assertTrue(world.getSpawnedParticles().isEmpty(), "no more column particles once the dragon is gone");
+    }
+
+    @Test
+    void nuovaGlowsRedAndPorungaFromTheNetherDoesNot() {
+        actor.spawn(center, DragonType.SHENRON, BallSet.NETHER, DEFAULT_CONFIG);
+        EnderDragon nuova = actor.current();
+        Team team = server.getScoreboardManager().getMainScoreboard().getTeam(DragonActor.NUOVA_TEAM);
+
+        assertTrue(nuova.isGlowing(), "Nuova glows");
+        assertTrue(team != null && team.hasEntry(nuova.getUniqueId().toString()), "red team carries the glow colour");
+        assertEquals(NamedTextColor.RED, team.color());
+
+        actor.spawn(center, DragonType.PORUNGA, BallSet.NETHER, DEFAULT_CONFIG);
+        assertFalse(team.hasEntry(actor.current().getUniqueId().toString()), "Porunga keeps his default glow");
+        assertFalse(team.hasEntry(nuova.getUniqueId().toString()), "the replaced Nuova left the team");
+    }
+
+    @Test
+    void onlyNuovaLeavesAFireTrailAndItStopsWithHim() {
+        actor.spawn(center, DragonType.SHENRON, BallSet.NETHER, DEFAULT_CONFIG);
+        server.getScheduler().performTicks(4);
+        assertTrue(world.getSpawnedParticles().stream().anyMatch(p -> p.particle() == Particle.SMALL_FLAME),
+            "Nuova should trail fire as he circles");
+
+        actor.spawn(center, DragonType.PORUNGA, BallSet.NETHER, DEFAULT_CONFIG);
+        world.clearSpawnedParticles();
+        server.getScheduler().performTicks(20);
+        assertFalse(world.getSpawnedParticles().stream().anyMatch(p -> p.particle() == Particle.SMALL_FLAME),
+            "a Nether Porunga gets the smoke column but no fire trail");
+    }
+
+    @Test
+    void despawningNuovaTakesHimOffTheRedTeam() {
+        actor.spawn(center, DragonType.SHENRON, BallSet.NETHER, DEFAULT_CONFIG);
+        String entry = actor.current().getUniqueId().toString();
+
+        actor.despawnWithEffects();
+
+        Team team = server.getScoreboardManager().getMainScoreboard().getTeam(DragonActor.NUOVA_TEAM);
+        assertFalse(team.hasEntry(entry));
     }
 }

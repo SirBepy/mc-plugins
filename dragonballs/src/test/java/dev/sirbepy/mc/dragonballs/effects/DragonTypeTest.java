@@ -4,6 +4,8 @@ import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Only a Nether Shenron is renamed; the set-independent name the console parsers match stays fixed. */
 class DragonTypeTest {
@@ -30,5 +32,13 @@ class DragonTypeTest {
     void setIndependentNameNeverChanges() {
         assertEquals("Shenron", DragonType.SHENRON.displayName());
         assertEquals("Porunga", DragonType.PORUNGA.displayName());
+    }
+
+    @Test
+    void onlyANetherShenronIsNuova() {
+        assertTrue(DragonType.SHENRON.isNuova(BallSet.NETHER));
+        assertFalse(DragonType.SHENRON.isNuova(BallSet.OVERWORLD));
+        assertFalse(DragonType.SHENRON.isNuova(BallSet.END));
+        assertFalse(DragonType.PORUNGA.isNuova(BallSet.NETHER));
     }
 }

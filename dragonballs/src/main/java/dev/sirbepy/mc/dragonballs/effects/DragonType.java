@@ -25,10 +25,15 @@ public enum DragonType {
      * Nuova Shenron, GT's fire Shadow Dragon (Joe, 2026-10-08); add a case here for any other
      * per-set name. */
     public String displayName(BallSet set) {
-        if (this == SHENRON && set == BallSet.NETHER) {
+        if (isNuova(set)) {
             return "Nuova Shenron";
         }
         return displayName;
+    }
+
+    /** Nuova Shenron also looks different: a red glow and a fire trail (Joe, 2026-10-08). */
+    public boolean isNuova(BallSet set) {
+        return this == SHENRON && set == BallSet.NETHER;
     }
 
     public int wishes() {
