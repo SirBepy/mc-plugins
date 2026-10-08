@@ -162,7 +162,7 @@ public final class Dialogue {
         if (members.stream().noneMatch(m -> m.rank() == Rank.S)) {
             lines.add("No one has reached S-Rank yet. The page is blank, and it's beautiful.");
         }
-        lines.add("One day this gallery will hold a Hall of Fame. I've already bought the frames.");
+        lines.add("The Hall of Fame is open. Every first and every record, in my best handwriting.");
         if (member != null && member.contractsDone() > 0) {
             lines.add("You've finished " + member.contractsDone() + " contracts. Don't worry, I spelled your name right.");
         }
