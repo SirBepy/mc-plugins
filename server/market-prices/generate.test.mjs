@@ -76,6 +76,19 @@ test('market items are twice their stall base and hand-gathered items stay deare
   assert.ok(items.netherite_ingot > 200);
 });
 
+test('food from the Farmer and Fishmonger stalls pays double, and what is made from it follows', () => {
+  assert.equal(items.wheat, 0.2);
+  assert.equal(items.pumpkin, 0.4);
+  assert.equal(items.melon_slice, 0.08);
+  assert.equal(items.cod, 1);
+  assert.equal(items.pufferfish, 2);
+  assert.equal(items.sugar_cane, 0.04, 'sugar cane is not food and keeps its price');
+  assert.equal(items.ink_sac, 0.2, 'ink sacs are not food and keep their price');
+  assert.ok(Math.abs(items.bread - 3 * items.wheat) < 1e-4, 'bread is three wheat');
+  assert.ok(Math.abs(items.hay_block - 9 * items.wheat) < 1e-4, 'a hay bale is nine wheat');
+  assert.equal(items.carved_pumpkin, items.pumpkin, 'carving is a shears click');
+});
+
 test('every spawn-market item is suggested at twice its current stall price (rerun generate.mjs after a stall change)', () => {
   const stalls = readFileSync(join(here, '..', '..', 'market', 'src', 'main', 'resources', 'stalls.yml'), 'utf8');
   const aliases = { membrane: 'phantom_membrane', withersskull: 'wither_skeleton_skull' };

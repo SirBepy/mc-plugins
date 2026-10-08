@@ -42,7 +42,7 @@ items:
   azalea: 0.2
   azalea_leaves: 0.03
   azure_bluet: 0.05
-  baked_potato: 0.1
+  baked_potato: 0.2
   bamboo: 0.02
   bamboo_block: 0.18
   bamboo_button: 0.09
@@ -68,9 +68,9 @@ items:
   bee_nest: 2
   beef: 0.1
   beehive: 1.14
-  beetroot: 0.1
+  beetroot: 0.2
   beetroot_seeds: 0.01
-  beetroot_soup: 0.6675
+  beetroot_soup: 1.2675
   bell: 5
   big_dripleaf: 0.2
   birch_boat: 1.125
@@ -154,7 +154,7 @@ items:
   brain_coral: 0.2
   brain_coral_block: 0.2
   brain_coral_fan: 0.2
-  bread: 0.3
+  bread: 0.6
   breeze_rod: 4
   brewer_pottery_sherd: 2
   brewing_stand: 2.03
@@ -200,15 +200,15 @@ items:
   bush: 0.01
   cactus: 0.02
   cactus_flower: 0.05
-  cake: 12.0906
+  cake: 12.3906
   calcite: 0.05
   calibrated_sculk_sensor: 4
   campfire: 1.595
   candle: 0.3
-  carrot: 0.1
-  carrot_on_a_stick: 0.42
+  carrot: 0.2
+  carrot_on_a_stick: 0.52
   cartography_table: 0.44
-  carved_pumpkin: 0.3
+  carved_pumpkin: 0.4
   cauldron: 8.8594
   chainmail_boots: 2
   chainmail_chestplate: 5
@@ -280,20 +280,20 @@ items:
   cobblestone_wall: 0.01
   cobweb: 0.2
   cocoa_beans: 0.05
-  cod: 0.5
-  cod_bucket: 4.2969
+  cod: 1
+  cod_bucket: 4.7969
   comparator: 0.8219
   compass: 5.1875
   composter: 0.315
   conduit: 54
   cooked_beef: 0.1
   cooked_chicken: 0.1
-  cooked_cod: 0.5
+  cooked_cod: 1
   cooked_mutton: 0.1
   cooked_porkchop: 0.1
   cooked_rabbit: 0.1
-  cooked_salmon: 0.5
-  cookie: 0.0313
+  cooked_salmon: 1
+  cookie: 0.0563
   copper_axe: 1.3269
   copper_bars: 0.1559
   copper_block: 3.7406
@@ -538,7 +538,7 @@ items:
   glass: 0.0356
   glass_bottle: 0.0356
   glass_pane: 0.0134
-  glistering_melon_slice: 0.5872
+  glistering_melon_slice: 0.6272
   globe_banner_pattern: 3
   glow_berries: 0.05
   glow_ink_sac: 0.3
@@ -554,7 +554,7 @@ items:
   golden_apple: 5.025
   golden_axe: 1.9269
   golden_boots: 2.4625
-  golden_carrot: 0.6472
+  golden_carrot: 0.7472
   golden_chestplate: 4.925
   golden_dandelion: 0.05
   golden_helmet: 3.0781
@@ -617,7 +617,7 @@ items:
   guster_banner_pattern: 5
   guster_pottery_sherd: 2
   hanging_roots: 0.01
-  hay_block: 0.9
+  hay_block: 1.8
   heart_of_the_sea: 30
   heart_pottery_sherd: 2
   heartbreak_pottery_sherd: 2
@@ -657,7 +657,7 @@ items:
   iron_sword: 2.5713
   iron_trapdoor: 5.0625
   item_frame: 1.32
-  jack_o_lantern: 0.3412
+  jack_o_lantern: 0.4413
   jukebox: 20.72
   jungle_boat: 0.5625
   jungle_button: 0.1125
@@ -809,9 +809,9 @@ items:
   mangrove_wood: 1.2
   map: 5.5075
   medium_amethyst_bud: 0.15
-  melon: 0.36
-  melon_seeds: 0.04
-  melon_slice: 0.04
+  melon: 0.72
+  melon_seeds: 0.08
+  melon_slice: 0.08
   milk_bucket: 3.8969
   minecart: 6.3281
   miner_pottery_sherd: 2
@@ -828,10 +828,10 @@ items:
   mossy_stone_bricks: 0.0356
   mourner_pottery_sherd: 2
   mud: 0.02
-  mud_brick_slab: 0.06
-  mud_brick_stairs: 0.12
-  mud_brick_wall: 0.12
-  mud_bricks: 0.12
+  mud_brick_slab: 0.11
+  mud_brick_stairs: 0.22
+  mud_brick_wall: 0.22
+  mud_bricks: 0.22
   muddy_mangrove_roots: 0.12
   mushroom_stem: 0.05
   mushroom_stew: 0.1675
@@ -955,7 +955,7 @@ items:
   oxidized_cut_copper_stairs: 0.9352
   oxidized_lightning_rod: 1.2469
   packed_ice: 0.45
-  packed_mud: 0.12
+  packed_mud: 0.22
   painting: 0.72
   pale_hanging_moss: 0.05
   pale_moss_block: 0.05
@@ -1070,7 +1070,7 @@ items:
   popped_chorus_fruit: 0.1156
   poppy: 0.05
   porkchop: 0.1
-  potato: 0.1
+  potato: 0.2
   potent_sulfur: 0.5
   potion: 0.05
   powder_snow_bucket: 3.8969
@@ -1085,11 +1085,11 @@ items:
   prismarine_stairs: 0.8
   prismarine_wall: 0.8
   prize_pottery_sherd: 2
-  pufferfish: 1
-  pufferfish_bucket: 4.7969
-  pumpkin: 0.2
-  pumpkin_pie: 0.26
-  pumpkin_seeds: 0.05
+  pufferfish: 2
+  pufferfish_bucket: 5.7969
+  pumpkin: 0.4
+  pumpkin_pie: 0.46
+  pumpkin_seeds: 0.1
   purple_banner: 2.74
   purple_bed: 1.52
   purple_bundle: 1.15
@@ -1123,7 +1123,7 @@ items:
   rabbit: 0.1
   rabbit_foot: 1
   rabbit_hide: 1
-  rabbit_stew: 0.4175
+  rabbit_stew: 0.6175
   rail: 0.4771
   raiser_armor_trim_smithing_template: 10
   raw_copper: 0.4
@@ -1186,8 +1186,8 @@ items:
   rose_bush: 0.1
   rotten_flesh: 0.02
   saddle: 3
-  salmon: 0.5
-  salmon_bucket: 4.2969
+  salmon: 1
+  salmon_bucket: 4.7969
   sand: 0.02
   sandstone: 0.08
   sandstone_slab: 0.04
@@ -1293,7 +1293,7 @@ items:
   stone_stairs: 0.0256
   stone_sword: 0.06
   stonecutter: 1.3425
-  straw_bed: 0.675
+  straw_bed: 1.35
   string: 0.1
   stripped_acacia_log: 0.9
   stripped_acacia_wood: 1.2
@@ -1340,7 +1340,7 @@ items:
   taiga_village_map: 3
   tall_dry_grass: 0.01
   tall_grass: 0.01
-  target: 1.4
+  target: 2.3
   terracotta: 0.2156
   tide_armor_trim_smithing_template: 10
   tinted_glass: 0.4178
@@ -1355,8 +1355,8 @@ items:
   trial_key: 2
   trident: 30
   tripwire_hook: 0.6978
-  tropical_fish: 1
-  tropical_fish_bucket: 4.7969
+  tropical_fish: 2
+  tropical_fish_bucket: 5.7969
   tube_coral: 0.2
   tube_coral_block: 0.2
   tube_coral_fan: 0.2
@@ -1475,7 +1475,7 @@ items:
   weathered_lightning_rod: 1.2469
   weeping_vines: 0.05
   wet_sponge: 3
-  wheat: 0.1
+  wheat: 0.2
   wheat_seeds: 0.01
   white_banner: 2.44
   white_bed: 1.47

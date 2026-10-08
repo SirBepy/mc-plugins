@@ -3,7 +3,7 @@
 // plugin (market/), which every in-game day picks a few of each stall's `buys` and writes them
 // onto the stall's sign spots; this module only says where those spots are and what each stall
 // might buy, returned as MARKET for emit.mjs to write into market/src/main/resources/stalls.yml.
-// Prices from Joe's 2026-10-05 table, minerals raised and logs lowered 2026-10-06: AFK-farmable items are cheap, items only gathered by hand
+// Prices from Joe's 2026-10-05 table, minerals raised and logs lowered 2026-10-06, food doubled 2026-10-09: AFK-farmable items are cheap, items only gathered by hand
 // (logs, coal, raw ores, diamond, ancient debris, netherite scrap, leather, rabbit hide) keep a real price.
 // Amount 64 except stack-of-16 and rare items.
 import { writeFileSync } from 'node:fs';
@@ -20,8 +20,10 @@ export function buildStalls(model, { GUIDES, lecternState }) {
   const STALLS = [
     {
       id: 'farmer', side: 'north', a0: -8, name: 'Farmer', wool: 'yellow',
-      buys: [buy(64, 'wheat', 0.05), buy(64, 'carrot', 0.05), buy(64, 'potato', 0.05), buy(64, 'beetroot', 0.05),
-        buy(64, 'pumpkin', 0.1), buy(64, 'sugar_cane', 0.02), buy(64, 'melon_slice', 0.02), buy(64, 'cactus', 0.01),
+      // Food pays double the 2026-10-05 table (Joe, 2026-10-09); sugar cane, cactus and bamboo aren't
+      // food and keep their price.
+      buys: [buy(64, 'wheat', 0.1), buy(64, 'carrot', 0.1), buy(64, 'potato', 0.1), buy(64, 'beetroot', 0.1),
+        buy(64, 'pumpkin', 0.2), buy(64, 'sugar_cane', 0.02), buy(64, 'melon_slice', 0.04), buy(64, 'cactus', 0.01),
         buy(64, 'bamboo', 0.01)],
       props: [['hay_block[axis=y]', -1, 1], ['hay_block[axis=AXIS]', -1, 2], ['composter', 5, 1], ['pumpkin', 5, 2],
         ['carved_pumpkin[facing=INWARD]', 5, 2, 1]],
@@ -41,7 +43,8 @@ export function buildStalls(model, { GUIDES, lecternState }) {
     },
     {
       id: 'fishmonger', side: 'east', a0: -8, name: 'Fishmonger', wool: 'light_blue',
-      buys: [buy(64, 'cod', 0.25), buy(64, 'salmon', 0.25), buy(16, 'pufferfish', 0.5), buy(16, 'tropical_fish', 0.5),
+      // Fish pays double the 2026-10-05 table (Joe, 2026-10-09); ink sacs aren't food and keep their price.
+      buys: [buy(64, 'cod', 0.5), buy(64, 'salmon', 0.5), buy(16, 'pufferfish', 1), buy(16, 'tropical_fish', 1),
         buy(64, 'ink_sac', 0.1)],
       props: [['barrel[facing=up]', -1, 1], ['barrel[facing=up]', -1, 2], ['water_cauldron[level=3]', 5, 1],
         ['barrel[facing=up]', 5, 2], ['dried_kelp_block', -1, 1, 1]],

@@ -31,7 +31,7 @@ export const RAW = {
   calibrated_sculk_sensor: 4, sculk_shrieker: 3, pale_moss_block: 0.05, pale_hanging_moss: 0.05,
   amethyst_shard: 0.2, small_amethyst_bud: 0.1, medium_amethyst_bud: 0.15, large_amethyst_bud: 0.2,
   amethyst_cluster: 0.5, glowstone_dust: 0.15, prismarine_shard: 0.2, prismarine_crystals: 0.3, cobweb: 0.2,
-  glow_lichen: 0.05, bone_meal: 0.03, carved_pumpkin: 0.3,
+  glow_lichen: 0.05, bone_meal: 0.03,
 
   // Ores mined with Silk Touch, priced a little above what they drop.
   coal_ore: 0.25, deepslate_coal_ore: 0.25, iron_ore: 1.5, deepslate_iron_ore: 1.5, copper_ore: 0.8,
@@ -95,7 +95,7 @@ Object.assign(RAW, {
 
 /**
  * Prices that follow from other prices without a recipe: weathered copper is the copper it aged
- * from, concrete is its powder, a filled bucket is the bucket plus what's in it. Called with the
+ * from, concrete is its powder, a carved pumpkin is its pumpkin, a filled bucket is the bucket plus what's in it. Called with the
  * prices so far; returns new fixed prices for items that don't have one yet.
  */
 export function derive(price, items) {
@@ -110,6 +110,8 @@ export function derive(price, items) {
     if (base) out[id] = price.get(base);
     const concrete = id.match(/^(.+)_concrete$/);
     if (concrete && price.has(`${id}_powder`)) out[id] = price.get(`${id}_powder`);
+    // Carving is a shears click, so a carved pumpkin follows the Farmer stall's pumpkin price.
+    if (id === 'carved_pumpkin' && price.has('pumpkin')) out[id] = price.get('pumpkin');
     if (id in BUCKET_EXTRA && price.has('bucket')) {
       const extra = BUCKET_EXTRA[id];
       const add = typeof extra === 'string' ? price.get(extra) : extra;
