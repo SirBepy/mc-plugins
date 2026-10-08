@@ -30,14 +30,16 @@ public final class BallPickupListener implements Listener {
 
     private final BallSets sets;
     private final Supplier<DragonBallsConfig> config;
+    private final HeldBallCheck heldBallCheck;
     // Tracks, per (set, star), who last dropped it and when: a player re-picking up their own drop
     // within 30s doesn't re-announce it (so bouncing a ball between hand and ground doesn't spam chat).
     private final Map<BallKey, UUID> lastDropper = new HashMap<>();
     private final Map<BallKey, Long> lastDroppedAt = new HashMap<>();
 
-    public BallPickupListener(BallSets sets, Supplier<DragonBallsConfig> config) {
+    public BallPickupListener(BallSets sets, Supplier<DragonBallsConfig> config, HeldBallCheck heldBallCheck) {
         this.sets = sets;
         this.config = config;
+        this.heldBallCheck = heldBallCheck;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -64,7 +66,12 @@ public final class BallPickupListener implements Listener {
                 event.setCancelled(true);
                 return;
             }
-            if (!registry.isDroppedAs(star, itemEntity.getUniqueId())) {
+            // A ball its online holder no longer carries left their inventory without an event (the
+            // graves datapack respawns whatever sat in a slot it refills as a brand-new entity), so this
+            // untracked entity IS that ball, not a dupe.
+            UUID formerHolder = heldBallCheck.isAdrift(registry, star)
+                    ? registry.get(star).orElseThrow().holderId() : null;
+            if (formerHolder == null && !registry.isDroppedAs(star, itemEntity.getUniqueId())) {
                 // Registry disagrees about where this star actually is: a stray dupe (creative,
                 // duplication glitch). Deny the pickup and delete the impostor rather than hand it out.
                 event.setCancelled(true);
@@ -73,12 +80,17 @@ public final class BallPickupListener implements Listener {
             }
             boolean stone = sets.items().isStoneItem(stack);
             registry.markHeld(star, player, stone);
-            if (!recentlySelfDropped(registry.set(), star, player)) {
-                config.get().messages().send(player.getServer(), foundMessageKey(registry.set()),
-                        Placeholder.unparsed("player", player.getName()),
-                        Placeholder.unparsed("star", String.valueOf(star)));
+            if (!player.getUniqueId().equals(formerHolder) && !recentlySelfDropped(registry.set(), star, player)) {
+                announceFound(config.get(), player, registry.set(), star);
             }
         });
+    }
+
+    /** The server-wide "found" line, worded per set; also used for a floating ball hit off its spot. */
+    static void announceFound(DragonBallsConfig config, Player finder, BallSet set, int star) {
+        config.messages().send(finder.getServer(), foundMessageKey(set),
+                Placeholder.unparsed("player", finder.getName()),
+                Placeholder.unparsed("star", String.valueOf(star)));
     }
 
     private static String foundMessageKey(BallSet set) {

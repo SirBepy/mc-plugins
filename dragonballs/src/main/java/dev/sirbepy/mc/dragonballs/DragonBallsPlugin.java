@@ -14,6 +14,7 @@ import dev.sirbepy.mc.dragonballs.listener.BallItemLifecycleListener;
 import dev.sirbepy.mc.dragonballs.listener.BallJoinDupeListener;
 import dev.sirbepy.mc.dragonballs.listener.BallLogoutDropListener;
 import dev.sirbepy.mc.dragonballs.listener.BallPickupListener;
+import dev.sirbepy.mc.dragonballs.listener.HeldBallCheck;
 import dev.sirbepy.mc.dragonballs.listener.BallPlaceBreakListener;
 import dev.sirbepy.mc.dragonballs.listener.BallSlowness;
 import dev.sirbepy.mc.dragonballs.listener.BallSlownessListener;
@@ -86,11 +87,12 @@ public final class DragonBallsPlugin extends JavaPlugin {
 
         var pm = getServer().getPluginManager();
         pm.registerEvents(floatingBalls, this);
-        pm.registerEvents(new BallPickupListener(sets, config::get), this);
+        HeldBallCheck heldBallCheck = new HeldBallCheck(sets, config::get, getLogger());
+        pm.registerEvents(new BallPickupListener(sets, config::get, heldBallCheck), this);
         pm.registerEvents(new BallSlownessListener(slowness), this);
         pm.registerEvents(new BallContainerGuardListener(overworldRegistry), this);
         pm.registerEvents(new BallDeathListener(sets), this);
-        pm.registerEvents(new BallPlaceBreakListener(sets, floatingBalls, PickupGuard.load(this)), this);
+        pm.registerEvents(new BallPlaceBreakListener(sets, floatingBalls, PickupGuard.load(this), config::get), this);
         pm.registerEvents(new BallItemLifecycleListener(sets), this);
         pm.registerEvents(new BallJoinDupeListener(sets), this);
         pm.registerEvents(new BallDimensionGuardListener(sets, config::get, slowness), this);
@@ -99,6 +101,7 @@ public final class DragonBallsPlugin extends JavaPlugin {
 
         getServer().getScheduler().runTaskTimer(this, new BallMaintenanceTask(sets, config::get,
                 logoutDrop::dropForOfflineHolders), 1L, BallMaintenanceTask.PERIOD_TICKS);
+        getServer().getScheduler().runTaskTimer(this, heldBallCheck, HeldBallCheck.PERIOD_TICKS, HeldBallCheck.PERIOD_TICKS);
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 new DragonBallsCommand(sets, config::get, this::reload).registerInto(event.registrar()));

@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.dragonballs.listener;
 
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
+import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.placed.FloatingBalls;
 import dev.sirbepy.mc.dragonballs.placed.PickupGuard;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
@@ -21,25 +22,49 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.OptionalInt;
+import java.util.UUID;
+import java.util.function.Supplier;
 
 /**
  * Placing a ball sets it floating in the block it would have filled; hitting it picks it back up
  * as an item. The vanilla head placement still runs first, so spawn protection and Towny's build
  * rules decide where a ball may go exactly as they did for the head block, and only then is the
  * head cancelled in favour of the floating ball. Stone balls place and pick up like active ones;
- * which set a ball belongs to comes from its own PDC marker.
+ * which set a ball belongs to comes from its own PDC marker. Picking one up announces it server-wide
+ * like a ground pickup, unless the same player set it down in the last 30 s (adjusting a summon
+ * cluster shouldn't spam chat).
  */
 public final class BallPlaceBreakListener implements Listener {
+
+    private static final long SUPPRESS_ANNOUNCE_MILLIS = 30_000;
+
+    /** Who found which ball; the plugin broadcasts it, tests record it (MockBukkit's server can't broadcast). */
+    @FunctionalInterface
+    interface FoundAnnouncer {
+        void announce(Player finder, BallSet set, int star);
+    }
 
     private final BallSets sets;
     private final FloatingBalls balls;
     private final PickupGuard guard;
+    private final FoundAnnouncer announcer;
+    // "<set>:<star>" -> who last set that ball down and when, for the self-placed announce suppression.
+    private final Map<String, UUID> lastPlacer = new HashMap<>();
+    private final Map<String, Long> lastPlacedAt = new HashMap<>();
 
-    public BallPlaceBreakListener(BallSets sets, FloatingBalls balls, PickupGuard guard) {
+    public BallPlaceBreakListener(BallSets sets, FloatingBalls balls, PickupGuard guard,
+                                  Supplier<DragonBallsConfig> config) {
+        this(sets, balls, guard, (finder, set, star) -> BallPickupListener.announceFound(config.get(), finder, set, star));
+    }
+
+    BallPlaceBreakListener(BallSets sets, FloatingBalls balls, PickupGuard guard, FoundAnnouncer announcer) {
         this.sets = sets;
         this.balls = balls;
         this.guard = guard;
+        this.announcer = announcer;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -61,6 +86,9 @@ public final class BallPlaceBreakListener implements Listener {
         boolean stone = sets.items().isStoneItem(placed);
         takeOne(event.getPlayer().getInventory(), event.getHand(), placed);
         sets.registry(set).markPlaced(star.getAsInt(), block.getLocation(), stone);
+        String key = set + ":" + star.getAsInt();
+        lastPlacer.put(key, event.getPlayer().getUniqueId());
+        lastPlacedAt.put(key, System.currentTimeMillis());
     }
 
     private static void takeOne(PlayerInventory inventory, EquipmentSlot hand, ItemStack placed) {
@@ -98,10 +126,20 @@ public final class BallPlaceBreakListener implements Listener {
         var leftover = player.getInventory().addItem(ball);
         if (leftover.isEmpty()) {
             registry.markHeld(star, player, stone);
+            if (!recentlyPlacedBy(ref.set(), star, player)) {
+                announcer.announce(player, ref.set(), star);
+            }
         } else {
             var dropped = player.getWorld().dropItem(block.clone().add(0.5, 0.5, 0.5), leftover.values().iterator().next());
             registry.markDropped(star, dropped, stone);
         }
         player.getWorld().playSound(block.clone().add(0.5, 0.5, 0.5), Sound.ENTITY_ITEM_PICKUP, 0.8f, 1.2f);
+    }
+
+    private boolean recentlyPlacedBy(BallSet set, int star, Player player) {
+        String key = set + ":" + star;
+        Long at = lastPlacedAt.get(key);
+        return player.getUniqueId().equals(lastPlacer.get(key)) && at != null
+                && System.currentTimeMillis() - at < SUPPRESS_ANNOUNCE_MILLIS;
     }
 }

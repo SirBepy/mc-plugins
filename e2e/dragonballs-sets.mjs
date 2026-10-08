@@ -98,7 +98,12 @@ try {
       await sleep(300); // lets the equip's own window-click round trip land server-side first
       // Querying the whole SelectedItem truncates mid-NBT (RCON's response size cap) before it ever
       // reaches custom_name/custom_model_data; asking for each component path alone stays well under it.
-      const name = plain(await rcon.command(`minecraft:data get entity ${HUNTER} SelectedItem.components."minecraft:custom_name"`));
+      let name = plain(await rcon.command(`minecraft:data get entity ${HUNTER} SelectedItem.components."minecraft:custom_name"`));
+      // A radar with an awake ball in range is named "Dragon Radar: 4-star (nearest), Close", whose
+      // extra components push the base text past the reply cap; ask for the base text alone then.
+      if (!name.includes(expectName)) {
+        name = plain(await rcon.command(`minecraft:data get entity ${HUNTER} SelectedItem.components."minecraft:custom_name".text`));
+      }
       const model = plain(await rcon.command(`minecraft:data get entity ${HUNTER} SelectedItem.components."minecraft:custom_model_data"`));
       assert(name.includes(expectName), `${set} radar shows "${expectName}" (got ${name})`);
       assert(model.includes(expectModel), `${set} radar carries the ${expectModel} model (got ${model})`);

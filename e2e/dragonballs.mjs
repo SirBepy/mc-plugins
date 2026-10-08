@@ -43,10 +43,26 @@ try {
     // /dragonballs give never fires a pickup/drop event, so it never recomputes the slowness
     // modifier on its own (see BallSlownessListener); a toss+self-pickup cycle launders it through
     // a real EntityPickupItemEvent, exactly like a player bouncing a ball in hand would.
-    // The reset left all 7 with the hunter; park 2-7 with the witness and clear them from its
-    // inventory so the hunter really carries one.
+    // The reset left all 7 with the hunter; the witness drops 2-7 and they're moved off the platform
+    // to fall to the ground far below, so the hunter really carries one. A /clear won't do: a held
+    // ball wiped from an inventory drops back at the holder's feet (HeldBallCheck). 4-7 stay down
+    // there for this whole step, so each "find the dropped star" below relies on taking the lowest,
+    // always one of the hunter's 1-3.
     for (let star = 2; star <= 7; star++) await rcon.command(`dragonballs give ${WITNESS} ${star}`);
-    await rcon.command(`minecraft:clear ${WITNESS} minecraft:player_head`);
+    await waitFor(() => witness.inventory.items().filter((i) => i.name === 'player_head').length === 6, 'the witness holds 2-7');
+    // From the far corner, facing away, so the hunter can't pick one up before they're moved.
+    await teleport(rcon, witness, BX - 7, PLATFORM_Y + 1, BZ - 7);
+    await witness.lookAt(new Vec3(BX - 20, PLATFORM_Y + 1, BZ - 20), true);
+    for (const ball of witness.inventory.items().filter((i) => i.name === 'player_head')) await witness.tossStack(ball);
+    await waitFor(async () => {
+      const s = await status();
+      return [2, 3, 4, 5, 6, 7].every((star) => s[star].state === 'dropped');
+    }, '2-7 are dropped', 5_000);
+    const w = witness.entity.position;
+    await rcon.command(`minecraft:execute as @e[type=minecraft:item,x=${w.x},y=${w.y},z=${w.z},distance=..8,`
+      + `nbt={Item:{id:"minecraft:player_head"}}] run tp @s ${BX + 40} ${PLATFORM_Y} ${BZ}`);
+    await teleport(rcon, witness, STAND.x + 3, STAND.y, STAND.z);
+    // Back to back, inside HeldBallCheck's 2 s grace, so the cleared 1-Star never drops at the feet.
     await rcon.command(`minecraft:clear ${HUNTER} minecraft:player_head`);
     await rcon.command(`dragonballs give ${HUNTER} 1`);
     await sleep(300);
@@ -97,8 +113,9 @@ try {
     await waitFor(async () => near(await speedModifier(WITNESS), -0.05), 'DBWitness now shows -0.05 after the pickup', 3_000);
   });
 
-  // Return everything to DBHunter for the next scenarios.
-  await rcon.command(`dragonballs give ${HUNTER} ${witnessPickedUpStar}`);
+  // Return everything to DBHunter for the next scenarios, the parked 4-7 included: a lone dropped
+  // ball has to mean the one a scenario just threw.
+  for (let star = 1; star <= 7; star++) await rcon.command(`dragonballs give ${HUNTER} ${star}`);
   await sleep(200);
 
   // --- 4. container guard: a ball never goes into a chest -------------------------------------------

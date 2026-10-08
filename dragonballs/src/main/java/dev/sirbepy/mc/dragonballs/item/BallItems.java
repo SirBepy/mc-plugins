@@ -11,6 +11,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Skull;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.inventory.meta.components.CustomModelDataComponent;
@@ -156,6 +157,21 @@ public final class BallItems {
      * the pack (and Bedrock) falls back to the plain head with this item's skin. */
     public static String modelId(BallSet set, int star, boolean stone) {
         return stone ? "dragonball_stone" : "dragonball_" + set.id() + "_" + star;
+    }
+
+    /** True if {@code player} has {@code set}'s {@code star} ball anywhere they can hold one. */
+    public boolean carries(Player player, BallSet set, int star) {
+        // getContents covers storage, armor and offhand; the cursor holds a ball mid-click.
+        for (ItemStack stack : player.getInventory().getContents()) {
+            if (isBall(stack, set, star)) {
+                return true;
+            }
+        }
+        return isBall(player.getItemOnCursor(), set, star);
+    }
+
+    public boolean isBall(ItemStack item, BallSet set, int star) {
+        return isBall(item) && setOf(item) == set && starOf(item).getAsInt() == star;
     }
 
     /** False for a ball item made before the 3D look existed (no model id, or a stale one). */

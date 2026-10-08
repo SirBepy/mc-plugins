@@ -29,6 +29,8 @@ import org.mockbukkit.mockbukkit.world.WorldMock;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -49,6 +51,7 @@ class BallPlaceBreakListenerTest {
     private PlayerMock player;
     private boolean mayPickUp = true;
     private BallPlaceBreakListener listener;
+    private final List<String> announced = new ArrayList<>();
 
     @BeforeEach
     void setUp(@TempDir Path tempDir) {
@@ -63,7 +66,8 @@ class BallPlaceBreakListenerTest {
                 items, () -> new DragonBallsConfig(new YamlConfiguration()));
         balls = new FloatingBalls(plugin, items, id -> false);
         sets.all().forEach(registry -> registry.setLook(balls));
-        listener = new BallPlaceBreakListener(sets, balls, (who, where) -> mayPickUp);
+        listener = new BallPlaceBreakListener(sets, balls, (who, where) -> mayPickUp,
+                (finder, set, star) -> announced.add(finder.getName() + " " + set + " " + star));
         player = server.addPlayer();
         world.getChunkAt(0, 0).load();
     }
@@ -178,6 +182,48 @@ class BallPlaceBreakListenerTest {
         assertTrue(event.isCancelled());
         assertEquals(BallState.PLACED, sets.registry(BallSet.OVERWORLD).get(4).orElseThrow().state());
         assertFalse(player.getInventory().containsAtLeast(items.createItem(BallSet.OVERWORLD, 4), 1));
+    }
+
+    @Test
+    void hittingAScatteredBallAnnouncesTheFind() {
+        sets.registry(BallSet.NETHER).markPlaced(2, new Location(world, 3, 65, 4), false);
+
+        listener.onHit(new PrePlayerAttackEntityEvent(player, hitbox(BallSet.NETHER, 2), true));
+
+        assertEquals(List.of(player.getName() + " NETHER 2"), announced);
+    }
+
+    @Test
+    void takingBackABallYouJustPlacedIsNotAnnounced() {
+        listener.onPlace(place(world.getBlockAt(3, 65, 4), items.createItem(BallSet.OVERWORLD, 5)));
+        player.getInventory().setItemInMainHand(null);
+
+        listener.onHit(new PrePlayerAttackEntityEvent(player, hitbox(BallSet.OVERWORLD, 5), true));
+
+        assertTrue(sets.registry(BallSet.OVERWORLD).isHeldBy(5, player.getUniqueId()));
+        assertTrue(announced.isEmpty());
+    }
+
+    @Test
+    void someoneElseTakingAJustPlacedBallIsAnnounced() {
+        listener.onPlace(place(world.getBlockAt(3, 65, 4), items.createItem(BallSet.OVERWORLD, 5)));
+        PlayerMock other = server.addPlayer();
+
+        listener.onHit(new PrePlayerAttackEntityEvent(other, hitbox(BallSet.OVERWORLD, 5), true));
+
+        assertEquals(List.of(other.getName() + " OVERWORLD 5"), announced);
+    }
+
+    @Test
+    void aBallDroppedForAFullInventoryIsNotAnnouncedYet() {
+        sets.registry(BallSet.OVERWORLD).markPlaced(3, new Location(world, 3, 65, 4), false);
+        for (int slot = 0; slot < player.getInventory().getSize(); slot++) {
+            player.getInventory().setItem(slot, new ItemStack(Material.DIRT, 64));
+        }
+
+        listener.onHit(new PrePlayerAttackEntityEvent(player, hitbox(BallSet.OVERWORLD, 3), true));
+
+        assertTrue(announced.isEmpty(), "the ground pickup announces it later");
     }
 
     @Test
