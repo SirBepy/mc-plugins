@@ -9,7 +9,6 @@ import dev.sirbepy.mc.dragonballs.registry.BallScatterer;
 import dev.sirbepy.mc.dragonballs.registry.BallView;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
-import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -28,13 +27,11 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalInt;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
@@ -51,11 +48,8 @@ import java.util.logging.Level;
  */
 public final class ScatterService implements BallScatterer {
 
-    // Nether fallback balls are placed roughly mid-column; the real y comes from the safe-spot scan.
-    private static final int NETHER_MIN_Y = 32;
-    private static final int NETHER_MAX_FLOOR_Y = 108;
-    private static final int NETHER_BEDROCK_ROOF_Y = 127;
-    private static final double DESTINATION_PREVIEW_Y = 64;
+    static final int NETHER_BEDROCK_ROOF_Y = 127;
+    static final double DESTINATION_PREVIEW_Y = 64;
 
     // The second search round when the set's own ring has no usable structure.
     private static final double WIDEN_MIN = 0.5;
@@ -68,9 +62,10 @@ public final class ScatterService implements BallScatterer {
             Material.POINTED_DRIPSTONE, Material.PLAYER_HEAD, Material.PLAYER_WALL_HEAD, Material.SPAWNER,
             Material.TRIAL_SPAWNER, Material.BARRIER, Material.BEDROCK);
 
-    /** The annulus a set's ball must land in, in the set's own dimension. */
-    private record Ring(BallSet set, World world, double centerX, double centerZ, double minRadius,
-                        double maxRadius, int pregenLimit, double minSpacing) {
+    /** The annulus a set's ball must land in, in the set's own dimension. Package-private so
+     * {@link ScatterFallback} can take one without ScatterService exposing its internals further. */
+    record Ring(BallSet set, World world, double centerX, double centerZ, double minRadius,
+               double maxRadius, int pregenLimit, double minSpacing) {
         Ring widened() {
             return new Ring(set, world, centerX, centerZ, minRadius * WIDEN_MIN, maxRadius * WIDEN_MAX, pregenLimit,
                     minSpacing);
@@ -85,8 +80,9 @@ public final class ScatterService implements BallScatterer {
     private record StructureSpot(int x, int y, int z, String structureId, BoundingBox footprint) {
     }
 
-    /** What one scatter run has already taken, so no two balls share a structure or crowd each other. */
-    private static final class Claims {
+    /** What one scatter run has already taken, so no two balls share a structure or crowd each other.
+     * Package-private so {@link ScatterFallback} can take one. */
+    static final class Claims {
         final List<double[]> spots;
         final List<BoundingBox> structures = new ArrayList<>();
 
@@ -113,6 +109,7 @@ public final class ScatterService implements BallScatterer {
     // star (a void respawn, an admin re-roll) can't race it: before this guard the old chunk-load
     // self-heal did exactly that on the test server, 2026-10-08, 3 of 21 balls landing twice.
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
+    private final ScatterFallback fallbackPlacement;
 
     public ScatterService(JavaPlugin plugin, Supplier<DragonBallsConfig> config) {
         this.plugin = plugin;
@@ -127,6 +124,7 @@ public final class ScatterService implements BallScatterer {
                 plugin.getServer().getScheduler().runTask(plugin, task);
             }
         };
+        this.fallbackPlacement = new ScatterFallback(plugin, config, random, townyGuard, this::placeHead);
     }
 
     private StructureScatterConfig structureConfig() {
@@ -256,7 +254,7 @@ public final class ScatterService implements BallScatterer {
                     if (found == null) {
                         plugin.getLogger().warning("No " + ring.set().id() + " structure found for star " + star
                                 + "; it lands on plain ground instead");
-                        return fallback(star, ring, claims, stone, registry);
+                        return fallbackPlacement.fallback(star, ring, claims, stone, registry);
                     }
                     claims.spots.add(new double[]{found.x() + 0.5, found.z() + 0.5});
                     claims.structures.add(found.footprint());
@@ -442,145 +440,16 @@ public final class ScatterService implements BallScatterer {
         return null;
     }
 
-    // ---- fallback: the plain placement, only when no listed structure fits even the widened ring ----
-
-    private CompletableFuture<Void> fallback(int star, Ring ring, Claims claims, boolean stone, BallRegistry registry) {
-        double[] candidate = ScatterPlanner.findCandidate(random, ring.centerX(), ring.centerZ(), ring.minRadius(),
-                ring.maxRadius(), ring.pregenLimit(), claims.spots, ring.minSpacing(), 2000);
-        if (candidate == null) {
-            plugin.getLogger().warning("Could not find a free " + ring.set().id() + " scatter spot for star " + star);
-            return CompletableFuture.completedFuture(null);
-        }
-        if (ring.set() == BallSet.NETHER) {
-            return resolveNetherSpot(ring.world(), ring.centerX(), ring.centerZ(), (int) ring.minRadius(),
-                    (int) ring.maxRadius(), ring.pregenLimit(), claims.spots, candidate[0], candidate[1], 0)
-                    .thenCompose(xyz -> runOnMain(() -> placeHead(star, ring.world(), xyz[0], xyz[1], xyz[2], stone,
-                            registry, "surface")));
-        }
-        Predicate<Material> accept = ring.set() == BallSet.END
-                ? material -> material == Material.END_STONE
-                : material -> SurfaceClassifier.classify(material) == SurfaceKind.SOLID;
-        return resolveGroundSurface(ring.world(), ring.centerX(), ring.centerZ(), ring.minRadius(), ring.maxRadius(),
-                ring.pregenLimit(), claims.spots, candidate[0], candidate[1], accept, 0)
-                .thenCompose(xz -> runOnMain(() -> placeAtSurfaceNow(star, ring.world(), (int) Math.floor(xz[0]),
-                        (int) Math.floor(xz[1]), stone, registry, "surface")));
-    }
-
-    /**
-     * Resolves (x, z) to a point whose highest block satisfies {@code accept}: loads its chunk, and
-     * if it doesn't, resamples a brand-new random point around the given center (up to
-     * {@code scatter.max-liquid-resamples} tries) before falling back to a shore search outward from
-     * the last candidate.
-     */
-    private CompletableFuture<double[]> resolveGroundSurface(World world, double centerX, double centerZ,
-                                                               double minRadius, double maxRadius, int pregenLimit,
-                                                               List<double[]> avoid, double x, double z,
-                                                               Predicate<Material> accept, int attempts) {
-        return loadChunkFor(world, x, z).thenCompose(chunk -> {
-            int bx = (int) Math.floor(x);
-            int bz = (int) Math.floor(z);
-            Material surface = highestSurfaceMaterial(world, bx, bz);
-            if (accept.test(surface) && isWilderness(world, bx, bz)) {
-                return CompletableFuture.completedFuture(new double[]{bx + 0.5, bz + 0.5});
-            }
-            DragonBallsConfig cfg = config.get();
-            if (attempts + 1 < cfg.maxLiquidResamples()) {
-                double[] fresh = ScatterPlanner.findCandidate(random, centerX, centerZ, minRadius, maxRadius,
-                        pregenLimit, avoid, cfg.minSpacing(), 2000);
-                if (fresh == null) {
-                    return shoreSearch(world, bx, bz, 0, accept);
-                }
-                return resolveGroundSurface(world, centerX, centerZ, minRadius, maxRadius, pregenLimit, avoid,
-                        fresh[0], fresh[1], accept, attempts + 1);
-            }
-            return shoreSearch(world, bx, bz, 0, accept);
-        });
-    }
-
-    /** Spirals out from a rejected candidate looking for the nearest accepted surface (a "shore"). */
-    private CompletableFuture<double[]> shoreSearch(World world, int bx, int bz, int ringIndex, Predicate<Material> accept) {
-        List<int[]> offsets = ScatterPlanner.spiralOffsets(48);
-        if (ringIndex >= offsets.size()) {
-            // Exhausted the search radius; accept the original point rather than looping forever.
-            return CompletableFuture.completedFuture(new double[]{bx + 0.5, bz + 0.5});
-        }
-        int[] offset = offsets.get(ringIndex);
-        int cx = bx + offset[0];
-        int cz = bz + offset[1];
-        return loadChunkFor(world, cx, cz).thenCompose(chunk -> {
-            Material surface = highestSurfaceMaterial(world, cx, cz);
-            if (accept.test(surface) && isWilderness(world, cx, cz)) {
-                return CompletableFuture.completedFuture(new double[]{cx + 0.5, cz + 0.5});
-            }
-            return shoreSearch(world, bx, bz, ringIndex + 1, accept);
-        });
-    }
-
-    private Material highestSurfaceMaterial(World world, int x, int z) {
-        int highestY = world.getHighestBlockYAt(x, z, HeightMap.MOTION_BLOCKING_NO_LEAVES);
-        return world.getBlockAt(x, highestY - 1, z).getType();
-    }
-
     /** No ball of any set, on any placement path, may land inside a town claim; checked at (x, z)
-     * only (Towny's own plot lookup ignores y). */
+     * only (Towny's own plot lookup ignores y). Also used by {@link ScatterFallback}, which keeps
+     * its own copy rather than calling back into this instance. */
     private boolean isWilderness(World world, int x, int z) {
         return townyGuard.isWilderness(new Location(world, x + 0.5, DESTINATION_PREVIEW_Y, z + 0.5));
     }
 
-    private void placeAtSurfaceNow(int star, World world, int bx, int bz, boolean stone, BallRegistry registry, String kind) {
-        int y = world.getHighestBlockYAt(bx, bz, HeightMap.MOTION_BLOCKING_NO_LEAVES);
-        placeHead(star, world, bx, y, bz, stone, registry, kind);
-    }
-
-    // ---- nether fallback: column scan for a safe floor/headroom spot, not a heightmap ----
-
-    private CompletableFuture<int[]> resolveNetherSpot(World netherWorld, double centerX, double centerZ,
-                                                         int minRadius, int maxRadius, int pregenLimit,
-                                                         List<double[]> avoid, double x, double z, int attempts) {
-        return loadChunkFor(netherWorld, x, z).thenCompose(chunk -> {
-            int bx = (int) Math.floor(x);
-            int bz = (int) Math.floor(z);
-            OptionalInt safeY = findNetherSafeY(netherWorld, bx, bz);
-            if (safeY.isPresent() && isWilderness(netherWorld, bx, bz)) {
-                return CompletableFuture.completedFuture(new int[]{bx, safeY.getAsInt(), bz});
-            }
-            DragonBallsConfig cfg = config.get();
-            if (attempts + 1 < cfg.maxLiquidResamples()) {
-                double[] fresh = ScatterPlanner.findCandidate(random, centerX, centerZ, minRadius, maxRadius,
-                        pregenLimit, avoid, NetherScale.toNetherRadius(cfg.minSpacing()), 2000);
-                if (fresh != null) {
-                    return resolveNetherSpot(netherWorld, centerX, centerZ, minRadius, maxRadius, pregenLimit, avoid,
-                            fresh[0], fresh[1], attempts + 1);
-                }
-            }
-            return CompletableFuture.failedFuture(
-                    new IllegalStateException("No safe nether floor found near (" + bx + ", " + bz + ")"));
-        });
-    }
-
-    /** First floor between y 32 and the bedrock roof with a solid non-lava block and 2 air blocks
-     * above it (room for the head plus headroom); the returned y is where the head itself goes. */
-    private OptionalInt findNetherSafeY(World world, int x, int z) {
-        for (int floorY = NETHER_MIN_Y; floorY <= NETHER_MAX_FLOOR_Y; floorY++) {
-            if (floorY + 2 >= NETHER_BEDROCK_ROOF_Y) {
-                break;
-            }
-            Material floor = world.getBlockAt(x, floorY, z).getType();
-            if (floor == Material.AIR || floor == Material.LAVA || floor == Material.CAVE_AIR) {
-                continue;
-            }
-            Material above1 = world.getBlockAt(x, floorY + 1, z).getType();
-            Material above2 = world.getBlockAt(x, floorY + 2, z).getType();
-            if (above1 == Material.AIR && above2 == Material.AIR) {
-                return OptionalInt.of(floorY + 1);
-            }
-        }
-        return OptionalInt.empty();
-    }
-
     // ---- shared ----
 
-    private CompletableFuture<Chunk> loadChunkFor(World world, double x, double z) {
+    static CompletableFuture<Chunk> loadChunkFor(World world, double x, double z) {
         return world.getChunkAtAsync((int) Math.floor(x) >> 4, (int) Math.floor(z) >> 4, true);
     }
 
@@ -588,18 +457,5 @@ public final class ScatterService implements BallScatterer {
         registry.markPlaced(star, world.getBlockAt(x, y, z).getLocation(), stone);
         plugin.getLogger().info("Placed " + registry.set().id() + " " + star + "-star at "
                 + world.getName() + " " + x + " " + y + " " + z + " (" + kind + ")");
-    }
-
-    private CompletableFuture<Void> runOnMain(Runnable action) {
-        CompletableFuture<Void> done = new CompletableFuture<>();
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
-            try {
-                action.run();
-                done.complete(null);
-            } catch (Throwable t) {
-                done.completeExceptionally(t);
-            }
-        });
-        return done;
     }
 }
