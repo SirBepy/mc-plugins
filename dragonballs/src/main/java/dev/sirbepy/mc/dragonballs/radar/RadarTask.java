@@ -120,6 +120,15 @@ public final class RadarTask implements Runnable {
         }
     }
 
+    /**
+     * Makes the next pass re-send {@code player}'s compass target even if the ball hasn't moved.
+     * Called on join, respawn and world change: the server sends the client the world spawn as its
+     * compass target then, so an unchanged cached target would leave the radar pointing at spawn.
+     */
+    public void forgetTarget(UUID player) {
+        lastTarget.remove(player);
+    }
+
     /** The stars {@code player}'s {@code set} radar can see right now, nearest first (empty outside the set's home world). */
     public List<Integer> starsNearestFirst(Player player, BallSet set) {
         Map<Integer, Location> targets = visibleTargets(player, set);

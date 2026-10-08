@@ -244,6 +244,23 @@ class RadarTaskTest {
         assertEquals(List.of(), task.starsNearestFirst(player, BallSet.NETHER), "a Nether radar sees nothing in the overworld");
     }
 
+    @Test
+    void aRespawnMakesTheNextPassResendTheTargetTheClientWasResetFrom() {
+        registry.markPlaced(3, new Location(world, 400, 64, 0), false);
+        player.getInventory().setItemInMainHand(items.create());
+        task.run();
+        assertEquals(400, player.getCompassTarget().getBlockX());
+
+        // A respawn re-sends the world spawn as the client's compass target.
+        player.setCompassTarget(world.getSpawnLocation());
+        new RadarResyncListener(task).onRespawn(new org.bukkit.event.player.PlayerRespawnEvent(
+                player, world.getSpawnLocation(), false, false, false,
+                org.bukkit.event.player.PlayerRespawnEvent.RespawnReason.DEATH));
+        task.run();
+
+        assertEquals(400, player.getCompassTarget().getBlockX(), "the radar must point back at the ball, not spawn");
+    }
+
     private ItemStack hand() {
         return player.getInventory().getItemInMainHand();
     }

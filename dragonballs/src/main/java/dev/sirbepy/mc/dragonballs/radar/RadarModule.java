@@ -18,5 +18,6 @@ public final class RadarModule {
         RadarTask task = new RadarTask(sets, items, tracking, config);
         plugin.getServer().getScheduler().runTaskTimer(plugin, task, RadarTask.PERIOD_TICKS, RadarTask.PERIOD_TICKS);
         plugin.getServer().getPluginManager().registerEvents(new RadarCycleListener(items, tracking, task), plugin);
+        plugin.getServer().getPluginManager().registerEvents(new RadarResyncListener(task), plugin);
     }
 }
