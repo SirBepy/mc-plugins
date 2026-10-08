@@ -43,8 +43,7 @@ public final class CallManager {
 
     static final String[] NAMES = {"Leonel Salamanca", "Marco Salamanca"};
     static final long ATTACKER_MEMORY_MILLIS = 15_000;
-    private static final double GUARD_RANGE = 16;
-    private static final double GUARD_LEASH = 24;
+    static final double GUARD_RANGE = 16;
 
     private final Supplier<CartelConfig> config;
     private final CartelStore store;
@@ -54,9 +53,10 @@ public final class CallManager {
     private final LongSupplier clock;
     private final Random random;
     private final Map<UUID, Long> recentAttackers = new HashMap<>();
+    private final Steering steering;
     private Call call;
 
-    private static final class Call {
+    static final class Call {
         final Mode mode;
         final UUID owner;
         final UUID target;
@@ -84,6 +84,7 @@ public final class CallManager {
         this.trophies = trophies;
         this.clock = clock;
         this.random = random;
+        this.steering = new Steering(config, random, this::end, this::guardTarget, CallManager::smoke);
     }
 
     // ---- state ----
@@ -240,7 +241,7 @@ public final class CallManager {
         }
     }
 
-    // ---- steering ----
+    // ---- ticking ----
 
     public void tick() {
         if (call == null) {
@@ -259,95 +260,10 @@ public final class CallManager {
             return;
         }
         if (call.mode == Mode.GUARD) {
-            steerGuard();
+            steering.steerGuard(call);
         } else {
-            steerHit();
+            steering.steerHit(call);
         }
-    }
-
-    private void steerGuard() {
-        Player owner = Bukkit.getPlayer(call.owner);
-        if (owner == null || owner.isDead()) {
-            end(null);
-            return;
-        }
-        for (Mob cousin : call.cousins) {
-            LivingEntity threat = cousin.getTarget();
-            if (threat == null || !threat.isValid() || !guardTarget(threat, owner)
-                    || threat.getLocation().distanceSquared(owner.getLocation()) > GUARD_LEASH * GUARD_LEASH) {
-                threat = nearestThreat(owner);
-                cousin.setTarget(threat);
-            }
-            if (threat != null) {
-                continue;
-            }
-            boolean sameWorld = cousin.getWorld().equals(owner.getWorld());
-            double distance = sameWorld ? cousin.getLocation().distance(owner.getLocation()) : Double.MAX_VALUE;
-            if (distance > GUARD_LEASH) {
-                List<Location> spots = SpawnSpots.around(owner.getLocation(), 2, 1, random);
-                cousin.teleport(spots.isEmpty() ? owner.getLocation() : spots.getFirst());
-            } else if (distance > 4) {
-                cousin.getPathfinder().moveTo(owner, 1.2);
-            }
-        }
-    }
-
-    private LivingEntity nearestThreat(Player owner) {
-        LivingEntity best = null;
-        double bestDistance = Double.MAX_VALUE;
-        for (Entity nearby : owner.getNearbyEntities(GUARD_RANGE, 8, GUARD_RANGE)) {
-            if (nearby instanceof LivingEntity living && guardTarget(living, owner)) {
-                double d = living.getLocation().distanceSquared(owner.getLocation());
-                if (d < bestDistance) {
-                    bestDistance = d;
-                    best = living;
-                }
-            }
-        }
-        return best;
-    }
-
-    private void steerHit() {
-        Player victim = Bukkit.getPlayer(call.target);
-        if (victim == null) {
-            end(call.targetName + " left the server. The cousins head back to Mexico.");
-            return;
-        }
-        if (!targetable(victim)) {
-            end(call.targetName + " is out of reach. The cousins head back to Mexico.");
-            return;
-        }
-        int lose = config.get().loseTrailDistance();
-        boolean lost = call.cousins.stream().allMatch(cousin -> !cousin.getWorld().equals(victim.getWorld())
-                || cousin.getLocation().distanceSquared(victim.getLocation()) > (double) lose * lose);
-        if (lost && !retrack(victim)) {
-            end("The cousins lost " + call.targetName + "'s trail.");
-            return;
-        }
-        for (Mob cousin : call.cousins) {
-            if (cousin.getTarget() == null || !cousin.getTarget().getUniqueId().equals(victim.getUniqueId())) {
-                cousin.setTarget(victim);
-            }
-        }
-    }
-
-    private boolean retrack(Player victim) {
-        if (call.retracks >= config.get().retracks()) {
-            return false;
-        }
-        List<Location> spots = SpawnSpots.around(victim.getLocation(), config.get().hitDistance(), 2, random);
-        if (spots.isEmpty()) {
-            return false;
-        }
-        call.retracks++;
-        for (int i = 0; i < call.cousins.size(); i++) {
-            Location at = spots.get(Math.min(i, spots.size() - 1));
-            call.cousins.get(i).teleport(at);
-            smoke(at);
-        }
-        victim.sendMessage(Component.text("The cousins picked up your trail.", NamedTextColor.DARK_RED));
-        victim.playSound(victim.getLocation(), Sound.EVENT_MOB_EFFECT_BAD_OMEN, 1.0f, 0.8f);
-        return true;
     }
 
     // ---- who the cousins may fight ----
