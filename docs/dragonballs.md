@@ -56,7 +56,9 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
   inside a Towny town, so summons happen in the wilderness (Joe, 2026-10-08), and a ball that ends
   up lying in a town anyway (dropped there on death or logout, tossed in, or a town claims the land
   around it) moves itself within 5 seconds to the nearest free wilderness spot past the border,
-  telling players within 64 blocks where it went. The 7 balls over the spawn station's pedestals
+  telling players within 64 blocks where it went. That spot is above ground: on dry surface open
+  to the sky in the Overworld and the End (never in a cave, under trees or on water), and in the
+  Nether on a floor with headroom, nearest the ball's old height (Joe, 2026-10-09). The 7 balls over the spawn station's pedestals
   float the same way, as decoration only.
 - A ball never leaves its own dimension: go through a portal, `/home`, `/spawn` or any other
   cross-dimension teleport and it drops where you left (e.g. at the Nether portal). Dropped balls

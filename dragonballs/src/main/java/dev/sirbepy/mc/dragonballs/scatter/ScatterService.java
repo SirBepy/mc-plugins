@@ -40,7 +40,7 @@ import java.util.function.Supplier;
  */
 public final class ScatterService implements BallScatterer {
 
-    static final int NETHER_BEDROCK_ROOF_Y = 127;
+    public static final int NETHER_BEDROCK_ROOF_Y = 127;
     static final double DESTINATION_PREVIEW_Y = 64;
 
     // The second search round when the set's own ring has no usable structure.

@@ -155,6 +155,79 @@ class TownEvictionTest {
         assertNull(far.nextMessage());
     }
 
+    /** The whole wilderness strip west of the town, x 80..99, at height y. */
+    private void westStrip(WorldMock in, int y, Material material) {
+        for (int x = 80; x < 100; x++) {
+            for (int z = -20; z < 60; z++) {
+                in.getBlockAt(x, y, z).setType(material);
+            }
+        }
+    }
+
+    // Joe, 2026-10-09: the 1-star left a town 8 blocks under the ground; a ball must stay findable.
+    @Test
+    void aBallNeverLandsInACaveUnderTheWilderness() {
+        // A hill west of the town, y 66..70, over a one-block cave at the town's floor height.
+        for (int y = 66; y <= 70; y++) {
+            westStrip(world, y, Material.STONE);
+        }
+        overworld().markPlaced(3, new Location(world, 104, 65, 20), false);
+
+        eviction.run();
+
+        BallView moved = view(3);
+        assertTrue(moved.x() < 100, "still the nearest border, west: " + moved);
+        assertEquals(71, (int) moved.y(), "on top of the hill, not in the cave under it");
+        assertEquals(70, world.getHighestBlockYAt((int) Math.floor(moved.x()), (int) Math.floor(moved.z())),
+                "nothing above it but sky");
+    }
+
+    @Test
+    void aBallNeverLandsUnderTreesOrOnWater() {
+        // West of the town: a leaf canopy at y 70; its floor is the same stone at 64.
+        westStrip(world, 70, Material.OAK_LEAVES);
+        // North of it: a lake on the floor.
+        for (int x = 100; x < 140; x++) {
+            for (int z = -20; z < 0; z++) {
+                world.getBlockAt(x, 65, z).setType(Material.WATER);
+            }
+        }
+        overworld().markPlaced(3, new Location(world, 104, 65, 20), false);
+
+        eviction.run();
+
+        BallView moved = view(3);
+        assertFalse(inTown(moved), "outside the town: " + moved);
+        assertTrue(moved.x() >= 100 && moved.z() >= 40, "south, the only dry open side: " + moved);
+        assertEquals(65, (int) moved.y(), "on the open floor: " + moved);
+    }
+
+    @Test
+    void aNetherBallLandsWithHeadroomUnderTheRoof() {
+        WorldMock nether = server.addSimpleWorld("world_nether");
+        nether.setEnvironment(org.bukkit.World.Environment.NETHER);
+        for (int cx = 5; cx < 10; cx++) {
+            for (int cz = -2; cz < 4; cz++) {
+                nether.getChunkAt(cx, cz).load();
+            }
+        }
+        for (int x = 80; x < 160; x++) {
+            for (int z = -20; z < 60; z++) {
+                nether.getBlockAt(x, 64, z).setType(Material.NETHERRACK);
+                nether.getBlockAt(x, 126, z).setType(Material.BEDROCK);
+            }
+        }
+        // West of the town a one-block-high gap at y 65: a pocket, with open cavern above y 66.
+        westStrip(nether, 66, Material.NETHERRACK);
+        sets.registry(BallSet.NETHER).markPlaced(2, new Location(nether, 104, 65, 20), false);
+
+        eviction.run();
+
+        BallView moved = sets.registry(BallSet.NETHER).get(2).orElseThrow();
+        assertTrue(moved.x() < 100, "the nearest border, west: " + moved);
+        assertEquals(67, (int) moved.y(), "on the netherrack above the pocket, not in it");
+    }
+
     @Test
     void heldWildernessAndFlyingBallsStayPut() {
         PlayerMock holder = server.addPlayer("Holder");

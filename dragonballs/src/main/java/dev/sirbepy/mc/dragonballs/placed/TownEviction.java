@@ -5,9 +5,14 @@ import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
 import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import dev.sirbepy.mc.dragonballs.registry.BallState;
 import dev.sirbepy.mc.dragonballs.registry.BallView;
+import dev.sirbepy.mc.dragonballs.scatter.ScatterService;
 import dev.sirbepy.mc.dragonballs.scatter.ScatterTownyGuard;
+import dev.sirbepy.mc.dragonballs.scatter.SurfaceClassifier;
+import dev.sirbepy.mc.dragonballs.scatter.SurfaceKind;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.bukkit.HeightMap;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -34,7 +39,7 @@ public final class TownEviction implements Runnable {
     // Rings out from the ball, 4 blocks apart: a town block is 16 wide, so no wilderness gap is missed.
     static final int STEP = 4;
     static final int MAX_RADIUS = 1024;
-    // How far up or down from the ball's own height to look for ground at the new spot.
+    // Nether only: how far up or down from the ball's own height to look for a floor at the new spot.
     private static final int HEIGHT_SEARCH = 32;
     private static final double NOTIFY_RADIUS = 64;
 
@@ -111,8 +116,8 @@ public final class TownEviction implements Runnable {
 
     /**
      * The nearest free spot in the wilderness: rings of growing radius around {@code from}, the first
-     * wilderness column that has an empty block resting on solid ground near {@code from}'s height
-     * and no other ball in it. Null if there's none within {@link #MAX_RADIUS}.
+     * wilderness column with a findable resting spot (see {@link #ground}) and no other ball in it.
+     * Null if there's none within {@link #MAX_RADIUS}.
      */
     Location nearestWilderness(Location from) {
         World world = from.getWorld();
@@ -136,17 +141,48 @@ public final class TownEviction implements Runnable {
         return null;
     }
 
-    /** The empty block nearest {@code y} in column x, z that sits on a solid block, or null. */
+    /**
+     * Where a ball can rest in column x, z so a player can find it, or null. The Overworld and the
+     * End: on the surface, open to the sky (Joe, 2026-10-09: the first evicted 1-star ended up 8
+     * blocks underground, in a cave next to {@code y}). The Nether has a bedrock roof instead of sky,
+     * so there it's the floor nearest {@code y} with headroom, as the Nether scatter does.
+     */
     private static Location ground(World world, int x, int y, int z) {
+        return world.getEnvironment() == World.Environment.NETHER
+                ? netherFloor(world, x, y, z)
+                : surface(world, x, z);
+    }
+
+    /** On top of the column's highest block, if that's dry solid ground (not water, ice, the void or
+     * a tree) with nothing over it. */
+    private static Location surface(World world, int x, int z) {
+        // NO_LEAVES so a canopy isn't taken for ground; a column under leaves is skipped instead,
+        // since a ball there can't be seen from above and a trunk's top would count as ground.
+        int floorY = world.getHighestBlockYAt(x, z, HeightMap.MOTION_BLOCKING_NO_LEAVES);
+        if (floorY < world.getMinHeight() || floorY + 1 >= world.getMaxHeight()
+                || world.getHighestBlockYAt(x, z, HeightMap.MOTION_BLOCKING) != floorY) {
+            return null;
+        }
+        Material floor = world.getBlockAt(x, floorY, z).getType();
+        if (!floor.isSolid() || SurfaceClassifier.classify(floor) != SurfaceKind.SOLID) {
+            return null;
+        }
+        return new Location(world, x, floorY + 1, z);
+    }
+
+    /** The empty block nearest {@code y} below the bedrock roof that has an empty block over it and a
+     * solid one under it; a one-block gap is a pocket in the rock, not a floor. */
+    private static Location netherFloor(World world, int x, int y, int z) {
         int min = world.getMinHeight() + 1;
-        int max = world.getMaxHeight() - 1;
+        int max = ScatterService.NETHER_BEDROCK_ROOF_Y - 1;
         for (int d = 0; d <= HEIGHT_SEARCH; d++) {
             for (int candidate : new int[] {y + d, y - d}) {
                 if (candidate < min || candidate >= max) {
                     continue;
                 }
                 Block block = world.getBlockAt(x, candidate, z);
-                if (block.isEmpty() && block.getRelative(BlockFace.DOWN).getType().isSolid()) {
+                if (block.isEmpty() && block.getRelative(BlockFace.UP).isEmpty()
+                        && block.getRelative(BlockFace.DOWN).getType().isSolid()) {
                     return block.getLocation();
                 }
             }
