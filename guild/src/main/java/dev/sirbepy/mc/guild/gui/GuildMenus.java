@@ -164,7 +164,7 @@ public final class GuildMenus {
                 refresh(player, shown, Screen.MAIN, 0);
             });
         }
-        Commission featured = guild.featured();
+        Commission featured = guild.office().featured();
         if (featured != null) {
             menu.set(FEATURED_SLOT, Icons.glint(commissionIcon(player, member, featured, true)), (shown, click) -> {
                 claimCommission(player, featured);
@@ -449,7 +449,7 @@ public final class GuildMenus {
                 "Treasury. Everyone eligible works on them",
                 "at once; the first to claim one wins it.",
                 "",
-                gm ? "Posted this week: " + guild.commissionsThisWeek() + " / " + guild.config().commissionsPerWeek()
+                gm ? "Posted this week: " + guild.office().commissionsThisWeek() + " / " + guild.config().commissionsPerWeek()
                         : "Gathered goods go to the Guildmaster.",
                 gm ? "Left-click: feature. Right-click: cancel." : ""));
         List<Commission> open = guild.store().commissions().stream().filter(Commission::open).toList();
@@ -461,11 +461,11 @@ public final class GuildMenus {
             menu.set(slot, commissionIcon(player, member, commission, false), (shown, click) -> {
                 if (gm) {
                     if (click == ClickType.RIGHT || click == ClickType.SHIFT_RIGHT) {
-                        if (guild.cancelCommission(player, commission)) {
+                        if (guild.office().cancelCommission(player, commission)) {
                             Chat.send(player, "Commission cancelled; " + Text.coins(commission.reward())
                                     + " went back to the Treasury.");
                         }
-                    } else if (guild.feature(player, commission)) {
+                    } else if (guild.office().feature(player, commission)) {
                         Chat.send(player, "Commission featured.");
                     }
                 } else {
@@ -488,7 +488,7 @@ public final class GuildMenus {
     private ItemStack commissionIcon(Player player, Member member, Commission commission, boolean featured) {
         Objective o = commission.objective();
         boolean gm = guild.isGuildmaster(player);
-        boolean eligible = member != null && guild.eligibleFor(member, commission);
+        boolean eligible = member != null && guild.office().eligibleFor(member, commission);
         List<String> lore = new ArrayList<>();
         lore.add((featured ? "Featured commission, " : "Commission " + commission.id() + ", ")
                 + commission.minRank().name() + "-Rank and up");
@@ -512,7 +512,7 @@ public final class GuildMenus {
     }
 
     private void claimCommission(Player player, Commission commission) {
-        Guild.Claim claim = guild.claimCommission(player, commission);
+        Guild.Claim claim = guild.office().claimCommission(player, commission);
         switch (claim.result()) {
             case CLAIMED -> {
                 Chat.send(player, "Commission complete: " + commission.objective().text() + ". Paid "
@@ -534,7 +534,7 @@ public final class GuildMenus {
     private Menu office(Player player) {
         Menu menu = new Menu(6, Component.text("Guildmaster's Office", NamedTextColor.GOLD));
         var treasury = guild.store().treasury();
-        long withdrawable = guild.withdrawable();
+        long withdrawable = guild.office().withdrawable();
         menu.set(PROFILE_SLOT, Icons.icon(Icons.head(player), "Guildmaster " + player.getName(), NamedTextColor.GOLD,
                 List.of("Founder of the Adventurer's Guild.",
                         "Your adventurer rank is earned like anyone's.")));
@@ -570,7 +570,7 @@ public final class GuildMenus {
                 (shown, click) -> refresh(player, shown, Screen.MEMBERS, 0));
         menu.set(29, statistics());
         menu.set(31, Icons.icon(Material.BELL, "Commissions", Chat.BRONZE,
-                "Posted this week: " + guild.commissionsThisWeek() + " / " + guild.config().commissionsPerWeek(),
+                "Posted this week: " + guild.office().commissionsThisWeek() + " / " + guild.config().commissionsPerWeek(),
                 "Reward " + guild.config().commissionMinReward() + "-" + guild.config().commissionMaxReward()
                         + " coins, taken from the Treasury.",
                 "",
@@ -582,13 +582,13 @@ public final class GuildMenus {
         menu.set(33, Icons.icon(Material.CHEST, "Your stores", Chat.BRONZE,
                 stored + " items handed in for your commissions",
                 stored > 0 ? "!Click to collect" : ""), (shown, click) -> {
-            int taken = guild.collectStores(player);
+            int taken = guild.office().collectStores(player);
             if (taken > 0) {
                 Chat.send(player, "You collect " + taken + " items from the Guild stores.");
             }
             refresh(player, shown, Screen.OFFICE, 0);
         });
-        long wait = guild.announceWait();
+        long wait = guild.office().announceWait();
         menu.set(40, Icons.icon(Material.GOAT_HORN, "Announcements", Chat.BRONZE,
                 "/guild announce <message>",
                 wait > 0 ? "Next one in " + wait + " min" : "!Ready",
@@ -599,7 +599,7 @@ public final class GuildMenus {
     }
 
     private void withdraw(Player player, long amount) {
-        long paid = guild.withdraw(player, amount);
+        long paid = guild.office().withdraw(player, amount);
         if (paid > 0) {
             Chat.send(player, "You draw " + Text.coins(paid) + " from the Treasury.", NamedTextColor.GOLD);
             player.playSound(player.getLocation(), Sound.BLOCK_CHAIN_PLACE, 1f, 1.4f);

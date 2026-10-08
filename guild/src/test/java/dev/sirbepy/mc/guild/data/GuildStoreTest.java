@@ -29,7 +29,7 @@ class GuildStoreTest extends GuildTestBase {
         member.setCoinsToday(80);
         store.treasury().record(clock.nowMillis(), LedgerEntry.Kind.ADJUST, 1000, "test");
         store.treasury().addWithdrawal(clock.dayKey(), 250);
-        guild.postCommission(gm, new Objective(Objective.Kind.MINE, Set.of("IRON_ORE", "DEEPSLATE_IRON_ORE"), 20, "Mine 20 Iron Ore"), 150, Rank.D);
+        guild.office().postCommission(gm, new Objective(Objective.Kind.MINE, Set.of("IRON_ORE", "DEEPSLATE_IRON_ORE"), 20, "Mine 20 Iron Ore"), 150, Rank.D);
         Commission commission = store.commissions().getFirst();
         commission.setProgress(alice.getUniqueId(), 7);
         store.setFeaturedId(commission.id());

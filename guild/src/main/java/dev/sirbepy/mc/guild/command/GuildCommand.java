@@ -143,8 +143,8 @@ public final class GuildCommand {
         }
         if (!guild.isGuildmaster(player)) {
             Chat.send(player, "Only the Guildmaster makes Guild announcements.", NamedTextColor.GRAY);
-        } else if (!guild.announce(player, StringArgumentType.getString(c, "message"))) {
-            Chat.send(player, "The town crier is hoarse. Next announcement in " + guild.announceWait() + " min.", NamedTextColor.YELLOW);
+        } else if (!guild.office().announce(player, StringArgumentType.getString(c, "message"))) {
+            Chat.send(player, "The town crier is hoarse. Next announcement in " + guild.office().announceWait() + " min.", NamedTextColor.YELLOW);
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -167,7 +167,7 @@ public final class GuildCommand {
             Chat.send(player, "Couldn't read that. Kinds: hunt <mob>, gather <item>, mine <block>, fish <item|any>.", NamedTextColor.RED);
             return Command.SINGLE_SUCCESS;
         }
-        switch (guild.postCommission(player, objective, reward, minRank)) {
+        switch (guild.office().postCommission(player, objective, reward, minRank)) {
             case POSTED -> Chat.send(player, "Commission posted: " + objective.text() + " for " + Text.coins(reward)
                     + ", " + minRank.name() + "-Rank and up. " + Text.coins(reward) + " moved from the Treasury into escrow.", NamedTextColor.GREEN);
             case NOT_GUILDMASTER -> Chat.send(player, "Only the Guildmaster posts commissions.", NamedTextColor.GRAY);
@@ -263,7 +263,7 @@ public final class GuildCommand {
         if (player == null) {
             return Command.SINGLE_SUCCESS;
         }
-        if (commission == null || !guild.cancelCommission(player, commission)) {
+        if (commission == null || !guild.office().cancelCommission(player, commission)) {
             Chat.send(player, "No open commission of yours by that id.", NamedTextColor.YELLOW);
         } else {
             Chat.send(player, "Commission cancelled; " + Text.coins(commission.reward()) + " went back to the Treasury.");
@@ -274,7 +274,7 @@ public final class GuildCommand {
     private int feature(CommandContext<CommandSourceStack> c) {
         Player player = player(c);
         Commission commission = guild.store().commission(StringArgumentType.getString(c, "id"));
-        if (player != null && (commission == null || !guild.feature(player, commission))) {
+        if (player != null && (commission == null || !guild.office().feature(player, commission))) {
             Chat.send(player, "No open commission of yours by that id.", NamedTextColor.YELLOW);
         }
         return Command.SINGLE_SUCCESS;

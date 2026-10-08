@@ -33,12 +33,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
  * The Guild's rules in one place: registration, boards, progress, claims inside the dragon's daily
- * caps, the Treasury commission, Promotion Trials, and the Guildmaster's commissions and withdrawals.
+ * caps, the Treasury commission and Promotion Trials. The Guildmaster's side of the Treasury (his
+ * withdrawals, commissions, feature and announce) is {@link #office()}.
  */
 public final class Guild {
 
@@ -63,8 +63,6 @@ public final class Guild {
 
     public enum TrialStart { STARTED, NOT_ELIGIBLE, ALREADY_ACTIVE, COOLDOWN }
 
-    public enum PostResult { POSTED, NOT_GUILDMASTER, WEEKLY_LIMIT, BAD_REWARD, TREASURY_SHORT }
-
     private final Supplier<GuildConfig> config;
     private final GuildClock clock;
     private final GuildStore store;
@@ -73,6 +71,7 @@ public final class Guild {
     private final Board board;
     private final Achievements achievements;
     private final ServerEvents events;
+    private final GuildmasterOffice office;
 
     public Guild(Supplier<GuildConfig> config, GuildClock clock, GuildStore store, Bank bank, Random random) {
         this.config = config;
@@ -83,10 +82,15 @@ public final class Guild {
         this.board = new Board(random);
         this.achievements = new Achievements(store);
         this.events = new ServerEvents(this, random);
+        this.office = new GuildmasterOffice(this);
     }
 
     public ServerEvents events() {
         return events;
+    }
+
+    public GuildmasterOffice office() {
+        return office;
     }
 
     public Achievements achievements() {
@@ -219,7 +223,7 @@ public final class Guild {
             }
         }
         for (Commission commission : store.commissions()) {
-            if (!commission.open() || !eligibleFor(member, commission)) {
+            if (!commission.open() || !office.eligibleFor(member, commission)) {
                 continue;
             }
             Objective o = commission.objective();
@@ -289,7 +293,7 @@ public final class Guild {
         if (reward.coins() > 0 && !bank.available()) {
             return Claim.of(ClaimResult.NO_BANK);
         }
-        if (!takeGathers(player, def.objectives(), null)) {
+        if (!Inventories.takeGathers(player, def.objectives(), null)) {
             return Claim.of(ClaimResult.MISSING_ITEMS);
         }
 
@@ -412,203 +416,6 @@ public final class Guild {
         } else {
             Chat.send(player, "You passed the trial. You are now a " + rank.title() + ".", rank.color());
         }
-    }
-
-    // ---- Treasury ----
-
-    /** What the Guildmaster may still take out today: the daily limit, never more than the Treasury holds. */
-    public long withdrawable() {
-        long left = config.get().guildmasterDailyWithdrawal() - store.treasury().withdrawnToday(clock.dayKey());
-        return Math.max(0, Math.min(left, store.treasury().balance()));
-    }
-
-    /** Pays up to {@code amount} into the Guildmaster's balance; returns what was paid. */
-    public long withdraw(Player player, long amount) {
-        if (!isGuildmaster(player) || !bank.available()) {
-            return 0;
-        }
-        long paid = Math.min(amount, withdrawable());
-        if (paid <= 0 || !bank.deposit(player, paid)) {
-            return 0;
-        }
-        store.treasury().addWithdrawal(clock.dayKey(), paid);
-        store.treasury().record(clock.nowMillis(), LedgerEntry.Kind.WITHDRAWAL, -paid, player.getName());
-        store.save();
-        return paid;
-    }
-
-    // ---- The Guildmaster's commissions ----
-
-    public int commissionsThisWeek() {
-        String week = clock.weekKey();
-        UUID gm = config.get().guildmaster();
-        // Cancelled ones count too, so posting and cancelling can't be used to spam the server.
-        return (int) store.commissions().stream().filter(c -> c.week().equals(week) && c.poster().equals(gm)).count();
-    }
-
-    public PostResult postCommission(Player poster, Objective objective, int reward, Rank minRank) {
-        GuildConfig cfg = config.get();
-        if (!isGuildmaster(poster)) {
-            return PostResult.NOT_GUILDMASTER;
-        }
-        if (commissionsThisWeek() >= cfg.commissionsPerWeek()) {
-            return PostResult.WEEKLY_LIMIT;
-        }
-        if (reward < cfg.commissionMinReward() || reward > cfg.commissionMaxReward()) {
-            return PostResult.BAD_REWARD;
-        }
-        if (store.treasury().balance() < reward) {
-            return PostResult.TREASURY_SHORT;
-        }
-        Commission commission = new Commission(store.nextCommissionId(), poster.getUniqueId(), objective, reward, minRank,
-                clock.nowMillis(), clock.weekKey());
-        store.commissions().add(commission);
-        store.treasury().record(clock.nowMillis(), LedgerEntry.Kind.ESCROW, -reward, poster.getName());
-        store.save();
-        return PostResult.POSTED;
-    }
-
-    public boolean cancelCommission(Player poster, Commission commission) {
-        if (!isGuildmaster(poster) || !commission.open()) {
-            return false;
-        }
-        commission.setStatus(Commission.Status.CANCELLED);
-        store.treasury().record(clock.nowMillis(), LedgerEntry.Kind.REFUND, commission.reward(), poster.getName());
-        if (commission.id().equals(store.featuredId())) {
-            store.setFeaturedId(null);
-        }
-        store.save();
-        return true;
-    }
-
-    public boolean eligibleFor(Member member, Commission commission) {
-        return !config.get().isGuildmaster(member.id()) && member.rank().atLeast(commission.minRank());
-    }
-
-    public boolean commissionDone(Player player, Member member, Commission commission) {
-        Objective o = commission.objective();
-        if (o.kind() == Objective.Kind.GATHER) {
-            return Inventories.count(player.getInventory(), Inventories.materials(o.targets())) >= o.amount();
-        }
-        return commission.progress(member.id()) >= o.amount();
-    }
-
-    public Claim claimCommission(Player player, Commission commission) {
-        Member member = member(player);
-        if (member == null || !eligibleFor(member, commission)) {
-            return Claim.of(ClaimResult.NOT_ELIGIBLE);
-        }
-        if (!commission.open()) {
-            return Claim.of(ClaimResult.CLOSED);
-        }
-        Objective o = commission.objective();
-        if (o.kind() != Objective.Kind.GATHER && commission.progress(member.id()) < o.amount()) {
-            return Claim.of(ClaimResult.NOT_DONE);
-        }
-        if (!bank.available()) {
-            return Claim.of(ClaimResult.NO_BANK);
-        }
-        List<ItemStack> handedIn = new ArrayList<>();
-        if (!takeGathers(player, List.of(o), handedIn)) {
-            return Claim.of(ClaimResult.MISSING_ITEMS);
-        }
-        store.stores().addAll(handedIn);
-        bank.deposit(player, commission.reward());
-        commission.setClaimed(player.getUniqueId(), player.getName());
-        if (commission.id().equals(store.featuredId())) {
-            store.setFeaturedId(null);
-        }
-        member.setReputation(member.reputation() + COMMISSION_REPUTATION);
-        member.addStat("commissions-done", 1);
-        achievements.afterCommission(player, member);
-        member.addStat("coins-earned", commission.reward());
-        store.save();
-        Player gm = Bukkit.getPlayer(config.get().guildmaster());
-        if (gm != null) {
-            Chat.send(gm, player.getName() + " completed your commission \"" + o.text() + "\""
-                    + (handedIn.isEmpty() ? "." : ". The goods wait in your office stores."));
-        }
-        return new Claim(ClaimResult.CLAIMED, commission.reward(), 0, COMMISSION_REPUTATION, false, List.of());
-    }
-
-    public boolean feature(Player poster, Commission commission) {
-        if (!isGuildmaster(poster) || !commission.open()) {
-            return false;
-        }
-        store.setFeaturedId(commission.id());
-        store.save();
-        Bukkit.getServer().broadcast(Chat.line("The Guildmaster features a commission: " + commission.objective().text()
-                + " for " + commission.reward() + " coins (" + commission.minRank().name() + "-Rank and up). See /guild."));
-        return true;
-    }
-
-    public Commission featured() {
-        Commission featured = store.featuredId() == null ? null : store.commission(store.featuredId());
-        return featured != null && featured.open() ? featured : null;
-    }
-
-    /** Minutes until the Guildmaster may announce again; 0 when he can. */
-    public long announceWait() {
-        long next = store.lastAnnouncement() + config.get().announcementCooldownMinutes() * 60_000L;
-        return Math.max(0, (next - clock.nowMillis() + 59_999) / 60_000);
-    }
-
-    public boolean announce(Player poster, String text) {
-        if (!isGuildmaster(poster) || announceWait() > 0) {
-            return false;
-        }
-        store.setLastAnnouncement(clock.nowMillis());
-        store.save();
-        Bukkit.getServer().broadcast(Chat.tag().append(Component.text("Guildmaster " + poster.getName() + ": ", Chat.BRONZE))
-                .append(Component.text(text, Chat.PARCHMENT)));
-        for (Player online : Bukkit.getOnlinePlayers()) {
-            online.playSound(online.getLocation(), Sound.BLOCK_BELL_USE, 0.7f, 1.0f);
-        }
-        return true;
-    }
-
-    /** Collects the gathered goods from the Guildmaster's stores into his inventory. */
-    public int collectStores(Player player) {
-        if (!isGuildmaster(player) || store.stores().isEmpty()) {
-            return 0;
-        }
-        int count = store.stores().stream().mapToInt(ItemStack::getAmount).sum();
-        Inventories.give(player, store.stores());
-        store.stores().clear();
-        store.save();
-        return count;
-    }
-
-    /**
-     * Takes every gather objective's items, all or nothing. {@code handedIn} (if given) receives the
-     * items taken, for commissions whose goods go to the Guildmaster.
-     */
-    private boolean takeGathers(Player player, List<Objective> objectives, List<ItemStack> handedIn) {
-        List<Objective> gathers = objectives.stream().filter(o -> o.kind() == Objective.Kind.GATHER).toList();
-        for (Objective o : gathers) {
-            if (Inventories.count(player.getInventory(), Inventories.materials(o.targets())) < o.amount()) {
-                return false;
-            }
-        }
-        // Two objectives may want overlapping items; a second check after each take keeps it all-or-nothing.
-        ItemStack[] before = player.getInventory().getStorageContents();
-        ItemStack[] snapshot = new ItemStack[before.length];
-        for (int i = 0; i < before.length; i++) {
-            snapshot[i] = before[i] == null ? null : before[i].clone();
-        }
-        List<ItemStack> taken = new ArrayList<>();
-        for (Objective o : gathers) {
-            List<ItemStack> part = Inventories.take(player.getInventory(), Inventories.materials(o.targets()), o.amount());
-            if (part == null) {
-                player.getInventory().setStorageContents(snapshot);
-                return false;
-            }
-            taken.addAll(part);
-        }
-        if (handedIn != null) {
-            handedIn.addAll(taken);
-        }
-        return true;
     }
 
     /** Gather objectives' carried counts, for menus. */

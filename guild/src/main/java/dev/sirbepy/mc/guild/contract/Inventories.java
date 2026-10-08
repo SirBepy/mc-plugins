@@ -71,6 +71,38 @@ public final class Inventories {
         return materials;
     }
 
+    /**
+     * Takes every gather objective's items, all or nothing. {@code handedIn} (if given) receives the
+     * items taken, for commissions whose goods go to the Guildmaster.
+     */
+    public static boolean takeGathers(Player player, List<Objective> objectives, List<ItemStack> handedIn) {
+        List<Objective> gathers = objectives.stream().filter(o -> o.kind() == Objective.Kind.GATHER).toList();
+        for (Objective o : gathers) {
+            if (count(player.getInventory(), materials(o.targets())) < o.amount()) {
+                return false;
+            }
+        }
+        // Two objectives may want overlapping items; a second check after each take keeps it all-or-nothing.
+        ItemStack[] before = player.getInventory().getStorageContents();
+        ItemStack[] snapshot = new ItemStack[before.length];
+        for (int i = 0; i < before.length; i++) {
+            snapshot[i] = before[i] == null ? null : before[i].clone();
+        }
+        List<ItemStack> taken = new ArrayList<>();
+        for (Objective o : gathers) {
+            List<ItemStack> part = take(player.getInventory(), materials(o.targets()), o.amount());
+            if (part == null) {
+                player.getInventory().setStorageContents(snapshot);
+                return false;
+            }
+            taken.addAll(part);
+        }
+        if (handedIn != null) {
+            handedIn.addAll(taken);
+        }
+        return true;
+    }
+
     static boolean isPlain(ItemStack item, Set<Material> materials) {
         return item != null && materials.contains(item.getType())
                 && (!item.hasItemMeta() || !item.getItemMeta().hasDisplayName());

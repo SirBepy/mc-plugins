@@ -106,7 +106,7 @@ public final class Dialogue {
             return "Silas Coinwright, Treasurer. Every coin in this hall has a line in my ledger, and every line has a coin.";
         }
         if (guild.isGuildmaster(player)) {
-            return "Guildmaster. You may draw " + Text.coins(guild.withdrawable()) + " more today. Your office has the ledger; I have the headache.";
+            return "Guildmaster. You may draw " + Text.coins(guild.office().withdrawable()) + " more today. Your office has the ledger; I have the headache.";
         }
         if (member == null) {
             return "Fees go in, commissions go in, nothing goes out without a signature. Registration is at the desk.";

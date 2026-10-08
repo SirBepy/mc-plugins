@@ -127,8 +127,8 @@ public final class GuildAdminCommand {
     private int status(CommandContext<CommandSourceStack> c) {
         var treasury = guild.store().treasury();
         send(c, "Members " + guild.store().members().size() + ", treasury " + treasury.balance() + " (in "
-                + treasury.totalIn() + ", out " + treasury.totalOut() + "), guildmaster may draw " + guild.withdrawable()
-                + " today, commissions " + guild.store().commissions().size() + " (" + guild.commissionsThisWeek()
+                + treasury.totalIn() + ", out " + treasury.totalOut() + "), guildmaster may draw " + guild.office().withdrawable()
+                + " today, commissions " + guild.store().commissions().size() + " (" + guild.office().commissionsThisWeek()
                 + " this week), featured " + guild.store().featuredId() + ", bank " + (guild.bank().available() ? "up" : "DOWN"));
         return Command.SINGLE_SUCCESS;
     }
