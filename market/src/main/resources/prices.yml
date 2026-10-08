@@ -155,7 +155,7 @@ items:
   brain_coral_block: 0.2
   brain_coral_fan: 0.2
   bread: 0.3
-  breeze_rod: 1
+  breeze_rod: 4
   brewer_pottery_sherd: 2
   brewing_stand: 2.03
   brick: 0.0656
@@ -329,8 +329,8 @@ items:
   crafter: 7.1331
   crafting_table: 0.36
   creaking_heart: 3
-  creeper_banner_pattern: 5.04
-  creeper_head: 5
+  creeper_banner_pattern: 20.04
+  creeper_head: 20
   crimson_button: 0.27
   crimson_door: 0.54
   crimson_fence: 0.3867
@@ -463,7 +463,7 @@ items:
   dispenser: 0.615
   dragon_breath: 2
   dragon_egg: 500
-  dragon_head: 50
+  dragon_head: 200
   dried_ghast: 160.05
   dried_kelp: 0.01
   dried_kelp_block: 0.09
@@ -765,7 +765,7 @@ items:
   lingering_potion: 0.5
   lodestone: 1.4706
   loom: 0.38
-  mace: 31
+  mace: 34
   magenta_banner: 2.71
   magenta_bed: 1.515
   magenta_bundle: 1.145
@@ -983,7 +983,7 @@ items:
   peony: 0.1
   phantom_membrane: 4
   piglin_banner_pattern: 5
-  piglin_head: 5
+  piglin_head: 20
   pink_banner: 2.68
   pink_bed: 1.51
   pink_bundle: 1.14
@@ -1217,8 +1217,8 @@ items:
   shulker_box: 10.72
   shulker_shell: 5
   silence_armor_trim_smithing_template: 10
-  skeleton_skull: 2
-  skull_banner_pattern: 20.04
+  skeleton_skull: 20
+  skull_banner_pattern: 40.04
   skull_pottery_sherd: 2
   slime_ball: 0.5
   slime_block: 4.5
@@ -1500,9 +1500,9 @@ items:
   white_wool_stairs: 0.6
   wild_armor_trim_smithing_template: 10
   wildflowers: 0.05
-  wind_charge: 0.25
+  wind_charge: 1
   wither_rose: 0.05
-  wither_skeleton_skull: 20
+  wither_skeleton_skull: 40
   wolf_armor: 3
   wooden_axe: 0.35
   wooden_hoe: 0.26
@@ -1534,7 +1534,7 @@ items:
   yellow_wool: 0.45
   yellow_wool_slab: 0.225
   yellow_wool_stairs: 0.65
-  zombie_head: 5
+  zombie_head: 20
 # Per enchantment level, on top of an enchanted item or book.
 enchantments:
   aqua_affinity: 2

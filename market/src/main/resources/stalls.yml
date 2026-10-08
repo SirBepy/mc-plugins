@@ -84,6 +84,10 @@ stalls:
       - {item: gunpowder, amount: 64, price: 6.4}
       - {item: spider_eye, amount: 64, price: 16}
       - {item: slime_ball, amount: 64, price: 16}
+      - {item: zombie_head, amount: 1, price: 10}
+      - {item: skeleton_skull, amount: 1, price: 10}
+      - {item: creeper_head, amount: 1, price: 10}
+      - {item: piglin_head, amount: 1, price: 10}
   rare_goods:
     name: Rare goods
     color: purple
@@ -96,3 +100,6 @@ stalls:
       - {item: membrane, amount: 16, price: 32}
       - {item: ghast_tear, amount: 16, price: 160}
       - {item: ender_pearl, amount: 16, price: 4}
+      - {item: breeze_rod, amount: 16, price: 32}
+      - {item: withersskull, amount: 1, price: 20}
+      - {item: dragon_head, amount: 1, price: 100}

@@ -24,8 +24,10 @@ import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
@@ -34,6 +36,7 @@ import java.util.logging.Logger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MarketTest {
@@ -213,6 +216,48 @@ class MarketTest {
         MarketConfig real = new MarketConfig(yaml);
         assertEquals("2026-10-05", real.period(0, Instant.parse("2026-10-05T21:30:00Z")));
         assertEquals("2026-10-06", real.period(0, Instant.parse("2026-10-05T22:30:00Z")), "past midnight in Zagreb (UTC+2)");
+    }
+
+    @Test
+    void layoutRefusesAPlayerHeadUnderAnyName() {
+        for (String name : List.of("player_head", "PLAYER_HEAD", "minecraft:player_head", "playerhead", "player_wall_head")) {
+            YamlConfiguration yaml = new YamlConfiguration();
+            yaml.set("stalls.heads.buys", List.of(Map.of("item", name, "amount", 1, "price", 10)));
+            IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> MarketLayout.from(yaml), name);
+            assertTrue(e.getMessage().contains(name), e.getMessage());
+        }
+        assertFalse(MarketLayout.isPlayerHead("skeleton_skull"));
+        assertFalse(MarketLayout.isPlayerHead("withersskull"));
+    }
+
+    @Test
+    void shippedPoolsBuyMobHeadsAndBreezeRodsButNoPlayerHead() {
+        Map<String, Map<String, Offer>> pools = new HashMap<>();
+        for (Stall stall : layout.stalls()) {
+            Map<String, Offer> pool = new HashMap<>();
+            stall.buys().forEach(o -> pool.put(o.item(), o));
+            pools.put(stall.id(), pool);
+            stall.buys().forEach(o -> assertFalse(MarketLayout.isPlayerHead(o.item()), stall.id() + " " + o.item()));
+        }
+        // A charged creeper's heads sell singly at a diamond's price, the wither skull at twice that,
+        // the dragon head at ten times.
+        BigDecimal diamond = each(pools.get("smith").get("diamond"));
+        for (String head : List.of("zombie_head", "skeleton_skull", "creeper_head", "piglin_head")) {
+            Offer offer = pools.get("mob_drops").get(head);
+            assertEquals(1, offer.amount(), head);
+            assertEquals(0, offer.price().compareTo(diamond), head);
+        }
+        Offer skull = pools.get("rare_goods").get("withersskull");
+        assertEquals(0, skull.price().compareTo(diamond.multiply(BigDecimal.TWO)));
+        Offer dragon = pools.get("rare_goods").get("dragon_head");
+        assertEquals(0, dragon.price().compareTo(diamond.multiply(BigDecimal.TEN)));
+        // Breeze rods pay twice a blaze rod: trial spawners can't be AFK-farmed.
+        assertEquals(0, each(pools.get("rare_goods").get("breeze_rod"))
+                .compareTo(each(pools.get("rare_goods").get("blaze_rod")).multiply(BigDecimal.TWO)));
+    }
+
+    private static BigDecimal each(Offer offer) {
+        return offer.price().divide(BigDecimal.valueOf(offer.amount()));
     }
 
     @Test

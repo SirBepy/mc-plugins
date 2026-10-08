@@ -59,14 +59,23 @@ export function buildStalls(model, { GUIDES, lecternState }) {
       id: 'mob_drops', side: 'south', a0: -8, name: 'Mob drops', wool: 'green',
       buys: [buy(64, 'rotten_flesh', 0.01), buy(64, 'bone', 0.05), buy(64, 'string', 0.05), buy(64, 'feather', 0.05),
         buy(64, 'leather', 0.5), buy(64, 'rabbit_hide', 0.5), buy(64, 'gunpowder', 0.1), buy(64, 'spider_eye', 0.25),
-        buy(64, 'slime_ball', 0.25)],
+        buy(64, 'slime_ball', 0.25),
+        // Mob heads only drop from a charged creeper's blast, one per kill, so they sell singly at a
+        // diamond's price (heads added at Joe's request, 2026-10-08). Never player_head: the cartel's trophies and every
+        // custom head (Dragon Balls included) are player heads, and MarketLayout refuses one.
+        ...['zombie_head', 'skeleton_skull', 'creeper_head', 'piglin_head'].map((head) => buy(1, head, 10))],
       props: [['bone_block[axis=y]', -1, 1], ['bone_block[axis=AXIS]', -1, 2], ['skeleton_skull[rotation=0]', -1, 1, 1],
         ['barrel[facing=up]', 5, 1]],
     },
     {
       id: 'rare_goods', side: 'south', a0: 4, name: 'Rare goods', wool: 'purple',
       // 'membrane' is Essentials' alias for phantom_membrane, whose 16 characters overflow a sign line.
-      buys: [buy(16, 'blaze_rod', 1), buy(16, 'membrane', 2), buy(16, 'ghast_tear', 10), buy(16, 'ender_pearl', 0.25)],
+      // 'withersskull' likewise stands for wither_skeleton_skull (21 characters).
+      // Breeze rods pay twice a blaze rod: trial spawners' cooldown rules out the AFK farm a blaze
+      // spawner allows. A wither skeleton skull (a 2.5% drop) pays twice a charged-creeper head, and
+      // the dragon head (one per End ship) ten times.
+      buys: [buy(16, 'blaze_rod', 1), buy(16, 'membrane', 2), buy(16, 'ghast_tear', 10), buy(16, 'ender_pearl', 0.25),
+        buy(16, 'breeze_rod', 2), buy(1, 'withersskull', 20), buy(1, 'dragon_head', 100)],
       props: [['crying_obsidian', -1, 1], ['amethyst_block', -1, 2], ['purple_candle[candles=3,lit=true]', -1, 1, 1],
         ['obsidian', 5, 1], ['end_rod[facing=up]', 5, 1, 1]],
     },

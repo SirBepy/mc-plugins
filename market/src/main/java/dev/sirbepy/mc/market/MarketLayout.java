@@ -47,14 +47,28 @@ public record MarketLayout(Material signBlock, Stall.Slot priceLectern, List<Sta
                 }
                 List<Offer> buys = new ArrayList<>();
                 for (Map<?, ?> offer : stall.getMapList("buys")) {
+                    String item = String.valueOf(offer.get("item"));
+                    if (isPlayerHead(item)) {
+                        throw new IllegalArgumentException("stalls.yml stall " + id + " may not buy " + item
+                                + ": cartel trophies, Dragon Balls and every custom head are player heads");
+                    }
                     // Via the decimal string, so 1.28 stays 1.28 rather than its binary approximation.
-                    buys.add(new Offer(String.valueOf(offer.get("item")), number(offer, "amount").intValue(),
+                    buys.add(new Offer(item, number(offer, "amount").intValue(),
                             new BigDecimal(String.valueOf(number(offer, "price")))));
                 }
                 stalls.add(new Stall(id, stall.getString("name", id), color, List.copyOf(slots), List.copyOf(buys)));
             }
         }
         return new MarketLayout(signBlock, priceLectern, List.copyOf(stalls));
+    }
+
+    /**
+     * Whether an Essentials item name means a player head: the vanilla ids, with or without the
+     * namespace, and Essentials 2.22's only alias for one, {@code playerhead}.
+     */
+    static boolean isPlayerHead(String item) {
+        String key = item.toLowerCase(Locale.ROOT).replace("minecraft:", "").replace("_", "");
+        return key.equals("playerhead") || key.equals("playerwallhead");
     }
 
     private static Number number(Map<?, ?> map, String key) {

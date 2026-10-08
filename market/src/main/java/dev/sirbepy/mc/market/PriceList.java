@@ -15,6 +15,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -26,6 +27,9 @@ final class PriceList {
 
     // A book page holds 14 lines of about 19 characters; a stall heading takes 1 line, an item 2.
     private static final int LINES_PER_PAGE = 14;
+    // Sign names Essentials needs because the vanilla id overflows a sign line, and that read badly
+    // as words. Membrane reads fine as it is.
+    private static final Map<String, String> SIGN_ALIASES = Map.of("withersskull", "wither_skeleton_skull");
 
     private PriceList() {
     }
@@ -57,7 +61,7 @@ final class PriceList {
                     page = Component.text().append(heading);
                     lines = 1;
                 }
-                page.append(Component.newline(), Component.text(ItemNames.sentence(offer.item())), Component.newline(),
+                page.append(Component.newline(), Component.text(name(offer.item())), Component.newline(),
                         Component.text("  " + offer.amount() + " for " + money(offer.price()), NamedTextColor.DARK_GRAY));
                 lines += 2;
             }
@@ -78,12 +82,17 @@ final class PriceList {
                 continue;
             }
             String text = offers.stream()
-                    .map(o -> o.amount() + " " + ItemNames.sentence(o.item()).toLowerCase(Locale.ROOT) + " " + money(o.price()))
+                    .map(o -> o.amount() + " " + name(o.item()).toLowerCase(Locale.ROOT) + " " + money(o.price()))
                     .collect(Collectors.joining(", "));
             lines.add(config.messages().render("today-stall",
                     Placeholder.unparsed("stall", stall.name()), Placeholder.unparsed("offers", text)));
         }
         return lines;
+    }
+
+    /** The item's name as words, e.g. {@code Dark oak log}, spelling out a sign alias. */
+    static String name(String item) {
+        return ItemNames.sentence(SIGN_ALIASES.getOrDefault(item, item));
     }
 
     static String money(BigDecimal price) {

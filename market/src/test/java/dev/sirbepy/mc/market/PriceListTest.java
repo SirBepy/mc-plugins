@@ -78,11 +78,12 @@ class PriceListTest {
         for (Stall stall : layout.stalls()) {
             assertTrue(all.contains(stall.name()), stall.name());
             for (Offer offer : stall.buys()) {
-                String entry = ItemNames.sentence(offer.item()) + "\n  " + offer.amount() + " for " + PriceList.money(offer.price());
+                String entry = PriceList.name(offer.item()) + "\n  " + offer.amount() + " for " + PriceList.money(offer.price());
                 assertTrue(all.contains(entry), entry);
             }
         }
         assertTrue(all.contains("Dark oak log\n  64 for $14.40"), "a tall log at half the $28.80 a normal log pays");
+        assertTrue(all.contains("Wither skeleton skull\n  1 for $20.00"), "the withersskull sign alias spelled out");
         for (Component page : pages.subList(1, pages.size())) {
             assertTrue(plain(page).split("\n").length <= 14, plain(page));
         }
@@ -93,14 +94,16 @@ class PriceListTest {
         Map<String, List<Offer>> picks = Map.of(
                 "lumberjack", List.of(new Offer("dark_oak_log", 64, new BigDecimal("13.9")),
                         new Offer("warped_stem", 64, new BigDecimal("36.01"))),
-                "smith", List.of(new Offer("diamond", 16, new BigDecimal("150"))));
+                "smith", List.of(new Offer("diamond", 16, new BigDecimal("150"))),
+                "rare_goods", List.of(new Offer("withersskull", 1, new BigDecimal("21.5"))));
         Function<String, List<Offer>> buying = id -> picks.getOrDefault(id, List.of());
 
         List<String> lines = PriceList.today(layout, buying, config).stream().map(PriceListTest::plain).toList();
 
         assertEquals(List.of("Today the spawn market buys:",
                 "Lumberjack: 64 dark oak log $13.90, 64 warped stem $36.01",
-                "Smith: 16 diamond $150.00"), lines);
+                "Smith: 16 diamond $150.00",
+                "Rare goods: 1 wither skeleton skull $21.50"), lines);
     }
 
     @Test

@@ -77,7 +77,7 @@ test('market items are twice their stall base and hand-gathered items stay deare
 
 test('every spawn-market item is suggested at twice its current stall price (rerun generate.mjs after a stall change)', () => {
   const stalls = readFileSync(join(here, '..', '..', 'market', 'src', 'main', 'resources', 'stalls.yml'), 'utf8');
-  const aliases = { membrane: 'phantom_membrane' };
+  const aliases = { membrane: 'phantom_membrane', withersskull: 'wither_skeleton_skull' };
   for (const [, item, amount, price] of stalls.matchAll(/\{item: ([a-z_]+), amount: (\d+), price: ([\d.]+)\}/g)) {
     const id = aliases[item] ?? item;
     assert.ok(Math.abs(items[id] - (2 * Number(price)) / Number(amount)) < 1e-4, `${id}: ${items[id]} vs stall ${price}/${amount}`);
