@@ -18,10 +18,10 @@ import java.util.logging.Logger;
 
 /**
  * Persists wish-bans and timed effect curses to {@code plugins/DragonBalls/curses.yml}, atomically
- * (same {@link YamlFiles} pattern {@code BallRegistry} uses for {@code balls.yml}). Expired effect
- * entries are dropped the moment anything reads or mutates a player's list - this class never scans
- * on a timer; applying the remaining ones to an online player is {@code CurseListener}'s job, driven
- * by join/respawn/command events only.
+ * (same {@link YamlFiles} pattern {@code BallRegistry} uses for {@code balls.yml}). An expired effect
+ * entry is kept until {@link #takeExpired} hands it to {@code CurseListener} with the player online:
+ * the vanilla effect only ticks down while its player is online, so it outlives the real-time expiry,
+ * and the stored entry is the only record of which effect to strip once they come back.
  */
 public final class CurseStore {
 
@@ -51,38 +51,53 @@ public final class CurseStore {
         save();
     }
 
-    /** Removes every curse (effect curses + wish ban) for the player; {@code /shenron curse lift}. */
-    public void liftAll(UUID player) {
-        effects.remove(player);
+    /** Removes every curse (effect curses + wish ban) for the player; {@code /shenron curse lift}.
+     * Returns the removed effect curses, expired ones included, so their effects can be stripped. */
+    public List<EffectCurse> liftAll(UUID player) {
+        List<EffectCurse> removed = effects.remove(player);
         wishBanned.remove(player);
         save();
+        return removed == null ? List.of() : removed;
     }
 
-    /** Active (non-expired) effect curses for the player. Expired ones found along the way are
-     * dropped from the stored list as a side effect, so the file never accumulates dead entries. */
+    /** Active (non-expired) effect curses for the player. Read-only: expired entries stay until
+     * {@link #takeExpired}. */
     public List<EffectCurse> activeEffects(UUID player, long nowMillis) {
         List<EffectCurse> stored = effects.get(player);
-        if (stored == null || stored.isEmpty()) {
+        if (stored == null) {
             return List.of();
         }
         List<EffectCurse> live = new ArrayList<>();
-        boolean droppedAny = false;
         for (EffectCurse curse : stored) {
-            if (CurseMath.isExpired(curse.expiryMillis(), nowMillis)) {
-                droppedAny = true;
-            } else {
+            if (!CurseMath.isExpired(curse.expiryMillis(), nowMillis)) {
                 live.add(curse);
             }
         }
-        if (droppedAny) {
-            if (live.isEmpty()) {
-                effects.remove(player);
-            } else {
-                effects.put(player, live);
-            }
-            save();
-        }
         return live;
+    }
+
+    /** Removes and returns the player's expired effect curses; call it only with the player online,
+     * since the caller strips their lingering effects. */
+    public List<EffectCurse> takeExpired(UUID player, long nowMillis) {
+        List<EffectCurse> stored = effects.get(player);
+        if (stored == null) {
+            return List.of();
+        }
+        List<EffectCurse> expired = new ArrayList<>();
+        List<EffectCurse> live = new ArrayList<>();
+        for (EffectCurse curse : stored) {
+            (CurseMath.isExpired(curse.expiryMillis(), nowMillis) ? expired : live).add(curse);
+        }
+        if (expired.isEmpty()) {
+            return List.of();
+        }
+        if (live.isEmpty()) {
+            effects.remove(player);
+        } else {
+            effects.put(player, live);
+        }
+        save();
+        return expired;
     }
 
     private void load() {

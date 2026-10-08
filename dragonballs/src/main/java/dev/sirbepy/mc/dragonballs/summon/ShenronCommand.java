@@ -13,7 +13,6 @@ import dev.sirbepy.mc.dragonballs.registry.BallView;
 import dev.sirbepy.mc.dragonballs.summon.curse.CurseListener;
 import dev.sirbepy.mc.dragonballs.summon.curse.CurseMath;
 import dev.sirbepy.mc.dragonballs.summon.curse.CurseStore;
-import dev.sirbepy.mc.dragonballs.summon.curse.EffectCurse;
 import dev.sirbepy.mc.dragonballs.summon.wish.WishPublisher;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -27,7 +26,6 @@ import org.bukkit.command.RemoteConsoleCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffectType;
 
-import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -189,18 +187,7 @@ public final class ShenronCommand {
             sender.sendMessage(Component.text("No such player: " + playerName));
             return Command.SINGLE_SUCCESS;
         }
-        UUID targetId = target.get();
-        List<EffectCurse> previous = curses.activeEffects(targetId, System.currentTimeMillis());
-        curses.liftAll(targetId);
-        Player online = Bukkit.getPlayer(targetId);
-        if (online != null) {
-            for (EffectCurse curse : previous) {
-                PotionEffectType type = CurseListener.resolveType(curse.effectKey());
-                if (type != null) {
-                    online.removePotionEffect(type);
-                }
-            }
-        }
+        curseListener.lift(target.get(), Bukkit.getPlayer(target.get()));
         sender.sendMessage(Component.text("Lifted all curses from " + playerName + "."));
         return Command.SINGLE_SUCCESS;
     }

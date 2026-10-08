@@ -238,9 +238,9 @@ Answer only through console commands (`node server/deploy/kinetic.mjs cmd "<comm
 | `shenron public <session> <title> \| <line>` | Logs a player-safe title (max 60 chars) and line (max 200) for a granted session; the public website lists it under Wishes granted (latest one per session wins) |
 | `shenron dismiss [text]` | Optional last words, then the dragon leaves and the balls scatter |
 | `shenron status` | `session=<id> set=<set> summoner=<name> dragon=<dragon> wishesLeft=<n> idleSeconds=<n>` |
-| `shenron curse effect <player> <effect> <amplifier> <hours>` | An effect that comes back after death and rejoin until it expires |
+| `shenron curse effect <player> <effect> <amplifier> <hours>` | An effect that comes back after death and rejoin until it expires; `hours` are real hours, online or not, and the effect ends within a minute of expiry (or on the next join) |
 | `shenron curse nowish <player>` | The player can never summon again |
-| `shenron curse lift <player>` | Removes every curse and the wish ban |
+| `shenron curse lift <player>` | Removes every curse and the wish ban, including the lingering effect of a curse that already expired |
 
 Admin and testing commands (ops, console or RCON): `dragonballs status` (where each ball of each set
 is), `dragonballs give <player> <star> [overworld|nether|end]`, `dragonballs scatter [nether|end]

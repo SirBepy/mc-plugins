@@ -59,9 +59,13 @@ public final class SummonModule {
         // Every 5s: cheap bookkeeping against already-stored timestamps (same spirit as
         // BallMaintenanceTask), never a per-tick scan; a no-op whenever no session is active.
         BukkitTask ticker = plugin.getServer().getScheduler().runTaskTimer(plugin, sessions::tick, 100L, 100L);
+        // Every minute: ends curse effects whose real-time expiry passed while their player was online.
+        BukkitTask curseSweep = plugin.getServer().getScheduler().runTaskTimer(plugin,
+                () -> curseListener.sweep(plugin.getServer().getOnlinePlayers()), 1200L, 1200L);
 
         return () -> {
             ticker.cancel();
+            curseSweep.cancel();
             sessions.shutdown();
         };
     }
