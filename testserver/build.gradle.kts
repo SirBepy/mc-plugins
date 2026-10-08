@@ -46,6 +46,8 @@ fun registerPrepare(name: String, dir: java.io.File, withDatapacks: Boolean, mot
             // Same for Essentials: its default config has every sign type switched off, so the spawn
             // market's [Sell] signs only work with the real server's enabledSigns.
             serverEssentialsConfig.copyTo(dir.resolve("plugins/Essentials/config.yml"), overwrite = true)
+            // And AuraSkills' mana abilities, so treecapitator.mjs measures live's Treecapitator cap.
+            serverAuraSkillsManaConfig.copyTo(dir.resolve("plugins/AuraSkills/mana_abilities.yml"), overwrite = true)
             // Offline mode lets the e2e bots join and RCON lets them run admin commands; this is a
             // local-only test server, so the RCON password is random per checkout and never committed.
             val props = dir.resolve("server.properties")
@@ -86,6 +88,7 @@ fun RunServer.configureCommon() {
 
 val serverTownyConfig = rootProject.layout.projectDirectory.file("server/config/plugins/Towny/settings/config.yml").asFile
 val serverEssentialsConfig = rootProject.layout.projectDirectory.file("server/config/plugins/Essentials/config.yml").asFile
+val serverAuraSkillsManaConfig = rootProject.layout.projectDirectory.file("server/config/plugins/AuraSkills/mana_abilities.yml").asFile
 val runDir = layout.projectDirectory.dir("run").asFile
 val e2eDir = layout.projectDirectory.dir("run-e2e").asFile
 val e2eDatapacksDir = layout.projectDirectory.dir("e2e-datapacks").asFile
