@@ -80,7 +80,7 @@ export const GUIDES = {
       'Good wishes: real money, gear with max enchants, named pets, XP, a build, server effects, time or weather, a chat title, a villager trade.',
       'Never, curse or not: hurting, robbing or finding another player, fly/op/creative, extra wishes, bans - or anything about the balls themselves.',
       'Too big? The dragon may offer a curse instead: a lasting effect, your named items, or never wishing again. You can say no.',
-      "After the wish the set flies off, landing further away each time, always in its own world.\n\nFor 3 Minecraft days they're stone: findable, but the radar's blind and they won't summon.",
+      "After the wish the set flies off 1000-2000 blocks (Nether: 250-500), always in its own world.\n\nFor 3 Minecraft days they're stone: findable, but the radar's blind and they won't summon.",
     ],
   },
 };

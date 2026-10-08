@@ -44,7 +44,7 @@ scatter:
   pregen-limit: 4900
   nether-pregen-limit: 1200
   # The Nether set's tier radii are the overworld ones at 1/8 scale times this (Joe, 2026-10-08:
-  # 2.0, so tier 0 is 250-750 Nether blocks). Keep max-radius / 8 * this under nether-pregen-limit
+  # 2.0, so the 1000-2000 ring is 250-500 Nether blocks). Keep max-radius / 8 * this under nether-pregen-limit
   # or the scatter centre gets pinned to 0,0. Ball spacing stays min-spacing / 8.
   nether-radius-multiplier: 2.0
   # Balls stay at least this far apart from each other, so a lucky player can't grab two in one trip.
@@ -246,19 +246,15 @@ scatter:
       - nova_structures:end_castle
       - nova_structures:end_lighthouse
 
-# The hunt gets harder after every granted wish. Indexed by wishCount (0 = before any wish has ever
-# been granted), clamped to the last entry once wishCount runs past the list. min/max-radius are the
-# overworld scatter annulus around the summon point; the Nether set reuses the same radius divided
-# by 8 (its coordinates are 1/8 scale) times scatter.nether-radius-multiplier around its own summon
-# point; the End set always uses
-# end-min/max-distance from 0,0 regardless of tier. Each of the 3 sets always scatters all 7 of its
-# own balls in its own home dimension - there is no cross-dimension split anymore, so an old
-# config.yml's "nether"/"end" per-tier keys (the old split scheme) are simply ignored if present.
+# Where a set's balls land after a scatter. One flat ring for every scatter (Joe, 2026-10-08: the
+# rings that grew after each wish made the Overworld hunt too long). min/max-radius are the overworld
+# scatter annulus around the summon point; the Nether set reuses the same radius divided by 8 (its
+# coordinates are 1/8 scale) times scatter.nether-radius-multiplier around its own summon point; the
+# End set always uses end-min/max-distance from 0,0. The list form stays so growth can come back:
+# entry N is used once a set has N granted wishes, the last entry after that. An old config.yml's
+# "nether"/"end" per-entry keys (the old dimension-split scheme) are ignored.
 difficulty:
-  - { min-radius: 1000, max-radius: 3000 }
-  - { min-radius: 1500, max-radius: 3500 }
-  - { min-radius: 1500, max-radius: 4000 }
-  - { min-radius: 2000, max-radius: 4500 }
+  - { min-radius: 1000, max-radius: 2000 }
 
 # Fraction of walking speed lost per carried ball (any slot, including offhand/cursor), stacked
 # linearly via one MULTIPLY_SCALAR_1 attribute modifier: 7 balls = 7 * 0.05 = -35%.

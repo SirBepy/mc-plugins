@@ -4,8 +4,12 @@ import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -78,7 +82,23 @@ class DragonBallsConfigTest {
 
         assertEquals(1, config.difficulty().size());
         assertEquals(1000, config.difficulty().get(0).minRadius());
-        assertEquals(3000, config.difficulty().get(0).maxRadius());
+        assertEquals(2000, config.difficulty().get(0).maxRadius());
+    }
+
+    @Test
+    void theShippedRingIsFlatAt1000To2000WhateverTheWishCount() throws Exception {
+        YamlConfiguration bundled;
+        try (Reader reader = new InputStreamReader(Objects.requireNonNull(
+                DragonBallsConfigTest.class.getResourceAsStream("/config.yml")), StandardCharsets.UTF_8)) {
+            bundled = YamlConfiguration.loadConfiguration(reader);
+        }
+        List<DifficultyTier> tiers = new DragonBallsConfig(bundled).difficulty();
+
+        for (long wishes : new long[]{0, 1, 5, 100}) {
+            DifficultyTier tier = DifficultySchedule.tierFor(tiers, wishes);
+            assertEquals(1000, tier.minRadius(), "after " + wishes + " wishes");
+            assertEquals(2000, tier.maxRadius(), "after " + wishes + " wishes");
+        }
     }
 
     @Test

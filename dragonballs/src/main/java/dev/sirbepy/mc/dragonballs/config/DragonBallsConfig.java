@@ -72,7 +72,7 @@ public final class DragonBallsConfig {
             int max = Math.max(min, asInt(map.get("max-radius"), min));
             tiers.add(new DifficultyTier(min, max));
         }
-        return tiers.isEmpty() ? List.of(new DifficultyTier(1000, 3000)) : List.copyOf(tiers);
+        return tiers.isEmpty() ? List.of(new DifficultyTier(1000, 2000)) : List.copyOf(tiers);
     }
 
     private static int asInt(Object value, int fallback) {
