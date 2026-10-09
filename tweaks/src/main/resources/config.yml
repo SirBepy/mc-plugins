@@ -57,3 +57,10 @@ sea-gifts:
 nether-wishes:
   enabled: true
   owner: 7dca8f8e-2981-4925-a7d7-128395ca11b9
+
+# Ops who never act as Towny admins (Joe, 2026-10-09, for SirBepy): on every join each gets Towny's
+# "adminbypass" mode (TownyAdminOffListener), so town build/destroy/switch rules apply to them like to
+# anyone; Towny forgets modes on quit. `/resident toggle adminbypass` switches it back off for the session.
+# To drop everyone, put `towny-admin-off: []` in the server's file: a missing key reads this list.
+towny-admin-off:
+  - a6f30e22-f8d5-4ae8-a69c-2f81662b1950

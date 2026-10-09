@@ -7,6 +7,8 @@ import dev.sirbepy.mc.tweaks.listener.PhantomBuffListener;
 import dev.sirbepy.mc.tweaks.listener.PollosGunListener;
 import dev.sirbepy.mc.tweaks.listener.ScytheMasterListener;
 import dev.sirbepy.mc.tweaks.listener.SpawnGuardListener;
+import dev.sirbepy.mc.tweaks.listener.TownyAdminBypass;
+import dev.sirbepy.mc.tweaks.listener.TownyAdminOffListener;
 import dev.sirbepy.mc.tweaks.listener.VoidTridentListener;
 import dev.sirbepy.mc.tweaks.netherwishes.AutoReplant;
 import dev.sirbepy.mc.tweaks.netherwishes.HeartyFood;
@@ -31,6 +33,7 @@ public final class TweaksPlugin extends JavaPlugin {
 
     private static final String SEA_GIFTS_OWNERS = "sea-gifts.owners";
     private static final String SEA_GIFTS_OWNER = "sea-gifts.owner";
+    static final String TOWNY_ADMIN_OFF = "towny-admin-off";
 
     @Override
     public void onEnable() {
@@ -64,6 +67,11 @@ public final class TweaksPlugin extends JavaPlugin {
         // ScytheMasterListener references AuraSkills API classes, so it must not load without it.
         if (getServer().getPluginManager().isPluginEnabled("AuraSkills")) {
             getServer().getPluginManager().registerEvents(new ScytheMasterListener(), this);
+        }
+        // TownyAdminBypass references Towny classes, so it must not load without it.
+        if (getServer().getPluginManager().isPluginEnabled("Towny")) {
+            getServer().getPluginManager().registerEvents(new TownyAdminOffListener(this,
+                    () -> uuidsAt(getConfig(), TOWNY_ADMIN_OFF), new TownyAdminBypass(getLogger())), this);
         }
         if (getConfig().getBoolean("sea-gifts.enabled", true)) {
             SeaGifts seaGifts = new SeaGifts(getServer(),
@@ -104,14 +112,20 @@ public final class TweaksPlugin extends JavaPlugin {
      * single owner at {@code legacyPath} from before the wish had more than one owner.
      */
     static Set<UUID> ownersAt(Configuration config, String listPath, String legacyPath) {
-        Set<UUID> owners = new LinkedHashSet<>();
-        for (String value : config.getStringList(listPath)) {
-            UUID owner = parse(value);
-            if (owner != null) owners.add(owner);
-        }
+        Set<UUID> owners = uuidsAt(config, listPath);
         UUID legacy = ownerAt(config, legacyPath);
         if (legacy != null) owners.add(legacy);
         return owners;
+    }
+
+    /** Every UUID in the list at {@code path}, the jar's list when the server's file has none; bad entries skipped. */
+    static Set<UUID> uuidsAt(Configuration config, String path) {
+        Set<UUID> uuids = new LinkedHashSet<>();
+        for (String value : config.getStringList(path)) {
+            UUID uuid = parse(value);
+            if (uuid != null) uuids.add(uuid);
+        }
+        return uuids;
     }
 
     private static UUID parse(String value) {

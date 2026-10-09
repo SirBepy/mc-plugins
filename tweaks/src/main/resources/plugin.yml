@@ -2,7 +2,7 @@ name: Tweaks
 main: dev.sirbepy.mc.tweaks.TweaksPlugin
 version: ${version}
 api-version: "26.2"
-softdepend: [AuraSkills]
+softdepend: [AuraSkills, Towny]
 
 permissions:
   tweaks.seagifts.admin:

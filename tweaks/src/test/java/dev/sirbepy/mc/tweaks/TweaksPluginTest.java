@@ -51,6 +51,15 @@ class TweaksPluginTest {
         assertEquals(Set.of(BEPY), seaGiftsOwners(config));
     }
 
+    @Test
+    void theJarKeepsSirBepyOffTownyAdminUntilTheServerFileSaysOtherwise() throws Exception {
+        // Live's config.yml has no towny-admin-off key, so the jar's list applies.
+        assertEquals(Set.of(BEPY), TweaksPlugin.uuidsAt(serverConfig("motd:\n  enabled: true\n"),
+                TweaksPlugin.TOWNY_ADMIN_OFF));
+        assertEquals(Set.of(), TweaksPlugin.uuidsAt(serverConfig("towny-admin-off: []\n"),
+                TweaksPlugin.TOWNY_ADMIN_OFF));
+    }
+
     private static Set<UUID> seaGiftsOwners(YamlConfiguration config) {
         return TweaksPlugin.ownersAt(config, "sea-gifts.owners", "sea-gifts.owner");
     }
