@@ -252,11 +252,24 @@ try {
       .test(await rcon.command('guildadmin staff list')), 'Lyra present', 20_000);
   });
 
-  await step('right-clicking the receptionist gets a word from Lyra and the Guild board', async () => {
+  // Like Haru, each staff member is a skinned Mannequin for Java clients and a villager for Bedrock (or a
+  // declined pack). These bots are plain Java and the e2e server offers no pack, so they get the Mannequin.
+  const AT_LYRA = `x=${LYRA.x},y=${LYRA.y},z=${LYRA.z},distance=..1`;
+  const lyraFor = (bot, name) => Object.values(bot.entities).find((e) => e.name === name && e.position.distanceTo(LYRA) < 1);
+  await step('a Java player sees Lyra as a Mannequin in her pack skin, never the villager', async () => {
     await teleport(rcon, hero, BX, PLATFORM_Y + 1, BZ + 2);
-    let lyra;
-    await waitFor(() => (lyra = Object.values(hero.entities)
-      .find((e) => e.name === 'villager' && e.position.distanceTo(LYRA) < 1)), 'hero sees Lyra');
+    await waitFor(() => lyraFor(hero, 'mannequin'), 'hero sees the Mannequin');
+    const profile = await rcon.command(`minecraft:data get entity @e[type=mannequin,${AT_LYRA},limit=1] profile`);
+    assert(/claudesmp:entity\/guild\/receptionist/.test(profile), `skin patch on the Mannequin (got ${profile})`);
+    assert(/slim/.test(profile), `Lyra has slim arms (got ${profile})`);
+    assert(/Test passed/.test(await rcon.command(`minecraft:execute if entity @e[type=villager,${AT_LYRA}]`)),
+      'the villager body still stands there for Bedrock');
+    await sleep(1_000);
+    assert(!lyraFor(hero, 'villager'), 'the villager is hidden from a Java player');
+  });
+
+  await step('right-clicking the receptionist gets a word from Lyra and the Guild board', async () => {
+    const lyra = lyraFor(hero, 'mannequin');
     const since = hero.lines.length;
     const opened = nextWindow(hero);
     await hero.activateEntity(lyra);
@@ -264,6 +277,15 @@ try {
     assert(/Adventurer's Guild/.test(titleOf(menu)), `board title (got ${titleOf(menu)})`);
     await waitForLine(hero, /^Lyra: /, 5_000, since);
     hero.closeWindow(menu);
+  });
+
+  await step('a killed Mannequin is back within the next guard tick, still dressed', async () => {
+    await rcon.command(`minecraft:kill @e[type=mannequin,${AT_LYRA}]`);
+    await waitFor(async () => /Test passed/.test(await rcon.command(`minecraft:execute if entity @e[type=mannequin,${AT_LYRA}]`)),
+      'Lyra back on her spot', 10_000);
+    const profile = await rcon.command(`minecraft:data get entity @e[type=mannequin,${AT_LYRA},limit=1] profile`);
+    assert(/claudesmp:entity\/guild\/receptionist/.test(profile), `dressed again (got ${profile})`);
+    await waitFor(() => lyraFor(hero, 'mannequin'), 'hero sees the new Mannequin');
   });
 
   await step('inside a guarded hall box a member cannot break blocks', async () => {

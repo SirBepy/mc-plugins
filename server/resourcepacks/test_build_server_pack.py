@@ -331,6 +331,17 @@ class BuiltPackTest(unittest.TestCase):
         cape = Image.open(io.BytesIO(self.entries[asset("claudesmp:entity/haru_cape", "textures", "png")]))
         self.assertEqual(cape.size, (64, 32))
 
+    def test_guild_staff_skins_are_in_the_pack(self):
+        # The guild plugin's Staff enum points each Mannequin at claudesmp:entity/guild/<role>.
+        for role in ("receptionist", "clerk", "treasurer", "examiner", "archivist"):
+            skin = Image.open(io.BytesIO(self.entries[asset(f"claudesmp:entity/guild/{role}", "textures", "png")]))
+            self.assertEqual(skin.size, (64, 64), role)
+            # The base head's front face must be fully opaque, or the client draws holes in the face.
+            face = skin.convert("RGBA").crop((8, 8, 16, 16))
+            self.assertEqual(face.getextrema()[3], (255, 255), role)
+        cape = Image.open(io.BytesIO(self.entries[asset("claudesmp:entity/guild/examiner_cape", "textures", "png")]))
+        self.assertEqual(cape.size, (64, 32))
+
 
 if __name__ == "__main__":
     unittest.main()

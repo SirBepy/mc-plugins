@@ -300,9 +300,22 @@ member where ImMijo asks, from the console:
   toggling trapdoors or candles, and blows up nothing inside that box; `guildadmin hall guard off` lifts
   it. Off by default.
 
-The staff are AI-less, invulnerable villagers with a name and a floating title, the same body for Java
-and Bedrock; they turn to face the nearest visitor, can't be hurt, leashed, converted or traded with,
-and a guard tick re-creates or snaps back anyone missing within 5 seconds while their chunk is loaded.
+Each staff member is two bodies on one spot, built like Haru (ImMijo, 2026-10-09: "the way Haru was
+done well"). Java players see a player-shaped Mannequin in that character's own skin, drawn in the
+server pack (`claudesmp:entity/guild/<role id>`, from `server/resourcepacks/guild_skins.py`), with the
+title under the name. Bedrock players, and Java players whose pack declined or failed, see an AI-less
+villager with a name and a floating title instead (a cached pack is answered before join with no status
+event, so unknown counts as loaded). Both bodies turn to face the nearest visitor, can't be hurt,
+leashed, converted or traded with, and right-clicking either one does the same thing; a guard tick
+re-creates or snaps back any body missing within 5 seconds while its chunk is loaded, including the
+Mannequin of staff placed before it existed.
+
+The skins: Lyra in the Guild's navy uniform with a rose ribbon tie, a gold badge and a quill behind her
+ear; Bram with receding grey hair and beard, a scar over one eye, a pencil, a tan leather vest and a
+finger missing from his left hand; Silas with gold round spectacles, a gold waistcoat and watch chain
+under a black frock coat, and an ink-stained finger; Captain Maren in steel plate under a blue tabard
+and cape with a gold sword; Pip with copper curls, a quill stuck in them, freckles, a green robe and a
+satchel. Lyra and Maren have slim arms.
 
 | Role id | Name | Title | Right-click opens |
 | --- | --- | --- | --- |

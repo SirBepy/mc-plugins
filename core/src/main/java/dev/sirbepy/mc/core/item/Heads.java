@@ -7,6 +7,8 @@ import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.UUID;
 
 /**
@@ -41,5 +43,11 @@ public final class Heads {
         }
         item.setItemMeta(meta);
         return item;
+    }
+
+    /** The base64 {@code textures} property value for the skin at {@code textures.minecraft.net/texture/<hash>}. */
+    public static String textureValue(String textureHash) {
+        String json = "{\"textures\":{\"SKIN\":{\"url\":\"http://textures.minecraft.net/texture/" + textureHash + "\"}}}";
+        return Base64.getEncoder().encodeToString(json.getBytes(StandardCharsets.UTF_8));
     }
 }

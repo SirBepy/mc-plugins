@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.haru.npc;
 
+import dev.sirbepy.mc.core.npc.MannequinViewers;
 import dev.sirbepy.mc.haru.data.HaruStore;
 import dev.sirbepy.mc.haru.data.NpcAnchor;
 import dev.sirbepy.mc.haru.dialogue.Speech;
@@ -17,12 +18,9 @@ import org.bukkit.entity.TextDisplay;
 import org.bukkit.entity.Villager;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -31,7 +29,7 @@ import java.util.function.Predicate;
  * Haru himself, as two bodies at the same spot: a skinned, player-shaped {@link Mannequin} that Java
  * players see, and an AI-less cleric villager with a floating title that Bedrock players see (Joe,
  * 2026-10-06: the villager reads well on Bedrock, Java gets something better). Each player is shown
- * only their own body ({@link #applyVisibility}). All three entities are invulnerable, persistent and
+ * only their own body ({@link #applyVisibility}, decided by {@link MannequinViewers}). All three entities are invulnerable, persistent and
  * carry the {@code haru:npc} marker; {@link #ensure} runs on a timer and re-creates or snaps back
  * anything missing or moved while the chunk is loaded, and any marked copy that isn't recorded is removed.
  */
@@ -44,9 +42,8 @@ public final class HaruNpc {
     private final Plugin plugin;
     private final HaruStore store;
     private final NamespacedKey marker;
-    private final Predicate<UUID> bedrock;
+    private final MannequinViewers viewers;
     private final HaruLook look;
-    private final Set<UUID> packFailed = new HashSet<>();
     private Consumer<Mannequin> mannequinLook;
     private Consumer<TextDisplay> titleLook;
 
@@ -54,7 +51,7 @@ public final class HaruNpc {
         this.plugin = plugin;
         this.store = store;
         this.marker = new NamespacedKey(plugin, "npc");
-        this.bedrock = bedrock;
+        this.viewers = new MannequinViewers(bedrock, this::applyVisibility);
         this.look = look;
         this.mannequinLook = look::dress;
         this.titleLook = HaruLook::styleTitle;
@@ -166,44 +163,21 @@ public final class HaruNpc {
         }
     }
 
-    /**
-     * Java players see the skinned Mannequin; Bedrock players see the villager and its floating title.
-     * When the skin comes from the server pack, a Java player whose pack declined or failed would see a
-     * missing-texture Mannequin, so they get the villager instead. Unknown counts as loaded: a cached
-     * pack is answered during the configuration phase, before any play-phase status event, so waiting
-     * for a "loaded" event hid the Mannequin from ImMijo after a rejoin (2026-10-06).
-     */
+    /** Java players see the skinned Mannequin; Bedrock players see the villager and its floating title. */
     public void applyVisibility(Player player) {
-        boolean mannequin = !bedrock.test(player.getUniqueId())
-                && (!look.needsPack() || !packFailed.contains(player.getUniqueId()));
-        show(player, entity(store.mannequinId()), mannequin);
-        show(player, entity(store.npcId()), !mannequin);
-        show(player, entity(store.titleId()), !mannequin);
+        boolean mannequin = viewers.seesMannequin(player, look.needsPack());
+        MannequinViewers.show(plugin, player, entity(store.mannequinId()), mannequin);
+        MannequinViewers.show(plugin, player, entity(store.npcId()), !mannequin);
+        MannequinViewers.show(plugin, player, entity(store.titleId()), !mannequin);
     }
 
-    /** Records whether the player's client failed or declined the server pack, then updates their view. */
-    public void setPackFailed(Player player, boolean failed) {
-        if (failed) {
-            packFailed.add(player.getUniqueId());
-        } else {
-            packFailed.remove(player.getUniqueId());
-        }
-        applyVisibility(player);
+    /** Tracks each player's pack status; the plugin registers it as a listener. */
+    public MannequinViewers viewers() {
+        return viewers;
     }
 
     public void applyVisibilityToAll() {
         Bukkit.getOnlinePlayers().forEach(this::applyVisibility);
-    }
-
-    private void show(Player player, Entity entity, boolean visible) {
-        if (entity == null) {
-            return;
-        }
-        if (visible) {
-            player.showEntity(plugin, entity);
-        } else {
-            player.hideEntity(plugin, entity);
-        }
     }
 
     /** Turns Haru towards the nearest player within 8 blocks, and lets a few petals fall around him. */
@@ -230,10 +204,7 @@ public final class HaruNpc {
         }
         if (nearest != null) {
             for (LivingEntity body : bodies) {
-                Vector look = nearest.getEyeLocation().toVector().subtract(body.getEyeLocation().toVector());
-                Location facing = body.getEyeLocation().clone().setDirection(look);
-                body.setRotation(facing.getYaw(), facing.getPitch());
-                body.setBodyYaw(facing.getYaw());
+                MannequinViewers.face(body, nearest);
             }
         }
         if (petals) {

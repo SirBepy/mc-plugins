@@ -46,6 +46,7 @@ public final class HaruPlugin extends JavaPlugin {
         var pm = getServer().getPluginManager();
         pm.registerEvents(new MenuListener(), this);
         pm.registerEvents(new HaruProtectionListener(ctx.npc()), this);
+        pm.registerEvents(ctx.npc().viewers(), this);
         pm.registerEvents(new HaruInteractListener(ctx, menus, bound), this);
         pm.registerEvents(bound, this);
         pm.registerEvents(quests, this);

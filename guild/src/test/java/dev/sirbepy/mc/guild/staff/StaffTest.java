@@ -6,6 +6,7 @@ import dev.sirbepy.mc.guild.gui.GuildMenus;
 import dev.sirbepy.mc.guild.data.Place;
 import dev.sirbepy.mc.guild.rank.Rank;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.bukkit.entity.Mannequin;
 import org.bukkit.entity.Villager;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -13,10 +14,22 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.MockBukkit;
+import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -26,11 +39,19 @@ class StaffTest extends GuildTestBase {
     private StaffNpcs npcs;
     private StaffListener listener;
     private Dialogue dialogue;
+    private final Set<UUID> bedrock = new HashSet<>();
+    private final List<Staff> dressed = new ArrayList<>();
+    private final Set<UUID> wiped = new HashSet<>();
+    private org.bukkit.plugin.Plugin plugin;
 
     @BeforeEach
     void setUpStaff() {
-        npcs = new StaffNpcs(MockBukkit.createMockPlugin(), store);
-        npcs.setTitleLook(display -> { });
+        plugin = MockBukkit.createMockPlugin();
+        npcs = new StaffNpcs(plugin, store, bedrock::contains);
+        npcs.setLooks(display -> { }, (mannequin, staff) -> {
+            dressed.add(staff);
+            wiped.remove(mannequin.getUniqueId());
+        }, (mannequin, staff) -> wiped.contains(mannequin.getUniqueId()));
         dialogue = new Dialogue(guild, new Random(7));
         listener = new StaffListener(npcs, guild, new GuildMenus(guild), dialogue);
         world.getChunkAt(0, 0);
@@ -137,10 +158,119 @@ class StaffTest extends GuildTestBase {
     }
 
     @Test
+    void javaPlayersSeeEachSkinnedMannequinAndBedrockPlayersTheVillager() {
+        PlayerMock pocket = server.addPlayer(".Pocket");
+        bedrock.add(pocket.getUniqueId());
+        placeAll();
+        for (Staff staff : Staff.values()) {
+            Mannequin mannequin = npcs.mannequin(staff);
+            assertNotNull(mannequin, staff + " has a Mannequin");
+            assertEquals(staff, npcs.staffOf(mannequin));
+            assertTrue(mannequin.isInvulnerable() && mannequin.isImmovable() && mannequin.isPersistent());
+            assertTrue(mannequin.getLocation().distance(spot(staff).toLocation()) < 0.01, staff + " on the villager's spot");
+            assertTrue(alice.canSee(mannequin) && !alice.canSee(npcs.villager(staff)), "Java: " + staff + "'s Mannequin");
+            assertTrue(!pocket.canSee(mannequin) && pocket.canSee(npcs.villager(staff)), "Bedrock: " + staff + "'s villager");
+        }
+        assertEquals(List.of(Staff.values()), dressed, "each dressed in their own skin after spawning");
+    }
+
+    @Test
+    void aJavaPlayerWhosePackFailedSeesTheVillagers() {
+        placeAll();
+        npcs.viewers().setPackFailed(alice, true);
+        assertFalse(alice.canSee(npcs.mannequin(Staff.CLERK)));
+        assertTrue(alice.canSee(npcs.villager(Staff.CLERK)));
+        npcs.viewers().setPackFailed(alice, false);
+        assertTrue(alice.canSee(npcs.mannequin(Staff.CLERK)));
+    }
+
+    @Test
+    void rightClickingTheMannequinTalksAndOpensTheBoard() {
+        placeAll();
+        PlayerInteractEntityEvent event = new PlayerInteractEntityEvent(alice, npcs.mannequin(Staff.RECEPTIONIST), EquipmentSlot.HAND);
+        listener.onInteract(event);
+        assertTrue(event.isCancelled());
+        String said = lastLine(alice);
+        assertTrue(said != null && said.startsWith("Lyra: "), said);
+        assertTrue(plain(alice.getOpenInventory().title()).contains("Adventurer's Guild"));
+    }
+
+    @Test
+    void staffPlacedBeforeTheMannequinsGetOneOnTheNextGuardTick() {
+        placeAll();
+        Villager bram = npcs.villager(Staff.CLERK);
+        npcs.mannequin(Staff.CLERK).remove();
+        store.staff().get("clerk")[2] = null;
+        npcs.ensure();
+        assertNotNull(npcs.mannequin(Staff.CLERK));
+        assertEquals(bram, npcs.villager(Staff.CLERK), "the villager is kept");
+    }
+
+    @Test
+    void aKilledMannequinComesBackAndAWipedSkinIsPutBackOn() {
+        placeAll();
+        Mannequin silas = npcs.mannequin(Staff.TREASURER);
+        silas.remove();
+        npcs.ensure();
+        assertNotEquals(silas, npcs.mannequin(Staff.TREASURER));
+
+        dressed.clear();
+        wiped.add(npcs.mannequin(Staff.EXAMINER).getUniqueId());
+        npcs.ensure();
+        assertEquals(List.of(Staff.EXAMINER), dressed);
+    }
+
+    @Test
+    void theMannequinIsRememberedAcrossARestart() {
+        placeAll();
+        UUID pip = npcs.mannequin(Staff.ARCHIVIST).getUniqueId();
+        assertEquals(pip, newStore().staff().get("archivist")[2]);
+    }
+
+    @Test
+    void aStrayCopyOfAMannequinIsRemoved() {
+        placeAll();
+        Mannequin copy = world.spawn(spot(Staff.CLERK).toLocation(), Mannequin.class);
+        copy.getPersistentDataContainer().set(new org.bukkit.NamespacedKey(plugin, "staff"),
+                org.bukkit.persistence.PersistentDataType.STRING, "clerk-java");
+        assertEquals(Staff.CLERK, npcs.staffOf(copy));
+        npcs.removeStrays(new org.bukkit.entity.Entity[] {copy, npcs.mannequin(Staff.CLERK)});
+        assertFalse(copy.isValid());
+        assertNotNull(npcs.mannequin(Staff.CLERK));
+    }
+
+    @Test
+    void everyStaffSkinIsDrawnInTheServerPack() throws IOException {
+        File textures = new File("../server/resourcepacks/claudesmp-items/assets/claudesmp/textures");
+        for (Staff staff : Staff.values()) {
+            assertTrue(staff.skin().needsPack(), staff + " is a pack skin");
+            BufferedImage skin = ImageIO.read(new File(textures, path(staff.skin().packTexture())));
+            assertNotNull(skin, staff + "'s skin is in the pack");
+            assertEquals(64, skin.getWidth());
+            assertEquals(64, skin.getHeight());
+            if (!staff.skin().packCape().isBlank()) {
+                BufferedImage cape = ImageIO.read(new File(textures, path(staff.skin().packCape())));
+                assertNotNull(cape, staff + "'s cape is in the pack");
+                assertEquals(64, cape.getWidth());
+            }
+        }
+        assertEquals(Set.of(Staff.RECEPTIONIST, Staff.EXAMINER),
+                Set.of(Staff.values()).stream().filter(s -> s.skin().slim()).collect(java.util.stream.Collectors.toSet()),
+                "Lyra and Maren are drawn with slim arms");
+    }
+
+    /** {@code claudesmp:entity/guild/clerk} -> {@code entity/guild/clerk.png}, as the client resolves it. */
+    private static String path(String key) {
+        return key.substring(key.indexOf(':') + 1) + ".png";
+    }
+
+    @Test
     void removingAStaffMemberForgetsTheirSpot() {
         placeAll();
+        Mannequin pip = npcs.mannequin(Staff.ARCHIVIST);
         npcs.remove(Staff.ARCHIVIST);
         assertNull(npcs.villager(Staff.ARCHIVIST));
+        assertFalse(pip.isValid(), "the Mannequin goes too");
         npcs.ensure();
         assertNull(npcs.villager(Staff.ARCHIVIST), "not re-created once removed");
         assertTrue(!store.staffSpots().containsKey("archivist"));

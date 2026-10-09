@@ -21,7 +21,6 @@ import org.bukkit.inventory.meta.LeatherArmorMeta;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -146,11 +145,7 @@ public final class Goods {
         // Fully qualified: this package already declares its own Heads (the collectible catalog),
         // so an import of core's Heads would clash with it by simple name.
         return dev.sirbepy.mc.core.item.Heads.texturedHead(
-                UUID.nameUUIDFromBytes(textureHash.getBytes(StandardCharsets.UTF_8)), textureValue(textureHash));
-    }
-
-    public static String textureValue(String textureHash) {
-        String json = "{\"textures\":{\"SKIN\":{\"url\":\"http://textures.minecraft.net/texture/" + textureHash + "\"}}}";
-        return Base64.getEncoder().encodeToString(json.getBytes(StandardCharsets.UTF_8));
+                UUID.nameUUIDFromBytes(textureHash.getBytes(StandardCharsets.UTF_8)),
+                dev.sirbepy.mc.core.item.Heads.textureValue(textureHash));
     }
 }

@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.guild;
 
+import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.core.gui.MenuListener;
 import dev.sirbepy.mc.guild.command.GuildAdminCommand;
 import dev.sirbepy.mc.guild.command.GuildCommand;
@@ -43,7 +44,8 @@ public final class GuildPlugin extends JavaPlugin {
         FarmGuard farms = new FarmGuard(config::get, clock::nowMillis);
         ExploreTracker explore = new ExploreTracker(guild);
 
-        StaffNpcs staff = new StaffNpcs(this, store);
+        BedrockForms bedrock = BedrockForms.create(this);
+        StaffNpcs staff = new StaffNpcs(this, store, bedrock::isBedrock);
 
         var pm = getServer().getPluginManager();
         pm.registerEvents(new MenuListener(), this);
@@ -52,6 +54,7 @@ public final class GuildPlugin extends JavaPlugin {
         pm.registerEvents(new ProgressListener(guild, bosses, farms), this);
         pm.registerEvents(new HallGuard(store), this);
         pm.registerEvents(new StaffListener(staff, guild, menus, new Dialogue(guild, new Random())), this);
+        pm.registerEvents(staff.viewers(), this);
 
         var scheduler = getServer().getScheduler();
         scheduler.runTaskTimer(this, () -> explore.tick(getServer().getOnlinePlayers()), 40L, 40L);

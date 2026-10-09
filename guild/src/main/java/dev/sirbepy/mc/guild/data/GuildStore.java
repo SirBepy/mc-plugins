@@ -31,7 +31,7 @@ public final class GuildStore {
     private final Map<String, First> firsts = new LinkedHashMap<>();
     /** Server-wide state for bounties, Grand Quests and Guildmaster activities, by key. */
     private final YamlConfiguration events = new YamlConfiguration();
-    /** Staff id -> {villager, title display}; an id present here means that staff member is placed. */
+    /** Staff id -> {villager, title display, Mannequin}; an id present here means that staff member is placed. */
     private final Map<String, UUID[]> staff = new LinkedHashMap<>();
     /** Staff id -> where they stand, as ImMijo asked for it in the hall he built. */
     private final Map<String, Place> staffSpots = new LinkedHashMap<>();

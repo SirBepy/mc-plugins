@@ -24,8 +24,9 @@ import org.bukkit.event.world.EntitiesLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
 /**
- * Nothing hurts, burns, converts, leashes or re-skills the staff, and right-clicking one never opens a
- * villager trade: they speak, then open the Guild screen that fits their job. Sneak-click just talks.
+ * Nothing hurts, burns, converts, leashes or re-skills the staff, and right-clicking one (either body)
+ * never opens a villager trade: they speak, then open the Guild screen that fits their job. Sneak-click
+ * just talks.
  */
 public final class StaffListener implements Listener {
 
@@ -140,5 +141,9 @@ public final class StaffListener implements Listener {
     @EventHandler
     public void onEntitiesLoad(EntitiesLoadEvent event) {
         npcs.removeStrays(event.getEntities().toArray(Entity[]::new));
+        // Hiding needs the entity loaded, so whoever is online when the hall's chunk loads is fixed here.
+        if (event.getEntities().stream().anyMatch(entity -> npcs.staffOf(entity) != null)) {
+            npcs.applyVisibilityToAll();
+        }
     }
 }

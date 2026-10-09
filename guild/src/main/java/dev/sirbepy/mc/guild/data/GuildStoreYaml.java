@@ -62,6 +62,7 @@ final class GuildStoreYaml {
             ConfigurationSection s = staffSection.createSection(id);
             s.set("villager", ids[0] == null ? null : ids[0].toString());
             s.set("title", ids[1] == null ? null : ids[1].toString());
+            s.set("mannequin", ids[2] == null ? null : ids[2].toString());
             Place spot = store.staffSpots().get(id);
             if (spot != null) {
                 s.set("world", spot.world());
@@ -156,7 +157,8 @@ final class GuildStoreYaml {
             for (String id : staffSection.getKeys(false)) {
                 ConfigurationSection s = staffSection.getConfigurationSection(id);
                 if (s != null) {
-                    store.staff().put(id, new UUID[] {parseUuid(s.getString("villager")), parseUuid(s.getString("title"))});
+                    store.staff().put(id, new UUID[] {parseUuid(s.getString("villager")), parseUuid(s.getString("title")),
+                            parseUuid(s.getString("mannequin"))});
                     if (s.getString("world") != null) {
                         store.staffSpots().put(id, new Place(s.getString("world"), s.getDouble("x"), s.getDouble("y"), s.getDouble("z"),
                                 (float) s.getDouble("yaw")));

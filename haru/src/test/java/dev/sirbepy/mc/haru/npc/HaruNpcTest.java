@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.haru.npc;
 
+import dev.sirbepy.mc.core.npc.NpcSkin;
 import dev.sirbepy.mc.haru.HaruTestBase;
 import dev.sirbepy.mc.haru.config.HaruConfig;
 import dev.sirbepy.mc.haru.gui.HaruMenus;
@@ -80,16 +81,16 @@ class HaruNpcTest extends HaruTestBase {
     @Test
     void aPackSkinIsHiddenOnlyFromPlayersWhosePackFailed() {
         config.set(new HaruConfig(owner.getUniqueId(), config.get().zone(), "world", 3, 0.2,
-                new HaruConfig.Skin("", "claudesmp:entity/haru", "", false)));
+                NpcSkin.pack("claudesmp:entity/haru", "", false)));
         ctx.npc().applyVisibility(owner);
         assertTrue(owner.canSee(ctx.npc().mannequin()), "status unknown (cached pack): Mannequin");
         assertFalse(owner.canSee(haru));
 
-        ctx.npc().setPackFailed(owner, true);
+        ctx.npc().viewers().setPackFailed(owner, true);
         assertFalse(owner.canSee(ctx.npc().mannequin()), "declined or failed: villager");
         assertTrue(owner.canSee(haru));
 
-        ctx.npc().setPackFailed(owner, false);
+        ctx.npc().viewers().setPackFailed(owner, false);
         assertTrue(owner.canSee(ctx.npc().mannequin()));
     }
 
