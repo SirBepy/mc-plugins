@@ -140,7 +140,7 @@ These are for a dragon summoned from the **Overworld** set.
 | Wish | Shenron | Porunga (per wish) |
 | --- | --- | --- |
 | Valuables | 1 stack of iron or gold blocks, or 16 diamond blocks, or 1 netherite block | half of one of those |
-| Money | 100,000 coins | 50,000 coins |
+| Money | 40,000 coins | 15,000 coins |
 | Custom item look (like the Katana) | look plus max enchants, silly over-max ones allowed (a Knockback 6 stick is fine) | look only, or one modest over-max enchant |
 | Named animals (must carry a unique name tag) | buff several named animals, or a whole species of the player's | one named animal |
 | Empty shulker boxes | 9 | 4 |
@@ -160,7 +160,8 @@ open (`allow-end` in `bukkit.yml`).
 ### Nether and End dragons
 
 A dragon from a deeper set is stronger, Shenron and Porunga alike: **Nether 1.5x, End 2x** every
-amount, duration and size above (Joe, 2026-10-07; the End set only counts once the End opens). A
+amount, duration and size above (Joe, 2026-10-07; the End set only counts once the End opens),
+except money, which Joe set by hand on 2026-10-09 (the Nether pays much more than the Overworld). A
 build scales by its area, so its sides grow less. Rows without a number (a custom look, named
 animals, a villager) stay the same kind of wish, but a Nether or End dragon may be a little more
 generous with them, and the council weighs the set too.
@@ -170,7 +171,7 @@ generous with them, and the council weighs the set too.
 | Iron or gold blocks | 64 / 96 / 128 | 32 / 48 / 64 |
 | Diamond blocks | 16 / 24 / 32 | 8 / 12 / 16 |
 | Netherite | 1 block / 1 block + 4 ingots / 2 blocks | 4 ingots / 7 ingots / 1 block |
-| Money | 100,000 / 150,000 / 200,000 | 50,000 / 75,000 / 100,000 |
+| Money | 40,000 / 100,000 / 200,000 | 15,000 / 30,000 / 60,000 |
 | Empty shulker boxes | 9 / 13 / 18 | 4 / 6 / 8 |
 | XP | 100 / 150 / 200 levels | 30 / 45 / 60 levels |
 | A build | ~30x30 / ~37x37 / ~42x42 | a statue / a bigger statue / a small build |

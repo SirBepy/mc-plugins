@@ -51,7 +51,7 @@ week, rewards he picks inside the Guild's bounds (10-1,000 coins), escrowed from
 
 `baltop` on live at 22:22 UTC: **the whole server held 8,613 coins** (top balance 4,240; three players
 at 0). The spawn market pays 28.8 for 64 logs, 16 for 64 cod, 160 for 16 diamonds; `prices.yml` values a
-diamond at 20. A Shenron money wish is 100,000. So the 2,000/day cap is a ceiling nobody should reach;
+diamond at 20. A Shenron money wish was 100,000 (40,000 in the Overworld since 2026-10-09). So the 2,000/day cap is a ceiling nobody should reach;
 real rewards sit an order of magnitude under it, and the Guild's value lives in progression, titles,
 access and story rather than coins. A full E-Rank day (5 dailies) pays about 125 coins, roughly 4 stacks
 of logs sold at the market; a full S-Rank day about 660 plus the weekly (700). Only an S day where most
