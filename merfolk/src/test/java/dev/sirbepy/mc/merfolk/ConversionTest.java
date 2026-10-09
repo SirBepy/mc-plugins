@@ -83,7 +83,7 @@ class ConversionTest {
         assertTrue(click(logiks, villager), "the trade screen must not open on the ritual click");
 
         assertTrue(Merfolk.is(villager));
-        assertEquals(Villager.Type.SWAMP, villager.getVillagerType());
+        assertEquals(Merfolk.Variant.of(villager.getUniqueId()).type, villager.getVillagerType());
         assertTrue(Merfolk.isHead(villager.getEquipment().getHelmet()));
         assertEquals(0f, villager.getEquipment().getHelmetDropChance());
         assertEquals(2, logiks.getInventory().getItemInMainHand().getAmount());

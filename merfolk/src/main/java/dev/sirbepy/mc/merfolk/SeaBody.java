@@ -86,17 +86,17 @@ public final class SeaBody implements Listener {
         if (Merfolk.is(villager)) {
             adopt(villager);
         } else {
-            moveOffSwamp(villager);
+            moveOffMerfolkTypes(villager);
         }
     }
 
     /**
-     * The pack draws swamp robes as the merfolk body, so an ordinary villager must not wear them.
-     * Plugin NPCs (no AI or invulnerable, like the Guild's swamp-robed Archivist) keep the type their
-     * plugin chose.
+     * The pack draws the swamp and jungle types as merfolk bodies, so an ordinary villager must not
+     * wear them. Plugin NPCs (no AI or invulnerable, like the Guild's swamp-robed Archivist) keep the
+     * type their plugin chose.
      */
-    static void moveOffSwamp(Villager villager) {
-        if (villager.getVillagerType() != Villager.Type.SWAMP || !villager.hasAI() || villager.isInvulnerable()) return;
+    static void moveOffMerfolkTypes(Villager villager) {
+        if (!Merfolk.Variant.isMerfolkType(villager.getVillagerType()) || !villager.hasAI() || villager.isInvulnerable()) return;
         villager.setVillagerType(Villager.Type.PLAINS);
     }
 
@@ -180,7 +180,7 @@ public final class SeaBody implements Listener {
             if (Merfolk.has(from.getPersistentDataContainer(), Merfolk.ZOMBIE_TAG)) {
                 Merfolk.make(cured);
             } else {
-                moveOffSwamp(cured);
+                moveOffMerfolkTypes(cured);
             }
         }
     }

@@ -1,27 +1,27 @@
 """Generates every resource pack asset for ItsLogiks' Merfolk wish (Shenron wish, granted
-2026-10-09, Nuova Shenron): the merfolk plugin (being built in parallel, module merfolk/) turns some
-villagers into underwater Merfolk by (1) setting the villager's VillagerType to SWAMP, (2) putting a
-custom item (base minecraft:kelp, item_model claudesmp:merfolk_head) in the villager's HEAD
-equipment slot, and (3) placing "Kelp Beds" shown as an item display (claudesmp:kelp_bed_placed,
-item_display_transform NONE). This script owns every pixel/JSON of that look:
+2026-10-09, Nuova Shenron): the merfolk plugin (module merfolk/) turns some villagers into underwater
+Merfolk by (1) setting the villager's VillagerType to its variant's type (SWAMP for Kelp, JUNGLE for
+Coral, picked from the villager's UUID), (2) putting a custom item (base minecraft:kelp, item_model
+claudesmp:merfolk_head or claudesmp:merfolk_head_coral) in the villager's HEAD equipment slot, and
+(3) placing "Kelp Beds" shown as an item display (claudesmp:kelp_bed_placed, item_display_transform
+NONE). This script owns every pixel/JSON of that look:
 
-  1. assets/minecraft/textures/entity/villager/type/swamp.png and .../baby/swamp.png -- the
-     repainted SWAMP villager type, which the client draws as a cutout over the shared base
-     villager.png (javap'd below; untouched, still shared by every other type).
-  2. assets/claudesmp/items/merfolk_head.json + models/item/merfolk_head.json + its texture -- the
-     3D head piece (fin "ears", a dorsal crest, trailing kelp strands) worn in the villager's
-     CustomHeadLayer.
+  1. assets/minecraft/textures/entity/villager/type/{swamp,jungle}.png and .../baby/{swamp,jungle}.png
+     -- the merfolk bodies. The adult textures are Joe's own skins (merfolk_skins/kelp.png and
+     coral.png, 2026-10-09, drawn on the adult villager box-UV layout below) copied unchanged; the
+     baby textures are remapped from them part by part, since BabyVillagerModel has its own layout.
+  2. assets/claudesmp/items/merfolk_head{,_coral}.json + models/item/merfolk_head{,_coral}.json + their
+     textures -- two small 3D fins per side of the head, worn in the villager's CustomHeadLayer and
+     coloured to match each skin (the skins paint the face, gills and hair themselves).
   3. assets/claudesmp/items/kelp_bed.json (flat icon) and kelp_bed_placed.json (the 3D placed bed,
      item_display_transform NONE) + their textures.
 
 ----------------------------------------------------------------------------------------------------
-PART 1 MATH -- villager box-UV (javap'd 2026-10-09 against C:\\tmp\\client-26.3.jar; confirmed against
-the ACTUAL pixel footprint of the 26.3 jar's own type/swamp.png, dumped this session):
+PART 1 MATH -- villager box-UV (javap'd 2026-10-09 against C:\\tmp\\client-26.3.jar):
 
-VillagerModel.createBodyModel() (net.minecraft.client.model.npc.VillagerModel, javap'd): every part
-is `CubeListBuilder.create().texOffs(u, v).addBox(x, y, z, w, h, d)`, which lays UV out with
-Minecraft's standard box-UV algorithm (the same one guild_skins.py's face_rects() already uses for
-Mannequin skins):
+VillagerModel.createBodyModel() / BabyVillagerModel.createBodyModel() (javap'd): every part is
+`CubeListBuilder.create().texOffs(u, v).addBox(x, y, z, w, h, d)`, which lays UV out with Minecraft's
+standard box-UV algorithm (the same one guild_skins.py's face_rects() uses for Mannequin skins):
 
     top    = (u + d,         v,         w, d)
     bottom = (u + d + w,     v,         w, d)
@@ -30,34 +30,25 @@ Mannequin skins):
     left   = (u + d + w,     v + d,     d, h)
     back   = (u + d + w + d, v + d,     w, h)
 
-javap'd (u, v, w, h, d) per part, VillagerModel/BabyVillagerModel.createBodyModel():
+javap'd (u, v, w, h, d) per part:
     adult head=(0,0,8,10,8) hat=(32,0,8,10,8) hat_rim=(30,47,16,16,1) nose=(24,0,2,4,2)
-          body=(16,20,8,12,6) jacket=(0,38,8,20,6) arms=(44,22,4,8,4) arms_hold=(40,38,8,4,4)
-          leg=(0,22,4,12,4) [right_leg and left_leg share this UV, mirrored geometry only]
+          body=(16,20,8,12,6) jacket=(0,38,8,20,6) arms=(44,22,4,8,4) [both arms share it]
+          arms_hold=(40,38,8,4,4) leg=(0,22,4,12,4) [both legs share it]
     baby  head=(0,0,8,8,7) hat=(0,30,8,8,7) hat_rim=(0,45,14,1,12) nose=(23,0,2,2,1)
-          body=(0,15,4,5,3) bb_main=(16,21,4,6,3) right_hand=(36,15,2,4,2) middlearm=(24,17,4,2,2)
+          body=(0,15,4,5,3) bb_main=(16,21,4,6,3) [the robe, inflated 0.2 over body]
+          right_hand=(36,15,2,4,2) and (16,15,2,4,2) [one part, two hands] middlearm=(24,17,4,2,2)
+          right_leg=(8,23,2,3,2) left_leg=(0,23,2,3,2)
 
-Base villager.png (shared, untouched) paints its head-front-face eyes at exactly y=14, x in
-{9,10,13,14} (adult) / y=12, x in {8,9,13,14} (baby) -- confirmed by sampling the jar's own
-villager.png / villager_baby.png this session (green pupil + white highlight pixels). Every type
-texture, including vanilla's own type/swamp.png, leaves those pixels (and the rest of the lower
-face) transparent so the SAME eyes show on every villager regardless of type; this is also why the
-vanilla swamp hood has a big teardrop opening, not narrow eye slits. Confirmed vanilla's type/swamp.png
-has no .mcmeta (no hat blink/flap animation): this session checked the jar directly, no such entry
-exists for either villager/type/swamp.png or villager/baby/swamp.png.
+The client draws the shared base villager.png / villager_baby.png first, then the type texture as a
+cutout over the same model, so opaque type pixels replace the base skin. Joe's skins are opaque over
+every part's whole footprint (head, nose, body, jacket, arms, legs) and transparent only on the hat
+and hat_rim, which stay free for the profession layer's hats: the face, eyes and gills come from the
+skin, not the base. Vanilla's type textures carry no .mcmeta (checked in the jar), so none ship here.
 
-DESIGN DECISION (documented per the task brief, since this deviates from "paint only inside vanilla's
-existing opaque footprint" like dragonscale_armor.py does): Merfolk need scaly skin on the WHOLE head,
-face and nose, which vanilla's swamp hood leaves transparent (tan base skin shows there). So this
-script fills every part's full box-UV footprint with merfolk colours and punches OUT only the 4
-exact eye pixels per age (same coordinates found above), rather than reusing vanilla's bigger
-transparent face-hole. The "hat" + "hat_rim" parts (vanilla's floppy witch hood) are kept -- same
-behaviour as vanilla swamp, Claude did not delete the hood geometry's opacity -- but repainted as a
-kelp mantle/hood instead of felt, which reads better on an aquatic villager than a cloth point; the
-baby swamp type ships NO opaque hood pixels at all in vanilla (checked this session: every row of
-baby/swamp.png's head/hat band is fully transparent), so painting the baby's hood here is a deviation
-from vanilla's OWN baby look, done so baby merfolk read as merfolk too, not as plain tan baby
-villagers in a green jacket.
+Baby remap: each baby face is resampled nearest-neighbour from the matching adult part's same face
+(pixel i of n takes source pixel floor((i + 0.5) * N / n)). For the 10-tall adult head front that
+keeps rows 0,1,3,4,5,6,8,9, so the eye row (6) lands on the baby's row 5. The baby legs take the
+adult legs' bottom rows instead, since only the feet show under the robe on both models.
 
 PART 2 MATH -- CustomHeadLayer's villager-specific transform (javap'd 2026-10-09):
 VillagerRenderer.CUSTOM_HEAD_TRANSFORMS = new Transforms(-0.1171875f, -0.07421875f, 1.0f) (javap'd its
@@ -96,9 +87,8 @@ translate doesn't change how a rotation's own axes conjugate).
 
 The villager head box itself (javap'd above) is 8 wide x 10 tall x 8 deep (from (-4,-10,-4) to
 (4,0,4) in that head-pivot frame) -- 2 units taller than a player head -- with a nose protruding to
-z=-6 (javap'd nose addBox(-1,-1,-6,2,4,2)). Ears/crest/kelp strands below are placed outside that box
-(sides, above the top, behind the back), so they can never cover the eyes, which sit on the FRONT
-face (z=-4) only.
+z=-6 (javap'd nose addBox(-1,-1,-6,2,4,2)). The fins below root on the sides of that box behind
+z=0 and sweep backwards, so they can never cover the eyes, which sit on the FRONT face (z=-4) only.
 
 Run from anywhere: python server/resourcepacks/merfolk_assets.py
 """
@@ -118,52 +108,39 @@ PACK = ROOT / "claudesmp-items" / "assets" / "claudesmp"
 # --- Part 1: villager type textures --------------------------------------------------------------
 
 TYPE_DIR = PACK.parent / "minecraft" / "textures" / "entity" / "villager"
-ADULT_SWAMP = TYPE_DIR / "type" / "swamp.png"
-BABY_SWAMP = TYPE_DIR / "baby" / "swamp.png"
+SKINS = ROOT / "merfolk_skins"
 
-# Merfolk palette.
-SCALE_LIGHT = (108, 196, 164)
-SCALE_DARK = (32, 94, 80)
-GILL = (18, 42, 36)
-ROBE_LIGHT = (84, 128, 74)
-ROBE_DARK = (42, 70, 40)
-HOOD_LIGHT = (66, 104, 60)
-HOOD_DARK = (34, 58, 36)
-ACCENT = (232, 224, 196)
-
-# (u, v, w, h, d, category). category picks which procedural pattern paints the part.
-ADULT_PARTS = {
-    "head": (0, 0, 8, 10, 8, "skin"),
-    "hat": (32, 0, 8, 10, 8, "hood"),
-    "hat_rim": (30, 47, 16, 16, 1, "hood"),
-    "nose": (24, 0, 2, 4, 2, "skin"),
-    "body": (16, 20, 8, 12, 6, "robe"),
-    "jacket": (0, 38, 8, 20, 6, "robe"),
-    "arms": (44, 22, 4, 8, 4, "skin"),
-    "arms_hold": (40, 38, 8, 4, 4, "skin"),
-    "leg": (0, 22, 4, 12, 4, "robe"),
+ADULT_PARTS = {  # (u, v, w, h, d), javap'd, see the module docstring
+    "head": (0, 0, 8, 10, 8),
+    "nose": (24, 0, 2, 4, 2),
+    "body": (16, 20, 8, 12, 6),
+    "jacket": (0, 38, 8, 20, 6),
+    "arms": (44, 22, 4, 8, 4),
+    "arms_hold": (40, 38, 8, 4, 4),
+    "leg": (0, 22, 4, 12, 4),
 }
-BABY_PARTS = {
-    "head": (0, 0, 8, 8, 7, "skin"),
-    "hat": (0, 30, 8, 8, 7, "hood"),
-    "hat_rim": (0, 45, 14, 1, 12, "hood"),
-    "nose": (23, 0, 2, 2, 1, "skin"),
-    "body": (0, 15, 4, 5, 3, "robe"),
-    "bb_main": (16, 21, 4, 6, 3, "robe"),
-    "right_hand": (36, 15, 2, 4, 2, "skin"),
-    "middlearm": (24, 17, 4, 2, 2, "skin"),
+# Each baby part's (u, v, w, h, d), the adult part it is resampled from, and how: "scale" resamples
+# every face, "feet" keeps the adult side faces' bottom rows (only the feet show under either robe).
+BABY_PARTS = [
+    ((0, 0, 8, 8, 7), "head", "scale"),
+    ((23, 0, 2, 2, 1), "nose", "scale"),
+    ((0, 15, 4, 5, 3), "body", "scale"),
+    ((16, 21, 4, 6, 3), "jacket", "scale"),
+    ((36, 15, 2, 4, 2), "arms", "scale"),
+    ((16, 15, 2, 4, 2), "arms", "scale"),
+    ((24, 17, 4, 2, 2), "arms_hold", "scale"),
+    ((8, 23, 2, 3, 2), "leg", "feet"),
+    ((0, 23, 2, 3, 2), "leg", "feet"),
+]
+
+# Fin colours are sampled from each skin's own head so the 3D fins read as part of it: Kelp's teal
+# scales, Coral's painted coral fin.
+VARIANTS = {
+    "kelp": {"type": "swamp", "head": "merfolk_head",
+             "membrane": (70, 120, 114), "membrane_dark": (44, 86, 86), "spine": (118, 172, 160)},
+    "coral": {"type": "jungle", "head": "merfolk_head_coral",
+              "membrane": (240, 118, 92), "membrane_dark": (186, 74, 66), "spine": (255, 160, 128)},
 }
-
-EYE_HOLES_ADULT = [(9, 14), (10, 14), (13, 14), (14, 14)]
-EYE_HOLES_BABY = [(8, 12), (9, 12), (13, 12), (14, 12)]
-
-# Gill slits: a couple of dark pixels on the head's "right"/"left" cheek faces.
-GILLS_ADULT = [(1, 15), (2, 15), (3, 15), (18, 15), (19, 15), (20, 15)]
-GILLS_BABY = [(1, 12), (2, 12), (17, 12), (18, 12)]
-
-# Shell/pearl accents on the robe.
-ACCENTS_ADULT = [(9, 50), (9, 58), (36, 50)]
-ACCENTS_BABY = [(21, 26)]
 
 
 def face_rects(u, v, w, h, d):
@@ -179,98 +156,50 @@ def face_rects(u, v, w, h, d):
     }
 
 
-def scale_pattern(size, seed, light, dark):
-    """Overlapping-scale pattern (same arc technique as dragon_models.py's "scales" texture,
-    recoloured teal for merfolk skin)."""
-    rng = np.random.default_rng(seed)
-    ys, xs = np.mgrid[0:size, 0:size]
-    best = np.full((size, size), 9.0)
-    for row in range(-1, size // 4 + 2):
-        for col in range(-1, size // 4 + 2):
-            cx = col * 4 + (2 if row % 2 else 0)
-            cy = row * 4
-            d = np.hypot(xs - cx, (ys - cy) * 1.1) / 3.2
-            best = np.where((ys >= cy) & (d < best), d, best)
-    t = np.clip(np.where(best > 8, 1.0, best), 0, 1) ** 2
-    img = np.zeros((size, size, 3))
-    for c in range(3):
-        img[:, :, c] = light[c] * (1 - t) + dark[c] * t
-    img += rng.normal(0, 4, (size, size, 1))
-    return np.clip(img, 0, 255).astype(np.uint8)
+def pick(n, size):
+    """Nearest-neighbour source indices for shrinking `size` pixels to `n`."""
+    return [int((i + 0.5) * size / n) for i in range(n)]
 
 
-def frond_pattern(size, seed, light, dark):
-    """Vertical kelp-frond stripes (robe/hood cloth)."""
-    rng = np.random.default_rng(seed)
-    ys, xs = np.mgrid[0:size, 0:size]
-    wave = np.sin(xs * 0.5 + ys * 0.15) * 1.5
-    stripe = ((xs + wave) % 4) < 2
-    img = np.zeros((size, size, 3))
-    for c in range(3):
-        img[:, :, c] = np.where(stripe, light[c], dark[c])
-    img += rng.normal(0, 5, (size, size, 1))
-    return np.clip(img, 0, 255).astype(np.uint8)
+def baby_texture(adult):
+    src = np.asarray(adult.convert("RGBA"))
+    out = np.zeros((64, 64, 4), np.uint8)
+    for (u, v, w, h, d), part, mode in BABY_PARTS:
+        from_rects = face_rects(*ADULT_PARTS[part])
+        for face, (x, y, fw, fh) in face_rects(u, v, w, h, d).items():
+            sx, sy, sw, sh = from_rects[face]
+            cols = [sx + c for c in pick(fw, sw)]
+            if mode == "feet" and face not in ("top", "bottom"):
+                rows = [sy + sh - fh + r for r in range(fh)]
+            else:
+                rows = [sy + r for r in pick(fh, sh)]
+            out[y:y + fh, x:x + fw] = src[np.ix_(rows, cols)]
+    return Image.fromarray(out, "RGBA")
 
 
-def villager_type_texture(parts, eye_holes, gills, accents, size=64):
-    skin = scale_pattern(size, 11, SCALE_LIGHT, SCALE_DARK)
-    robe = frond_pattern(size, 12, ROBE_LIGHT, ROBE_DARK)
-    hood = frond_pattern(size, 13, HOOD_LIGHT, HOOD_DARK)
-    sources = {"skin": skin, "robe": robe, "hood": hood}
-
-    img = np.zeros((size, size, 4), np.uint8)
-    for u, v, w, h, d, cat in parts.values():
-        src = sources[cat]
-        for x, y, fw, fh in face_rects(u, v, w, h, d).values():
-            x0, y0, x1, y1 = x, y, x + fw, y + fh
-            if x1 <= 0 or y1 <= 0 or x0 >= size or y0 >= size:
-                continue
-            x0c, y0c, x1c, y1c = max(0, x0), max(0, y0), min(size, x1), min(size, y1)
-            img[y0c:y1c, x0c:x1c, :3] = src[y0c:y1c, x0c:x1c]
-            img[y0c:y1c, x0c:x1c, 3] = 255
-    for x, y in gills:
-        img[y, x, :3] = GILL
-        img[y, x, 3] = 255
-    for x, y in accents:
-        img[y, x, :3] = ACCENT
-        img[y, x, 3] = 255
-    for x, y in eye_holes:
-        img[y, x] = (0, 0, 0, 0)
-    return Image.fromarray(img, "RGBA")
+def skin(name):
+    return Image.open(SKINS / f"{name}.png").convert("RGBA")
 
 
-# --- Part 2: merfolk_head item model --------------------------------------------------------------
+# --- Part 2: merfolk_head item models (side fins) -------------------------------------------------
 
-HEAD_MODEL_PATH = PACK / "models" / "item" / "merfolk_head.json"
-HEAD_TEX_PATH = PACK / "textures" / "item" / "merfolk_head.png"
-HEAD_TEX_REF = "claudesmp:item/merfolk_head"
-HEAD_ITEM_PATH = PACK / "items" / "merfolk_head.json"
-
-HEAD_TEX_SIZE = 32
+HEAD_TEX_SIZE = 16
 HEAD_REGIONS = {
-    "fin_base": (0, 0, 16, 16),
-    "fin_tip": (16, 0, 24, 8),
-    "fin": (24, 0, 32, 8),
-    "kelp": (0, 16, 16, 24),
-    "kelp_dark": (16, 16, 24, 24),
+    "fin_base": (0, 0, 8, 8),
+    "fin_tip": (8, 0, 16, 8),
 }
 
 
-def head_texture():
+def head_texture(variant):
+    """Membrane with darker fin-ray streaks on the left half, plain spine colour on the right."""
+    c = VARIANTS[variant]
     img = Image.new("RGBA", (HEAD_TEX_SIZE, HEAD_TEX_SIZE), (0, 0, 0, 0))
     px = img.load()
-
-    def fill(region, color):
-        x0, y0, x1, y1 = region
-        for y in range(y0, y1):
-            for x in range(x0, x1):
-                px[x, y] = color + (255,)
-
-    fill(HEAD_REGIONS["fin_base"], (90, 176, 148))
-    fill(HEAD_REGIONS["fin_tip"], (36, 100, 86))
-    fill(HEAD_REGIONS["fin"], (52, 128, 110))
-    fill(HEAD_REGIONS["kelp"], ROBE_LIGHT)
-    fill(HEAD_REGIONS["kelp_dark"], ROBE_DARK)
+    for y in range(8):
+        for x in range(8):
+            px[x, y] = (c["membrane_dark"] if x % 3 == 2 else c["membrane"]) + (255,)
+        for x in range(8, 16):
+            px[x, y] = c["spine"] + (255,)
     return img
 
 
@@ -306,7 +235,7 @@ def to_item_space_villager(elements):
     return out
 
 
-def build_head(elements):
+def build_head(elements, tex_ref):
     out = []
     for i, e in enumerate(elements):
         f, t = e["from"], e["to"]
@@ -320,7 +249,7 @@ def build_head(elements):
             el["rotation"] = {"origin": list(o), "x": rx, "y": ry, "z": rz}
         out.append(el)
     return {
-        "textures": {"t": HEAD_TEX_REF, "particle": HEAD_TEX_REF},
+        "textures": {"t": tex_ref, "particle": tex_ref},
         "elements": out,
         # Identity: numerically equivalent to NO_TRANSFORM, written explicitly so the fit math
         # above is on record in the file that uses it (same reasoning as dragonscale_helmet_model.py).
@@ -328,33 +257,27 @@ def build_head(elements):
     }
 
 
-def ear(mirror=False):
+# Where the fin's root meets the head: just above eye height (eyes on row 6 of 10, y -4..-3) and
+# behind the cheek, so the fin stays clear of the face.
+FIN_ROOT = (4.0, -5.5, 1.0)
+FIN_SWEEP = -35  # degrees about y; negative swings the tip toward +z, the back of the head
+
+
+def fin(mirror=False):
+    """Three spines fanning up and out from the side of the head, joined by membrane, the whole fin
+    swept back about its root."""
+    rot = (FIN_ROOT, (0, FIN_SWEEP, 0))
     boxes = [
-        hbox((4.0, -7.2, -0.8), (5.6, -4.4, 2.0), "fin_base"),
-        hbox((5.0, -7.8, -0.3), (7.2, -5.2, 1.2), "fin_tip", ((5.0, -6.5, 0.4), (0, 0, -12))),
+        hbox((4.0, -6.6, 0.7), (6.9, -3.8, 1.3), "fin_base", rot),
+        hbox((4.0, -8.2, 0.6), (4.7, -3.6, 1.4), "fin_tip", rot),
+        hbox((5.1, -7.7, 0.6), (5.8, -3.8, 1.4), "fin_tip", rot),
+        hbox((6.2, -7.0, 0.6), (6.9, -4.0, 1.4), "fin_tip", rot),
     ]
     return mirror_x(boxes) if mirror else boxes
 
 
-def crest():
-    segs = []
-    for i, oz in enumerate((-2.0, 0.5, 3.0)):
-        y_top = -11.2 + i * 0.3
-        segs.append(hbox((-0.6, y_top, oz - 1.1), (0.6, -9.6, oz + 1.1), "fin",
-                          ((0, -10, oz), (-20 - i * 5, 0, 0))))
-    return segs
-
-
-def kelp_strands():
-    out = []
-    for ox in (-1.6, 0.0, 1.6):
-        out.append(hbox((ox - 0.4, -2.0, 3.0), (ox + 0.4, 5.5, 4.2), "kelp",
-                         ((ox, -2.0, 3.6), (14, 0, 0))))
-    return out
-
-
 def merfolk_head_elements():
-    return ear(False) + ear(True) + crest() + kelp_strands()
+    return fin(False) + fin(True)
 
 
 def item_definition(model_ref):
@@ -467,21 +390,28 @@ def bed_icon_texture():
 
 
 def main():
-    for d in (ADULT_SWAMP.parent, BABY_SWAMP.parent, HEAD_MODEL_PATH.parent, HEAD_TEX_PATH.parent,
-              HEAD_ITEM_PATH.parent, BED_MODEL_PATH.parent, BED_TEX_PATH.parent, BED_ITEM_PATH.parent):
+    for d in (TYPE_DIR / "type", TYPE_DIR / "baby", PACK / "models" / "item", PACK / "textures" / "item",
+              PACK / "items", BED_MODEL_PATH.parent, BED_TEX_PATH.parent, BED_ITEM_PATH.parent):
         d.mkdir(parents=True, exist_ok=True)
 
-    villager_type_texture(ADULT_PARTS, EYE_HOLES_ADULT, GILLS_ADULT, ACCENTS_ADULT).save(ADULT_SWAMP)
-    villager_type_texture(BABY_PARTS, EYE_HOLES_BABY, GILLS_BABY, ACCENTS_BABY).save(BABY_SWAMP)
-    print(f"wrote {ADULT_SWAMP}")
-    print(f"wrote {BABY_SWAMP}")
+    full_model_ref = None
+    for name, c in VARIANTS.items():
+        adult = skin(name)
+        adult.save(TYPE_DIR / "type" / f"{c['type']}.png")
+        baby_texture(adult).save(TYPE_DIR / "baby" / f"{c['type']}.png")
+        print(f"wrote type/{c['type']}.png and baby/{c['type']}.png from {name}")
 
-    head_texture().save(HEAD_TEX_PATH)
-    HEAD_MODEL_PATH.write_text(json.dumps(
-        build_head(to_item_space_villager(merfolk_head_elements())), indent=2) + "\n")
-    HEAD_ITEM_PATH.write_text(json.dumps(item_definition("claudesmp:item/merfolk_head"), indent=2) + "\n")
-    print(f"wrote {HEAD_MODEL_PATH}")
-    print(f"wrote {HEAD_TEX_PATH}")
+        model_ref = f"claudesmp:item/{c['head']}"
+        head_texture(name).save(PACK / "textures" / "item" / f"{c['head']}.png")
+        if full_model_ref is None:
+            model = build_head(to_item_space_villager(merfolk_head_elements()), model_ref)
+            full_model_ref = model_ref
+        else:
+            # Same fins, own colours: inherit the elements and display, swap the texture.
+            model = {"parent": full_model_ref, "textures": {"t": model_ref, "particle": model_ref}}
+        (PACK / "models" / "item" / f"{c['head']}.json").write_text(json.dumps(model, indent=2) + "\n")
+        (PACK / "items" / f"{c['head']}.json").write_text(json.dumps(item_definition(model_ref), indent=2) + "\n")
+        print(f"wrote {c['head']} model, texture and item")
 
     bed_icon_texture().save(BED_ICON_TEX_PATH)
     BED_ICON_MODEL_PATH.write_text(json.dumps(

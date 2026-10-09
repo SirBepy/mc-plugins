@@ -1,6 +1,6 @@
-"""Checks the Merfolk wish assets (merfolk_assets.py) inside the built join pack: the repainted
-swamp villager type textures are vanilla-sized and keep the base skin's eyes visible, the
-merfolk_head item resolves to a model that fits the item-model element range and carries the
+"""Checks the Merfolk wish assets (merfolk_assets.py) inside the built join pack: the swamp and
+jungle villager types carry Joe's Kelp and Coral skins and their baby remaps, each variant's fin
+item resolves to a model that fits the item-model element range and carries the
 identity "head" display the CustomHeadLayer derivation in merfolk_assets.py relies on, and the
 kelp_bed / kelp_bed_placed items resolve and the placed model matches the plugin's geometry
 contract (x 0..16, z -8..24, lowest y 0).
@@ -47,61 +47,69 @@ class BuiltPackTest(unittest.TestCase):
 
     # --- villager type textures --------------------------------------------------------------
 
-    def test_swamp_type_textures_are_vanilla_sized(self):
-        # Same dimensions as the 26.3 client jar's own type/swamp.png and baby/swamp.png (dumped
-        # this session): the client's VillagerModel/BabyVillagerModel box-UV layout assumes these
-        # exact sizes, so a mismatch would scramble every face onto the wrong part of the model.
-        adult = self.png("assets/minecraft/textures/entity/villager/type/swamp.png")
-        self.assertEqual(adult.size, (64, 64))
-        baby = self.png("assets/minecraft/textures/entity/villager/baby/swamp.png")
-        self.assertEqual(baby.size, (64, 64))
+    def type_png(self, age, variant):
+        return self.png(f"assets/minecraft/textures/entity/villager/{age}/{ma.VARIANTS[variant]['type']}.png")
 
-    def test_swamp_type_textures_leave_the_shared_eyes_visible(self):
-        # The base villager.png/villager_baby.png (untouched, shared by every type) paints its
-        # green-eyed face at these exact pixels (sampled from the 26.3 jar this session); every
-        # type texture, including this one, must leave them transparent so the SAME eyes show
-        # through on a merfolk villager, same as on every other type.
-        for name, holes in (
-            ("assets/minecraft/textures/entity/villager/type/swamp.png", ma.EYE_HOLES_ADULT),
-            ("assets/minecraft/textures/entity/villager/baby/swamp.png", ma.EYE_HOLES_BABY),
-        ):
-            img = self.png(name).convert("RGBA")
+    def test_adult_bodies_are_joes_skins_unchanged(self):
+        for variant in ma.VARIANTS:
+            shipped = self.type_png("type", variant).convert("RGBA")
+            self.assertEqual(shipped.size, (64, 64))
+            self.assertEqual(shipped.tobytes(), ma.skin(variant).tobytes(), variant)
+
+    def test_baby_bodies_cover_every_baby_part_and_leave_the_hat_free(self):
+        # Opaque over every part BabyVillagerModel draws (javap'd layout), so no tan base skin peeks
+        # through; hat and hat_rim stay transparent like the adult skins', free for profession hats.
+        for variant in ma.VARIANTS:
+            img = self.type_png("baby", variant).convert("RGBA")
+            self.assertEqual(img.size, (64, 64))
             px = img.load()
-            for x, y in holes:
-                self.assertEqual(px[x, y][3], 0, f"{name} eye pixel {(x, y)} should stay transparent")
+            for (u, v, w, h, d), _, _ in ma.BABY_PARTS:
+                for x, y, fw, fh in ma.face_rects(u, v, w, h, d).values():
+                    for yy in range(y, y + fh):
+                        for xx in range(x, x + fw):
+                            self.assertEqual(px[xx, yy][3], 255, f"{variant} baby pixel {(xx, yy)}")
+            for uvwhd in ((0, 30, 8, 8, 7), (0, 45, 14, 1, 12)):
+                for x, y, fw, fh in ma.face_rects(*uvwhd).values():
+                    for yy in range(y, y + fh):
+                        for xx in range(x, x + fw):
+                            self.assertEqual(px[xx, yy][3], 0, f"{variant} baby hat pixel {(xx, yy)}")
 
-    def test_swamp_type_textures_are_mostly_opaque_around_the_eyes(self):
-        # Unlike vanilla's own swamp hood (a big transparent face opening), merfolk paint the whole
-        # head/face/nose opaque (Joe's brief: "paint ... scaly skin over the head, face, nose and
-        # hands"), punching out only the eye pixels themselves.
-        img = self.png("assets/minecraft/textures/entity/villager/type/swamp.png").convert("RGBA")
-        px = img.load()
-        for x, y in ((8, 14), (11, 14), (12, 14), (15, 14)):
-            self.assertEqual(px[x, y][3], 255, f"adult pixel {(x, y)} next to an eye should be opaque")
+    def test_baby_face_keeps_the_skins_eyes(self):
+        # The adult head front's eye row (6 of 10) lands on the baby's row 5 of 8, column for column.
+        for variant in ma.VARIANTS:
+            adult = ma.skin(variant).load()
+            baby = self.type_png("baby", variant).convert("RGBA").load()
+            for i in range(8):
+                self.assertEqual(baby[7 + i, 7 + 5], adult[8 + i, 8 + 6], f"{variant} eye row x={i}")
 
-    def test_swamp_type_textures_have_no_mcmeta(self):
-        # Checked against the 26.3 client jar directly this session: neither vanilla type/swamp.png
-        # nor baby/swamp.png carries a .mcmeta (no hat blink/flap animation), so this pack doesn't
-        # ship one either.
-        self.assertNotIn("assets/minecraft/textures/entity/villager/type/swamp.png.mcmeta", self.entries)
-        self.assertNotIn("assets/minecraft/textures/entity/villager/baby/swamp.png.mcmeta", self.entries)
+    def test_villager_types_have_no_mcmeta(self):
+        # Checked against the 26.3 client jar: vanilla type/baby textures carry no .mcmeta.
+        self.assertFalse([n for n in self.entries
+                          if n.startswith("assets/minecraft/textures/entity/villager/") and n.endswith(".mcmeta")])
 
-    def test_other_villager_types_are_not_shipped(self):
-        # Only the swamp type is reskinned; every other type/baby texture stays vanilla (not
-        # present in this pack at all).
+    def test_only_the_merfolk_types_are_shipped(self):
+        # Every other villager type stays vanilla (not present in this pack at all).
         shipped = [n for n in self.entries if n.startswith("assets/minecraft/textures/entity/villager/")]
         self.assertEqual(sorted(shipped), sorted([
             "assets/minecraft/textures/entity/villager/type/swamp.png",
             "assets/minecraft/textures/entity/villager/baby/swamp.png",
+            "assets/minecraft/textures/entity/villager/type/jungle.png",
+            "assets/minecraft/textures/entity/villager/baby/jungle.png",
         ]))
 
     # --- merfolk_head item ---------------------------------------------------------------------
 
-    def test_merfolk_head_item_resolves_to_its_model(self):
-        definition = self.json("assets/claudesmp/items/merfolk_head.json")["model"]
-        self.assertEqual(definition["type"], "minecraft:model")
-        model = self.json(asset(definition["model"], "models", "json"))
-        self.assertIn(asset(model["textures"]["t"], "textures", "png"), self.entries)
+    def test_each_variants_head_item_resolves_to_its_own_fin_texture(self):
+        textures = set()
+        for c in ma.VARIANTS.values():
+            definition = self.json(f"assets/claudesmp/items/{c['head']}.json")["model"]
+            self.assertEqual(definition["type"], "minecraft:model")
+            model = self.json(asset(definition["model"], "models", "json"))
+            self.assertIn(asset(model["textures"]["t"], "textures", "png"), self.entries)
+            if "parent" in model:
+                self.assertIn("elements", self.json(asset(model["parent"], "models", "json")))
+            textures.add(model["textures"]["t"])
+        self.assertEqual(len(textures), len(ma.VARIANTS))
 
     def test_merfolk_head_model_stays_in_the_item_model_range(self):
         model = self.json("assets/claudesmp/models/item/merfolk_head.json")
@@ -121,7 +129,7 @@ class BuiltPackTest(unittest.TestCase):
 
     def test_merfolk_head_elements_sit_outside_the_villager_head_box_front_face(self):
         # The villager head box (javap'd) is x -4..4, y -10..0, z -4..4 in the design frame, with
-        # the face on z=-4; every ear/crest/kelp-strand element must stay clear of that whole front
+        # the face on z=-4; every fin element must stay clear of that whole front
         # face plane so it can never cover the eyes. Checked on the PRE-conversion design-frame
         # elements (merfolk_assets.merfolk_head_elements()), which is the frame that fact is true
         # in; the item-space model file is a fixed, derived function of these.

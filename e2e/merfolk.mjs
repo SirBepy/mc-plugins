@@ -4,9 +4,10 @@ import {
 } from './lib.mjs';
 
 // The Merfolk (ItsLogiks' wish, merfolk plugin): only the configured owner turns a villager standing in
-// water into a merfolk with a nautilus shell (a stranger's shell does nothing); merfolk wear the swamp
-// type (the server pack's merfolk body) and the fin head item, never lose air, and sink to the sea floor
-// where an ordinary villager floats; an ordinary swamp villager is moved to plains robes; a Kelp Bed goes
+// water into a merfolk with a nautilus shell (a stranger's shell does nothing); merfolk wear their
+// variant's type and fins (Kelp: swamp + merfolk_head, Coral: jungle + merfolk_head_coral, the server
+// pack's merfolk bodies), never lose air, and sink to the sea floor where an ordinary villager floats; an
+// ordinary swamp or jungle villager is moved to plains robes; a Kelp Bed goes
 // into two water blocks on the floor and stays water, and hitting it gives the item back; two merfolk fed
 // fish with a free Kelp Bed make a merfolk baby; at night a merfolk walks home to its bed; an unemployed
 // merfolk near an underwater barrel / cartography table becomes a Fisher / Treasurer with the wish's
@@ -99,8 +100,11 @@ try {
     await owner.activateEntity(villagerAt(owner, BX + 1.5, PY + 3, BZ + 0.5));
     await waitFor(async () => /merfolk:merfolk/.test(await get(one('mf_conv'), 'BukkitValues')), 'villager became a merfolk', 5_000);
     await waitFor(() => owner.heldItem?.count === 1, 'one shell spent', 5_000);
-    assert(/minecraft:swamp/.test(await get(one('mf_conv'), 'VillagerData.type')), 'merfolk wear the swamp type');
-    assert(/claudesmp:merfolk_head/.test(await get(one('mf_conv'), 'equipment.head')), 'merfolk wear the fin head item');
+    const type = await get(one('mf_conv'), 'VillagerData.type');
+    const head = await get(one('mf_conv'), 'equipment.head');
+    assert(/minecraft:(swamp|jungle)/.test(type), `merfolk wear a merfolk type (${type})`);
+    const fins = /minecraft:jungle/.test(type) ? /claudesmp:merfolk_head_coral/ : /claudesmp:merfolk_head(?!_)/;
+    assert(fins.test(head), `merfolk wear their variant's fins (${type}, ${head})`);
     await teleport(rcon, owner, BX + 7, PY + 1, BZ + 7);
     await rcon.command(`minecraft:fill ${BX} ${PY + 1} ${BZ} ${BX + 1} ${PY + 4} ${BZ} minecraft:water`);
   });
@@ -119,9 +123,11 @@ try {
     assert((await number(one('mf_held'), 'Air')) < 300, 'a submerged ordinary villager loses air');
   });
 
-  await step('an ordinary swamp villager is moved to plains robes', async () => {
+  await step('ordinary swamp and jungle villagers are moved to plains robes', async () => {
     await summon('mf_swampy', BX + 7.5, PY + 1, BZ + 7.5, ',VillagerData:{type:"minecraft:swamp",profession:"minecraft:none",level:1}');
-    assert(/minecraft:plains/.test(await get(one('mf_swampy'), 'VillagerData.type')), 'plains robes');
+    await summon('mf_jungly', BX + 7.5, PY + 1, BZ + 6.5, ',VillagerData:{type:"minecraft:jungle",profession:"minecraft:none",level:1}');
+    assert(/minecraft:plains/.test(await get(one('mf_swampy'), 'VillagerData.type')), 'swamp to plains robes');
+    assert(/minecraft:plains/.test(await get(one('mf_jungly'), 'VillagerData.type')), 'jungle to plains robes');
   });
 
   await step('a Kelp Bed lies in two water blocks on the floor, stays water, and hitting it gives it back', async () => {

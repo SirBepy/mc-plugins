@@ -81,10 +81,16 @@ class SeaBodyTest {
     }
 
     @Test
-    void anOrdinarySwampVillagerIsMovedToPlainsRobesSoItDoesntLookLikeAMerfolk() {
+    void anOrdinarySwampOrJungleVillagerIsMovedToPlainsRobesSoItDoesntLookLikeAMerfolk() {
         Villager swamp = world.spawn(new Location(world, 0, 60, 0), Villager.class,
                 v -> v.setVillagerType(Villager.Type.SWAMP));
         assertEquals(Villager.Type.PLAINS, swamp.getVillagerType());
+        Villager jungle = world.spawn(new Location(world, 0, 60, 0), Villager.class,
+                v -> v.setVillagerType(Villager.Type.JUNGLE));
+        assertEquals(Villager.Type.PLAINS, jungle.getVillagerType());
+        Villager snow = world.spawn(new Location(world, 0, 60, 0), Villager.class,
+                v -> v.setVillagerType(Villager.Type.SNOW));
+        assertEquals(Villager.Type.SNOW, snow.getVillagerType(), "village types are left alone");
 
         Villager npc = world.spawn(new Location(world, 0, 60, 0), Villager.class, v -> {
             v.setVillagerType(Villager.Type.SWAMP);
@@ -102,7 +108,7 @@ class SeaBodyTest {
         Merfolk.make(merfolk);
         beds.claim(beds.add(world.getBlockAt(5, 60, 5), BlockFace.NORTH), merfolk.getUniqueId());
         ZombieVillager zombie = (ZombieVillager) world.spawnEntity(merfolk.getLocation(), EntityType.ZOMBIE_VILLAGER);
-        zombie.getEquipment().setHelmet(Merfolk.head());
+        zombie.getEquipment().setHelmet(Merfolk.head(Merfolk.Variant.of(merfolk.getUniqueId())));
 
         server.getPluginManager().callEvent(new EntityTransformEvent(merfolk, List.of(zombie),
                 EntityTransformEvent.TransformReason.INFECTION));
@@ -113,6 +119,6 @@ class SeaBodyTest {
         server.getPluginManager().callEvent(new EntityTransformEvent(zombie, List.of(cured),
                 EntityTransformEvent.TransformReason.CURED));
         assertTrue(Merfolk.is(cured));
-        assertEquals(Villager.Type.SWAMP, cured.getVillagerType());
+        assertEquals(Merfolk.Variant.of(cured.getUniqueId()).type, cured.getVillagerType());
     }
 }

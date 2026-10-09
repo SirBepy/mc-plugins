@@ -1,0 +1,7 @@
+{
+  "parent": "claudesmp:item/merfolk_head",
+  "textures": {
+    "t": "claudesmp:item/merfolk_head_coral",
+    "particle": "claudesmp:item/merfolk_head_coral"
+  }
+}
