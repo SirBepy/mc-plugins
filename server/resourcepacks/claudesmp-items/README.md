@@ -289,3 +289,19 @@ Caveats, stated honestly:
   checked before the trim-select fallback) but the worn trim overlay's behaviour against our custom
   layer texture was not rendered or verified. The endfight plugin isn't expected to set a trim on
   this armor, so this should not come up in practice.
+
+## Final-blow dragon helm
+
+Whoever lands the Ender Dragon's final blow gets a netherite helmet that looks exactly like a dragon
+head (Joe, 2026-10-09; given by the endfight plugin on every final blow). The
+`custom_model_data` string `"dragon_head"` in `assets/minecraft/items/netherite_helmet.json` picks a
+verbatim copy of the 26.3 client jar's own `assets/minecraft/items/dragon_head.json` model, so the
+inventory icon is vanilla's dragon head and no new art is involved. Worn, the helmet must carry an
+`equippable` with slot head and no `asset_id`: the client then draws the item model on the head
+(the same path as the Dragonscale helm), using the dragon head's own `head` display. Stats,
+enchanting, repairs and fire resistance stay netherite's; Bedrock sees a netherite helmet. Untested
+in a real 26.3 client.
+
+```
+minecraft:give <player> netherite_helmet[custom_model_data={strings:["dragon_head"]},equippable={slot:"head"}]
+```

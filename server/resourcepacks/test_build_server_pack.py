@@ -289,6 +289,25 @@ class BuiltPackTest(unittest.TestCase):
         self.assertIn(tex_path, self.entries)
         Image.open(io.BytesIO(self.entries[tex_path])).load()  # decodes without error
 
+    def test_final_blow_helm_draws_the_vanilla_dragon_head_model(self):
+        # The final blow's reward (Joe, 2026-10-09) is a netherite helmet that looks exactly like a
+        # dragon head, in the inventory and worn. The case is a verbatim copy of the 26.3 client
+        # jar's own assets/minecraft/items/dragon_head.json model, so it tracks vanilla's look.
+        definition = self.json("assets/minecraft/items/netherite_helmet.json")["model"]
+        case = next(c for c in definition["cases"] if c["when"] == "dragon_head")
+        self.assertEqual(case["model"], {
+            "type": "minecraft:special",
+            "base": "minecraft:item/dragon_head",
+            "model": {"type": "minecraft:head", "kind": "dragon"},
+            "transformation": {
+                "left_rotation": [1.0, 0.0, 0.0, -0.0],
+                "right_rotation": [0.0, 0.0, 0.0, 1.0],
+                "scale": [1.0, 1.0, 1.0],
+                "translation": [0.5, 0.0, 0.5],
+            },
+        })
+        self.assertEqual(definition["fallback"], _vanilla_netherite_armor_trim_select("helmet"))
+
     def test_dragonscale_textures_are_tinted_differently_from_plain_netherite(self):
         # Pixel check that the look actually reads as different from vanilla netherite: Dragonscale
         # carries a violet/magenta tint, vanilla netherite is a near-neutral dark grey.
