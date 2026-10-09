@@ -33,10 +33,10 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
   both green from the Overworld, Nuova Shenron red (red glow, fire trail) and Porunga purple
   (purple glow, purple trail) from the Nether, both gold from the End, like Dragon Ball Super's
   Super Shenron. Porunga glows white in the other sets; Shenron doesn't glow there. Bedrock
-  players see the same models in the same set colours, through a Bedrock pack Geyser sends them
-  on join (no glow outline on Bedrock); only if Geyser starts before DragonBalls can
-  hook it do they get a plain Ender Dragon with the dragon's name circling above the balls
-  instead. The End set
+  players see a plain Ender Dragon with the dragon's name circling above the balls: the Bedrock
+  models (custom Geyser entities plus a Bedrock pack sent on join) sit behind config.yml's
+  `bedrock-dragon-models`, off, because with them on no real Bedrock client could join live
+  (2026-10-08/09, cause not yet found). The End set
   sleeps (no balls, no radar sales) until the End opens; it scatters the first time the server
   starts with the End open.
 - Every ball sits inside a structure (Joe, 2026-10-08 and 2026-10-09: "always prioritize putting it
