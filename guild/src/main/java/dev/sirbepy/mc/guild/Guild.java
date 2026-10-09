@@ -163,7 +163,7 @@ public final class Guild {
     /** Draws a new board, resets the day's caps and lapses an expired trial, as the clock requires. */
     public void refresh(Member member) {
         String weekBefore = member.boardWeek();
-        boolean changed = board.ensure(member, clock.dayKey(), clock.weekKey());
+        boolean changed = board.ensure(member, clock.dayKey(), clock.weekKey(), config.get().dailyContracts());
         if (!clock.weekKey().equals(weekBefore)) {
             member.setWeeklyDrawnAt(clock.nowMillis());
         }

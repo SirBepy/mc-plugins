@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.guild.config;
 
+import dev.sirbepy.mc.guild.contract.Board;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.time.ZoneId;
@@ -10,12 +11,12 @@ public record GuildConfig(UUID guildmaster, ZoneId zone, int registrationFee, in
                           double commissionRate, int guildmasterDailyWithdrawal, int commissionsPerWeek,
                           int commissionMinReward, int commissionMaxReward, int announcementCooldownMinutes,
                           double grandQuestShareCap, double farmEnvironmentShare, int farmChunkKillLimit,
-                          int farmChunkWindowMinutes) {
+                          int farmChunkWindowMinutes, int dailyContracts) {
 
     public static final UUID IMMIJO = UUID.fromString("8c0c13b9-057a-4ac8-aacf-7b6c77f8742b");
 
     public static GuildConfig defaults(UUID guildmaster, ZoneId zone) {
-        return new GuildConfig(guildmaster, zone, 500, 2000, 15, 0.05, 1000, 3, 10, 1000, 30, 0.25, 0.5, 30, 10);
+        return new GuildConfig(guildmaster, zone, 500, 2000, 15, 0.05, 1000, 3, 10, 1000, 30, 0.25, 0.5, 30, 10, Board.MAX_DAILY_SLOTS);
     }
 
     public static GuildConfig from(ConfigurationSection c) {
@@ -46,7 +47,8 @@ public record GuildConfig(UUID guildmaster, ZoneId zone, int registrationFee, in
                 Math.min(1, Math.max(0.02, c.getDouble("grand-quest-share-cap", 0.25))),
                 Math.min(1, Math.max(0, c.getDouble("farm-environment-share", 0.5))),
                 Math.max(1, c.getInt("farm-chunk-kill-limit", 30)),
-                Math.max(1, c.getInt("farm-chunk-window-minutes", 10)));
+                Math.max(1, c.getInt("farm-chunk-window-minutes", 10)),
+                clamp(c.getInt("daily-contracts", Board.MAX_DAILY_SLOTS), 1, Board.MAX_DAILY_SLOTS));
     }
 
     public boolean isGuildmaster(UUID player) {

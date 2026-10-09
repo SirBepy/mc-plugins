@@ -232,7 +232,7 @@ public final class GuildAdminCommand {
         return Command.SINGLE_SUCCESS;
     }
 
-    /** Marks a board contract's tracked objectives done (slot 0-2, "weekly" or "trial"), for testing claims. */
+    /** Marks a board contract's tracked objectives done (daily slot 0-4, "weekly" or "trial"), for testing claims. */
     private int complete(CommandContext<CommandSourceStack> c) {
         Member m = target(c);
         if (m == null) {
@@ -243,11 +243,12 @@ public final class GuildAdminCommand {
         ActiveContract active = switch (slot) {
             case "weekly" -> m.weekly();
             case "trial" -> m.trial();
-            case "0", "1", "2" -> m.dailies().get(Integer.parseInt(slot));
+            case "0", "1", "2", "3", "4" -> Integer.parseInt(slot) < m.dailies().size()
+                    ? m.dailies().get(Integer.parseInt(slot)) : null;
             default -> null;
         };
         if (active == null) {
-            send(c, "Slot must be 0, 1, 2, weekly or trial (with one active).");
+            send(c, "Slot must be a daily 0-4, weekly or trial (with one active).");
             return Command.SINGLE_SUCCESS;
         }
         ContractDef def = active.def();

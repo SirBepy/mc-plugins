@@ -12,13 +12,14 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 /**
- * Draws each adventurer's board: 3 dailies at midnight (slot 1 one rank down, slots 2-3 at their own
- * rank, any slot may roll rare from D up) and a weekly on Monday. Yesterday's dailies are avoided while
- * the pool has others, so boards rarely repeat.
+ * Draws each adventurer's board: the configured dailies at midnight (slot 1 one rank down, the rest at
+ * their own rank, any slot may roll rare from D up) and a weekly on Monday. Yesterday's dailies are
+ * avoided while the pool has others, so boards rarely repeat.
  */
 public final class Board {
 
-    public static final int DAILY_SLOTS = 3;
+    /** The council's ruling on ImMijo's wish (2026-10-09): 5 dailies a day, and the menu has room for 5. */
+    public static final int MAX_DAILY_SLOTS = 5;
 
     public enum RerollResult { REROLLED, NO_REROLLS_LEFT, NOT_REROLLABLE, NOTHING_ELSE }
 
@@ -29,19 +30,26 @@ public final class Board {
     }
 
     /** Draws whatever is out of date. True if anything changed. */
-    public boolean ensure(Member member, String day, String week) {
+    public boolean ensure(Member member, String day, String week, int dailySlots) {
         boolean changed = false;
-        if (!day.equals(member.boardDay()) || member.dailies().size() != DAILY_SLOTS) {
+        if (!day.equals(member.boardDay())) {
             Set<String> yesterday = new HashSet<>();
             member.dailies().forEach(d -> yesterday.add(d.defId()));
             member.previousDailies().clear();
             member.previousDailies().addAll(yesterday);
             member.dailies().clear();
-            for (int slot = 0; slot < DAILY_SLOTS; slot++) {
+            for (int slot = 0; slot < dailySlots; slot++) {
                 member.dailies().add(draw(member, slot));
             }
             member.setBoardDay(day);
             member.setRerollsUsed(0);
+            changed = true;
+        } else if (member.dailies().size() < dailySlots) {
+            // More slots mid-day (the board grew from 3 to 5): top up, keeping what was claimed or
+            // worked today, so nobody loses progress or gets a whole fresh board twice in one day.
+            for (int slot = member.dailies().size(); slot < dailySlots; slot++) {
+                member.dailies().add(draw(member, slot));
+            }
             changed = true;
         }
         if (!week.equals(member.boardWeek()) || member.weekly() == null) {

@@ -12,6 +12,8 @@ timezone: Europe/Zagreb
 registration-fee: 500
 daily-coin-cap: 2000
 daily-level-cap: 15
+# Daily contracts on each adventurer's board (Shenron's council, 2026-10-09: 5). The menu fits at most 5.
+daily-contracts: 5
 commission-rate: 0.05
 guildmaster-daily-withdrawal: 1000
 commissions-per-week: 3

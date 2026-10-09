@@ -55,12 +55,23 @@ class GuildMenusTest extends GuildTestBase {
     void theBoardShowsEveryRewardBeforeTheWork() {
         Member member = join(alice);
         Menu menu = menus.build(alice, GuildMenus.Screen.MAIN, 0);
-        for (int i = 0; i < 3; i++) {
+        assertEquals(5, member.dailies().size());
+        for (int i = 0; i < 5; i++) {
             ItemStack icon = menu.getInventory().getItem(GuildMenus.DAILY_SLOTS[i]);
             assertEquals(member.dailies().get(i).def().title(), name(icon));
             assertTrue(lore(icon).contains("Reward: "), lore(icon));
         }
         assertTrue(lore(menu.getInventory().getItem(GuildMenus.WEEKLY_SLOT)).contains("Reward: "));
+    }
+
+    @Test
+    void aDailyPastWhatTheLevelCapLeavesShowsTheClip() {
+        Member member = join(alice);
+        member.setLevelsToday(15);
+        Menu menu = menus.build(alice, GuildMenus.Screen.MAIN, 0);
+        String lore = lore(menu.getInventory().getItem(GuildMenus.DAILY_SLOTS[4]));
+        assertTrue(lore.contains("Today's limits leave room for"), lore);
+        assertTrue(lore.contains("and 0 levels"), lore);
     }
 
     @Test

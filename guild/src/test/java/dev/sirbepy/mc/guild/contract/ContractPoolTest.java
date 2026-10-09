@@ -74,10 +74,10 @@ class ContractPoolTest {
     }
 
     @Test
-    void aPerfectDayStaysUnderTheLevelCap() {
+    void aFullBoardOfDailiesFitsTheLevelCap() {
+        // With the weekly on top an A or S day passes 15 (5x3 + 5 = 20); claims clip to the cap for that.
         for (Rank rank : Rank.values()) {
-            int daily = Board.DAILY_SLOTS * rank.levels();
-            assertTrue(daily + Reward.WEEKLY_LEVELS <= 15, rank + " could pass 15 levels in a day");
+            assertTrue(Board.MAX_DAILY_SLOTS * rank.levels() <= 15, rank + " dailies alone pass 15 levels");
         }
     }
 

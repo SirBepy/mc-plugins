@@ -102,7 +102,7 @@ try {
   await step('a finished daily pays its advertised coins and mints the commission on top', async () => {
     const info = await member(HERO);
     const ids = [...info.matchAll(/Board [^:]*:(.*?)\|/g)][0][1].trim().split(' ').map((s) => s.split('[')[0]);
-    assert(ids.length === 3, `three dailies (got ${ids})`);
+    assert(ids.length === 5, `five dailies (got ${ids})`);
     const slot = 1;
     for (const give of HAND_INS[ids[slot]] ?? []) {
       await rcon.command(`minecraft:give ${HERO} minecraft:${give}`);
@@ -114,7 +114,7 @@ try {
     hero.chat('/guild');
     menu = await opened;
     const since = hero.lines.length;
-    await hero.clickWindow(21, 0, 0);
+    await hero.clickWindow(20, 0, 0); // daily slot 1 (dailies sit in 19-23)
     const paidLine = await waitForLine(hero, /Contract complete/, 10_000, since);
     const coins = Number(paidLine.match(/Paid: (\d+) coins/)[1]);
     await waitFor(async () => (await balance(HERO)) === before + coins, `hero paid ${coins}`, 10_000);

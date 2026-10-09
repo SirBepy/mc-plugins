@@ -36,7 +36,7 @@ around the real economy; worth seven Dragon Balls but creating gameplay, not han
 | Joining fee | 500 coins, once, into the Treasury |
 | Per adventurer, per real day, from Guild contracts | 2,000 coins and 15 XP levels |
 | Item rewards from generated contracts | iron tier at most: no diamond/netherite gear, no shulkers, no elytra, no high enchant books |
-| Contract volume | 3 dailies + 1 weekly per adventurer, plus rare contracts, bounties and Grand Quests, all inside the daily caps |
+| Contract volume | 5 dailies + 1 weekly per adventurer (3 dailies until Shenron's council raised it on 2026-10-09, see Pace), plus rare contracts, bounties and Grand Quests, all inside the daily caps |
 | Treasury income | fees + a 5% commission minted on top of every paid generated contract |
 | Guildmaster's own withdrawals | at most 1,000 coins per real day |
 | Guildmaster powers | view members/ranks/stats/ledger, feature contracts, announcements, occasional activities, up to 3 Treasury-funded commissions a week (paid from the Treasury, never minted; he can't take or claim his own) |
@@ -53,8 +53,9 @@ week, rewards he picks inside the Guild's bounds (10-1,000 coins), escrowed from
 at 0). The spawn market pays 28.8 for 64 logs, 16 for 64 cod, 160 for 16 diamonds; `prices.yml` values a
 diamond at 20. A Shenron money wish is 100,000. So the 2,000/day cap is a ceiling nobody should reach;
 real rewards sit an order of magnitude under it, and the Guild's value lives in progression, titles,
-access and story rather than coins. A full E-Rank day (3 dailies) pays about 75 coins, roughly 2.5 stacks
-of logs sold at the market; a full S-Rank day about 420 plus the weekly.
+access and story rather than coins. A full E-Rank day (5 dailies) pays about 125 coins, roughly 4 stacks
+of logs sold at the market; a full S-Rank day about 660 plus the weekly (700). Only an S day where most
+slots rolled rare (2x coins) plus the weekly can reach the 2,000 cap, and the claim clip handles it.
 
 ## Ranks
 
@@ -71,16 +72,19 @@ Reaching the reputation and the contract count unlocks that rank's Promotion Tri
 trial promotes. Reputation keeps counting while a trial waits. Nobody, the Guildmaster and ops
 included, can set a rank by hand in normal play (`/guildadmin` exists for testing and repairs only).
 
-Pace: dailies pay 10-30 reputation by rank and a weekly about 4x a daily, so a perfect player gains
-~35/day at E and ~90/day at A. D comes in about 4-5 days, C ~11, B ~3 weeks, A ~5 weeks, S ~7 weeks of
-perfect play plus five trials; the 150-contract floor alone needs ~48 days at 3 dailies + 1 weekly.
-Realistically S is a 2-3 month goal.
+Pace (5 dailies + 1 weekly, Shenron's council ruling on ImMijo's "more quests a day, 3 weeks of every
+quest = S rank", 2026-10-09, 5-0: more dailies, every threshold unchanged, so S stays genuinely hard):
+dailies pay 10-30 reputation by rank and a weekly about 4x a daily, so a perfect player gains ~56/day
+at E, ~141/day at A and ~163/day at S (effort multipliers averaged to 1, rares ignored). D comes in about
+3 days, C ~1 week, B ~2 weeks, A ~3 weeks (day ~22), S ~5 weeks (day ~33) of perfect play, plus the time
+five trials take, so A in about 3-4 weeks and S in about 5-6; the 150-contract floor alone needs ~29
+days. Realistically S is a 1.5-2 month goal. (At 3 dailies it was A ~5 weeks, S ~7, floor ~48 days.)
 
 ### Rank privileges (never stat buffs)
 
 | Rank | Unlocks |
 | --- | --- |
-| E | 3 dailies + 1 weekly, 1 free reroll a day |
+| E | 5 dailies + 1 weekly, 1 free reroll a day |
 | D | rare contracts can appear (10% per daily slot); commissions default to D+ |
 | C | 2 rerolls a day, the Nether opens on the board (fortresses, blazes, wart), Bounty Board (phase 3) |
 | B | rare chance 15%, bastions, trial chambers and Incendium's named mobs on the board |
@@ -91,11 +95,16 @@ Promotions to D and C are told to the player; B, A and S are announced to the wh
 
 ## Contracts
 
-Each adventurer has a personal board: **3 dailies** (new at midnight Europe/Zagreb) and **1 weekly**
-(new Monday 00:00 Europe/Zagreb). Whatever is left when a new set is drawn expires. Daily slot 1 draws
-from one rank below the adventurer (E stays E), slots 2-3 from their own rank; the weekly from their
-own rank's weekly pool. No contract appears twice on a board, and the last day's dailies are avoided
-when the pool allows, so a board rarely repeats.
+Each adventurer has a personal board: **5 dailies** (new at midnight Europe/Zagreb; `daily-contracts`
+in config.yml, 1-5, the menu has room for 5) and **1 weekly** (new Monday 00:00 Europe/Zagreb).
+Whatever is left when a new set is drawn expires. Daily slot 1 draws from one rank below the adventurer
+(E stays E), slots 2-5 from their own rank; the weekly from their own rank's weekly pool. No contract
+appears twice on a board, and the last day's dailies are avoided when the pool allows (every rank has
+10+ dailies, so 5 on the board plus yesterday's 5 still fit; past that, yesterday's come back before
+anything repeats), so a board rarely repeats. A board drawn with fewer slots than the config asks for
+(the 3-daily boards on 2026-10-09) gains the missing slots the same day, keeping what was already
+claimed, worked and rerolled; the full redraw waits for midnight. In the menu the dailies sit in row 3
+(slots 19-23), the weekly at its right end (25).
 
 Rewards by the **contract's** rank (each contract has an effort multiplier, 0.8-1.5, applied to coins
 and reputation, rounded):
@@ -110,7 +119,9 @@ and reputation, rounded):
 | S | 140 | 30 | 3 |
 
 Weekly: 5x coins, 4x reputation, 5 levels. Rare: 2x coins, 2x reputation, plus an iron-tier supply
-bundle. The most a perfect day pays in levels is 3x3 + 5 = 14, under the 15 cap. Every claim is clipped
+bundle. The dailies alone pay at most 5x3 = 15 levels (S), but with the weekly a perfect A day comes to
+19 and an S day to 20 (B lands on exactly 15), so A and S adventurers who claim everything are clipped
+to 15 that day. Every claim is clipped
 to what is left of that day's caps (coins and levels separately); the menu shows the clip before the
 click, and the Treasury commission is 5% of what was actually paid (at least 1 coin on a paid claim).
 

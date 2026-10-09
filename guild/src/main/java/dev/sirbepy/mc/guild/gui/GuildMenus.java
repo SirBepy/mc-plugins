@@ -40,7 +40,7 @@ public final class GuildMenus {
         void go(Menu shown, Screen screen, int page);
     }
 
-    static final int[] DAILY_SLOTS = {19, 21, 23};
+    static final int[] DAILY_SLOTS = {19, 20, 21, 22, 23};
     static final int WEEKLY_SLOT = 25;
     static final int PROFILE_SLOT = 4;
     static final int FEATURED_SLOT = 31;
@@ -121,7 +121,7 @@ public final class GuildMenus {
                 "Guild Treasury.",
                 "",
                 "You start as an E-Rank Adventurer with",
-                "3 daily contracts and 1 weekly contract.",
+                cfg.dailyContracts() + " daily contracts and 1 weekly contract.",
                 "",
                 "!Click to register")), (shown, click) -> {
             switch (guild.register(player)) {
