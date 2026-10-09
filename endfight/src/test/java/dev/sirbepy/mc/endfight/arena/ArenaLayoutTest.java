@@ -211,15 +211,52 @@ class ArenaLayoutTest {
     }
 
     @Test
-    void fortressBlocksStayWithinRadius22AndNeverAboveTheCourtyard() {
+    void fortressBlocksStayWithinRadius22AndNeverAboveTheCourtyardExceptTheAltar() {
         FortressResult fortress = FortressStructures.build(EndFightTestSupport.SURFACE_Y);
-        for (Placement p : fortress.placements()) {
+        Set<String> altarPositions = new HashSet<>();
+        for (Placement p : AltarStructures.build(EndFightTestSupport.SURFACE_Y).placements()) {
+            altarPositions.add(p.x() + "," + p.y() + "," + p.z());
+        }
+        List<Placement> all = new ArrayList<>(fortress.placements());
+        all.addAll(AltarStructures.build(EndFightTestSupport.SURFACE_Y).placements());
+        for (Placement p : all) {
             double distance = Math.hypot(p.x(), p.z());
             assertTrue(distance <= 22.0, "fortress block " + p + " is further than 22 from the portal");
-            // Paving at or below the surface and air cleared out of the gate paths may reach inside.
-            if (p.y() > EndFightTestSupport.SURFACE_Y && !p.blockData().equals("minecraft:air")) {
+            boolean isAltar = altarPositions.contains(p.x() + "," + p.y() + "," + p.z());
+            // Paving at or below the surface and air cleared out of the gate paths may reach
+            // inside, and so does the altar itself - a small dais deliberately placed inside the
+            // courtyard, just north of the portal (Joe, 2026-10-09).
+            if (p.y() > EndFightTestSupport.SURFACE_Y && !p.blockData().equals("minecraft:air") && !isAltar) {
                 assertTrue(distance >= 14.0, "fortress block " + p + " is above the open courtyard");
             }
+        }
+    }
+
+    @Test
+    void altarClickableBlockSitsWellInsideTheCourtyard() {
+        AltarStructures.AltarResult altar = AltarStructures.build(EndFightTestSupport.SURFACE_Y);
+        double distance = Math.hypot(altar.clickX(), altar.clickZ());
+        assertTrue(distance <= 13.0, "the altar's clickable block should stay within radius 13 of the portal");
+    }
+
+    @Test
+    void noAltarBlockSitsAboveThePortal() {
+        for (Placement p : AltarStructures.build(EndFightTestSupport.SURFACE_Y).placements()) {
+            boolean overPortal = Math.abs(p.x()) <= 2 && Math.abs(p.z()) <= 2;
+            assertFalse(overPortal, "altar block " + p + " is above the portal");
+        }
+    }
+
+    @Test
+    void everyAltarBlockIsFoldedIntoTheFullArenaLayoutAndSoProtected() {
+        AltarStructures.AltarResult altar = AltarStructures.build(EndFightTestSupport.SURFACE_Y);
+        assertFalse(altar.placements().isEmpty());
+        Set<String> layoutPositions = new HashSet<>();
+        for (Placement p : layout.placements()) {
+            layoutPositions.add(p.x() + "," + p.y() + "," + p.z());
+        }
+        for (Placement p : altar.placements()) {
+            assertTrue(layoutPositions.contains(p.x() + "," + p.y() + "," + p.z()), "altar block " + p + " missing from the full arena layout");
         }
     }
 

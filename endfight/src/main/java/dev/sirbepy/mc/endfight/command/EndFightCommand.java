@@ -9,6 +9,8 @@ import dev.sirbepy.mc.endfight.arena.ArenaRegistry;
 import dev.sirbepy.mc.endfight.arena.ArenaService;
 import dev.sirbepy.mc.endfight.cult.CultCommand;
 import dev.sirbepy.mc.endfight.reward.RewardService;
+import dev.sirbepy.mc.endfight.tier.Tier;
+import dev.sirbepy.mc.endfight.tier.TierService;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import net.kyori.adventure.text.Component;
@@ -17,23 +19,27 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import java.util.Locale;
 import java.util.function.Supplier;
 
-/** {@code /endfight status|build|rebuild|clear|reload|rewards}, plus whatever {@link CultCommand}
- * attaches ({@code cult status|spawn|clear}), console+op only. Thin: every branch calls straight
- * into {@link ArenaService} or {@link RewardService}. */
+/** {@code /endfight status|build|rebuild|clear|reload|rewards|tier}, plus whatever
+ * {@link CultCommand} attaches ({@code cult status|spawn|clear}), console+op only. Thin: every
+ * branch calls straight into {@link ArenaService}, {@link RewardService} or {@link TierService}. */
 public final class EndFightCommand {
 
     private final ArenaService service;
     private final Supplier<EndFightConfig> config;
     private final Runnable reload;
     private final RewardService rewards;
+    private final TierService tiers;
 
-    public EndFightCommand(ArenaService service, Supplier<EndFightConfig> config, Runnable reload, RewardService rewards) {
+    public EndFightCommand(ArenaService service, Supplier<EndFightConfig> config, Runnable reload, RewardService rewards,
+                            TierService tiers) {
         this.service = service;
         this.config = config;
         this.reload = reload;
         this.rewards = rewards;
+        this.tiers = tiers;
     }
 
     public void registerInto(Commands registrar, CultCommand cultCommand) {
@@ -47,8 +53,38 @@ public final class EndFightCommand {
                 .then(Commands.literal("rewards")
                         .then(Commands.literal("status").executes(this::rewardsStatus))
                         .then(Commands.literal("test")
-                                .then(Commands.argument("player", StringArgumentType.word()).executes(this::rewardsTest))));
+                                .then(Commands.argument("player", StringArgumentType.word()).executes(this::rewardsTest))))
+                .then(Commands.literal("tier")
+                        .then(Commands.literal("status").executes(this::tierStatus))
+                        .then(Commands.literal("set")
+                                .then(Commands.argument("tier", StringArgumentType.word()).executes(this::tierSet))));
         registrar.register(cultCommand.attach(root).build(), "Manage the End Fight arena");
+    }
+
+    private int tierStatus(CommandContext<CommandSourceStack> ctx) {
+        ctx.getSource().getSender().sendMessage(Component.text(
+                "Next: " + tiers.next().displayName() + ", current fight: " + tiers.current().displayName()
+                        + ", first kill ever: " + tiers.firstKillEver()));
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int tierSet(CommandContext<CommandSourceStack> ctx) {
+        CommandSender sender = ctx.getSource().getSender();
+        String raw = StringArgumentType.getString(ctx, "tier");
+        Tier tier;
+        try {
+            tier = Tier.valueOf(raw.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            sender.sendMessage(Component.text("Unknown tier: " + raw));
+            return Command.SINGLE_SUCCESS;
+        }
+        if (tiers.firstKillEver()) {
+            config.get().messages().send(sender, "tier-locked-first-kill");
+            return Command.SINGLE_SUCCESS;
+        }
+        tiers.setNext(tier, sender instanceof Player player ? player : null);
+        config.get().messages().send(sender, "tier-set", Placeholder.unparsed("tier", tier.displayName()));
+        return Command.SINGLE_SUCCESS;
     }
 
     private int rewardsStatus(CommandContext<CommandSourceStack> ctx) {

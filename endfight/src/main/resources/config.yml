@@ -29,6 +29,24 @@ rewards:
       - material: EXPERIENCE_BOTTLE
         amount: 8
 
+tiers:
+  # The altar's pick before anyone has ever touched it, and what a fresh plugins/EndFight/tier.yml
+  # starts from. The server's actual first-ever dragon is still forced to Ferocious regardless of
+  # this (and of the altar) - see docs/endfight.md's Altar & tiers section.
+  default: FLEDGELING
+
+  # How long after a fresh dragon spawns EndFight waits before pushing the locked tier onto it.
+  # Dragonkind Evolved ticks every dragon once a second looking for one it hasn't started yet
+  # (see DkeTierPusher's class docs); this needs to stay comfortably past that 20-tick window so
+  # DKE has already started the dragon before EndFight's own push lands on top of it.
+  apply-delay-ticks: 60
+
+  dke:
+    # null (default) auto-detects Dragonkind Evolved through Bukkit's datapack list (matching a
+    # pack name containing "dke" or "dragonkind"); set true/false here if live's actual datapack
+    # filename matches neither and auto-detect guesses wrong.
+    force-installed:
+
 messages:
   reload-success: "<green>EndFight config reloaded."
   build-success: "<green>Arena built: <pillars> pillars, <blocks> blocks."
@@ -36,6 +54,9 @@ messages:
   clear-success: "<green>Arena cleared."
   clear-failed: "<red>Could not clear the arena; see console."
   reward-delivered: "<gold>The dragon's hoard: <xp> XP and a bundle went to your <where>."
+  tier-announce: "<light_purple><player> set the next dragon to <tier>."
+  tier-set: "<green>The next dragon will be <tier>."
+  tier-locked-first-kill: "<red>The server's first dragon is always Ferocious; the altar is locked until it falls."
 
 # The illager cult guarding the arena: guards on every outpost/balcony/gatehouse/wall, and waves
 # that pour out of the fortress gates as the dragon loses health. Short notice before the first

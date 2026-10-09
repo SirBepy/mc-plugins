@@ -1,5 +1,11 @@
 package dev.sirbepy.mc.endfight;
 
+import dev.sirbepy.mc.core.gui.MenuListener;
+import dev.sirbepy.mc.endfight.altar.AltarInteractListener;
+import dev.sirbepy.mc.endfight.altar.AltarLocator;
+import dev.sirbepy.mc.endfight.altar.AltarMenu;
+import dev.sirbepy.mc.endfight.altar.AuraMenu;
+import dev.sirbepy.mc.endfight.altar.WeeklyHoardInfo;
 import dev.sirbepy.mc.endfight.arena.ArenaListener;
 import dev.sirbepy.mc.endfight.arena.ArenaProtection;
 import dev.sirbepy.mc.endfight.arena.ArenaRegistry;
@@ -16,6 +22,13 @@ import dev.sirbepy.mc.endfight.reward.DragonDeathListener;
 import dev.sirbepy.mc.endfight.reward.PendingRewardsStore;
 import dev.sirbepy.mc.endfight.reward.RewardJoinListener;
 import dev.sirbepy.mc.endfight.reward.RewardService;
+import dev.sirbepy.mc.endfight.tier.BukkitDkePresence;
+import dev.sirbepy.mc.endfight.tier.BukkitEndDragonBattleHistory;
+import dev.sirbepy.mc.endfight.tier.ConsoleCommandSink;
+import dev.sirbepy.mc.endfight.tier.DkeTierPusher;
+import dev.sirbepy.mc.endfight.tier.TierApplyListener;
+import dev.sirbepy.mc.endfight.tier.TierKillTracker;
+import dev.sirbepy.mc.endfight.tier.TierService;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -65,8 +78,25 @@ public final class EndFightPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new DragonDeathListener(rewards), this);
         getServer().getPluginManager().registerEvents(new RewardJoinListener(this, rewards), this);
 
+        // --- Altar & tiers: the altar picks the next fight's DKE/HP tier - see docs/endfight.md --
+        TierService tiers = new TierService(new File(getDataFolder(), "tier.yml"), config.get().defaultTier(),
+                new BukkitEndDragonBattleHistory(service::endWorld), getLogger());
+        DkeTierPusher dkePusher = new DkeTierPusher(
+                new BukkitDkePresence(() -> config.get().dkeForceInstalled(), getLogger()),
+                new ConsoleCommandSink(), getLogger());
+        TierApplyListener tierApplyListener = new TierApplyListener(this, tiers, dkePusher, config.get().tierApplyDelayTicks());
+        getServer().getPluginManager().registerEvents(tierApplyListener, this);
+        getServer().getPluginManager().registerEvents(new TierKillTracker(tiers), this);
+        tierApplyListener.applyToExistingDragon();
+
+        AltarLocator altarLocator = new AltarLocator(registry);
+        AltarMenu altarMenu = new AltarMenu(tiers, config::get, WeeklyHoardInfo.NONE_TAKEN, AuraMenu.NONE);
+        getServer().getPluginManager().registerEvents(new AltarInteractListener(altarLocator, altarMenu), this);
+        getServer().getPluginManager().registerEvents(new MenuListener(), this);
+        // --- end altar & tiers -----------------------------------------------------------------
+
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
-            EndFightCommand command = new EndFightCommand(service, config::get, this::reload, rewards);
+            EndFightCommand command = new EndFightCommand(service, config::get, this::reload, rewards, tiers);
             command.registerInto(event.registrar(), new CultCommand(cultGuards));
         });
     }

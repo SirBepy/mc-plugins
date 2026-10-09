@@ -134,6 +134,47 @@ removed only once actually delivered, so nothing pays twice and nothing is lost 
 only for the server's first dragon ever. EndFight's XP + bundle go to every participant, Guild
 member or not, on every kill.
 
+## Altar & tiers
+
+Joe's decisions, 2026-10-09. The dragon's difficulty tier - `dev.sirbepy.mc.endfight.tier.Tier`,
+Dragonkind Evolved's own order and health (Fledgeling 250 HP to Ascended 1250, see `Tier.java`) -
+is picked by players, not by DKE's own kill-count math, which EndFight overrides every fight.
+
+**The altar.** A small crying-obsidian dais (`AltarStructures`) stands just inside the fortress
+courtyard, north of the exit portal. Right-clicking its lodestone opens the "Dragon Altar" menu: one
+icon per tier, click to set it as the pick for the **next** fight (announced to everyone currently in
+the End), plus an "Auras" slot for a later phase. A choice made while a dragon is alive only takes
+effect on the fight after it - the tier locks in the moment a fresh dragon spawns
+(`TierApplyListener`/`TierService#lockForSpawn`), not when the altar is clicked.
+
+**First kill ever.** The server's actual first Ender Dragon kill (Saturday 2026-10-10) is forced to
+Ferocious (850 HP) regardless of what the altar says, and the menu shows every tier locked with an
+explanation until then. "No dragon has ever died in this End" combines two signals, either one
+enough to clear it: `World#getEnderDragonBattle().hasBeenPreviouslyKilled()` (behind
+`EndDragonBattleHistory`, since MockBukkit throws for that call) and EndFight's own persisted flag in
+`tier.yml`, set the moment a real kill is detected in the End (independently of `reward/`'s own kill
+listener, since this module doesn't depend on that package).
+
+**Pushing the tier to DKE.** DKE ticks every dragon once a second looking for one it hasn't started
+yet, and starts/buffs it the moment it finds one - there's no gap to intercept mid-chain. So EndFight
+lets DKE go first, waits past that window (`tiers.apply-delay-ticks`), then re-runs DKE's own
+`dke:dragons/dragon_buff_<tier>` function on the dragon (after `dke:dragons/reset_tag`, so the
+re-run's cosmetic type reskin doesn't stack with DKE's first pass) - safe because that function always
+does an absolute `attribute ... base set`/`data modify ... Health set value`, never a relative
+modifier, so re-running it after DKE's own pass is idempotent. See `DkeTierPusher`'s class docs for
+the full research (tier name mapping, exact tick timing, why pre-seeding DKE's own kill-count scores
+was rejected). Whichever dragon vanilla had already spawned before this plugin could register a
+listener (the live End's very first one) is caught once on enable, marked with a PDC flag so a
+restart never re-applies.
+
+**Without DKE.** If the datapack isn't installed (checked via Bukkit's datapack list, with a
+`tiers.dke.force-installed` override if the real filename doesn't match the "dke"/"dragonkind"
+heuristic), EndFight sets the dragon's max health and health directly to `Tier#health()` instead.
+Either way, the dragon's actual max health is logged once applied.
+
+Commands: `/endfight tier status` (next pick, current fight's tier, first-kill-ever state) and
+`/endfight tier set <tier>` (same as the altar, refused during the first-kill-ever lock).
+
 ### `DragonFighters` (core)
 
 The attribution logic itself - melee/projectile/pet blame via the damage source, and the bed/anchor

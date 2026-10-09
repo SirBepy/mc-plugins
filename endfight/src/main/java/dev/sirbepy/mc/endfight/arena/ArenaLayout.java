@@ -60,6 +60,8 @@ public final class ArenaLayout {
         guardPosts.addAll(fortress.guardPosts());
         waveSpawns.addAll(fortress.waveSpawns());
 
+        placements.addAll(AltarStructures.build(surfaceY).placements());
+
         return new ArenaLayout(placements, guardPosts, waveSpawns, treads);
     }
 

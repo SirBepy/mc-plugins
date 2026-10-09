@@ -4,6 +4,7 @@ import dev.sirbepy.mc.core.Messages;
 import dev.sirbepy.mc.endfight.cult.CultConfig;
 import dev.sirbepy.mc.endfight.perch.PerchGateConfig;
 import dev.sirbepy.mc.endfight.reward.RewardBundle;
+import dev.sirbepy.mc.endfight.tier.Tier;
 import org.bukkit.configuration.file.FileConfiguration;
 
 /** Snapshot of {@code config.yml}, rebuilt by {@code /endfight reload}. */
@@ -15,6 +16,9 @@ public final class EndFightConfig {
     private final PerchGateConfig perchGate;
     private final boolean rewardsEnabled;
     private final RewardBundle rewardBundle;
+    private final Tier defaultTier;
+    private final long tierApplyDelayTicks;
+    private final Boolean dkeForceInstalled;
 
     public EndFightConfig(FileConfiguration config) {
         this.autoBuild = config.getBoolean("arena.auto-build", true);
@@ -23,6 +27,21 @@ public final class EndFightConfig {
         this.perchGate = new PerchGateConfig(config.getConfigurationSection("perch-gate"));
         this.rewardsEnabled = config.getBoolean("rewards.enabled", true);
         this.rewardBundle = RewardBundle.from(config.getConfigurationSection("rewards.bundle"));
+        this.defaultTier = parseTier(config.getString("tiers.default"));
+        this.tierApplyDelayTicks = config.getLong("tiers.apply-delay-ticks", 60L);
+        this.dkeForceInstalled = config.isSet("tiers.dke.force-installed")
+                ? config.getBoolean("tiers.dke.force-installed") : null;
+    }
+
+    private static Tier parseTier(String name) {
+        if (name == null) {
+            return Tier.FLEDGELING;
+        }
+        try {
+            return Tier.valueOf(name);
+        } catch (IllegalArgumentException e) {
+            return Tier.FLEDGELING;
+        }
     }
 
     public boolean autoBuild() {
@@ -49,5 +68,25 @@ public final class EndFightConfig {
 
     public RewardBundle rewardBundle() {
         return rewardBundle;
+    }
+
+    /** The altar's tier choice before anyone has ever touched it, and what a fresh
+     * {@code tier.yml} starts from. */
+    public Tier defaultTier() {
+        return defaultTier;
+    }
+
+    /** How long after a dragon spawns {@code TierApplyListener} waits before pushing the locked
+     * tier - comfortably past Dragonkind Evolved's own 1-second tick (see {@code DkeTierPusher}'s
+     * class docs), so DKE has already started the dragon and this plugin's push always lands
+     * last. */
+    public long tierApplyDelayTicks() {
+        return tierApplyDelayTicks;
+    }
+
+    /** {@code null} auto-detects Dragonkind Evolved through the datapack list; {@code true}/
+     * {@code false} overrides that for a live datapack filename the auto-detect heuristic misses. */
+    public Boolean dkeForceInstalled() {
+        return dkeForceInstalled;
     }
 }
