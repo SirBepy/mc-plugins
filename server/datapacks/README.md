@@ -43,6 +43,18 @@ are committed as files and copied into `world/datapacks` by `:server:assembleSer
   even load; also worth noting EDF Remastered's own FAQ says it has no plans to be compatible with
   other End overhauls like True Ending, so only one could ever ship anyway. Revisit once either
   publishes a 26.3 build.
+- **Dragonkind Evolved** by kanokarob (2026-10-09, Joe's pick for the dragon fight, alongside our
+  own EndFight plugin): `dragonkind-evolved-v1.15.zip` is Modrinth's `dragonkind-evolved` v1.15,
+  the 26.3 datapack (version id `ukamYQGg`, sha512 starting `4b8236362128b165`, matches the
+  Modrinth API). Only datapack files inside (functions, tags, loot tables, two structure nbts, no
+  jars or scripts). It adds 16 dragon types and difficulty tiers (Fledgeling 250 HP up to
+  Ascended), crystal abilities, servants and its own portal loot; EndFight picks the tier for each
+  fight (docs/endfight.md). Its license (github.com/kanokarob/Dragonkind-Evolved, license.txt)
+  allows running it on a public server but forbids distributing the pack, whole or in part,
+  edited or not, without the author's written permission: so it is only committed here (private
+  repo) and installed on the server. Its custom items need its own resource pack
+  (`dragonkind-evolved-RP-by-kanokarob-v1.10.zip`, same Modrinth version), which must NOT be merged
+  into our published server pack for the same reason.
 
 ## Vanilla Tweaks (vanillatweaks.net), generated 2026-10-02 for Minecraft 26.3
 
