@@ -9,6 +9,11 @@
       {
         "texture": "claudesmp:dragonscale"
       }
+    ],
+    "wings": [
+      {
+        "texture": "claudesmp:dragonscale"
+      }
     ]
   }
 }

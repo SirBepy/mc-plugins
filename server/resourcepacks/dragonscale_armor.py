@@ -1,11 +1,14 @@
 """Draws the Dragonscale armor look: the Ender Dragon kill reward (Joe, 2026-10-09), real netherite
 helmet/chestplate/leggings/boots with no enchantments, given by the endfight plugin. This writes the
-worn equipment layers (claudesmp:dragonscale, picked by the item's equippable.asset_id) and the four
+worn equipment layers (claudesmp:dragonscale, picked by the item's equippable.asset_id, including a
+"wings" layer WingsLayer only ever draws while the item sits in the chest slot) and the four
 inventory icons (picked by custom_model_data string "dragonscale") into claudesmp-items/.
 
 Theme: the Ender Dragon. Near-black overlapping scales with violet-purple edge highlights, a couple
 of magenta "ender eye" glints (helmet brow, chest centre), a ridged spine down the helmet's crest and
-spiked pauldrons on the shoulders.
+spiked pauldrons on the shoulders. The chestplate's wings layer is a membrane instead of scales: a
+dark-plum-to-near-black gradient, violet bone/finger lines, a scalloped darker trailing edge and a
+small claw at the shoulder joint.
 
 The six masks below (HUMANOID_MASK, LEGGINGS_MASK, ICON_MASKS) are the alpha silhouettes of the 26.3
 client jar's own assets/minecraft/textures/entity/equipment/{humanoid,humanoid_leggings}/netherite.png
@@ -32,6 +35,7 @@ ROOT = Path(__file__).resolve().parent
 PACK = ROOT / "claudesmp-items" / "assets" / "claudesmp"
 EQUIP_HUMANOID = PACK / "textures" / "entity" / "equipment" / "humanoid"
 EQUIP_LEGGINGS = PACK / "textures" / "entity" / "equipment" / "humanoid_leggings"
+EQUIP_WINGS = PACK / "textures" / "entity" / "equipment" / "wings"
 ICONS = PACK / "textures" / "item"
 
 # --- vanilla netherite silhouettes (26.3 client jar), one row per texel, '#' opaque / '.' empty ---
@@ -104,6 +108,45 @@ LEGGINGS_MASK = [
     "................########################........................",
     "................########################........................",
     "................########################........................",
+]
+
+# The 26.3 client jar's own assets/minecraft/textures/entity/equipment/wings/elytra.png (dumped
+# 2026-10-09): two authored UV islands (a thin rib strip, a tapering membrane panel) on an otherwise
+# empty 64x32 sheet; ElytraModel reuses this one texture mirrored for the left/right wing, so only
+# one island needs painting.
+WINGS_MASK = [
+    "...............................#########........................",
+    "................................##..............................",
+    "..................................########......................",
+    "..................................#########.....................",
+    "...................................#########....................",
+    "...................................#########....................",
+    "...................................#########....................",
+    "...................................##########...................",
+    "...................................##########...................",
+    "...................................##########...................",
+    "...................................##########...................",
+    "......................#.............##########..................",
+    "......................#.............##########..................",
+    "......................#.............##########..................",
+    "......................#.............##########..................",
+    "......................#.............##########..................",
+    "......................#..............#########..................",
+    "......................#..............#########..................",
+    "......................#..............#########..................",
+    "......................#...............########..................",
+    "......................#...............########..................",
+    "......................#................#######..................",
+    "................................................................",
+    "................................................................",
+    "................................................................",
+    "................................................................",
+    "................................................................",
+    "................................................................",
+    "................................................................",
+    "................................................................",
+    "................................................................",
+    "................................................................",
 ]
 
 ICON_MASKS = {
@@ -225,10 +268,11 @@ def scale_color(x, y):
     return base
 
 
-def paint(mask, accents=(), edge="violet"):
-    """Fills every opaque mask pixel with the scale pattern, trims silhouette-edge pixels (a lighter
-    violet rim on worn equipment layers so parts read in 3D, or a vanilla-style dark outline on
-    icons), then stamps the accents (glints, crest, pauldron spikes) on top."""
+def paint(mask, accents=(), edge="violet", fill=scale_color):
+    """Fills every opaque mask pixel with `fill` (the scale pattern by default), trims
+    silhouette-edge pixels (a lighter violet rim on worn equipment layers so parts read in 3D, or a
+    vanilla-style dark outline on icons), then stamps the accents (glints, crest, pauldron spikes,
+    wing claw) on top."""
     h, w = len(mask), len(mask[0])
     edge_color = EDGE_TRIM if edge == "violet" else ICON_OUTLINE
 
@@ -242,11 +286,46 @@ def paint(mask, accents=(), edge="violet"):
             if not opaque(x, y):
                 continue
             is_edge = not (opaque(x - 1, y) and opaque(x + 1, y) and opaque(x, y - 1) and opaque(x, y + 1))
-            px[x, y] = (edge_color if is_edge else scale_color(x, y)) + (255,)
+            px[x, y] = (edge_color if is_edge else fill(x, y)) + (255,)
     for x, y, col in accents:
         if opaque(x, y):
             px[x, y] = col + (255,)
     return img
+
+
+def membrane_color(x, y):
+    """Smooth dark-plum-to-near-black wing membrane (no scale shingles): lighter violet-plum near
+    the shoulder joint (low y), darkening toward the tip, the way stretched skin thins with
+    distance from the bone."""
+    return _mix(CORE_B, GROOVE, min(1.0, y / 21))
+
+
+def _wing_accents(mask):
+    """Violet finger/bone lines fanning down the membrane panel, a scalloped darker notch every
+    other row along its tapering (trailing) edge, and a small dark claw hooking off the shoulder
+    joint at the panel's first row. Skips the 1px rib strip (x <= 25): paint()'s own edge-detection
+    already renders it as a solid violet bone line since every pixel in a 1px-wide strip is an edge."""
+    accents = []
+    for y, row in enumerate(mask):
+        xs = [x for x, c in enumerate(row) if c == "#" and x > 25]
+        if len(xs) < 4:
+            continue
+        lo, hi = min(xs), max(xs)
+        span = hi - lo
+        for frac in (0.3, 0.7):
+            fx = lo + round(span * frac)
+            if fx in xs:
+                accents.append((fx, y, RIM_B))
+        if y % 2 == 0:
+            accents.append((lo, y, CREST))
+    top_xs = [x for x, c in enumerate(mask[0]) if c == "#"]
+    if top_xs:
+        mid = top_xs[len(top_xs) // 2]
+        accents += [(mid - 1, 0, CREST), (mid, 0, EDGE_TRIM)]
+    return accents
+
+
+WINGS_ACCENTS = _wing_accents(WINGS_MASK)
 
 
 def _rect(x0, y0, w, h, col):
@@ -325,13 +404,17 @@ def side_by_side(images, gap=4, factor=8):
 def main():
     EQUIP_HUMANOID.mkdir(parents=True, exist_ok=True)
     EQUIP_LEGGINGS.mkdir(parents=True, exist_ok=True)
+    EQUIP_WINGS.mkdir(parents=True, exist_ok=True)
     ICONS.mkdir(parents=True, exist_ok=True)
 
     humanoid = paint(HUMANOID_MASK, HUMANOID_ACCENTS)
     humanoid.save(EQUIP_HUMANOID / "dragonscale.png")
     leggings = paint(LEGGINGS_MASK)
     leggings.save(EQUIP_LEGGINGS / "dragonscale.png")
-    print(f"equipment: {EQUIP_HUMANOID / 'dragonscale.png'}, {EQUIP_LEGGINGS / 'dragonscale.png'}")
+    wings = paint(WINGS_MASK, WINGS_ACCENTS, fill=membrane_color)
+    wings.save(EQUIP_WINGS / "dragonscale.png")
+    print(f"equipment: {EQUIP_HUMANOID / 'dragonscale.png'}, {EQUIP_LEGGINGS / 'dragonscale.png'}, "
+          f"{EQUIP_WINGS / 'dragonscale.png'}")
 
     icons = {}
     for piece, mask in ICON_MASKS.items():
@@ -345,7 +428,8 @@ def main():
     out = Path(sys.argv[1])
     out.mkdir(parents=True, exist_ok=True)
 
-    for name, img in [("equipment_humanoid", humanoid), ("equipment_leggings", leggings)] + list(icons.items()):
+    for name, img in [("equipment_humanoid", humanoid), ("equipment_leggings", leggings),
+                       ("equipment_wings", wings)] + list(icons.items()):
         upscale(img, 8).save(out / f"dragonscale_{name}_8x.png")
 
     front_view(humanoid, leggings).save(out / "dragonscale_front_view.png")

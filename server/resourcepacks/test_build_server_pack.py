@@ -216,7 +216,7 @@ class BuiltPackTest(unittest.TestCase):
         # sets equippable.asset_id to it); both layers must exist at the same size as vanilla's own
         # netherite armor layers so the client's humanoid/humanoid_leggings model fits them.
         equipment = self.json("assets/claudesmp/equipment/dragonscale.json")
-        self.assertEqual(set(equipment["layers"]), {"humanoid", "humanoid_leggings"})
+        self.assertEqual(set(equipment["layers"]), {"humanoid", "humanoid_leggings", "wings"})
         for layer, ref in (("humanoid", "claudesmp:dragonscale"), ("humanoid_leggings", "claudesmp:dragonscale")):
             textures = [l["texture"] for l in equipment["layers"][layer]]
             self.assertEqual(textures, [ref], layer)
@@ -224,6 +224,23 @@ class BuiltPackTest(unittest.TestCase):
             self.assertIn(path, self.entries, layer)
             png = Image.open(io.BytesIO(self.entries[path]))
             self.assertEqual(png.size, (64, 32), layer)
+
+    def test_dragonscale_equipment_asset_has_a_wings_layer_sized_like_vanilla_elytra(self):
+        # WingsLayer (26.3 client jar, javap-verified 2026-10-09) reads only
+        # HumanoidRenderState.chestEquipment, so a "wings" entry on this shared equipment asset can
+        # only ever render while Dragonscale is worn as the chestplate; a helmet/leggings/boots
+        # wearer never triggers it even though they point at the same asset file.
+        equipment = self.json("assets/claudesmp/equipment/dragonscale.json")
+        self.assertIn("wings", equipment["layers"])
+        textures = [l["texture"] for l in equipment["layers"]["wings"]]
+        self.assertEqual(textures, ["claudesmp:dragonscale"])
+        path = "assets/claudesmp/textures/entity/equipment/wings/dragonscale.png"
+        self.assertIn(path, self.entries)
+        png = Image.open(io.BytesIO(self.entries[path]))
+        # Vanilla's own assets/minecraft/textures/entity/equipment/wings/elytra.png (26.3 client
+        # jar) is 64x32; ElytraModel's cubes carry fixed UVs into this sheet, so a mismatched size
+        # would scramble the membrane across the wrong faces.
+        self.assertEqual(png.size, (64, 32))
 
     def test_dragonscale_armor_resolves_on_all_four_pieces_with_vanilla_trims_kept_as_fallback(self):
         # Joe, 2026-10-09: the Ender Dragon kill reward is real netherite armor with no
