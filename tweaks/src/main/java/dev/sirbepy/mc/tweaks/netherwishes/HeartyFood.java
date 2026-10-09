@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.tweaks.netherwishes;
 
+import dev.sirbepy.mc.tweaks.OwnerArgument;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.FoodProperties;
 import net.kyori.adventure.text.Component;
@@ -63,7 +64,7 @@ public final class HeartyFood implements Listener {
     }
 
     private boolean isOwner(Entity entity) {
-        return entity instanceof Player && entity.getUniqueId().equals(owner.get());
+        return OwnerArgument.isOwner(entity, owner.get());
     }
 
     static boolean isFood(ItemStack item) {

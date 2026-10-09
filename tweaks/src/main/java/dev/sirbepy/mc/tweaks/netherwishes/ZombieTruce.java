@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.tweaks.netherwishes;
 
+import dev.sirbepy.mc.tweaks.OwnerArgument;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Server;
 import org.bukkit.entity.Entity;
@@ -52,7 +53,7 @@ public final class ZombieTruce implements Listener {
     }
 
     private boolean isOwner(Entity entity) {
-        return entity instanceof Player && entity.getUniqueId().equals(owner.get());
+        return OwnerArgument.isOwner(entity, owner.get());
     }
 
     /** Paper keeps the spawn reason in the mob's save data, so a cousin stays outside the truce after a restart. */
