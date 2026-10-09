@@ -79,7 +79,7 @@ public final class CultWaves implements Listener {
         }
         World world = dragon.getWorld();
         List<Player> nearby = CultRange.playersInRange(world, cfg.waves().range());
-        int alive = CultRange.aliveCultCount(world);
+        int alive = CultRange.aliveWaveCount(world);
         List<String> spawnTypes = WaveMath.spawnList(entries, nearby.size(), alive, cfg.maxAlive());
         if (spawnTypes.isEmpty()) {
             return;

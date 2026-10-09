@@ -33,6 +33,17 @@ final class CultRange {
         return count;
     }
 
+    /** Live wave mobs only: guards have a post, and there is one per post however many that is. */
+    static int aliveWaveCount(World world) {
+        int count = 0;
+        for (LivingEntity entity : world.getEntitiesByClass(LivingEntity.class)) {
+            if (CultMarker.isCult(entity) && CultMarker.postIndex(entity) < 0) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     private static double horizontalDistanceSquared(Location at) {
         return at.getX() * at.getX() + at.getZ() * at.getZ();
     }

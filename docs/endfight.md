@@ -60,9 +60,9 @@ hits and breath attacks near a guard still hurt it like any other mob, same as v
   `cult.die-with-dragon` is off.
 - **Waves** pour out of all 4 fortress gates when the dragon's health crosses 75%, 50% and 25% of
   its (possibly datapack-raised) max health, once per threshold per dragon. Each wave is bigger
-  with more players in the End near the portal, and a chat line announces it. A hard cap
-  (`cult.max-alive`, default 60) on live cult mobs holds regardless of how big a wave's math says it
-  should be.
+  with more players in the End near the portal, and a chat line announces it. A cap
+  (`cult.max-alive`, default 60) on live wave mobs holds regardless of how big a wave's math says it
+  should be; guards don't count toward it.
 - Everything here is behind `cult.guards.enabled` / `cult.waves.enabled`, both on by default, plus
   the composition and timing knobs in `config.yml`'s `cult` section.
 

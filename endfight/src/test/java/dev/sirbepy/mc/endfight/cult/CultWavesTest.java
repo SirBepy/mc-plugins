@@ -95,6 +95,21 @@ class CultWavesTest {
         assertEquals(6, aliveCultCount(end));
     }
 
+    // A full arena has more guards (one per post, ~95) than the wave cap, which must not swallow
+    // every wave: the cap only counts wave mobs.
+    @Test
+    void guardsBeyondTheCapStillLeaveRoomForAWave() {
+        for (int i = 0; i < 100; i++) {
+            CultMarker.markGuard(end.spawn(new Location(end, 20, 65, 0), Pillager.class), i);
+        }
+        EnderDragon dragon = dragonWithMaxHealth(200);
+        dragon.setHealth(140);
+
+        waves.onDamage(new EntityDamageEvent(dragon, EntityDamageEvent.DamageCause.ENTITY_ATTACK, 60));
+
+        assertEquals(106, aliveCultCount(end), "100 guards plus wave 1's 6 mobs");
+    }
+
     @Test
     void aSecondHitThatDoesNotCrossAnotherThresholdSpawnsNothingMore() {
         EnderDragon dragon = dragonWithMaxHealth(200);

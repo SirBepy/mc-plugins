@@ -41,8 +41,8 @@ messages:
 # that pour out of the fortress gates as the dragon loses health. Short notice before the first
 # fight (2026-10-10), so every part of this has its own switch, default on.
 cult:
-  # Hard cap on live cult mobs at once (guards + wave mobs together) - a wave that would push past
-  # it just spawns fewer mobs, in composition order.
+  # Cap on live wave mobs at once (guards don't count: there is one per post) - a wave that would
+  # push past it just spawns fewer mobs, in composition order.
   max-alive: 60
   # When the dragon dies, every remaining cult mob dies with it in a puff of soul particles.
   # Unconfirmed with Joe - off this switch if it turns out wrong.
