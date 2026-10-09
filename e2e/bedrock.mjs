@@ -41,9 +41,13 @@ for (const p of [
   fs.rmSync(p, { force: true });
 }
 
+// Geyser's own bedrock port, from the config the server booted with (25572 on the live layout).
+const geyserConfig = fs.readFileSync(path.join(localDir, 'plugins', 'Geyser-Spigot', 'config.yml'), 'utf8');
+const bedrockPort = Number(geyserConfig.match(/^bedrock:\s*\n(?:[ \t]+.*\n)*?[ \t]+port:\s*(\d+)/m)?.[1] ?? 19132);
+
 const client = bedrock.createClient({
   host: '127.0.0.1',
-  port: 19132,
+  port: bedrockPort,
   username: USERNAME,
   offline: true,
 });
@@ -79,6 +83,8 @@ function authInput(position, delta) {
 // position matches it, so movement below must be computed relative to this, not to the RCON baseline
 // (which uses the Java-side feet position, a different offset).
 let lastKnownPosition = null;
+const textsReceived = [];
+client.on('text', (packet) => { textsReceived.push(packet.message ?? ''); });
 client.on('kick', (reason) => { kickReason = reason; });
 client.on('error', (err) => console.error('[bedrock client error]', err.message));
 client.on('move_player', (packet) => { lastKnownPosition = packet.position; });
@@ -126,6 +132,9 @@ client.queue('text', {
 await sleep(2000);
 const logAfterChat = fs.readFileSync(logFile, 'utf8');
 report('server log recorded the bot chat message', logAfterChat.includes(chatMessage));
+// Names' Bedrock tag: the chat line comes back as "[BE] .BedrockE2E: <message>" (colour codes stripped).
+const echoed = textsReceived.map((t) => t.replace(/§./g, '')).find((t) => t.includes(chatMessage));
+report('chat shows [BE] in front of the Bedrock player\'s name', echoed?.startsWith(`[BE] ${FLOODGATE_NAME}`), echoed);
 
 // --- movement: a few blocks of player_auth_input packets, Geyser's server-authoritative movement
 // packet (replaces MovePlayer client->server as of StartGame's ServerAuthoritativeMovementMode) ---
