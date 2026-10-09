@@ -48,6 +48,26 @@ VANILLA_CROSSBOW = {
 VANILLA_NETHERITE_SWORD = {"type": "minecraft:model", "model": "minecraft:item/netherite_sword"}
 
 
+def _vanilla_netherite_armor_trim_select(piece):
+    # The 26.3 client jar's own assets/minecraft/items/netherite_<piece>.json model: an 11-way
+    # select on trim_material (one case per vanilla trim, quartz..resin) falling back to the plain
+    # piece. Dragonscale's wrapper must keep this verbatim as its own fallback.
+    materials = ["quartz", "iron", "netherite", "redstone", "copper", "gold", "emerald", "diamond",
+                 "lapis", "amethyst", "resin"]
+    return {
+        "type": "minecraft:select",
+        "cases": [
+            {
+                "model": {"type": "minecraft:model", "model": f"minecraft:item/netherite_{piece}_{m}_trim"},
+                "when": f"minecraft:{m}",
+            }
+            for m in materials
+        ],
+        "fallback": {"type": "minecraft:model", "model": f"minecraft:item/netherite_{piece}"},
+        "property": "minecraft:trim_material",
+    }
+
+
 def _vanilla_compass_branch(target):
     # The 26.3 client jar's own compass.json: 33 entries, compass_16 at both ends (frames
     # 16..31 then 00..16) so the needle loops back around to vanilla's own frame 16.
@@ -190,6 +210,48 @@ class BuiltPackTest(unittest.TestCase):
     def test_other_netherite_swords_stay_vanilla(self):
         sword = self.json("assets/minecraft/items/netherite_sword.json")["model"]
         self.assertEqual(sword["fallback"], VANILLA_NETHERITE_SWORD)
+
+    def test_dragonscale_equipment_asset_has_both_layers_at_vanilla_armor_size(self):
+        # claudesmp:dragonscale is the Ender Dragon kill reward's worn look (the endfight plugin
+        # sets equippable.asset_id to it); both layers must exist at the same size as vanilla's own
+        # netherite armor layers so the client's humanoid/humanoid_leggings model fits them.
+        equipment = self.json("assets/claudesmp/equipment/dragonscale.json")
+        self.assertEqual(set(equipment["layers"]), {"humanoid", "humanoid_leggings"})
+        for layer, ref in (("humanoid", "claudesmp:dragonscale"), ("humanoid_leggings", "claudesmp:dragonscale")):
+            textures = [l["texture"] for l in equipment["layers"][layer]]
+            self.assertEqual(textures, [ref], layer)
+            path = f"assets/{ref.split(':', 1)[0]}/textures/entity/equipment/{layer}/{ref.split(':', 1)[1]}.png"
+            self.assertIn(path, self.entries, layer)
+            png = Image.open(io.BytesIO(self.entries[path]))
+            self.assertEqual(png.size, (64, 32), layer)
+
+    def test_dragonscale_armor_resolves_on_all_four_pieces_with_vanilla_trims_kept_as_fallback(self):
+        # Joe, 2026-10-09: the Ender Dragon kill reward is real netherite armor with no
+        # enchantments, reskinned by custom_model_data=["dragonscale"]; every other netherite piece
+        # (including any trimmed one) must still render exactly as vanilla's own item model does.
+        for piece in ("helmet", "chestplate", "leggings", "boots"):
+            definition = self.json(f"assets/minecraft/items/netherite_{piece}.json")["model"]
+            self.assertEqual(definition["property"], "minecraft:custom_model_data")
+            case = next(c for c in definition["cases"] if c["when"] == "dragonscale")
+            model = self.json(asset(case["model"]["model"], "models", "json"))
+            self.assertEqual(model["parent"], "minecraft:item/generated")
+            self.assertIn(asset(model["textures"]["layer0"], "textures", "png"), self.entries, piece)
+            png = Image.open(io.BytesIO(self.entries[asset(model["textures"]["layer0"], "textures", "png")]))
+            self.assertEqual(png.size, (16, 16), piece)
+            self.assertEqual(definition["fallback"], _vanilla_netherite_armor_trim_select(piece), piece)
+
+    def test_dragonscale_textures_are_tinted_differently_from_plain_netherite(self):
+        # Pixel check that the look actually reads as different from vanilla netherite: Dragonscale
+        # carries a violet/magenta tint, vanilla netherite is a near-neutral dark grey.
+        def avg_rgb(png_bytes):
+            img = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
+            px = img.load()
+            pixels = [px[x, y][:3] for x in range(img.width) for y in range(img.height) if px[x, y][3] > 0]
+            return tuple(sum(c[i] for c in pixels) / len(pixels) for i in range(3))
+
+        r, g, b = avg_rgb(self.entries["assets/claudesmp/textures/item/dragonscale_chestplate.png"])
+        self.assertGreater(r, g, "Dragonscale should read warmer/violet, not neutral grey")
+        self.assertGreater(b, g)
 
     def test_the_salamanca_pistol_resolves_to_its_texture(self):
         self.assert_look_resolves("crossbow", "cartel_pistol")

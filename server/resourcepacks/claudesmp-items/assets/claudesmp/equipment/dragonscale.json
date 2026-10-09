@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "claudesmp:dragonscale"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "claudesmp:dragonscale"
+      }
+    ]
+  }
+}
