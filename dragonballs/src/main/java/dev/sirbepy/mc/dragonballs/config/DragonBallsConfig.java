@@ -33,6 +33,7 @@ public final class DragonBallsConfig {
     private final int stoneDays;
     private final int stoneRealHours;
     private final Messages messages;
+    private final boolean bedrockDragonModels;
 
     public DragonBallsConfig(FileConfiguration config) {
         ConfigurationSection textures = config.getConfigurationSection("textures");
@@ -59,6 +60,7 @@ public final class DragonBallsConfig {
         this.stoneDays = Math.max(1, config.getInt("stone.days", 3));
         this.stoneRealHours = Math.max(1, config.getInt("stone.real-hours", 24));
         this.messages = new Messages(config.getConfigurationSection("messages"));
+        this.bedrockDragonModels = config.getBoolean("bedrock-dragon-models", false);
     }
 
     // A hardcoded fallback schedule (same as config.yml's default) covers a config.yml saved by an
@@ -170,5 +172,11 @@ public final class DragonBallsConfig {
 
     public Messages messages() {
         return messages;
+    }
+
+    /** Whether Geyser gets the summon dragons' custom Bedrock entities and pack; off, Bedrock
+     * players see the Ender Dragon stand-in. */
+    public boolean bedrockDragonModels() {
+        return bedrockDragonModels;
     }
 }

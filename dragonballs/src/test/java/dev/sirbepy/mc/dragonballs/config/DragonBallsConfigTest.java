@@ -12,7 +12,9 @@ import java.util.Map;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Covers the 3-set textures layout and its legacy fallback (a {@code config.yml} saved by a jar from
@@ -124,5 +126,22 @@ class DragonBallsConfigTest {
         assertEquals(2000, config.difficulty().get(0).maxRadius());
         assertEquals(1500, config.difficulty().get(1).minRadius());
         assertEquals(3000, config.difficulty().get(1).maxRadius());
+    }
+
+    // On, no Bedrock client could join live (2026-10-09), so the bundled config, an older config
+    // without the key, and a broken value all keep the Geyser dragon models off.
+    @Test
+    void bedrockDragonModelsAreOffUnlessTheConfigTurnsThemOn() throws Exception {
+        YamlConfiguration bundled;
+        try (Reader reader = new InputStreamReader(Objects.requireNonNull(
+                DragonBallsConfigTest.class.getResourceAsStream("/config.yml")), StandardCharsets.UTF_8)) {
+            bundled = YamlConfiguration.loadConfiguration(reader);
+        }
+        assertFalse(new DragonBallsConfig(bundled).bedrockDragonModels());
+        assertFalse(new DragonBallsConfig(new YamlConfiguration()).bedrockDragonModels());
+
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("bedrock-dragon-models", true);
+        assertTrue(new DragonBallsConfig(yaml).bedrockDragonModels());
     }
 }

@@ -32,6 +32,12 @@ textures:
     "7": eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjUxNDU3MWI5ODAzMjY0ZGI3NmI5ODZmZWU1NDIxYTY2NDdlNmE5MjkwZTFmZDFhOTVlNjFjNDMwNGI1MjQyMiJ9fX0=
   stone: eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZGEzZDdhNzA5NzE3ZDFmZmUyNDAyNDQ4ZDg2N2IxYTdmMzJmYjg5NTU2MjFjYzg5NzdiNjFmOWEzY2JjOTUifX19
 
+# Draw the summon dragons for Bedrock players as custom Geyser entities from the plugin's Bedrock
+# pack (read at startup only). Off by default: with it on, no Bedrock client could join live
+# (2026-10-08 22:52 to 2026-10-09, every attempt "Bedrock client disconnected" before login), so
+# Bedrock players see the Ender Dragon stand-in instead.
+bedrock-dragon-models: false
+
 # The overworld is the default; difficulty tiers below can also send balls to the Nether/End.
 world: world
 nether-world: world_nether

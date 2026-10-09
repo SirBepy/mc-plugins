@@ -59,9 +59,16 @@ public interface BedrockDragons {
     /** {@code carrier} is gone. */
     void forget(UUID carrier);
 
-    /** The Geyser hook when Geyser is installed and its API loads, otherwise {@link #NONE}. */
-    static BedrockDragons hook(JavaPlugin plugin) {
+    /** The Geyser hook when {@code enabled} (config's bedrock-dragon-models), Geyser is installed
+     * and its API loads, otherwise {@link #NONE}. Disabled, nothing is registered with Geyser at
+     * all: no custom entities, no pack. */
+    static BedrockDragons hook(JavaPlugin plugin, boolean enabled) {
         if (plugin.getServer().getPluginManager().getPlugin("Geyser-Spigot") == null) {
+            return NONE;
+        }
+        if (!enabled) {
+            plugin.getLogger().info("Bedrock dragon models are disabled (bedrock-dragon-models: false); "
+                    + "Bedrock players see an Ender Dragon");
             return NONE;
         }
         try {

@@ -117,7 +117,7 @@ public final class DragonBallsPlugin extends JavaPlugin {
 
         RadarModule.register(this, sets, config::get);
         StationModule.register(this, sets, floatingBalls, config::get);
-        effects = new SpectacleEffects(this, items, BedrockDragons.hook(this));
+        effects = new SpectacleEffects(this, items, BedrockDragons.hook(this, config.get().bedrockDragonModels()));
         summon = SummonModule.register(this, sets, floatingBalls, config::get, effects);
 
         floatingBalls.start();
