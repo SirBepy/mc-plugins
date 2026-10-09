@@ -57,7 +57,7 @@ final class PriceList {
     static List<Component> pages(MarketLayout layout, MobHeads heads, MarketConfig config) {
         List<Component> pages = new ArrayList<>();
         pages.add(config.messages().render("prices-book-intro",
-                Placeholder.unparsed("spread", Math.round(config.priceSpread() * 100) + "%")));
+                Placeholder.unparsed("spread", PriceCommand.percent(config.priceSpread()))));
         for (Stall stall : layout.stalls()) {
             addPages(pages, stall.name(), stall.buys().stream()
                     .map(o -> new Entry(name(o.item()), o.amount() + " for " + money(o.price()))).toList());
