@@ -1,0 +1,16 @@
+# EndFight phase 1: the arena structures around the End's 10 end-spike pillars and the cult
+# fortress ring around the exit portal - their protection, and rebuilding them after a dragon
+# respawn regenerates the pillars. Later phases add the illager cult (guards/waves) and rewards.
+
+arena:
+  # Build the arena automatically the first time the End world is seen: on enable if it already
+  # exists, or the moment it loads later (e.g. live flips allow-end on and restarts). Never builds
+  # a second time on its own - state.yml remembers. Set false to require a manual `endfight build`.
+  auto-build: true
+
+messages:
+  reload-success: "<green>EndFight config reloaded."
+  build-success: "<green>Arena built: <pillars> pillars, <blocks> blocks."
+  build-failed: "<red>Could not build the arena; see console."
+  clear-success: "<green>Arena cleared."
+  clear-failed: "<red>Could not clear the arena; see console."

@@ -1,0 +1,10 @@
+name: EndFight
+version: ${version}
+main: dev.sirbepy.mc.endfight.EndFightPlugin
+api-version: "26.2"
+author: sirbepy
+
+permissions:
+  endfight.admin:
+    description: Build, rebuild and clear the End Fight arena.
+    default: op
