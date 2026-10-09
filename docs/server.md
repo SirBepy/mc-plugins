@@ -213,6 +213,22 @@ half its join bandwidth). The Overworld settings live in `server/config/config/p
 (debris, quartz and gold up to y 128), and the End's override turns it off. All three are Paper's own
 recommended lists. Applies from the next restart after the files are uploaded; there is no reload.
 
+## Loyalty tridents come back from the void (Joe, 2026-10-09)
+
+Bedrock parity, Tweaks plugin, `VoidTridentListener` (switch: `void-tridents.enabled` in Tweaks'
+`config.yml`). On Java (26.3, checked in the server jar and on a private e2e server) Loyalty only pulls
+a trident home after it hit something or landed, so one thrown into the void falls until Paper
+deletes it 64 blocks under the world's floor. Now:
+
+- A thrown Loyalty trident that drops below the world's min height (y 0 in the End) is stopped and
+  marked as having hit, and vanilla Loyalty flies it back to the thrower like any returning trident.
+- If the void still takes one (owner in another world, dead, or the trident was thrown before the
+  last restart), the exact item (name, enchantments, durability, every component) goes straight into
+  the owner's inventory, or at their feet if it is full. A dead owner gets it on respawn, an offline
+  one on joining, unless the server restarts first (kept in memory only).
+- Tridents without Loyalty, and creative throws (the inventory kept the trident), stay vanilla.
+- Bedrock players behave the same: it all happens on the server. e2e: `e2e/void-tridents.mjs`.
+
 ## Phantoms (CoffiebagSupreme's Shenron wish, 2026-10-07)
 
 Granted by a 4-1 council vote in a toned-down, server-wide form, then extended by Joe the same night.

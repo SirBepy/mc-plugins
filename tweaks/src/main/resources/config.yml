@@ -24,6 +24,12 @@ motd:
 phantoms:
   enabled: true
 
+# Bedrock parity (Joe, 2026-10-09): a Loyalty trident thrown into the void flies back to its thrower
+# instead of being deleted; if the void still takes it, the item goes into the owner's inventory
+# (VoidTridentListener). Tridents without Loyalty stay vanilla. Off = vanilla after the next restart.
+void-tridents:
+  enabled: true
+
 # Porunga's sea gifts: permanent Dolphin's Grace and Conduit Power that each owner switches for himself
 # with /seagifts dolphin|conduit, each at most once per real hour; death switches both off. Owners:
 # ItsLogiks (2026-10-08, session jam0yw) and SirBepy (2026-10-08, session ay4gtv). Switches and cooldowns

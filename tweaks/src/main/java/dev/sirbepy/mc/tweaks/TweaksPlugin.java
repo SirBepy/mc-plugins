@@ -6,6 +6,7 @@ import dev.sirbepy.mc.tweaks.listener.PhantomBuffListener;
 import dev.sirbepy.mc.tweaks.listener.PollosGunListener;
 import dev.sirbepy.mc.tweaks.listener.ScytheMasterListener;
 import dev.sirbepy.mc.tweaks.listener.SpawnGuardListener;
+import dev.sirbepy.mc.tweaks.listener.VoidTridentListener;
 import dev.sirbepy.mc.tweaks.netherwishes.AutoReplant;
 import dev.sirbepy.mc.tweaks.netherwishes.HeartyFood;
 import dev.sirbepy.mc.tweaks.netherwishes.NetherWishesCommand;
@@ -48,6 +49,11 @@ public final class TweaksPlugin extends JavaPlugin {
             getServer().getPluginManager().registerEvents(phantoms, this);
             phantoms.trackLoaded(getServer().getWorlds());
             getServer().getScheduler().runTaskTimer(this, phantoms::tick, 1L, 1L);
+        }
+        if (getConfig().getBoolean("void-tridents.enabled", true)) {
+            VoidTridentListener tridents = new VoidTridentListener(getServer());
+            getServer().getPluginManager().registerEvents(tridents, this);
+            getServer().getScheduler().runTaskTimer(this, tridents::tick, 1L, 1L);
         }
         // ScytheMasterListener references AuraSkills API classes, so it must not load without it.
         if (getServer().getPluginManager().isPluginEnabled("AuraSkills")) {
