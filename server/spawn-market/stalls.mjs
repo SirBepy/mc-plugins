@@ -174,6 +174,9 @@ export function buildStalls(model, { GUIDES, lecternState }) {
       // 4) since the Market plugin now sells heads through ordinary [Sell]-style signs instead of
       // an NPC. Red: the one wool colour none of the other seven stalls/stations use.
       id: 'heads', ...SHOP_SPOT.heads, name: 'Heads', wool: 'red', extraSlot: true, headStall: true,
+      // Description moved onto hanging signs flanking the nameplate (Joe, 2026-10-09): the back
+      // wall's own wall signs are the Market plugin's buy signs only, never static text.
+      desc: [['Sell your', 'mob heads', '', ''], ['New buyers', 'every day', '', '']],
       props: [['bone_block[axis=y]', -1, 1], ['bone_block[axis=AXIS]', -1, 2], ['skeleton_skull[rotation=0]', -1, 1, 1],
         ['wither_skeleton_skull[rotation=0]', 5, 1, 1], ['cobweb', 5, 2]],
     },
@@ -182,23 +185,27 @@ export function buildStalls(model, { GUIDES, lecternState }) {
       // signs and guide lectern as the DragonBall station, at a second location, so the station's
       // own front stays just pedestals. Cyan: unused by any other stall/station.
       ...SHOP_SPOT.radars, name: 'Radars', wool: 'cyan', awning: true,
+      desc: [['Find the', 'Dragon', 'Balls', ''], ['Guide book', 'inside', '', '']],
       guides: [['dragonballs', 2, 2]],
       props: [...RADAR_SIGNS],
     },
     {
       // Homes shop stall (shop street, east side, far from the plaza): sells extra /sethome
-      // slots, one sign spot. Pink: unused by any other stall/station.
-      ...SHOP_SPOT.homes, name: 'Homes', wool: 'pink', awning: true, shop: 'homes',
+      // slots, one wall sign per home (4th/5th/6th, left to right) instead of the old single
+      // 3-tier sign (Joe, 2026-10-09: "right clicking a sign buys them the home slots"). Pink:
+      // unused by any other stall/station.
+      ...SHOP_SPOT.homes, name: 'Homes', wool: 'pink', awning: true, shop: 'homes', shopSignCount: 3,
+      desc: [['Extra', '/sethome', 'slots', ''], ['Buy up to', '6 homes', 'Right-', 'click']],
       props: [],
     },
     {
       // Cosmetics shop stall (shop street, west side, far from the plaza): sells a cosmetic
-      // token, one sign spot plus a generator-placed static info sign (the Market plugin only
-      // owns the sell sign). Magenta: unused by any other stall/station.
+      // token, one sign spot. Its old static "How it works" wall sign is gone: that description now
+      // lives on the hanging signs below, same as every other street stall (Joe, 2026-10-09).
+      // Magenta: unused by any other stall/station.
       ...SHOP_SPOT.cosmetics, name: 'Cosmetics', wool: 'magenta', awning: true, shop: 'cosmetics',
-      props: [[sign('spruce_wall_sign[facing=INWARD]', [
-        'How it works', 'Hold an item,', '/cosmetic idea', 'Claude makes it',
-      ]), 3, 2, 1]],
+      desc: [['Buy a', 'token,', 'hold an', 'item,'], ['then type', '/cosmetic', '<idea>', '']],
+      props: [],
     },
   ];
 
@@ -212,7 +219,7 @@ export function buildStalls(model, { GUIDES, lecternState }) {
   // copper and cherry looks he was shown), but never touches the a0/d math any export coordinate
   // is built from.
   function stall({ id, side: sideName, a0, name, wool, buys = [], props, stations = [], guides = [], priceLectern,
-    extraSlot, headStall, shop, awning }) {
+    extraSlot, headStall, shop, shopSignCount, awning, desc }) {
     const S = side(sideName);
     const at = (a, d, y, state, phase) => { const [u, v] = S.at(a0 + a, d); set(u, y, v, state, phase); };
     const inward = S.inward;
@@ -268,6 +275,16 @@ export function buildStalls(model, { GUIDES, lecternState }) {
     // eye-level row the [Sell] signs use, so a player looking at them sees under it.
     at(2, 0, Y + 3, sign(`spruce_hanging_sign[attached=false,rotation=${ROTATION[inward]}]`, ['', name, '', ''],
       { color: wool, back: true }), 'attach');
+    // Description hanging signs flank the nameplate (Joe's pick, 2026-10-09: "right clicking a
+    // sign buys", so every description moves off the back wall onto these instead), hung from the
+    // same front beam (a=1/a=3, d=0, one block below its own Y+4) as the nameplate at a=2.
+    if (desc) {
+      const [left, right] = desc;
+      at(1, 0, Y + 3, sign(`spruce_hanging_sign[attached=false,rotation=${ROTATION[inward]}]`, left,
+        { color: wool, back: true }), 'attach');
+      at(3, 0, Y + 3, sign(`spruce_hanging_sign[attached=false,rotation=${ROTATION[inward]}]`, right,
+        { color: wool, back: true }), 'attach');
+    }
     at(-1, -1, Y + 3, `${P.light}[hanging=true]`, 'attach');
     at(5, -1, Y + 3, `${P.light}[hanging=true]`, 'attach');
     for (const [state, a] of stations) at(a, 2, Y + 1, resolve(state));
@@ -302,9 +319,16 @@ export function buildStalls(model, { GUIDES, lecternState }) {
       else MARKET.stalls.push({ id, name, color: wool, slots, buys });
     }
     if (shop) {
-      // Single sign, centred on the back wall like the middle eye-level sell-stall slot.
-      const [u, v] = S.at(a0 + 2, 2);
-      MARKET.shops[shop] = { name, color: wool, sign: { x: CX + u, y: Y + 2, z: CZ + v, facing: inward } };
+      // Homes gets 3 wall-sign spots (4th/5th/6th home, left to right), the same a=1..3/d=2
+      // eye-level row a sell stall's own 3 slots use; every other shop (just Cosmetics so far)
+      // keeps the single spot centred on the back wall, same shape as a 1-element list so
+      // MarketLayout parses one consistent `signs:` schema for every shop (Joe, 2026-10-09).
+      const as = shopSignCount === 3 ? [1, 2, 3] : [2];
+      const signs = as.map((a) => {
+        const [u, v] = S.at(a0 + a, 2);
+        return { x: CX + u, y: Y + 2, z: CZ + v, facing: inward };
+      });
+      MARKET.shops[shop] = { name, color: wool, signs };
     }
     for (const [state, a, d, dy = 0] of props) at(a, d, Y + 1 + dy, resolve(state), dy ? 'attach' : 'build');
   }

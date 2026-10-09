@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -102,13 +103,22 @@ public final class HomeShop implements Listener {
         load();
     }
 
-    /** Writes the shop's sign: today's three prices, same look as every other plugin sign. */
+    /** Writes the shop's signs: one per home it sells (4th/5th/6th, in {@code signs} order), same
+     * static look every market day - the per-player owned/next/later state only ever shows up in
+     * the click message, never on the sign itself (Joe, 2026-10-09: "right clicking a sign buys"). */
     public void apply(World world) {
         MarketLayout.Shop shop = layout.shops().get("homes");
-        if (shop == null || shop.sign() == null) {
+        if (shop == null) {
             return;
         }
-        Stall.Slot slot = shop.sign();
+        MarketConfig cfg = config.get();
+        List<Stall.Slot> signs = shop.signs();
+        for (int i = 0; i < signs.size(); i++) {
+            writeSign(world, shop, signs.get(i), cfg.baseHomes() + 1 + i, cfg);
+        }
+    }
+
+    private void writeSign(World world, MarketLayout.Shop shop, Stall.Slot slot, int n, MarketConfig cfg) {
         Block block = world.getBlockAt(slot.x(), slot.y(), slot.z());
         Material signBlock = layout.signBlock();
         if (block.getType() != signBlock) {
@@ -119,20 +129,15 @@ public final class HomeShop implements Listener {
         data.setFacing(slot.facing());
         sign.setBlockData(data);
 
-        MarketConfig cfg = config.get();
+        BigDecimal price = cfg.homePrice(n);
         SignSide front = sign.getSide(Side.FRONT);
-        front.line(0, Component.text("Extra home").decorate(TextDecoration.BOLD));
-        front.line(1, Component.text(truncate(ordinalPrice(cfg, cfg.baseHomes() + 1, "4th"))));
-        front.line(2, Component.text(truncate(ordinalPrice(cfg, cfg.baseHomes() + 2, "5th"))));
-        front.line(3, Component.text(truncate(ordinalPrice(cfg, cfg.baseHomes() + 3, "6th"))));
+        front.line(0, Component.text(truncate(nth(n) + " home")).decorate(TextDecoration.BOLD));
+        front.line(1, Component.text(truncate(price == null ? "-" : money(price))));
+        front.line(2, Component.text("Right-click"));
+        front.line(3, Component.text("to buy"));
         front.setColor(shop.color());
         front.setGlowingText(true);
         sign.update(true, false);
-    }
-
-    private static String ordinalPrice(MarketConfig cfg, int n, String ordinal) {
-        BigDecimal price = cfg.homePrice(n);
-        return price == null ? ordinal + ": -" : ordinal + ": " + money(price);
     }
 
     @EventHandler
@@ -141,17 +146,26 @@ public final class HomeShop implements Listener {
             return;
         }
         MarketLayout.Shop shop = layout.shops().get("homes");
-        Stall.Slot sign = shop == null ? null : shop.sign();
         Block block = event.getClickedBlock();
-        if (sign == null || block == null || block.getX() != sign.x() || block.getY() != sign.y() || block.getZ() != sign.z()) {
+        if (shop == null || block == null) {
             return;
         }
-        event.setCancelled(true);
-        purchase(event.getPlayer());
+        List<Stall.Slot> signs = shop.signs();
+        MarketConfig cfg = config.get();
+        for (int i = 0; i < signs.size(); i++) {
+            Stall.Slot sign = signs.get(i);
+            if (block.getX() == sign.x() && block.getY() == sign.y() && block.getZ() == sign.z()) {
+                event.setCancelled(true);
+                purchase(event.getPlayer(), cfg.baseHomes() + 1 + i);
+                return;
+            }
+        }
     }
 
-    /** Sells the player their next home slot, if the shop still has one to sell them. */
-    void purchase(Player player) {
+    /** Sells the player the home numbered {@code n} (the sign they clicked), if that's the one
+     * the shop's own record says is next for them; otherwise refuses, naming which sign they
+     * should have clicked instead. */
+    void purchase(Player player, int n) {
         var messages = config.get().messages();
         MarketConfig cfg = config.get();
         int current = currentHomes(player, cfg);
@@ -159,8 +173,15 @@ public final class HomeShop implements Listener {
             messages.send(player, "homes-max");
             return;
         }
-        int next = current + 1;
-        BigDecimal price = cfg.homePrice(next);
+        if (n <= current) {
+            messages.send(player, "homes-owned", Placeholder.unparsed("n", String.valueOf(n)));
+            return;
+        }
+        if (n > current + 1) {
+            messages.send(player, "homes-need-earlier", Placeholder.unparsed("n", String.valueOf(current + 1)));
+            return;
+        }
+        BigDecimal price = cfg.homePrice(n);
         if (!charge.charge(player, price.doubleValue())) {
             Double bal = balance.balance(player);
             if (bal == null) {
@@ -172,15 +193,21 @@ public final class HomeShop implements Listener {
             return;
         }
         // Recorded before the grant dispatch, which is why a near-simultaneous second click sees
-        // this player already at `next`: the real fix for the LuckPerms-is-async race above.
-        record(player.getUniqueId(), next, cfg);
-        if (!grant.grant(player.getUniqueId(), next)) {
+        // this player already at `n`: the real fix for the LuckPerms-is-async race above.
+        record(player.getUniqueId(), n, cfg);
+        if (!grant.grant(player.getUniqueId(), n)) {
             refund.refund(player, price.doubleValue());
             record(player.getUniqueId(), current, cfg);
             messages.send(player, "homes-closed");
             return;
         }
-        messages.send(player, "homes-success", Placeholder.unparsed("n", String.valueOf(next)));
+        messages.send(player, "homes-success", Placeholder.unparsed("n", String.valueOf(n)));
+    }
+
+    // Home tiers never reach English's 11th-13th exception (homes.max realistically stays well
+    // under 10), so a flat "th" suffix is correct for every n this shop ever prices.
+    private static String nth(int n) {
+        return n + "th";
     }
 
     /** The highest home count the player already has: their own highest granted permission node,

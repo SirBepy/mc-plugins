@@ -96,8 +96,12 @@ messages:
   today-wanted-resting: " <dark_gray>-</dark_gray> <gray>The board is resting. A new bounty comes tomorrow.</gray>"
   today-wanted-open: " <dark_gray>-</dark_gray> <white><name></white>'s head <gold>Fresh $<price></gold> <gray>/</gray> <gold>Old $<old></gold>"
   today-wanted-claimed: " <dark_gray>-</dark_gray> <white><name></white>'s head <gray>(claimed by <seller>)</gray>"
-  # The Homes shop. <n> is the home number just bought, <price>/<balance> whole dollars.
+  # The Homes shop: one sign per home (4th/5th/6th), right-click the one you're up to (Joe,
+  # 2026-10-09). <n> is the home number (just bought, already owned, or needed first);
+  # <price>/<balance> whole dollars.
   homes-max: "<gray>You already have the most homes this shop sells."
+  homes-owned: "<gray>You already have your <n>th home."
+  homes-need-earlier: "<gray>Buy your <n>th home first."
   homes-poor: "<red>That home costs <price>. You have <balance>."
   homes-closed: "<red>The Homes shop can't process that right now."
   homes-success: "<green>You can now set <n> homes!"

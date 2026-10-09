@@ -79,7 +79,8 @@ class CosmeticShopTest {
         shop.apply(world);
 
         MarketLayout.Shop cosmetics = layout.shops().get("cosmetics");
-        var block = world.getBlockAt(cosmetics.sign().x(), cosmetics.sign().y(), cosmetics.sign().z());
+        Stall.Slot slot = cosmetics.signs().get(0);
+        var block = world.getBlockAt(slot.x(), slot.y(), slot.z());
         assertEquals(Material.SPRUCE_WALL_SIGN, block.getType());
         Sign sign = (Sign) block.getState();
         assertEquals(Component.text("Cosmetic").decorate(TextDecoration.BOLD), sign.getSide(Side.FRONT).line(0));
@@ -89,7 +90,7 @@ class CosmeticShopTest {
         assertTrue(sign.getSide(Side.FRONT).isGlowingText());
 
         PlayerInteractEvent event = new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, ItemStack.empty(),
-                block, cosmetics.sign().facing(), EquipmentSlot.HAND);
+                block, slot.facing(), EquipmentSlot.HAND);
         shop.onInteract(event);
 
         assertTrue(event.isCancelled());

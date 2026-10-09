@@ -33,10 +33,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** The Homes shop (Joe, 2026-10-09): sells huskhomes.max_homes.4/5/6 above the default group's own
- * .3. {@link ConsoleHomeGrantTest} covers the real LuckPerms dispatch; this drives {@link HomeShop}
- * against a stub {@link HomeShop.HomeGrant} so each scenario (poor, double-click, grant failure)
- * is isolated from whether LuckPerms itself is installed. */
+/** The Homes shop (Joe, 2026-10-09): one wall sign per home it sells - huskhomes.max_homes.4/5/6
+ * above the default group's own .3 - right-click the one you're up to. {@link ConsoleHomeGrantTest}
+ * covers the real LuckPerms dispatch; this drives {@link HomeShop} against a stub
+ * {@link HomeShop.HomeGrant} so each scenario (poor, double-click, grant failure, wrong sign) is
+ * isolated from whether LuckPerms itself is installed. */
 class HomeShopTest {
 
     private static final Logger LOG = Logger.getLogger("home-shop-test");
@@ -93,39 +94,63 @@ class HomeShopTest {
     }
 
     @Test
-    void firstPurchaseChargesFiveHundredAndGrantsTheFourthHome() {
+    void theFourthHomeSignChargesFiveHundredAndGrantsIt() {
         PlayerMock player = server.addPlayer();
-        shop().purchase(player);
+        shop().purchase(player, 4);
         assertEquals(List.of(500.0), charged);
         assertEquals(List.of(4), grants);
         assertTrue(player.nextMessage().contains("set 4 homes"));
     }
 
     @Test
-    void secondPurchaseChargesFifteenHundredForTheFifthHome() {
+    void afterTheFourthTheFifthSignIsTheNextOneAndCharges1500() {
         PlayerMock player = server.addPlayer();
         HomeShop shop = shop();
-        shop.purchase(player);
+        shop.purchase(player, 4);
         player.nextMessage(); // drains the 4th home's "success" message
-        shop.purchase(player);
+        shop.purchase(player, 5);
         assertEquals(List.of(500.0, 1500.0), charged);
         assertEquals(List.of(4, 5), grants);
         assertTrue(player.nextMessage().contains("set 5 homes"));
     }
 
     @Test
-    void atSixHomesTheShopRefusesAndChargesNothing() {
+    void clickingAnEarlierSignYouAlreadyOwnSaysSoAndChargesNothing() {
         PlayerMock player = server.addPlayer();
         HomeShop shop = shop();
-        shop.purchase(player);
-        shop.purchase(player);
-        shop.purchase(player);
+        shop.purchase(player, 4);
+        player.nextMessage();
+        charged.clear();
+        grants.clear();
+        shop.purchase(player, 4);
+        assertTrue(charged.isEmpty());
+        assertTrue(grants.isEmpty());
+        assertTrue(player.nextMessage().contains("already have your 4th home"));
+    }
+
+    @Test
+    void clickingALaterSignBeforeTheOnesBeforeItSaysBuyThoseFirst() {
+        PlayerMock player = server.addPlayer();
+        // Still at the base 3 homes: the next sign to buy is the 4th, not the 6th.
+        shop().purchase(player, 6);
+        assertTrue(charged.isEmpty());
+        assertTrue(grants.isEmpty());
+        assertTrue(player.nextMessage().contains("Buy your 4th home first"));
+    }
+
+    @Test
+    void atSixHomesEverySignRefusesAndChargesNothing() {
+        PlayerMock player = server.addPlayer();
+        HomeShop shop = shop();
+        shop.purchase(player, 4);
+        shop.purchase(player, 5);
+        shop.purchase(player, 6);
         player.nextMessage();
         player.nextMessage();
         player.nextMessage();
         charged.clear();
         grants.clear();
-        shop.purchase(player);
+        shop.purchase(player, 6);
         assertTrue(charged.isEmpty());
         assertTrue(grants.isEmpty());
         assertTrue(player.nextMessage().contains("already have the most"));
@@ -135,7 +160,7 @@ class HomeShopTest {
     void anAdminWithTheHundredNodeAlreadyHasTheMostTooAndIsRefused() {
         PlayerMock admin = server.addPlayer();
         admin.addAttachment(MockBukkit.createMockPlugin()).setPermission("huskhomes.max_homes.100", true);
-        shop().purchase(admin);
+        shop().purchase(admin, 4);
         assertTrue(charged.isEmpty());
         assertTrue(grants.isEmpty());
         assertTrue(admin.nextMessage().contains("already have the most"));
@@ -145,7 +170,7 @@ class HomeShopTest {
     void aPoorPlayerIsRefusedWithTheirBalanceAndNotCharged() {
         walletBalance = 100;
         PlayerMock player = server.addPlayer();
-        shop().purchase(player);
+        shop().purchase(player, 4);
         assertTrue(charged.isEmpty());
         String message = player.nextMessage();
         assertTrue(message.contains("$500"), message);
@@ -153,15 +178,17 @@ class HomeShopTest {
     }
 
     @Test
-    void aFastDoubleClickChargesOnlyOnceAndThenOffersTheFifthHome() {
+    void aFastDoubleClickOnTheSameSignChargesOnlyOnceAndThenSaysAlreadyOwned() {
         // Simulates LuckPerms not having applied the first grant yet: no permission reflects it,
         // only this shop's own sale record does - which is exactly what must stop a double charge.
         PlayerMock player = server.addPlayer();
         HomeShop shop = shop();
-        shop.purchase(player);
+        shop.purchase(player, 4);
         assertEquals(List.of(500.0), charged);
-        shop.purchase(player);
-        assertEquals(List.of(500.0, 1500.0), charged, "the second click bought the 5th home, not a second 4th");
+        player.nextMessage();
+        shop.purchase(player, 4);
+        assertEquals(List.of(500.0), charged, "the second click on the same sign charged nothing more");
+        assertTrue(player.nextMessage().contains("already have your 4th home"));
     }
 
     @Test
@@ -169,43 +196,50 @@ class HomeShopTest {
         grantSucceeds = false;
         PlayerMock player = server.addPlayer();
         HomeShop shop = shop();
-        shop.purchase(player);
+        shop.purchase(player, 4);
         assertEquals(List.of(500.0), charged);
         assertEquals(List.of(500.0), refunded);
         assertTrue(player.nextMessage().contains("can't process"));
 
         // Record was rolled back, so a retry (say LuckPerms comes back) still offers the 4th, not the 5th.
         grantSucceeds = true;
-        shop.purchase(player);
+        shop.purchase(player, 4);
         assertEquals(List.of(500.0, 500.0), charged);
         assertEquals(List.of(4), grants);
     }
 
     @Test
-    void signShowsTheThreeTierPrices() {
+    void eachSignShowsItsOwnHomeNumberAndPrice() {
         MarketLayout.Shop homes = layout.shops().get("homes");
         WorldMock world = server.addSimpleWorld("world");
         shop().apply(world);
 
-        var block = world.getBlockAt(homes.sign().x(), homes.sign().y(), homes.sign().z());
+        assertEquals(3, homes.signs().size());
+        assertSignReads(world, homes.signs().get(0), "4th home", "$500");
+        assertSignReads(world, homes.signs().get(1), "5th home", "$1,500");
+        assertSignReads(world, homes.signs().get(2), "6th home", "$4,000");
+    }
+
+    private static void assertSignReads(WorldMock world, Stall.Slot slot, String title, String price) {
+        var block = world.getBlockAt(slot.x(), slot.y(), slot.z());
         assertEquals(Material.SPRUCE_WALL_SIGN, block.getType());
         assertEquals(BlockFace.WEST, ((Directional) block.getBlockData()).getFacing());
         Sign sign = (Sign) block.getState();
-        assertEquals(Component.text("Extra home").decorate(TextDecoration.BOLD), sign.getSide(Side.FRONT).line(0));
-        assertEquals(Component.text("4th: $500"), sign.getSide(Side.FRONT).line(1));
-        assertEquals(Component.text("5th: $1,500"), sign.getSide(Side.FRONT).line(2));
-        assertEquals(Component.text("6th: $4,000"), sign.getSide(Side.FRONT).line(3));
+        assertEquals(Component.text(title).decorate(TextDecoration.BOLD), sign.getSide(Side.FRONT).line(0));
+        assertEquals(Component.text(price), sign.getSide(Side.FRONT).line(1));
+        assertEquals(Component.text("Right-click"), sign.getSide(Side.FRONT).line(2));
+        assertEquals(Component.text("to buy"), sign.getSide(Side.FRONT).line(3));
         assertTrue(sign.getSide(Side.FRONT).isGlowingText());
     }
 
     @Test
-    void rightClickingTheSignBuysAHomeAndCancelsTheClick() {
+    void rightClickingTheFourthHomeSignBuysItAndCancelsTheClick() {
         PlayerMock player = server.addPlayer();
         WorldMock world = server.addSimpleWorld("world");
         HomeShop shop = shop();
         shop.apply(world);
         MarketLayout.Shop homes = layout.shops().get("homes");
-        var block = world.getBlockAt(homes.sign().x(), homes.sign().y(), homes.sign().z());
+        var block = world.getBlockAt(homes.signs().get(0).x(), homes.signs().get(0).y(), homes.signs().get(0).z());
 
         PlayerInteractEvent event = new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK,
                 ItemStack.empty(), block, BlockFace.WEST, EquipmentSlot.HAND);
@@ -213,6 +247,27 @@ class HomeShopTest {
 
         assertTrue(event.isCancelled(), "no sign-edit screen opens on our own sign");
         assertEquals(List.of(500.0), charged);
+    }
+
+    @Test
+    void rightClickingTheSixthHomeSignBeforeTheFifthRefusesWithNoCharge() {
+        PlayerMock player = server.addPlayer();
+        WorldMock world = server.addSimpleWorld("world");
+        HomeShop shop = shop();
+        shop.apply(world);
+        MarketLayout.Shop homes = layout.shops().get("homes");
+        shop.purchase(player, 4);
+        player.nextMessage();
+        charged.clear();
+        var block = world.getBlockAt(homes.signs().get(2).x(), homes.signs().get(2).y(), homes.signs().get(2).z());
+
+        PlayerInteractEvent event = new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK,
+                ItemStack.empty(), block, BlockFace.WEST, EquipmentSlot.HAND);
+        shop.onInteract(event);
+
+        assertTrue(event.isCancelled());
+        assertTrue(charged.isEmpty());
+        assertTrue(player.nextMessage().contains("Buy your 5th home first"));
     }
 
     @Test

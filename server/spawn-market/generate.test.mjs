@@ -69,9 +69,17 @@ test('the head-stall, wanted-board and shops spots are all 4/3/1 free sign (or h
   assert.ok(!placed.has(wanted.slice(5, 8).join(' ')), 'wanted-board head spot is also set by the datapack');
   assert.equal(Number(wanted[6]), Number(wanted[2]) + 1, 'the head sits one block above the sign');
 
-  const shops = [...content.matchAll(/^ {2}(\w+): \{name: (\w+), color: (\w+), sign: \{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: (\w+)\}\}$/mg)];
-  assert.deepEqual(shops.map((m) => m[1]).sort(), ['cosmetics', 'homes']);
-  for (const m of shops) assert.ok(!placed.has(m.slice(4, 7).join(' ')), `${m[1]} spot is also set by the datapack`);
+  const shopBlocks = [...content.matchAll(/^ {2}(\w+): \{name: (\w+), color: (\w+), signs: \[(.*)\]\}$/mg)];
+  assert.deepEqual(shopBlocks.map((m) => m[1]).sort(), ['cosmetics', 'homes']);
+  const shopSigns = Object.fromEntries(shopBlocks.map((m) =>
+    [m[1], [...m[4].matchAll(/\{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: (\w+)\}/g)]]));
+  // Homes gets one wall sign per home (4th/5th/6th, left to right); every other shop (just
+  // Cosmetics so far) keeps its original single spot (Joe, 2026-10-09).
+  assert.equal(shopSigns.homes.length, 3, 'Homes needs 3 signs, one per home');
+  assert.equal(shopSigns.cosmetics.length, 1, 'Cosmetics keeps its single sign');
+  for (const signs of Object.values(shopSigns)) {
+    for (const m of signs) assert.ok(!placed.has(m.slice(1, 4).join(' ')), `a shop spot ${m[0]} is also set by the datapack`);
+  }
 });
 
 test('the price lectern is an empty lectern labelled Prices that nothing else builds over', () => {
@@ -264,7 +272,10 @@ test('the head-stall, wanted-board and shops spots are all distinct coordinates 
     { x: +wanted[1], y: +wanted[2], z: +wanted[3] },
     { x: +wanted[4], y: +wanted[5], z: +wanted[6] },
   ];
-  const shopSigns = [...content.matchAll(/sign: \{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: \w+\}\}$/mg)]
+  // The shops: block sits between wanted-board: and stalls: (same section-slicing trick
+  // stallsSection above uses), so every {x,y,z} inside it is a shop's own sign spot.
+  const shopsSection = content.slice(content.indexOf('\nshops:\n'), content.indexOf('\nstalls:\n'));
+  const shopSigns = [...shopsSection.matchAll(/\{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: \w+\}/g)]
     .map((m) => ({ x: +m[1], y: +m[2], z: +m[3] }));
   const everySpot = [...headSlots, ...wantedSpots, ...shopSigns];
   const seen = new Set();
@@ -340,5 +351,16 @@ test('every carpet sits on a block', () => {
     if (!state.includes('_carpet')) continue;
     const [x, y, z] = k.split(',').map(Number);
     assert.ok(`${x},${y - 1},${z}` in model.blocks, `${state} at ${k} has air below it`);
+  }
+});
+
+// attached=false hangs a sign from a chain off the block directly above it; the street stalls'
+// new description signs (stalls.mjs's `desc`) hang under the same front beam the nameplate
+// already does, but any future hanging sign needs this checked too (Joe, 2026-10-09).
+test('every hanging sign has a solid block directly above it', () => {
+  for (const [k, state] of Object.entries(model.blocks)) {
+    if (!state.includes('hanging_sign')) continue;
+    const [x, y, z] = k.split(',').map(Number);
+    assert.ok(`${x},${y + 1},${z}` in model.blocks, `${state} at ${k} has no block above it to hang from`);
   }
 });

@@ -54,7 +54,6 @@ setblock 422 116 -840 spruce_wall_sign[facing=east]{front_text:{color:"cyan",has
 setblock 422 116 -839 spruce_wall_sign[facing=east]{front_text:{messages:[{text:"[Nether Radar]",color:"red",bold:true},"Finds Nether","balls only","5000 coins"]}}
 setblock 440 116 -865 lantern[hanging=false]
 setblock 431 116 -837 wither_skeleton_skull[rotation=0]
-setblock 422 116 -829 spruce_wall_sign[facing=east]{front_text:{messages:["How it works","Hold an item,","/cosmetic idea","Claude makes it"]}}
 setblock 426 116 -864 spruce_wall_sign[facing=north]{front_text:{color:"lime",has_glowing_text:1b,messages:["NEW HERE?","Read the books","at the Guide","stall (west)"]}}
 setblock 427 116 -864 spruce_wall_sign[facing=north]{front_text:{color:"yellow",has_glowing_text:1b,messages:["Welcome to","the Claude SMP","",""]}}
 setblock 428 116 -864 spruce_wall_sign[facing=north]{front_text:{color:"red",has_glowing_text:1b,messages:["RULES","No griefing","No stealing","Don't be an ass"]}}
@@ -98,9 +97,13 @@ setblock 416 117 -866 lantern[hanging=false]
 setblock 438 117 -866 lantern[hanging=false]
 setblock 425 117 -843 lantern[hanging=true]
 setblock 429 117 -843 lantern[hanging=true]
+setblock 424 117 -841 spruce_hanging_sign[attached=false,rotation=12]{front_text:{color:"cyan",has_glowing_text:1b,messages:["Find the","Dragon","Balls",""]},back_text:{color:"cyan",has_glowing_text:1b,messages:["Find the","Dragon","Balls",""]}}
+setblock 430 117 -841 spruce_hanging_sign[attached=false,rotation=4]{front_text:{color:"red",has_glowing_text:1b,messages:["Sell your","mob heads","",""]},back_text:{color:"red",has_glowing_text:1b,messages:["Sell your","mob heads","",""]}}
 setblock 422 117 -840 spruce_wall_sign[facing=east]{front_text:{messages:[{text:"[End Radar]",color:"light_purple",bold:true},"Finds End","balls only","20000 coins"]}}
 setblock 424 117 -840 spruce_hanging_sign[attached=false,rotation=12]{front_text:{color:"cyan",has_glowing_text:1b,messages:["","Radars","",""]},back_text:{color:"cyan",has_glowing_text:1b,messages:["","Radars","",""]}}
 setblock 430 117 -840 spruce_hanging_sign[attached=false,rotation=4]{front_text:{color:"red",has_glowing_text:1b,messages:["","Heads","",""]},back_text:{color:"red",has_glowing_text:1b,messages:["","Heads","",""]}}
+setblock 424 117 -839 spruce_hanging_sign[attached=false,rotation=12]{front_text:{color:"cyan",has_glowing_text:1b,messages:["Guide book","inside","",""]},back_text:{color:"cyan",has_glowing_text:1b,messages:["Guide book","inside","",""]}}
+setblock 430 117 -839 spruce_hanging_sign[attached=false,rotation=4]{front_text:{color:"red",has_glowing_text:1b,messages:["New buyers","every day","",""]},back_text:{color:"red",has_glowing_text:1b,messages:["New buyers","every day","",""]}}
 setblock 413 117 -865 spruce_hanging_sign[attached=false,rotation=8]{front_text:{color:"white",has_glowing_text:1b,messages:["","More","",""]}}
 setblock 414 117 -865 spruce_hanging_sign[attached=false,rotation=8]{front_text:{color:"white",has_glowing_text:1b,messages:["","Tag game","",""]}}
 setblock 415 117 -865 spruce_hanging_sign[attached=false,rotation=8]{front_text:{color:"white",has_glowing_text:1b,messages:["","Prices","",""]}}
@@ -112,8 +115,12 @@ setblock 424 117 -833 lantern[hanging=false]
 setblock 425 117 -833 lantern[hanging=true]
 setblock 429 117 -833 lantern[hanging=true]
 setblock 430 117 -833 lantern[hanging=false]
+setblock 424 117 -831 spruce_hanging_sign[attached=false,rotation=12]{front_text:{color:"magenta",has_glowing_text:1b,messages:["Buy a","token,","hold an","item,"]},back_text:{color:"magenta",has_glowing_text:1b,messages:["Buy a","token,","hold an","item,"]}}
+setblock 430 117 -831 spruce_hanging_sign[attached=false,rotation=4]{front_text:{color:"pink",has_glowing_text:1b,messages:["Extra","/sethome","slots",""]},back_text:{color:"pink",has_glowing_text:1b,messages:["Extra","/sethome","slots",""]}}
 setblock 424 117 -830 spruce_hanging_sign[attached=false,rotation=12]{front_text:{color:"magenta",has_glowing_text:1b,messages:["","Cosmetics","",""]},back_text:{color:"magenta",has_glowing_text:1b,messages:["","Cosmetics","",""]}}
 setblock 430 117 -830 spruce_hanging_sign[attached=false,rotation=4]{front_text:{color:"pink",has_glowing_text:1b,messages:["","Homes","",""]},back_text:{color:"pink",has_glowing_text:1b,messages:["","Homes","",""]}}
+setblock 424 117 -829 spruce_hanging_sign[attached=false,rotation=12]{front_text:{color:"magenta",has_glowing_text:1b,messages:["then type","/cosmetic","<idea>",""]},back_text:{color:"magenta",has_glowing_text:1b,messages:["then type","/cosmetic","<idea>",""]}}
+setblock 430 117 -829 spruce_hanging_sign[attached=false,rotation=4]{front_text:{color:"pink",has_glowing_text:1b,messages:["Buy up to","6 homes","Right-","click"]},back_text:{color:"pink",has_glowing_text:1b,messages:["Buy up to","6 homes","Right-","click"]}}
 setblock 425 117 -827 lantern[hanging=true]
 setblock 429 117 -827 lantern[hanging=true]
 setblock 415 117 -862 spruce_hanging_sign[attached=false,rotation=12]{front_text:{color:"white",has_glowing_text:1b,messages:["","Guide","",""]},back_text:{color:"white",has_glowing_text:1b,messages:["","Guide","",""]}}

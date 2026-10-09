@@ -18,6 +18,9 @@ const spot = (text) => {
   const m = text.match(/\{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: (\w+)\}/);
   return { x: Number(m[1]), y: Number(m[2]), z: Number(m[3]), facing: m[4] };
 };
+// Every {x,y,z,facing} on one line, in file order: a shop's `signs:` list has one per home/token.
+const spots = (text) => [...text.matchAll(/\{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: (\w+)\}/g)]
+  .map(([, x, y, z, facing]) => ({ x: Number(x), y: Number(y), z: Number(z), facing }));
 const section = (key) => STALLS.split(`\n${key}:`)[1].split(/\n\S/)[0];
 // stalls.yml's head-stall: 4 signs, the eye-level 3 first (the Head collector NPC was removed 2026-10-09).
 const HEAD_STALL = section('head-stall').split('\n').filter((l) => l.includes('{x:')).map(spot);
@@ -25,9 +28,11 @@ const HEAD_STALL_CENTER = HEAD_STALL[1];
 // stalls.yml's wanted-board: a sign and a player_wall_head.
 const WANTED_SIGN = spot(section('wanted-board').split('sign:')[1]);
 const WANTED_HEAD = spot(section('wanted-board').split('head:')[1]);
-// stalls.yml's shops.
-const HOMES_SIGN = spot(section('shops').split('homes:')[1].split('sign:')[1]);
-const COSMETICS_SIGN = spot(section('shops').split('cosmetics:')[1].split('sign:')[1]);
+// stalls.yml's shops: each shop's own line (never the whole shops: block, or Homes' 3 signs would
+// swallow Cosmetics' too), `signs:` a list (Joe, 2026-10-09: Homes gets 3, one per home).
+const shopLine = (id) => section('shops').split('\n').find((l) => l.trim().startsWith(`${id}:`));
+const HOMES_SIGNS = spots(shopLine('homes'));
+const COSMETICS_SIGN = spots(shopLine('cosmetics'))[0];
 // heads.yml, for the texture of whichever mob the Heads stall wants today.
 const HEADS = readFileSync(new URL('../market/src/main/resources/heads.yml', import.meta.url), 'utf8');
 // The e2e server's own log, to check /cosmetic's exact log line (Player Claude's listener tails this).
@@ -157,7 +162,9 @@ try {
   // Built up front so the very first /market rotate (below) paints every one of these at once.
   await buildApproach(HEAD_STALL_CENTER, 'north');
   await buildApproach(WANTED_SIGN, 'west');
-  await buildApproach(HOMES_SIGN, 'west');
+  // The middle sign: its approach box reaches 3 blocks either side, covering all 3 Homes signs
+  // (one block apart) in a single build.
+  await buildApproach(HOMES_SIGNS[1], 'west');
   await buildApproach(COSMETICS_SIGN, 'east');
 
   let item;
@@ -448,14 +455,14 @@ try {
     assert(Math.abs(after - before - freshPrice) < 0.001, `paid the fresh, full price $${freshPrice} (before $${before}, after $${after})`);
   });
 
-  await step('the Homes shop sells the 4th home via LuckPerms and charges its price', async () => {
+  await step('the Homes shop sells the 4th home via its own sign and charges its price', async () => {
     const [bot] = bots;
     await rcon.command(`minecraft:clear ${SELLER}`);
     await rcon.command(`eco set ${SELLER} 2000`);
     const before = await balance();
-    await approach(bot, HOMES_SIGN, 'west');
+    await approach(bot, HOMES_SIGNS[0], 'west');
     const since = bot.lines.length;
-    await clickSignAt(bot, HOMES_SIGN, 'west');
+    await clickSignAt(bot, HOMES_SIGNS[0], 'west');
     await waitForLine(bot, /You can now set 4 homes/, 5_000, since);
     const after = await balance();
     assert(Math.abs(before - after - 500) < 0.001, `charged $500 for the 4th home (before $${before}, after $${after})`);
@@ -466,6 +473,17 @@ try {
     // channel LuckPerms reliably logs a grant to.
     await waitFor(() => new RegExp(`Set huskhomes\\.max_homes\\.4 to true for ${SELLER}`, 'i').test(readFileSync(LOG_PATH, 'utf8')),
       `LuckPerms logs granting huskhomes.max_homes.4 to ${SELLER}`, 10_000);
+  });
+
+  await step('clicking the 6th-home sign before the 5th refuses with no charge', async () => {
+    const [bot] = bots;
+    const before = await balance();
+    await approach(bot, HOMES_SIGNS[2], 'west');
+    const since = bot.lines.length;
+    await clickSignAt(bot, HOMES_SIGNS[2], 'west');
+    await waitForLine(bot, /Buy your 5th home first/, 5_000, since);
+    const after = await balance();
+    assert(Math.abs(before - after) < 0.001, `the refusal charged nothing (before $${before}, after $${after})`);
   });
 
   await step('the Cosmetics shop sells a token, and /cosmetic spends it to stamp the held item', async () => {
@@ -509,7 +527,7 @@ try {
   await rcon.command(`minecraft:forceload remove ${LECTERN.x} ${LECTERN.z}`).catch(() => {});
   await rcon.command(`minecraft:forceload remove ${HEAD_STALL_CENTER.x - 8} ${HEAD_STALL_CENTER.z - 8} ${HEAD_STALL_CENTER.x + 8} ${HEAD_STALL_CENTER.z + 8}`).catch(() => {});
   await rcon.command(`minecraft:forceload remove ${WANTED_SIGN.x - 8} ${WANTED_SIGN.z - 8} ${WANTED_SIGN.x + 8} ${WANTED_SIGN.z + 8}`).catch(() => {});
-  await rcon.command(`minecraft:forceload remove ${HOMES_SIGN.x - 8} ${HOMES_SIGN.z - 8} ${HOMES_SIGN.x + 8} ${HOMES_SIGN.z + 8}`).catch(() => {});
+  await rcon.command(`minecraft:forceload remove ${HOMES_SIGNS[1].x - 8} ${HOMES_SIGNS[1].z - 8} ${HOMES_SIGNS[1].x + 8} ${HOMES_SIGNS[1].z + 8}`).catch(() => {});
   await rcon.command(`minecraft:forceload remove ${COSMETICS_SIGN.x - 8} ${COSMETICS_SIGN.z - 8} ${COSMETICS_SIGN.x + 8} ${COSMETICS_SIGN.z + 8}`).catch(() => {});
   await quit(...bots);
   rcon.close();

@@ -58,10 +58,10 @@ public final class CosmeticShop implements Listener {
 
     public void apply(World world) {
         MarketLayout.Shop shop = layout.shops().get("cosmetics");
-        if (shop == null || shop.sign() == null) {
+        if (shop == null || shop.signs().isEmpty()) {
             return;
         }
-        Stall.Slot slot = shop.sign();
+        Stall.Slot slot = shop.signs().get(0);
         Block block = world.getBlockAt(slot.x(), slot.y(), slot.z());
         Material signBlock = layout.signBlock();
         if (block.getType() != signBlock) {
@@ -88,7 +88,7 @@ public final class CosmeticShop implements Listener {
             return;
         }
         MarketLayout.Shop shop = layout.shops().get("cosmetics");
-        Stall.Slot sign = shop == null ? null : shop.sign();
+        Stall.Slot sign = shop == null || shop.signs().isEmpty() ? null : shop.signs().get(0);
         Block block = event.getClickedBlock();
         if (sign == null || block == null || block.getX() != sign.x() || block.getY() != sign.y() || block.getZ() != sign.z()) {
             return;

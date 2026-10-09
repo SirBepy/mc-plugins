@@ -19,8 +19,8 @@ import java.util.Map;
 /**
  * The generated {@code stalls.yml}: sign block type, the price-book lectern's spot (null when the
  * file has none), the Heads stall's 4 sign spots, the Wanted board's sign and head spots, every
- * shop stall (Homes, Cosmetics, ... - only their look is known so far, a later builder adds their
- * behaviour) and every sell stall, in file order.
+ * shop stall (Homes, Cosmetics, ...; {@link HomeShop}/{@link CosmeticShop} own their behaviour)
+ * and every sell stall, in file order.
  */
 public record MarketLayout(Material signBlock, Stall.Slot priceLectern, HeadStall headStall, WantedSpot wantedBoard,
                            Map<String, Shop> shops, List<Stall> stalls) {
@@ -38,8 +38,9 @@ public record MarketLayout(Material signBlock, Stall.Slot priceLectern, HeadStal
     public record WantedSpot(Stall.Slot sign, Stall.Slot head) {
     }
 
-    /** A later builder's stall (Homes, Cosmetics, ...): only its sign spot and look are known yet. */
-    public record Shop(String name, DyeColor color, Stall.Slot sign) {
+    /** A shop stall (Homes, Cosmetics, ...): its look plus one sign per thing it sells (Homes
+     * sells 3 - the 4th/5th/6th home - Cosmetics just 1), in file order. */
+    public record Shop(String name, DyeColor color, List<Stall.Slot> signs) {
     }
 
     public static MarketLayout load(InputStream stream) {
@@ -112,7 +113,11 @@ public record MarketLayout(Material signBlock, Stall.Slot priceLectern, HeadStal
                 continue;
             }
             DyeColor color = DyeColor.valueOf(shop.getString("color", "black").toUpperCase(Locale.ROOT));
-            shops.put(id, new Shop(shop.getString("name", id), color, spot(shop.getConfigurationSection("sign"))));
+            List<Stall.Slot> signs = new ArrayList<>();
+            for (Map<?, ?> slot : shop.getMapList("signs")) {
+                signs.add(slot(slot));
+            }
+            shops.put(id, new Shop(shop.getString("name", id), color, List.copyOf(signs)));
         }
         return Map.copyOf(shops);
     }

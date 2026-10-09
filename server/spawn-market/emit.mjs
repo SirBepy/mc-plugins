@@ -115,10 +115,13 @@ export function emit(model, { MARKET, WANTED }) {
       `  sign: {x: ${WANTED.sign.x}, y: ${WANTED.sign.y}, z: ${WANTED.sign.z}, facing: ${WANTED.sign.facing}}`,
       `  head: {x: ${WANTED.head.x}, y: ${WANTED.head.y}, z: ${WANTED.head.z}, facing: ${WANTED.head.facing}}`,
     ] : []),
+    // Every shop exports `signs:` (a list), even Cosmetics' own 1-element one, so MarketLayout
+    // parses one consistent shape for every shop (Joe, 2026-10-09: Homes gets 3, one per home).
     ...(Object.keys(MARKET.shops).length ? [
       'shops:',
       ...Object.entries(MARKET.shops).map(([key, s]) =>
-        `  ${key}: {name: ${s.name}, color: ${s.color}, sign: {x: ${s.sign.x}, y: ${s.sign.y}, z: ${s.sign.z}, facing: ${s.sign.facing}}}`),
+        `  ${key}: {name: ${s.name}, color: ${s.color}, signs: [${s.signs.map((sl) =>
+          `{x: ${sl.x}, y: ${sl.y}, z: ${sl.z}, facing: ${sl.facing}}`).join(', ')}]}`),
     ] : []),
     'stalls:',
     ...MARKET.stalls.flatMap(({ id, name, color, slots, buys }) => [

@@ -14,8 +14,8 @@ wanted-board:
   sign: {x: 431, y: 115, z: -868, facing: west}
   head: {x: 431, y: 116, z: -868, facing: west}
 shops:
-  homes: {name: Homes, color: pink, sign: {x: 432, y: 116, z: -830, facing: west}}
-  cosmetics: {name: Cosmetics, color: magenta, sign: {x: 422, y: 116, z: -830, facing: east}}
+  homes: {name: Homes, color: pink, signs: [{x: 432, y: 116, z: -831, facing: west}, {x: 432, y: 116, z: -830, facing: west}, {x: 432, y: 116, z: -829, facing: west}]}
+  cosmetics: {name: Cosmetics, color: magenta, signs: [{x: 422, y: 116, z: -830, facing: east}]}
 stalls:
   farmer:
     name: Farmer
