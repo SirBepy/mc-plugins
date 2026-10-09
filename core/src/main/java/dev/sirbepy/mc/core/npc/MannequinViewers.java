@@ -98,4 +98,11 @@ public final class MannequinViewers implements Listener {
         body.setRotation(facing.getYaw(), facing.getPitch());
         body.setBodyYaw(facing.getYaw());
     }
+
+    /** Teleports {@code entity} back to {@code home} if it has drifted more than half a block away. */
+    public static void snapBack(Entity entity, Location home) {
+        if (entity.getLocation().distanceSquared(home) > 0.25) {
+            entity.teleport(home);
+        }
+    }
 }

@@ -118,14 +118,14 @@ public final class HaruNpc {
             store.setNpcId(spawnVillager(home).getUniqueId());
             changed = true;
         } else {
-            snapBack(villager, home);
+            MannequinViewers.snapBack(villager, home);
         }
         Entity mannequin = entity(store.mannequinId());
         if (!(mannequin instanceof Mannequin) || mannequin.isDead()) {
             store.setMannequinId(spawnMannequin(home).getUniqueId());
             changed = true;
         } else {
-            snapBack(mannequin, home);
+            MannequinViewers.snapBack(mannequin, home);
             if (look.undressed((Mannequin) mannequin)) {
                 mannequinLook.accept((Mannequin) mannequin);
             }
@@ -136,7 +136,7 @@ public final class HaruNpc {
             store.setTitleId(spawnTitle(home).getUniqueId());
             changed = true;
         } else {
-            snapBack(title, titleSpot);
+            MannequinViewers.snapBack(title, titleSpot);
         }
         removeStrayCopies(List.of(world.getChunkAt(anchor.chunkX(), anchor.chunkZ()).getEntities()));
         if (changed) {
@@ -144,12 +144,6 @@ public final class HaruNpc {
         }
         // Hiding needs the entity loaded, so players who joined while his chunk was unloaded are fixed here.
         applyVisibilityToAll();
-    }
-
-    private static void snapBack(Entity entity, Location spot) {
-        if (entity.getLocation().distanceSquared(spot) > 0.25) {
-            entity.teleport(spot);
-        }
     }
 
     /** Removes marked entities that aren't one of Haru's recorded bodies (a duplicate from a restore). */

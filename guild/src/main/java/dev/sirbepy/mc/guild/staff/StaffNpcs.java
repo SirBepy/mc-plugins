@@ -134,7 +134,7 @@ public final class StaffNpcs {
                 ids[VILLAGER] = spawnVillager(staff, home).getUniqueId();
                 changed = true;
             } else {
-                snapBack(villager, home);
+                MannequinViewers.snapBack(villager, home);
             }
             // Staff placed before the Mannequins existed have none recorded; this gives them one.
             Entity mannequin = ids[MANNEQUIN] == null ? null : Bukkit.getEntity(ids[MANNEQUIN]);
@@ -142,7 +142,7 @@ public final class StaffNpcs {
                 ids[MANNEQUIN] = spawnMannequin(staff, home).getUniqueId();
                 changed = true;
             } else {
-                snapBack(mannequin, home);
+                MannequinViewers.snapBack(mannequin, home);
                 if (undressed.test((Mannequin) mannequin, staff)) {
                     dress.accept((Mannequin) mannequin, staff);
                 }
@@ -153,7 +153,7 @@ public final class StaffNpcs {
                 ids[TITLE] = spawnTitle(staff, titleSpot).getUniqueId();
                 changed = true;
             } else {
-                snapBack(title, titleSpot);
+                MannequinViewers.snapBack(title, titleSpot);
             }
             removeStrays(world.getChunkAt(cx, cz).getEntities());
         }
@@ -162,12 +162,6 @@ public final class StaffNpcs {
         }
         // Hiding needs the entity loaded, so players who joined while the hall was unloaded are fixed here.
         applyVisibilityToAll();
-    }
-
-    private static void snapBack(Entity entity, Location spot) {
-        if (entity.getLocation().distanceSquared(spot) > 0.25) {
-            entity.teleport(spot);
-        }
     }
 
     /** Removes marked entities that aren't a recorded staff body (a duplicate from a restore). */

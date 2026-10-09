@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.market;
 
+import dev.sirbepy.mc.core.npc.MannequinViewers;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -95,7 +96,7 @@ public final class HeadCollector implements Listener {
         if (mannequin == null) {
             mannequin = spawnMannequin(home);
         } else {
-            snapBack(mannequin, home);
+            MannequinViewers.snapBack(mannequin, home);
         }
         if (mannequin.getEquipment().getHelmet().getType() != Material.ZOMBIE_HEAD) {
             mannequin.getEquipment().setHelmet(ItemStack.of(Material.ZOMBIE_HEAD));
@@ -103,7 +104,7 @@ public final class HeadCollector implements Listener {
         if (villager == null) {
             villager = spawnVillager(home);
         } else {
-            snapBack(villager, home);
+            MannequinViewers.snapBack(villager, home);
         }
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             applyVisibility(player, mannequin, villager);
@@ -112,16 +113,8 @@ public final class HeadCollector implements Listener {
 
     private void applyVisibility(Player player, Mannequin mannequin, Villager villager) {
         boolean java = !bedrock.test(player.getUniqueId());
-        show(player, mannequin, java);
-        show(player, villager, !java);
-    }
-
-    private void show(Player player, Entity entity, boolean visible) {
-        if (visible) {
-            player.showEntity(plugin, entity);
-        } else {
-            player.hideEntity(plugin, entity);
-        }
+        MannequinViewers.show(plugin, player, mannequin, java);
+        MannequinViewers.show(plugin, player, villager, !java);
     }
 
     private static Location home(World world, Stall.Slot spot) {
@@ -138,12 +131,6 @@ public final class HeadCollector implements Listener {
             case EAST -> -90;
             default -> 0;
         };
-    }
-
-    private static void snapBack(Entity entity, Location home) {
-        if (entity.getLocation().distanceSquared(home) > 0.25) {
-            entity.teleport(home);
-        }
     }
 
     private Mannequin spawnMannequin(Location at) {
