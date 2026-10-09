@@ -42,6 +42,7 @@ public final class Titles {
         add("ashwalker", "Ashwalker", "walking the ashes of the old Nether guild");
         add("heir", "Heir of Legends", "following the last S-Rank adventurer's trail to its end");
         add("derby", "Derby Champion", "winning one of the Guildmaster's Guild activities");
+        add("dragonslayer", "Dragonslayer", "fighting the first Ender Dragon the server ever brought down");
     }
 
     private Titles() {

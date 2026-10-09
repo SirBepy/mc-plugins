@@ -6,6 +6,7 @@ import dev.sirbepy.mc.guild.Guild;
 import dev.sirbepy.mc.guild.data.GuildStore;
 import dev.sirbepy.mc.guild.data.Member;
 import dev.sirbepy.mc.guild.events.EventPools;
+import dev.sirbepy.mc.guild.events.FirstDragon;
 import dev.sirbepy.mc.guild.events.ServerEvents;
 import dev.sirbepy.mc.guild.fame.Titles;
 import dev.sirbepy.mc.guild.rank.Rank;
@@ -19,6 +20,8 @@ import org.bukkit.inventory.ItemStack;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.ToIntFunction;
 
@@ -165,6 +168,7 @@ final class FameMenus {
         menu.set(16, Icons.icon(Material.PAPER, "The First Contract", Chat.BRONZE,
                 firstContract == null ? "Unclaimed." : firstContract.name(),
                 firstContract == null ? "" : "on " + Text.dateTime(firstContract.time(), guild.config().zone())));
+        menu.set(22, firstDragon(store));
         menu.set(28, leaderboard(Material.WRITABLE_BOOK, "Most contracts", Member::contractsDone));
         menu.set(30, leaderboard(Material.EXPERIENCE_BOTTLE, "Most reputation", Member::reputation));
         menu.set(32, leaderboard(Material.CLOCK, "Longest daily streak", m -> m.stat("best-streak")));
@@ -176,6 +180,22 @@ final class FameMenus {
                 (shown, click) -> go.accept(shown, GuildMenus.Screen.MAIN));
         menu.frame(Material.YELLOW_STAINED_GLASS_PANE);
         return menu;
+    }
+
+    /** The party that brought down the server's first Ender Dragon, set once by {@link FirstDragon}. */
+    ItemStack firstDragon(GuildStore store) {
+        if (!FirstDragon.done(store)) {
+            return Icons.icon(Material.GRAY_DYE, "The First Dragon", NamedTextColor.GRAY, "Unclaimed. Yet.");
+        }
+        if (FirstDragon.earlier(store)) {
+            return Icons.icon(Material.DRAGON_HEAD, "The First Dragon", NamedTextColor.GRAY, "It fell before the Guild kept records.");
+        }
+        Map<UUID, String> party = FirstDragon.party(store);
+        List<String> lore = new ArrayList<>();
+        lore.add("The party that brought it down:");
+        lore.addAll(party.isEmpty() ? List.of("no Guild adventurer fought it") : party.values());
+        lore.add("on " + Text.dateTime(FirstDragon.time(store), guild.config().zone()));
+        return Icons.icon(Material.DRAGON_HEAD, "The First Dragon", NamedTextColor.LIGHT_PURPLE, lore);
     }
 
     private ItemStack leaderboard(Material icon, String name, ToIntFunction<Member> score) {

@@ -11,6 +11,7 @@ import dev.sirbepy.mc.guild.contract.ContractDef;
 import dev.sirbepy.mc.guild.data.ActiveContract;
 import dev.sirbepy.mc.guild.data.LedgerEntry;
 import dev.sirbepy.mc.guild.data.Member;
+import dev.sirbepy.mc.guild.events.FirstDragon;
 import dev.sirbepy.mc.guild.listener.ExploreTracker;
 import dev.sirbepy.mc.guild.rank.Rank;
 import dev.sirbepy.mc.guild.staff.StaffNpcs;
@@ -67,6 +68,8 @@ public final class GuildAdminCommand {
                 }))
                 .then(Commands.literal("grandquest")
                         .then(Commands.literal("reroll").executes(this::rerollGrand)))
+                .then(Commands.literal("firstdragon").executes(this::firstDragon)
+                        .then(Commands.literal("reset").executes(this::resetFirstDragon)))
                 .then(Commands.literal("treasury")
                         .then(Commands.argument("amount", IntegerArgumentType.integer()).executes(this::treasury)))
                 .then(Commands.literal("probe")
@@ -231,6 +234,18 @@ public final class GuildAdminCommand {
         guild.store().save();
         send(c, "Voided Grand Quest " + before + "; this week's is now " + next.id() + ": " + next.title()
                 + ", goal " + next.goal() + ". Shares already claimed stay paid.");
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int firstDragon(CommandContext<CommandSourceStack> c) {
+        send(c, FirstDragon.describe(guild.store(), guild.config().zone()));
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int resetFirstDragon(CommandContext<CommandSourceStack> c) {
+        FirstDragon.reset(guild.store());
+        send(c, "First Dragon record cleared: the next dragon to die in the End pays its Guild fighters again."
+                + " Coins, reputation and titles already given stay given.");
         return Command.SINGLE_SUCCESS;
     }
 

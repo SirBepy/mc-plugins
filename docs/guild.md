@@ -226,6 +226,9 @@ in `/guild`, or a right-click on Silas the treasurer) has:
   `grandquest reroll` (voids this week's Grand Quest, done or not, and starts a different one for the
   rest of the week with a server-wide announcement; shares already claimed stay paid, contributions and
   claims start over),
+  `firstdragon` (First Dragon status: armed, or the party and when; also names anyone whose coins are
+  still owed) and `firstdragon reset` (testing and repair only: forgets the record so the next dragon
+  killed in the End runs the event again; what was already paid stays paid),
   `probe <world> <x> <y> <z>` (the biome and structures exploration contracts see there), `staff ...` and
   `hall guard ...` (above), `reload`.
 
@@ -282,6 +285,7 @@ what the adventurer has earned. Each new one shows a title card and a line to it
 | Ashwalker | Expedition: Ashes of the Old Guild (A weekly: Incendium's abandoned tower, a Nether keep, a Headless Warrior) |
 | Heir of Legends | Legend: The Last S-Rank (S weekly: an Ancient City, a Warden, 4 echo shards, an Incendium Sanctum) |
 | Derby Champion | winning one of the Guildmaster's activities |
+| Dragonslayer | hurting the first Ender Dragon the server ever killed, as a member (First Dragon below) |
 
 ## Server-wide events (`events/ServerEvents.java`, `events/EventPools.java`)
 
@@ -299,11 +303,39 @@ what the adventurer has earned. Each new one shows a title card and a line to it
   10-60 minutes (30 by default), prize 50-500 coins escrowed from the Treasury. Members (not the
   Guildmaster) score hostile kills, catches or ore; the top score takes the prize (split on a tie,
   refunded with no entrants), from the Treasury so outside the daily cap.
+- **The First Dragon** (one time only; Joe, 2026-10-09, for the server's first Ender Dragon fight; public:
+  Guild members who fight the first dragon are rewarded). When the first Ender Dragon ever dies in the
+  End, every registered member who hurt it during that fight gets 300 coins, +50 reputation (it is no
+  contract, so promotion's contract count doesn't move), the secret title Dragonslayer, and a place in
+  the Hall of Fame's First Dragon party (stored once, never overwritten); the server hears the party
+  named. The Guildmaster counts like anyone else. Non-members and members who only stood in the End
+  get nothing from the Guild. Every party member's coins are paid outside the daily caps, minted like a
+  Grand Quest share with the 5% Treasury commission minted on top (15 each); party members offline at
+  the kill are paid straight into their balance at once and told on their next join (if the bank is
+  down at the kill, the coins wait and are paid on the next join). Item and XP rewards for the fight
+  belong to the separate `endfight` plugin (b7db, 2026-10-09), so nothing is paid twice.
+  - *Hurt it* means the game blames the player for damage the dragon took: their melee hits, any
+    arrow, trident or other projectile they shot or threw, TNT they lit, an End Crystal they broke
+    (the game's own blame, which for a crystal the dragon was healing from can fall on the nearest
+    player), and a bed or respawn anchor they set off within 2 blocks of the blast (the game blames
+    nobody for those, so `listener/DragonSlayers.java` matches the click to the blast). Not counted:
+    pets (they can't hurt the dragon anyway), dispensers, redstone-lit TNT, an op's `/kill`, and hits
+    the dragon shrugs off (deflected arrows while it perches, its half-second hurt cooldown, the
+    death animation).
+  - The fighters are a list kept on the dragon itself (PDC `guild:dragon-fighters`), so it survives a
+    restart mid-fight and every new dragon starts with an empty one. Only a dragon dying in the End
+    counts, summoned ones included (ops only).
+  - First kill ever: at boot, and when an End loads, the Guild reads the End's own record (the dragon
+    fight's "previously killed" flag). If the End already saw a dragon die before the Guild could
+    record one, the event is spent with no party and the log says `The End (world_the_end) records a
+    dragon killed before the Guild tracked it`; otherwise the log says `First Dragon event armed`. The
+    game only sets that flag once the death animation ends, so the Guild never reads it at a kill.
+    State: `first-dragon` in guild.yml's events section.
 
 ## Hall of Fame
 
-`/guild halloffame`, the book in `/guild`, or Pip the archivist: the first to each rank and the first
-contract (stored once, never overwritten), and top-5 tables for contracts, reputation, longest daily
+`/guild halloffame`, the book in `/guild`, or Pip the archivist: the first to each rank, the first
+contract and the First Dragon party (stored once, never overwritten), and top-5 tables for contracts, reputation, longest daily
 streak, bounties, commissions, structure kinds explored and titles.
 
 ## The Guild Hall and its staff
@@ -352,5 +384,12 @@ rerolls, the trial state and time left, the Guildmaster, night and thunder. Snea
 
 - Unit tests (`./gradlew :guild:test`): ranks and promotion, board drawing, every contract kind's
   progress, caps and clipping, commission math, Treasury and withdrawal limits, commissions, trials,
-  persistence round-trip, menus, every farm rule and the Grand Quest share cap and reroll.
+  persistence round-trip, menus, every farm rule and the Grand Quest share cap and reroll, the First
+  Dragon payout and who counts as a fighter.
+- `e2e/first-dragon.mjs` (private server): a sword hit, a bed blast and a `/damage ... by` each make a
+  fighter, a member who only stands there and a non-member who hits get nothing, an offline fighter is
+  paid and told on join, an op's `/kill` and a second dragon pay nobody. Checked once by hand on the
+  same server (2026-10-09): a fighter's hit survives a restart mid-fight, the main island's own dragon
+  pays its party, and after a full natural kill a restart with the record cleared logs the earlier
+  kill and spends the event.
 - Not testable by Claude: how menus look in a real 26.3 client.

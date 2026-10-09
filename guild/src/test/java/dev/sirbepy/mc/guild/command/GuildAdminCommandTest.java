@@ -58,6 +58,18 @@ class GuildAdminCommandTest extends GuildTestBase {
     }
 
     @Test
+    void firstDragonStatusAndReset() throws Exception {
+        store.events().set("first-dragon.done", true);
+        dispatcher.execute("guildadmin firstdragon", console);
+        assertTrue(consoleSender.nextMessage().startsWith("First Dragon: killed"));
+
+        dispatcher.execute("guildadmin firstdragon reset", console);
+        assertTrue(consoleSender.nextMessage().startsWith("First Dragon record cleared"));
+        dispatcher.execute("guildadmin firstdragon", console);
+        assertTrue(consoleSender.nextMessage().contains("armed"));
+    }
+
+    @Test
     void staffListShowsNotPlacedByDefault() throws Exception {
         dispatcher.execute("guildadmin staff list", console);
         assertTrue(consoleSender.nextMessage().contains("receptionist (Lyra Fennwick, Guild Receptionist): not placed"));

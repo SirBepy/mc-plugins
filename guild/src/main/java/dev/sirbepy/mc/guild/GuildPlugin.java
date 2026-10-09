@@ -7,12 +7,14 @@ import dev.sirbepy.mc.guild.command.GuildCommand;
 import dev.sirbepy.mc.guild.config.GuildConfig;
 import dev.sirbepy.mc.guild.data.GuildStore;
 import dev.sirbepy.mc.guild.econ.VaultBank;
+import dev.sirbepy.mc.guild.events.FirstDragon;
 import dev.sirbepy.mc.guild.gui.GuildMenus;
 import dev.sirbepy.mc.guild.hall.HallGuard;
 import dev.sirbepy.mc.guild.staff.Dialogue;
 import dev.sirbepy.mc.guild.staff.StaffListener;
 import dev.sirbepy.mc.guild.staff.StaffNpcs;
 import dev.sirbepy.mc.guild.listener.BossCredit;
+import dev.sirbepy.mc.guild.listener.DragonSlayers;
 import dev.sirbepy.mc.guild.listener.ExploreTracker;
 import dev.sirbepy.mc.guild.listener.FarmGuard;
 import dev.sirbepy.mc.guild.listener.ProgressListener;
@@ -43,6 +45,7 @@ public final class GuildPlugin extends JavaPlugin {
         BossCredit bosses = new BossCredit(clock::nowMillis);
         FarmGuard farms = new FarmGuard(config::get, clock::nowMillis);
         ExploreTracker explore = new ExploreTracker(guild);
+        DragonSlayers dragons = new DragonSlayers(new FirstDragon(guild, getLogger()), clock::nowMillis);
 
         BedrockForms bedrock = BedrockForms.create(this);
         StaffNpcs staff = new StaffNpcs(this, store, bedrock::isBedrock);
@@ -53,6 +56,8 @@ public final class GuildPlugin extends JavaPlugin {
         pm.registerEvents(farms, this);
         pm.registerEvents(new ProgressListener(guild, bosses, farms), this);
         pm.registerEvents(new HallGuard(store), this);
+        pm.registerEvents(dragons, this);
+        getServer().getWorlds().forEach(dragons::checkEarlierKill);
         pm.registerEvents(new StaffListener(staff, guild, menus, new Dialogue(guild, new Random())), this);
         pm.registerEvents(staff.viewers(), this);
 
