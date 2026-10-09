@@ -30,12 +30,17 @@ public final class ArenaLayout {
         this.treads = List.copyOf(treads);
     }
 
+    /** The layout with the fortress and the altar both standing on {@code surfaceY}. */
+    public static ArenaLayout build(List<Pillar> pillars, int surfaceY) {
+        return build(pillars, new Terrain(surfaceY, surfaceY));
+    }
+
     /**
      * @param pillars   exactly the pillars {@link PillarScanner} found (10 on a healthy world, may
      *                  be fewer if some chunks weren't generated yet)
-     * @param surfaceY  the End island's surface height at the portal, used for the fortress ring
+     * @param terrain   the ground the fortress ring and the altar stand on
      */
-    public static ArenaLayout build(List<Pillar> pillars, int surfaceY) {
+    public static ArenaLayout build(List<Pillar> pillars, Terrain terrain) {
         List<Pillar> byHeight = new ArrayList<>(pillars);
         byHeight.sort(Comparator.comparingInt(Pillar::topY));
         int tallFrom = Math.max(0, byHeight.size() - 5);
@@ -55,12 +60,12 @@ public final class ArenaLayout {
             treads.addAll(result.treads());
         }
 
-        FortressResult fortress = FortressStructures.build(surfaceY);
+        FortressResult fortress = FortressStructures.build(terrain.fortressY());
         placements.addAll(fortress.placements());
         guardPosts.addAll(fortress.guardPosts());
         waveSpawns.addAll(fortress.waveSpawns());
 
-        placements.addAll(AltarStructures.build(surfaceY).placements());
+        placements.addAll(AltarStructures.build(terrain.altarY()).placements());
 
         return new ArenaLayout(placements, guardPosts, waveSpawns, treads);
     }

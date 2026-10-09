@@ -36,23 +36,31 @@ public final class ArenaBuilder {
      * so a shorter world - a MockBukkit {@code WorldMock} in tests, or a differently configured
      * real one - never gets asked for an out-of-range block. */
     public List<Pillar> scan(World end) {
-        int minY = end.getMinHeight();
-        int maxY = end.getMaxHeight();
-        BlockLookup lookup = (x, y, z) -> (y < minY || y >= maxY) ? org.bukkit.Material.AIR : end.getBlockAt(x, y, z).getType();
-        return PillarScanner.scanAll(lookup);
+        return PillarScanner.scanAll(lookup(end));
     }
 
-    /** Scans the pillars, builds the layout from them (surfaceY is the average of what the scan
-     * read at each pillar - close enough to the portal's own surface for the fortress ring) and
-     * places every block. */
-    public BuildResult build(World end) {
+    private static BlockLookup lookup(World end) {
+        int minY = end.getMinHeight();
+        int maxY = end.getMaxHeight();
+        return (x, y, z) -> (y < minY || y >= maxY) ? org.bukkit.Material.AIR : end.getBlockAt(x, y, z).getType();
+    }
+
+    /** Scans the pillars, builds the layout from them and places every block. The fortress and
+     * altar stand on {@code knownTerrain} when an earlier build already read it (a rebuild would
+     * otherwise read our own foundations as the ground); otherwise the island's ground is read now,
+     * falling back to the pillars' average ground if no end stone turns up. */
+    public BuildResult build(World end, Terrain knownTerrain) {
         loadArenaChunks(end);
         try {
             List<Pillar> pillars = scan(end);
-            int surfaceY = averageSurfaceY(pillars);
-            ArenaLayout layout = ArenaLayout.build(pillars, surfaceY);
+            Terrain terrain = knownTerrain != null ? knownTerrain
+                    : TerrainScanner.scan(lookup(end)).orElseGet(() -> {
+                        int average = averageSurfaceY(pillars);
+                        return new Terrain(average, average);
+                    });
+            ArenaLayout layout = ArenaLayout.build(pillars, terrain);
             apply(end, layout);
-            return new BuildResult(pillars, surfaceY, layout);
+            return new BuildResult(pillars, terrain, layout);
         } finally {
             unloadArenaChunks(end);
         }
@@ -69,7 +77,7 @@ public final class ArenaBuilder {
         return sum / pillars.size();
     }
 
-    public record BuildResult(List<Pillar> pillars, int surfaceY, ArenaLayout layout) {
+    public record BuildResult(List<Pillar> pillars, Terrain terrain, ArenaLayout layout) {
     }
 
     /** Sets every tracked arena block back to air - testing/repair only. */

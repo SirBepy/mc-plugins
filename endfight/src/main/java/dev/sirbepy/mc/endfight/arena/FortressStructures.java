@@ -20,10 +20,10 @@ final class FortressStructures {
     private static final int THICKNESS = 3;
     private static final int HEIGHT = 8;
     private static final int OUTER_R = INNER_R + THICKNESS;
-    // The fortress stands on one surface height (the pillars' average), but the island's real
-    // surface under the ring varies by several blocks; walls reach this far below it so they meet
-    // the ground instead of floating over a dip (below ground they just replace end stone).
-    private static final int FOUNDATION = 6;
+    // The fortress stands on one surface height (see Terrain), but the island's real surface under
+    // the ring varies by several blocks; walls reach this far below it so they meet the ground
+    // instead of floating over a dip (below ground they just replace end stone).
+    private static final int FOUNDATION = 10;
     private static final Map<String, int[]> GATES = Map.of(
             "north", new int[] {0, -1},
             "south", new int[] {0, 1},

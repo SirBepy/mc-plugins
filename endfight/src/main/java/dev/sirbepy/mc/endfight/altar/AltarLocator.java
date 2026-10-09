@@ -3,6 +3,7 @@ package dev.sirbepy.mc.endfight.altar;
 import dev.sirbepy.mc.endfight.arena.AltarStructures;
 import dev.sirbepy.mc.endfight.arena.ArenaRegistry;
 import dev.sirbepy.mc.endfight.arena.Pillar;
+import dev.sirbepy.mc.endfight.arena.Terrain;
 
 import java.util.List;
 
@@ -32,7 +33,8 @@ public final class AltarLocator {
         if (pillars.isEmpty()) {
             return false;
         }
-        AltarStructures.AltarResult altar = AltarStructures.build(averageSurfaceY(pillars));
+        Terrain terrain = registry.terrain();
+        AltarStructures.AltarResult altar = AltarStructures.build(terrain != null ? terrain.altarY() : averageSurfaceY(pillars));
         return altar.clickX() == x && altar.clickY() == y && altar.clickZ() == z;
     }
 

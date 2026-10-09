@@ -20,6 +20,7 @@ public final class ArenaRegistry {
     private volatile List<WaveSpawn> waveSpawns = List.of();
     private volatile List<Pillar> pillars = List.of();
     private volatile boolean built = false;
+    private volatile Terrain terrain;
 
     public void registerListener(ArenaListener listener) {
         listeners.add(listener);
@@ -27,6 +28,12 @@ public final class ArenaRegistry {
 
     /** Replaces the whole registry from a freshly computed layout and notifies listeners. */
     public void update(List<Pillar> pillars, ArenaLayout layout, boolean built) {
+        update(pillars, layout, built, null);
+    }
+
+    /** As above, also remembering the ground the layout stands on ({@code null} if unknown). */
+    public void update(List<Pillar> pillars, ArenaLayout layout, boolean built, Terrain terrain) {
+        this.terrain = terrain;
         Set<Long> blocks = new HashSet<>(layout.placements().size() * 2);
         for (Placement placement : layout.placements()) {
             blocks.add(pack(placement.x(), placement.y(), placement.z()));
@@ -51,6 +58,11 @@ public final class ArenaRegistry {
 
     public boolean isArenaBlock(int x, int y, int z) {
         return arenaBlocks.contains(pack(x, y, z));
+    }
+
+    /** The ground the fortress and altar stand on, or null before any build or restore. */
+    public Terrain terrain() {
+        return terrain;
     }
 
     public boolean isBuilt() {

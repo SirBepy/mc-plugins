@@ -37,9 +37,12 @@ public final class AltarStructures {
         int floorY = surfaceY;
         int clickY = surfaceY + 1;
 
+        // The dais stands on the highest ground under it; a short foundation fills any dip.
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
-                placements.add(new Placement(dx, floorY, CLICK_OFFSET_Z + dz, "minecraft:polished_blackstone"));
+                for (int y = floorY - 3; y <= floorY; y++) {
+                    placements.add(new Placement(dx, y, CLICK_OFFSET_Z + dz, "minecraft:polished_blackstone"));
+                }
             }
         }
         placements.add(new Placement(0, floorY, CLICK_OFFSET_Z, "minecraft:crying_obsidian"));

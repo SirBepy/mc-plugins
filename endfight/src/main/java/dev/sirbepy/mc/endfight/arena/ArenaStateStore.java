@@ -50,7 +50,9 @@ final class ArenaStateStore {
                         wrapper.getInt("topY"), wrapper.getInt("surfaceY")));
             }
         }
-        return new ArenaState(built, layoutVersion, pillars);
+        Terrain terrain = yaml.isSet("terrain.fortressY")
+                ? new Terrain(yaml.getInt("terrain.fortressY"), yaml.getInt("terrain.altarY")) : null;
+        return new ArenaState(built, layoutVersion, pillars, terrain);
     }
 
     private Pillar readPillar(ConfigurationSection section) {
@@ -68,6 +70,10 @@ final class ArenaStateStore {
                     "cx", p.cx(), "cz", p.cz(), "radius", p.radius(), "topY", p.topY(), "surfaceY", p.surfaceY()));
         }
         yaml.set("pillars", pillars);
+        if (state.terrain() != null) {
+            yaml.set("terrain.fortressY", state.terrain().fortressY());
+            yaml.set("terrain.altarY", state.terrain().altarY());
+        }
         try {
             YamlFiles.saveAtomically(yaml, file);
         } catch (IOException e) {

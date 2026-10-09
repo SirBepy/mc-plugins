@@ -49,10 +49,19 @@ public final class ArenaService {
         if (!state.built() || state.pillars().isEmpty()) {
             return;
         }
-        int surfaceY = ArenaBuilder.averageSurfaceY(state.pillars());
-        ArenaLayout layout = ArenaLayout.build(state.pillars(), surfaceY);
-        registry.update(state.pillars(), layout, true);
+        Terrain terrain = terrainOf(state);
+        ArenaLayout layout = ArenaLayout.build(state.pillars(), terrain);
+        registry.update(state.pillars(), layout, true, terrain);
         logger.info("Restored the arena registry from state.yml (" + state.pillars().size() + " pillars).");
+    }
+
+    /** A state from before terrain was recorded stands on the pillars' average ground. */
+    private static Terrain terrainOf(ArenaState state) {
+        if (state.terrain() != null) {
+            return state.terrain();
+        }
+        int average = ArenaBuilder.averageSurfaceY(state.pillars());
+        return new Terrain(average, average);
     }
 
     /** Scans + places every block (used for both {@code build} and {@code rebuild} - rebuild just
@@ -63,13 +72,13 @@ public final class ArenaService {
             logger.warning("No End world loaded; can't build the arena yet.");
             return false;
         }
-        ArenaBuilder.BuildResult result = builder.build(end.get());
+        ArenaBuilder.BuildResult result = builder.build(end.get(), stateStore.load().terrain());
         if (result.pillars().isEmpty()) {
             logger.warning("Scanned 0 end-spike pillars; the End may not have generated yet. Nothing built.");
             return false;
         }
-        registry.update(result.pillars(), result.layout(), true);
-        stateStore.save(new ArenaState(true, ArenaState.CURRENT_LAYOUT_VERSION, result.pillars()));
+        registry.update(result.pillars(), result.layout(), true, result.terrain());
+        stateStore.save(new ArenaState(true, ArenaState.CURRENT_LAYOUT_VERSION, result.pillars(), result.terrain()));
         logger.info("EndFight arena built: " + result.pillars().size() + " pillars, "
                 + result.layout().placements().size() + " blocks, " + result.layout().guardPosts().size() + " guard posts.");
         return true;
@@ -84,7 +93,9 @@ public final class ArenaService {
         builder.clear(end.get(), registry);
         List<Pillar> pillars = registry.pillars();
         registry.clearBlocks();
-        stateStore.save(new ArenaState(false, ArenaState.CURRENT_LAYOUT_VERSION, pillars));
+        // The terrain is kept: the ground under the cleared foundations is gone, so a fresh read
+        // would be wrong, and the next build stands exactly where this one did.
+        stateStore.save(new ArenaState(false, ArenaState.CURRENT_LAYOUT_VERSION, pillars, stateStore.load().terrain()));
         logger.info("EndFight arena cleared.");
         return true;
     }

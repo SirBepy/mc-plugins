@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Covers the spec change: the arena auto-builds the first time an End world is seen with nothing
@@ -64,7 +65,7 @@ class ArenaServiceTest {
     void aRestartWithStateAlreadyBuiltOnlyRestoresTheRegistryNeverRescans() {
         Pillar sentinel = new Pillar(9999, 9999, 2, 76, 64);
         ArenaStateStore stateStore = new ArenaStateStore(new File(plugin.getDataFolder(), "state.yml"), Logger.getLogger("endfight-test"));
-        stateStore.save(new ArenaState(true, ArenaState.CURRENT_LAYOUT_VERSION, List.of(sentinel)));
+        stateStore.save(new ArenaState(true, ArenaState.CURRENT_LAYOUT_VERSION, List.of(sentinel), null));
 
         // A real, fully-seeded End world also exists - if auto-build's "already built" guard were
         // missing, this is what it would wrongly rescan and overwrite the sentinel with.
@@ -79,5 +80,23 @@ class ArenaServiceTest {
 
         assertEquals(1, registry.pillars().size(), "should not have rescanned the real 10-pillar world");
         assertEquals(blockCountAfterRestore, registry.blockCount());
+    }
+
+    // A rebuild must stand where the first build did: reading the ground again would find our own
+    // foundations instead of the island.
+    @Test
+    void aRebuildKeepsTheTerrainTheFirstBuildRead() {
+        seededEndWorld();
+        service.buildNow();
+        Terrain first = registry.terrain();
+        assertNotNull(first);
+
+        ArenaStateStore stateStore = new ArenaStateStore(new File(plugin.getDataFolder(), "state.yml"), Logger.getLogger("endfight-test"));
+        Terrain moved = new Terrain(first.fortressY() + 7, first.altarY() + 3);
+        stateStore.save(new ArenaState(true, ArenaState.CURRENT_LAYOUT_VERSION, registry.pillars(), moved));
+        service.buildNow();
+
+        assertEquals(moved, registry.terrain());
+        assertEquals(moved, stateStore.load().terrain());
     }
 }
