@@ -332,3 +332,13 @@ test('every stall front faces open paving (no block sits on the tile right outsi
     }
   }
 });
+
+// A carpet has no hold of its own: one over air pops off at the first neighbour update, which is
+// what took 6 of the awning canopy's 15 carpets on live (2026-10-09).
+test('every carpet sits on a block', () => {
+  for (const [k, state] of Object.entries(model.blocks)) {
+    if (!state.includes('_carpet')) continue;
+    const [x, y, z] = k.split(',').map(Number);
+    assert.ok(`${x},${y - 1},${z}` in model.blocks, `${state} at ${k} has air below it`);
+  }
+});

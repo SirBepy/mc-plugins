@@ -634,7 +634,7 @@ setblock 432 118 -866 dark_oak_slab[type=bottom]
 setblock 433 118 -866 dark_oak_stairs[facing=west,half=bottom]
 setblock 424 118 -844 spruce_log[axis=y]
 setblock 430 118 -844 spruce_log[axis=y]
-setblock 425 118 -843 cyan_carpet
+setblock 425 118 -843 cyan_wool
 fill 429 118 -843 434 118 -843 dark_oak_stairs[facing=south,half=bottom]
 setblock 421 118 -842 spruce_log
 setblock 424 118 -842 spruce_log
@@ -643,17 +643,17 @@ setblock 430 118 -842 spruce_log
 setblock 433 118 -842 spruce_log
 setblock 421 118 -841 spruce_planks
 setblock 424 118 -841 stripped_spruce_log[axis=z]
-setblock 425 118 -841 cyan_carpet
+setblock 425 118 -841 cyan_wool
 setblock 430 118 -841 stripped_spruce_log[axis=z]
 setblock 433 118 -841 spruce_planks
 setblock 421 118 -840 spruce_planks
 setblock 424 118 -840 stripped_spruce_log[axis=z]
-setblock 425 118 -840 white_carpet
+setblock 425 118 -840 white_wool
 setblock 430 118 -840 stripped_spruce_log[axis=z]
 setblock 433 118 -840 spruce_planks
 setblock 421 118 -839 spruce_planks
 setblock 424 118 -839 stripped_spruce_log[axis=z]
-setblock 425 118 -839 cyan_carpet
+setblock 425 118 -839 cyan_wool
 setblock 430 118 -839 stripped_spruce_log[axis=z]
 setblock 433 118 -839 spruce_planks
 fill 411 118 -865 416 118 -865 dark_oak_stairs[facing=south,half=bottom]
@@ -666,10 +666,10 @@ setblock 424 118 -838 spruce_log
 setblock 425 118 -838 stripped_birch_log[axis=y]
 setblock 430 118 -838 spruce_log
 setblock 433 118 -838 spruce_log
-setblock 425 118 -837 cyan_carpet
+setblock 425 118 -837 cyan_wool
 fill 429 118 -837 434 118 -837 dark_oak_stairs[facing=north,half=bottom]
-setblock 425 118 -833 magenta_carpet
-setblock 429 118 -833 pink_carpet
+setblock 425 118 -833 magenta_wool
+setblock 429 118 -833 pink_wool
 setblock 421 118 -832 spruce_log
 setblock 424 118 -832 spruce_log
 setblock 425 118 -832 stripped_birch_log[axis=y]
@@ -678,20 +678,20 @@ setblock 430 118 -832 spruce_log
 setblock 433 118 -832 spruce_log
 setblock 421 118 -831 spruce_planks
 setblock 424 118 -831 stripped_spruce_log[axis=z]
-setblock 425 118 -831 magenta_carpet
-setblock 429 118 -831 pink_carpet
+setblock 425 118 -831 magenta_wool
+setblock 429 118 -831 pink_wool
 setblock 430 118 -831 stripped_spruce_log[axis=z]
 setblock 433 118 -831 spruce_planks
 setblock 421 118 -830 spruce_planks
 setblock 424 118 -830 stripped_spruce_log[axis=z]
-setblock 425 118 -830 white_carpet
-setblock 429 118 -830 white_carpet
+setblock 425 118 -830 white_wool
+setblock 429 118 -830 white_wool
 setblock 430 118 -830 stripped_spruce_log[axis=z]
 setblock 433 118 -830 spruce_planks
 setblock 421 118 -829 spruce_planks
 setblock 424 118 -829 stripped_spruce_log[axis=z]
-setblock 425 118 -829 magenta_carpet
-setblock 429 118 -829 pink_carpet
+setblock 425 118 -829 magenta_wool
+setblock 429 118 -829 pink_wool
 setblock 430 118 -829 stripped_spruce_log[axis=z]
 setblock 433 118 -829 spruce_planks
 setblock 412 118 -864 spruce_log
@@ -705,8 +705,8 @@ setblock 425 118 -828 stripped_birch_log[axis=y]
 setblock 429 118 -828 stripped_birch_log[axis=y]
 setblock 430 118 -828 spruce_log
 setblock 433 118 -828 spruce_log
-setblock 425 118 -827 magenta_carpet
-setblock 429 118 -827 pink_carpet
+setblock 425 118 -827 magenta_wool
+setblock 429 118 -827 pink_wool
 setblock 412 118 -863 spruce_planks
 setblock 415 118 -863 stripped_spruce_log[axis=z]
 fill 424 118 -863 430 118 -863 dark_oak_slab[type=bottom]

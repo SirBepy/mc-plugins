@@ -239,14 +239,16 @@ export function buildStalls(model, { GUIDES, lecternState }) {
     const minusA = OPPOSITE[S.plusA];
     if (awning) {
       // Striped canvas awning instead of a gable (Joe's pick, 2026-10-09): a short wool valance
-      // against the entrance beam, then a carpet canopy sloping down over the counter on light
-      // stripped-birch corner poles, so the shop reads apart from the plain sell-stall gable at a
-      // glance even before you notice the counter. A flat wall-coloured cap covers the rest of the
+      // against the entrance beam, then a canopy row one block out and one lower over the counter
+      // on light stripped-birch corner poles, so the shop reads apart from the plain sell-stall
+      // gable at a glance even before you notice the counter. The canopy is wool, not carpet: a
+      // carpet over air pops off at the first neighbour update (6 of 15 did on live, 2026-10-09),
+      // and the eave lanterns hang from it. A flat wall-coloured cap covers the rest of the
       // stall, flush with the valance, so the interior stays enclosed.
       for (let a = -1; a <= 5; a++) {
         const c = a % 2 ? wool : 'white';
         at(a, 0, Y + 5, `${c}_wool`);
-        at(a, -1, Y + 4, `${c}_carpet`);
+        at(a, -1, Y + 4, `${c}_wool`);
       }
       for (const a of [0, 4]) for (let y = Y + 3; y <= Y + 4; y++) at(a, -1, y, 'stripped_birch_log[axis=y]');
       for (let d = 1; d <= 3; d++) for (let a = -1; a <= 5; a++) at(a, d, Y + 5, P.wall);
