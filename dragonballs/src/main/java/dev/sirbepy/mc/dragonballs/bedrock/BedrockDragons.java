@@ -75,7 +75,6 @@ public interface BedrockDragons {
 
     /** Minecraft yaw folded into -180..180, the range the Bedrock yaw property holds. */
     static float wrapYaw(float yaw) {
-        float wrapped = ((yaw % 360f) + 540f) % 360f - 180f;
-        return wrapped == 180f ? -180f : wrapped;
+        return ((yaw % 360f) + 540f) % 360f - 180f;
     }
 }
