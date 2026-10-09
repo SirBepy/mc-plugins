@@ -15,7 +15,7 @@ import java.util.Set;
 final class PlacedLookTracker {
 
     private PlacedBallLook look = PlacedBallLook.NONE;
-    // Memory only: a restart mid-flight just shows the old spot again, same as before this split.
+    // Memory only: a restart mid-flight just shows the ball at its old spot again.
     private final Set<Integer> hidden = new HashSet<>();
 
     void setLook(PlacedBallLook look) {
