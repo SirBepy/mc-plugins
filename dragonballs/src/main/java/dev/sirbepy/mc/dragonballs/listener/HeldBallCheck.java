@@ -50,6 +50,10 @@ public final class HeldBallCheck implements Runnable {
     private final Consumer<Item> lifecycleFlags;
     private final Logger logger;
     private final Map<String, Integer> misses = new HashMap<>();
+    // Set after construction (BallPickupListener's constructor itself takes this check), so an
+    // adopted stray can count as its former holder's own drop; null is tolerated so a test that
+    // only exercises the check in isolation doesn't have to wire it.
+    private BallPickupListener pickupListener;
 
     public HeldBallCheck(BallSets sets, Supplier<DragonBallsConfig> config, Logger logger) {
         this(sets, config, BallItemLifecycleListener::applyFlags, logger);
@@ -62,6 +66,13 @@ public final class HeldBallCheck implements Runnable {
         this.config = config;
         this.lifecycleFlags = lifecycleFlags;
         this.logger = logger;
+    }
+
+    /** Lets an adoption in {@link #check} also suppress the "found" broadcast for the former
+     * holder picking the adopted ball back up, the same way a real drop would. Public: the plugin
+     * wires this from outside the listener package, after constructing both. */
+    public void trackSelfPickupsWith(BallPickupListener pickupListener) {
+        this.pickupListener = pickupListener;
     }
 
     /** True when {@code registry} has {@code star} HELD by a player who is online but isn't carrying
@@ -103,6 +114,11 @@ public final class HeldBallCheck implements Runnable {
             misses.remove(key);
             lifecycleFlags.accept(stray);
             registry.markDropped(view.star(), stray, sets.items().isStoneItem(stray.getItemStack()));
+            if (pickupListener != null) {
+                // The adoption behaves exactly like holder dropping it themselves, so it gets the
+                // same 30 s "don't re-announce" grace on the pickup that follows.
+                pickupListener.recordSelfDrop(registry.set(), view.star(), holder.getUniqueId());
+            }
             logger.info(registry.set() + " " + view.star() + "-star left " + holder.getName()
                     + "'s inventory without an event; tracking it as dropped at " + describe(stray.getLocation()));
             return;

@@ -13,8 +13,6 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -26,20 +24,22 @@ import java.util.function.Supplier;
  */
 public final class BallPickupListener implements Listener {
 
-    private static final long SUPPRESS_BROADCAST_MILLIS = 30_000;
-
     private final BallSets sets;
-    private final Supplier<DragonBallsConfig> config;
     private final HeldBallCheck heldBallCheck;
-    // Tracks, per (set, star), who last dropped it and when: a player re-picking up their own drop
-    // within 30s doesn't re-announce it (so bouncing a ball between hand and ground doesn't spam chat).
-    private final Map<BallKey, UUID> lastDropper = new HashMap<>();
-    private final Map<BallKey, Long> lastDroppedAt = new HashMap<>();
+    private final FoundAnnouncer announcer;
+    // Who last dropped a given ball and when, for the self-dropped announce suppression. Also fed
+    // by HeldBallCheck.recordSelfDrop when it silently adopts a stray for its former holder, so that
+    // holder picking the adoption back up is treated the same as picking up their own drop.
+    private final RecentSelfAction recentlyDropped = new RecentSelfAction();
 
     public BallPickupListener(BallSets sets, Supplier<DragonBallsConfig> config, HeldBallCheck heldBallCheck) {
+        this(sets, heldBallCheck, (finder, set, star) -> announceFound(config.get(), finder, set, star));
+    }
+
+    BallPickupListener(BallSets sets, HeldBallCheck heldBallCheck, FoundAnnouncer announcer) {
         this.sets = sets;
-        this.config = config;
         this.heldBallCheck = heldBallCheck;
+        this.announcer = announcer;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -49,9 +49,7 @@ public final class BallPickupListener implements Listener {
             BallRegistry registry = sets.registryFor(stack).orElseThrow();
             boolean stone = sets.items().isStoneItem(stack);
             registry.markDropped(star, event.getItemDrop(), stone);
-            BallKey key = new BallKey(registry.set(), star);
-            lastDropper.put(key, event.getPlayer().getUniqueId());
-            lastDroppedAt.put(key, System.currentTimeMillis());
+            recentlyDropped.record(registry.set(), star, event.getPlayer().getUniqueId());
         });
     }
 
@@ -80,8 +78,8 @@ public final class BallPickupListener implements Listener {
             }
             boolean stone = sets.items().isStoneItem(stack);
             registry.markHeld(star, player, stone);
-            if (!player.getUniqueId().equals(formerHolder) && !recentlySelfDropped(registry.set(), star, player)) {
-                announceFound(config.get(), player, registry.set(), star);
+            if (!player.getUniqueId().equals(formerHolder) && !recentlyDropped.isRecent(registry.set(), star, player.getUniqueId())) {
+                announcer.announce(player, registry.set(), star);
             }
         });
     }
@@ -101,14 +99,10 @@ public final class BallPickupListener implements Listener {
         };
     }
 
-    private boolean recentlySelfDropped(BallSet set, int star, Player picker) {
-        BallKey key = new BallKey(set, star);
-        UUID dropper = lastDropper.get(key);
-        Long droppedAt = lastDroppedAt.get(key);
-        return dropper != null && dropper.equals(picker.getUniqueId()) && droppedAt != null
-                && System.currentTimeMillis() - droppedAt < SUPPRESS_BROADCAST_MILLIS;
-    }
-
-    private record BallKey(BallSet set, int star) {
+    /** Lets {@link HeldBallCheck} count a stray it silently adopts for its former holder as that
+     * holder's own drop, so that holder picking it back up doesn't get a "found" broadcast either,
+     * the same as a real {@link PlayerDropItemEvent} would suppress. */
+    void recordSelfDrop(BallSet set, int star, UUID holder) {
+        recentlyDropped.record(set, star, holder);
     }
 }

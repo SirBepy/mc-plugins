@@ -91,7 +91,9 @@ public final class DragonBallsPlugin extends JavaPlugin {
         var pm = getServer().getPluginManager();
         pm.registerEvents(floatingBalls, this);
         HeldBallCheck heldBallCheck = new HeldBallCheck(sets, config::get, getLogger());
-        pm.registerEvents(new BallPickupListener(sets, config::get, heldBallCheck), this);
+        BallPickupListener pickupListener = new BallPickupListener(sets, config::get, heldBallCheck);
+        heldBallCheck.trackSelfPickupsWith(pickupListener);
+        pm.registerEvents(pickupListener, this);
         pm.registerEvents(new BallSlownessListener(slowness), this);
         pm.registerEvents(new BallContainerGuardListener(overworldRegistry), this);
         pm.registerEvents(new BallDeathListener(sets), this);

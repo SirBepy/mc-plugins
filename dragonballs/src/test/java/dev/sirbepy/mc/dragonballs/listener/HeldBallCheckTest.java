@@ -68,6 +68,7 @@ class HeldBallCheckTest {
         sets = new BallSets(overworld, nether, end, items, () -> config);
         check = new HeldBallCheck(sets, () -> config, flagged::add, plugin.getLogger());
         pickup = new BallPickupListener(sets, () -> config, check);
+        check.trackSelfPickupsWith(pickup);
         player = server.addPlayer();
         player.setGameMode(GameMode.SURVIVAL);
         player.teleport(new Location(world, 50, 64, 50));
@@ -167,6 +168,28 @@ class HeldBallCheckTest {
         assertTrue(overworld.isDroppedAs(2, displaced.getUniqueId()));
         assertEquals(List.of(displaced), flagged, "it gets the no-despawn/invulnerable flags of any ball drop");
         assertEquals(List.of(displaced), ballEntities(), "no second copy dropped");
+    }
+
+    /** The adoption already left the ball DROPPED (not HELD) before the pickup runs, so the
+     * isAdrift-based silent path in onPickup doesn't apply; the "found" suppression has to come
+     * from the shared self-drop tracker HeldBallCheck now feeds instead. */
+    @Test
+    void aPlayerPickingUpTheirOwnAdoptedBallIsNotAnnounced() {
+        List<String> announced = new ArrayList<>();
+        BallPickupListener announcingPickup = new BallPickupListener(sets, check,
+                (finder, set, star) -> announced.add(finder.getName() + " " + set + " " + star));
+        check.trackSelfPickupsWith(announcingPickup);
+        overworld.markHeld(2, player, false);
+        Item displaced = displaceIntoTheWorld(2);
+
+        check.run();
+        check.run();
+        EntityPickupItemEvent event = new EntityPickupItemEvent(player, displaced, 0);
+        announcingPickup.onPickup(event);
+
+        assertFalse(event.isCancelled(), "the pickup goes through");
+        assertTrue(overworld.isHeldBy(2, player.getUniqueId()));
+        assertTrue(announced.isEmpty(), "the same player picking their own adopted ball back up is not announced");
     }
 
     @Test

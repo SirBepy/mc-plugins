@@ -23,10 +23,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.OptionalInt;
-import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
@@ -42,22 +39,13 @@ import java.util.function.Supplier;
  */
 public final class BallPlaceBreakListener implements Listener {
 
-    private static final long SUPPRESS_ANNOUNCE_MILLIS = 30_000;
-
-    /** Who found which ball; the plugin broadcasts it, tests record it (MockBukkit's server can't broadcast). */
-    @FunctionalInterface
-    interface FoundAnnouncer {
-        void announce(Player finder, BallSet set, int star);
-    }
-
     private final BallSets sets;
     private final FloatingBalls balls;
     private final PickupGuard guard;
     private final ScatterTownyGuard towns;
     private final FoundAnnouncer announcer;
-    // "<set>:<star>" -> who last set that ball down and when, for the self-placed announce suppression.
-    private final Map<String, UUID> lastPlacer = new HashMap<>();
-    private final Map<String, Long> lastPlacedAt = new HashMap<>();
+    // Who last set a given ball down and when, for the self-placed announce suppression.
+    private final RecentSelfAction recentlyPlaced = new RecentSelfAction();
 
     public BallPlaceBreakListener(BallSets sets, FloatingBalls balls, PickupGuard guard, ScatterTownyGuard towns,
                                   Supplier<DragonBallsConfig> config) {
@@ -97,9 +85,7 @@ public final class BallPlaceBreakListener implements Listener {
         boolean stone = sets.items().isStoneItem(placed);
         takeOne(event.getPlayer().getInventory(), event.getHand(), placed);
         sets.registry(set).markPlaced(star.getAsInt(), block.getLocation(), stone);
-        String key = set + ":" + star.getAsInt();
-        lastPlacer.put(key, event.getPlayer().getUniqueId());
-        lastPlacedAt.put(key, System.currentTimeMillis());
+        recentlyPlaced.record(set, star.getAsInt(), event.getPlayer().getUniqueId());
     }
 
     private static void takeOne(PlayerInventory inventory, EquipmentSlot hand, ItemStack placed) {
@@ -137,7 +123,7 @@ public final class BallPlaceBreakListener implements Listener {
         var leftover = player.getInventory().addItem(ball);
         if (leftover.isEmpty()) {
             registry.markHeld(star, player, stone);
-            if (!recentlyPlacedBy(ref.set(), star, player)) {
+            if (!recentlyPlaced.isRecent(ref.set(), star, player.getUniqueId())) {
                 announcer.announce(player, ref.set(), star);
             }
         } else {
@@ -145,12 +131,5 @@ public final class BallPlaceBreakListener implements Listener {
             registry.markDropped(star, dropped, stone);
         }
         player.getWorld().playSound(block.clone().add(0.5, 0.5, 0.5), Sound.ENTITY_ITEM_PICKUP, 0.8f, 1.2f);
-    }
-
-    private boolean recentlyPlacedBy(BallSet set, int star, Player player) {
-        String key = set + ":" + star;
-        Long at = lastPlacedAt.get(key);
-        return player.getUniqueId().equals(lastPlacer.get(key)) && at != null
-                && System.currentTimeMillis() - at < SUPPRESS_ANNOUNCE_MILLIS;
     }
 }
