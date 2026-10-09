@@ -1,18 +1,37 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { Vec3 } from 'vec3';
 import { Rcon, assert, createBot, quit, sleep, teleport, waitFor, waitForLine } from './lib.mjs';
 
 // Market: the plugin writes a dyed, glowing Essentials [Sell] sign on the Farmer stall's first spot
 // (coordinates from market/src/main/resources/stalls.yml), a bot selling to it gets paid the
-// sign's price, and the next in-game day rotates the market. The e2e world has no spawn market, so a floor and a back wall are built around the spot.
+// sign's price, and the next in-game day rotates the market. The e2e world has no spawn market, so a floor and a back wall are built around each spot tested.
 const SIGN = { x: 420, y: 116, z: -882 };
 // stalls.yml's price-lectern: the plugin places it and its price book itself.
 const LECTERN = { x: 415, y: 115, z: -865 };
 const SELLER = 'MarketSeller';
-// stalls.yml's head-collector spot: the plugin keeps a Mannequin (Java) and a villager (Bedrock) on it.
-const COLLECTOR = { x: 430, y: 115, z: -856 };
-// heads.yml, for the texture of whichever mob the Head collector wants today.
+// The plugin-owned spots come straight from the generated stalls.yml, so moving a stall in the
+// generator never leaves this suite testing an empty spot.
+const STALLS = readFileSync(new URL('../market/src/main/resources/stalls.yml', import.meta.url), 'utf8');
+const spot = (text) => {
+  const m = text.match(/\{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: (\w+)\}/);
+  return { x: Number(m[1]), y: Number(m[2]), z: Number(m[3]), facing: m[4] };
+};
+const section = (key) => STALLS.split(`\n${key}:`)[1].split(/\n\S/)[0];
+// stalls.yml's head-stall: 4 signs, the eye-level 3 first (the Head collector NPC was removed 2026-10-09).
+const HEAD_STALL = section('head-stall').split('\n').filter((l) => l.includes('{x:')).map(spot);
+const HEAD_STALL_CENTER = HEAD_STALL[1];
+// stalls.yml's wanted-board: a sign and a player_wall_head.
+const WANTED_SIGN = spot(section('wanted-board').split('sign:')[1]);
+const WANTED_HEAD = spot(section('wanted-board').split('head:')[1]);
+// stalls.yml's shops.
+const HOMES_SIGN = spot(section('shops').split('homes:')[1].split('sign:')[1]);
+const COSMETICS_SIGN = spot(section('shops').split('cosmetics:')[1].split('sign:')[1]);
+// heads.yml, for the texture of whichever mob the Heads stall wants today.
 const HEADS = readFileSync(new URL('../market/src/main/resources/heads.yml', import.meta.url), 'utf8');
+// The e2e server's own log, to check /cosmetic's exact log line (Player Claude's listener tails this).
+const LOG_PATH = fileURLToPath(new URL('../testserver/run-e2e/logs/latest.log', import.meta.url));
 
 const rcon = await Rcon.connect();
 const bots = [];
@@ -24,18 +43,109 @@ async function step(name, fn) {
 }
 
 const plain = (s) => s.replace(/§./g, '');
+const unquote = (s) => s.replace(/^"|"$/g, '');
 
 // One path per call: the server shortens long NBT in command feedback ("...").
-async function signData(path) {
-  const out = plain(await rcon.command(`minecraft:data get block ${SIGN.x} ${SIGN.y} ${SIGN.z} front_text.${path}`));
+async function dataGet(loc, path) {
+  const out = plain(await rcon.command(`minecraft:data get block ${loc.x} ${loc.y} ${loc.z} ${path}`));
   return out.replace(/^.*has the following block data: /, '').trim();
 }
 
-async function balance() {
-  const out = plain(await rcon.command(`balance ${SELLER}`));
+async function signData(path) {
+  return dataGet(SIGN, `front_text.${path}`);
+}
+
+async function signLine(loc, i) {
+  return unquote(await dataGet(loc, `front_text.messages[${i}]`));
+}
+
+async function balance(name = SELLER) {
+  const out = plain(await rcon.command(`balance ${name}`));
   const match = out.match(/\$([\d,]+(?:\.\d+)?)/);
   assert(match, `balance readable (got ${out.trim()})`);
   return Number(match[1].replace(/,/g, ''));
+}
+
+// A sign's facing is the direction it reads from: "south" means stand south of it looking north.
+// Each case's fill mirrors the farmer stall's own floor+backing wall, just rotated to the facing.
+const APPROACH = {
+  south: {
+    tp: (l) => [l.x, l.y - 1, l.z + 2],
+    look: (p) => p.offset(0.5, 0.5, 0.9),
+    build: async (x, y, z) => {
+      await rcon.command(`minecraft:fill ${x - 3} ${y - 2} ${z + 1} ${x + 3} ${y - 2} ${z + 5} minecraft:stone`);
+      await rcon.command(`minecraft:fill ${x - 3} ${y - 1} ${z} ${x + 3} ${y + 2} ${z + 5} minecraft:air`);
+      await rcon.command(`minecraft:fill ${x - 3} ${y - 1} ${z - 1} ${x + 3} ${y + 2} ${z - 1} minecraft:stone`);
+    },
+  },
+  north: {
+    tp: (l) => [l.x, l.y - 1, l.z - 2],
+    look: (p) => p.offset(0.5, 0.5, 0.1),
+    build: async (x, y, z) => {
+      await rcon.command(`minecraft:fill ${x - 3} ${y - 2} ${z - 5} ${x + 3} ${y - 2} ${z - 1} minecraft:stone`);
+      await rcon.command(`minecraft:fill ${x - 3} ${y - 1} ${z - 5} ${x + 3} ${y + 2} ${z} minecraft:air`);
+      await rcon.command(`minecraft:fill ${x - 3} ${y - 1} ${z + 1} ${x + 3} ${y + 2} ${z + 1} minecraft:stone`);
+    },
+  },
+  west: {
+    tp: (l) => [l.x - 2, l.y - 1, l.z],
+    look: (p) => p.offset(0.1, 0.5, 0.5),
+    build: async (x, y, z) => {
+      await rcon.command(`minecraft:fill ${x - 5} ${y - 2} ${z - 3} ${x - 1} ${y - 2} ${z + 3} minecraft:stone`);
+      await rcon.command(`minecraft:fill ${x - 5} ${y - 1} ${z - 3} ${x} ${y + 2} ${z + 3} minecraft:air`);
+      await rcon.command(`minecraft:fill ${x + 1} ${y - 1} ${z - 3} ${x + 1} ${y + 2} ${z + 3} minecraft:stone`);
+    },
+  },
+  east: {
+    tp: (l) => [l.x + 2, l.y - 1, l.z],
+    look: (p) => p.offset(0.9, 0.5, 0.5),
+    build: async (x, y, z) => {
+      await rcon.command(`minecraft:fill ${x + 1} ${y - 2} ${z - 3} ${x + 5} ${y - 2} ${z + 3} minecraft:stone`);
+      await rcon.command(`minecraft:fill ${x} ${y - 1} ${z - 3} ${x + 5} ${y + 2} ${z + 3} minecraft:air`);
+      await rcon.command(`minecraft:fill ${x - 1} ${y - 1} ${z - 3} ${x - 1} ${y + 2} ${z + 3} minecraft:stone`);
+    },
+  },
+};
+
+async function buildApproach(loc, facing) {
+  await rcon.command(`minecraft:forceload add ${loc.x - 8} ${loc.z - 8} ${loc.x + 8} ${loc.z + 8}`);
+  await APPROACH[facing].build(loc.x, loc.y, loc.z);
+}
+
+async function approach(bot, loc, facing) {
+  const [x, y, z] = APPROACH[facing].tp(loc);
+  await teleport(rcon, bot, x, y, z);
+}
+
+async function clickSignAt(bot, loc, facing) {
+  const block = bot.blockAt(new Vec3(loc.x, loc.y, loc.z));
+  assert(block && block.name.endsWith('wall_sign'), `bot sees the sign at ${loc.x},${loc.y},${loc.z} (got ${block?.name})`);
+  await bot.lookAt(APPROACH[facing].look(block.position), true);
+  await bot.activateBlock(block).catch(() => {});
+}
+
+// The server is offline-mode, so every player's uuid is Java's own name-derived (version 3, MD5)
+// uuid: UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(UTF_8)).
+function offlineUuidBytes(name) {
+  const md5 = createHash('md5').update(`OfflinePlayer:${name}`, 'utf8').digest();
+  md5[6] = (md5[6] & 0x0f) | 0x30;
+  md5[8] = (md5[8] & 0x3f) | 0x80;
+  return md5;
+}
+
+// The profile component's `id` is the uuid as 4 signed big-endian ints (Mojang's UUIDUtil.uuidToIntArray).
+function uuidIntArray(bytes) {
+  const ints = [];
+  for (let i = 0; i < 16; i += 4) ints.push(bytes.readInt32BE(i));
+  return ints;
+}
+
+/** A player_head item's NBT for /give: a profile naming the exact player (by uuid, offline-derived
+ * from their name) and, if given, a sirbepy:killed_at PDC long stamp (KillStamp). */
+function playerHeadNbt(name, killedAtMillis) {
+  const ids = uuidIntArray(offlineUuidBytes(name)).join(',');
+  const stamp = killedAtMillis == null ? '' : `,custom_data={PublicBukkitValues:{"sirbepy:killed_at":${killedAtMillis}L}}`;
+  return `minecraft:profile={id:[I;${ids}],name:"${name}"}${stamp}`;
 }
 
 try {
@@ -44,6 +154,11 @@ try {
   await rcon.command(`minecraft:fill ${SIGN.x - 3} ${SIGN.y - 2} ${SIGN.z + 1} ${SIGN.x + 3} ${SIGN.y - 2} ${SIGN.z + 5} minecraft:stone`);
   await rcon.command(`minecraft:fill ${SIGN.x - 3} ${SIGN.y - 1} ${SIGN.z} ${SIGN.x + 3} ${SIGN.y + 2} ${SIGN.z + 5} minecraft:air`);
   await rcon.command(`minecraft:fill ${SIGN.x - 3} ${SIGN.y - 1} ${SIGN.z - 1} ${SIGN.x + 3} ${SIGN.y + 2} ${SIGN.z - 1} minecraft:stone`);
+  // Built up front so the very first /market rotate (below) paints every one of these at once.
+  await buildApproach(HEAD_STALL_CENTER, 'north');
+  await buildApproach(WANTED_SIGN, 'west');
+  await buildApproach(HOMES_SIGN, 'west');
+  await buildApproach(COSMETICS_SIGN, 'east');
 
   let item;
   let amount;
@@ -56,10 +171,10 @@ try {
     assert(glow === '1b', `sign glows (got ${glow})`);
     const first = await signData('messages[0]');
     assert(/color: "dark_blue"/.test(first) && /text: "\[Sell\]"/.test(first), `line 1 is a dark blue [Sell] (got ${first})`);
-    const unquote = (s) => s.replace(/^"|"$/g, '');
-    amount = Number(unquote(await signData('messages[1]')));
-    item = unquote(await signData('messages[2]'));
-    price = Number(unquote(await signData('messages[3]')).replace('$', ''));
+    const unq = (s) => s.replace(/^"|"$/g, '');
+    amount = Number(unq(await signData('messages[1]')));
+    item = unq(await signData('messages[2]'));
+    price = Number(unq(await signData('messages[3]')).replace('$', ''));
     assert(amount > 0 && /^[a-z_]+$/.test(item) && price > 0, `sign reads amount/item/price (got ${amount} ${item} ${price})`);
     console.log(`  sign: ${amount} ${item} for $${price}`);
   });
@@ -125,7 +240,7 @@ try {
     // One block per stall: its name on a line of its own, then one line per item.
     await waitForLine(bot, /^Lumberjack$/, 5_000, since);
     await waitForLine(bot, /^ - 64 [a-z ]+ \$\d+\.\d\d$/, 5_000, since);
-    await waitForLine(bot, /^Head collector$/, 5_000, since);
+    await waitForLine(bot, /^Heads$/, 5_000, since);
     const opened = new Promise((resolve) => bot._client.once('open_book', resolve));
     bot.chat('/market prices');
     await Promise.race([opened, sleep(5_000).then(() => { throw new Error('/market prices opened no book'); })]);
@@ -139,11 +254,11 @@ try {
     await bot.equip(bot.inventory.items().find((i) => i.name === 'diamond'), 'hand');
     let since = bot.lines.length;
     bot.chat('/suggested-price');
-    // prices.yml (e301e4c, 2026-10-06): diamond's base went $16 -> $20, so 2x stall base is $20/$1280.
-    await waitForLine(bot, /Suggested price for Diamond: \$20\.00 each, \$1280\.00 for a stack of 64/, 5_000, since);
+    // prices.yml (regenerated alongside this market rework): diamond is $22, so a stack of 64 is $1408.
+    await waitForLine(bot, /Suggested price for Diamond: \$22\.00 each, \$1408\.00 for a stack of 64/, 5_000, since);
     since = bot.lines.length;
     bot.chat('/price');
-    await waitForLine(bot, /Suggested price for Diamond: \$20\.00/, 5_000, since);
+    await waitForLine(bot, /Suggested price for Diamond: \$22\.00/, 5_000, since);
   });
 
   await step('/suggested-price prices an enchanted book\'s enchantments and breaks them down', async () => {
@@ -162,56 +277,226 @@ try {
     await waitForLine(bot, /^ - Curse of Vanishing -25%$/, 5_000, since);
   });
 
-  await step('the Head collector buys a wanted mob head from a non-op and refuses a player\'s head', async () => {
+  await step('the Heads stall writes one sign per wanted mob', async () => {
+    for (const slot of HEAD_STALL) {
+      const color = await dataGet(slot, 'front_text.color');
+      assert(color === '"red"', `head-stall sign dyed red at ${slot.x},${slot.y},${slot.z} (got ${color})`);
+      const glow = await dataGet(slot, 'front_text.has_glowing_text');
+      assert(glow === '1b', `head-stall sign glows at ${slot.x},${slot.y},${slot.z} (got ${glow})`);
+      const name = await signLine(slot, 0);
+      assert(name.length > 0, `head-stall sign names a wanted mob at ${slot.x},${slot.y},${slot.z}`);
+      const headWord = await signLine(slot, 1);
+      assert(headWord === 'head', `line 2 reads "head" (got ${headWord})`);
+      const priceLine = await signLine(slot, 2);
+      assert(/^\$/.test(priceLine), `line 3 is a price (got ${priceLine})`);
+      const rightClick = await signLine(slot, 3);
+      assert(rightClick === 'Right-click', `line 4 prompts Right-click (got ${rightClick})`);
+    }
+  });
+
+  let mobName;
+  let headEach;
+  await step('the Heads stall buys a wanted mob head from a non-op', async () => {
     const [bot] = bots;
     await rcon.command(`deop ${SELLER}`);
-    await rcon.command(`minecraft:forceload add ${COLLECTOR.x} ${COLLECTOR.z}`);
-    await rcon.command(`minecraft:fill ${COLLECTOR.x - 2} ${COLLECTOR.y - 1} ${COLLECTOR.z - 3} ${COLLECTOR.x + 2} ${COLLECTOR.y - 1} ${COLLECTOR.z + 1} minecraft:stone`);
-    await rcon.command(`minecraft:fill ${COLLECTOR.x - 2} ${COLLECTOR.y} ${COLLECTOR.z - 3} ${COLLECTOR.x + 2} ${COLLECTOR.y + 2} ${COLLECTOR.z + 1} minecraft:air`);
-    await teleport(rcon, bot, COLLECTOR.x + 0.5, COLLECTOR.y, COLLECTOR.z - 2.5);
-    // The plugin's guard tick (every 10 s) puts the bodies on the spot once its chunk is loaded.
-    const spot = new Vec3(COLLECTOR.x + 0.5, COLLECTOR.y, COLLECTOR.z + 0.5);
-    const mannequin = () => Object.values(bot.entities).find((e) => e.name === 'mannequin' && e.position.distanceTo(spot) < 1);
-    await waitFor(() => mannequin(), 'the collector mannequin', 25_000);
-    const collector = mannequin();
+    await approach(bot, HEAD_STALL_CENTER, 'north');
 
     let since = bot.lines.length;
     bot.chat('/market');
-    await waitForLine(bot, /^Head collector$/, 5_000, since);
-    const heading = bot.lines.findIndex((l, i) => i >= since && /^Head collector$/.test(l));
-    const line = await waitForLine(bot, /^ - (.+) heads? \$(\d+\.\d\d)/, 5_000, heading);
-    const [, mobName, each] = line.match(/^ - (.+) heads? \$(\d+\.\d\d)/);
+    await waitForLine(bot, /^Heads$/, 5_000, since);
+    const heading = bot.lines.findIndex((l, i) => i >= since && /^Heads$/.test(l));
+    const line = await waitForLine(bot, /^ - (.+) heads? \$/, 5_000, heading);
+    const match = line.match(/^ - (.+?) heads? (\$[\d.]+(?: to \$[\d.]+)?)$/);
+    assert(match, `/market's Heads block lists a mob (got ${line})`);
+    [, mobName] = match;
+    const nums = match[2].match(/[\d.]+/g).map(Number);
+    headEach = Math.min(...nums);
     const block = HEADS.split(/\r?\n {2}(?=[a-z_]+:\r?\n)/).find((b) => b.includes(`name: "${mobName}"`));
     assert(block, `heads.yml has ${mobName}`);
     const texture = block.match(/texture: (\w+)/)[1];
     const value = Buffer.from(JSON.stringify({ textures: { SKIN: { url: `http://textures.minecraft.net/texture/${texture}` } } })).toString('base64');
-    console.log(`  wanted today: ${mobName} from $${each} a head`);
+    console.log(`  wanted today: ${mobName} from $${headEach} a head`);
 
     await rcon.command(`minecraft:clear ${SELLER}`);
     await rcon.command(`eco set ${SELLER} 0`);
     await rcon.command(`minecraft:give ${SELLER} minecraft:player_head[minecraft:profile={properties:[{name:"textures",value:"${value}"}]}] 2`);
     await waitFor(() => bot.inventory.items().some((i) => i.name === 'player_head'), `${SELLER} holds the mob heads`, 5_000);
     await bot.equip(bot.inventory.items().find((i) => i.name === 'player_head'), 'hand');
-    await bot.lookAt(collector.position.offset(0, 1.6, 0), true);
     since = bot.lines.length;
-    await bot.activateEntity(collector);
+    await clickSignAt(bot, HEAD_STALL_CENTER, 'north');
     await waitForLine(bot, /^Sold 2 /, 5_000, since);
     const paid = await balance();
     // A mob with several looks lists its cheapest; heads.yml's first texture may cost more, so
     // each head paid at least the listed price.
-    assert(paid >= 2 * Number(each) - 0.001, `paid at least 2 x $${each} (got $${paid})`);
+    assert(paid >= 2 * headEach - 0.001, `paid at least 2 x $${headEach} (got $${paid})`);
     await sleep(300);
     assert(!bot.inventory.items().some((i) => i.name === 'player_head'), 'the heads were taken');
+  });
 
-    // A real player's head (its owner named) with the very same skin is refused, and kept.
+  await step('the Heads stall refuses a real player\'s head, even wearing a wanted skin', async () => {
+    const [bot] = bots;
+    const block = HEADS.split(/\r?\n {2}(?=[a-z_]+:\r?\n)/).find((b) => b.includes(`name: "${mobName}"`));
+    const texture = block.match(/texture: (\w+)/)[1];
+    const value = Buffer.from(JSON.stringify({ textures: { SKIN: { url: `http://textures.minecraft.net/texture/${texture}` } } })).toString('base64');
+    const before = await balance();
     await rcon.command(`minecraft:give ${SELLER} minecraft:player_head[minecraft:profile={name:"MarketSeller",properties:[{name:"textures",value:"${value}"}]}] 1`);
     await waitFor(() => bot.inventory.items().some((i) => i.name === 'player_head'), `${SELLER} holds a player head`, 5_000);
     await bot.equip(bot.inventory.items().find((i) => i.name === 'player_head'), 'hand');
-    since = bot.lines.length;
-    await bot.activateEntity(collector);
+    const since = bot.lines.length;
+    await clickSignAt(bot, HEAD_STALL_CENTER, 'north');
     await waitForLine(bot, /never a player's/, 5_000, since);
-    assert(Math.abs((await balance()) - paid) < 0.001, 'nothing paid for a player head');
+    assert(Math.abs((await balance()) - before) < 0.001, 'nothing paid for a player head');
     assert(bot.inventory.items().some((i) => i.name === 'player_head'), 'the player head was kept');
+  });
+
+  // Player of the Day (the Wanted board). Two bots stay online so the admin rotate below can land
+  // on either one as the target; whichever it picks, the e2e server is offline-mode so its uuid is
+  // the same deterministic, name-derived one `playerHeadNbt` computes, letting a head of the exact
+  // target be given to any bot without needing to know which one got picked ahead of time.
+  const target2 = await createBot('MarketTarget');
+  bots.push(target2);
+  await rcon.command('eco set MarketTarget 0');
+  // The Heads stall step above left a refused player_head in SELLER's hand (kept, unsold): clear it
+  // so a later `.find(i => i.name === 'player_head')` here can only ever see the head this section
+  // itself just gave, never a stray leftover from an earlier step.
+  await rcon.command(`minecraft:clear ${SELLER} minecraft:player_head`);
+  await rcon.command('minecraft:clear MarketTarget minecraft:player_head');
+
+  let wantedTargetName;
+  const wantedBotFor = (name) => bots.find((b) => b.username === name);
+
+  // pick() is a coin flip between "an online player" and "everyone who's ever joined" (WantedBoard,
+  // 2026-10-09), and the latter pool only ever holds a player once MockBukkit/Bukkit has seen them
+  // disconnect at least once - neither bot has, this session, so that branch picks nobody ("No
+  // bounty") about half the time. Retry the rotate until it lands on one of our online bots.
+  async function rotateWantedBoard() {
+    for (let i = 0; i < 20; i++) {
+      await waitFor(async () => /picked new buyers/.test(plain(await rcon.command('market rotate'))), 'market rotate (wanted)', 10_000);
+      wantedTargetName = await signLine(WANTED_SIGN, 1);
+      if (wantedBotFor(wantedTargetName)) return;
+    }
+    throw new Error(`the Wanted board never landed on one of our bots after 20 rotates (last: ${wantedTargetName})`);
+  }
+
+  await step('the Wanted board picks a target and refuses that player\'s own head', async () => {
+    await approach(target2, WANTED_SIGN, 'west');
+    await rotateWantedBoard();
+    const targetBot = wantedBotFor(wantedTargetName);
+    await approach(targetBot, WANTED_SIGN, 'west');
+    await rcon.command(`minecraft:give ${wantedTargetName} minecraft:player_head[${playerHeadNbt(wantedTargetName)}] 1`);
+    await waitFor(() => targetBot.inventory.items().some((i) => i.name === 'player_head'), `${wantedTargetName} holds their own head`, 5_000);
+    await targetBot.equip(targetBot.inventory.items().find((i) => i.name === 'player_head'), 'hand');
+    const since = targetBot.lines.length;
+    await clickSignAt(targetBot, WANTED_SIGN, 'west');
+    await waitForLine(targetBot, /can't turn in your own head/, 5_000, since);
+    assert(targetBot.inventory.items().some((i) => i.name === 'player_head'), 'the own head was kept, not sold');
+  });
+
+  await step('an unstamped head pays the old-head share, claims the board, and a repeat sale is refused', async () => {
+    const targetBot = wantedBotFor(wantedTargetName);
+    const sellerBot = bots.find((b) => b.username !== wantedTargetName && (b.username === SELLER || b.username === 'MarketTarget'));
+    const oldLine = await signLine(WANTED_SIGN, 3);
+    const oldPrice = Number(oldLine.match(/\$(\d+)/)[1]);
+    const before = await balance(sellerBot.username);
+
+    await approach(sellerBot, WANTED_SIGN, 'west');
+    await rcon.command(`minecraft:give ${sellerBot.username} minecraft:player_head[${playerHeadNbt(wantedTargetName)}] 1`);
+    await waitFor(() => sellerBot.inventory.items().some((i) => i.name === 'player_head'), `${sellerBot.username} holds ${wantedTargetName}'s head`, 5_000);
+    await sellerBot.equip(sellerBot.inventory.items().find((i) => i.name === 'player_head'), 'hand');
+    let since = sellerBot.lines.length;
+    await clickSignAt(sellerBot, WANTED_SIGN, 'west');
+    await waitForLine(sellerBot, /brought in/, 5_000, since);
+    const after = await balance(sellerBot.username);
+    assert(Math.abs(after - before - oldPrice) < 0.001, `paid the old-head price $${oldPrice} (before $${before}, after $${after})`);
+    assert(!sellerBot.inventory.items().some((i) => i.name === 'player_head'), 'the head was taken');
+
+    assert((await signLine(WANTED_SIGN, 2)) === 'Claimed by', 'the sign now shows Claimed by');
+    assert((await signLine(WANTED_SIGN, 3)) === sellerBot.username, 'the sign names the seller');
+
+    // A second head of the same target, same period: refused, nothing paid again.
+    await rcon.command(`minecraft:give ${sellerBot.username} minecraft:player_head[${playerHeadNbt(wantedTargetName)}] 1`);
+    await waitFor(() => sellerBot.inventory.items().some((i) => i.name === 'player_head'), `${sellerBot.username} holds a second head`, 5_000);
+    await sellerBot.equip(sellerBot.inventory.items().find((i) => i.name === 'player_head'), 'hand');
+    since = sellerBot.lines.length;
+    await clickSignAt(sellerBot, WANTED_SIGN, 'west');
+    await waitForLine(sellerBot, /already brought in/, 5_000, since);
+    assert(Math.abs((await balance(sellerBot.username)) - after) < 0.001, 'the second attempt paid nothing');
+    assert(sellerBot.inventory.items().some((i) => i.name === 'player_head'), 'the second head was kept, unsold');
+  });
+
+  await step('a kill stamped after the bounty was posted pays the fresh, full price', async () => {
+    await rotateWantedBoard();
+    const sellerBot = bots.find((b) => b.username !== wantedTargetName);
+    const freshLine = await signLine(WANTED_SIGN, 2);
+    const freshPrice = Number(freshLine.match(/\$(\d+)/)[1]);
+    const before = await balance(sellerBot.username);
+
+    await approach(sellerBot, WANTED_SIGN, 'west');
+    // sellerBot may be the same bot that was kept holding the previous step's refused repeat head:
+    // clear it first so the equip below can only find the fresh, stamped head given next.
+    await rcon.command(`minecraft:clear ${sellerBot.username} minecraft:player_head`);
+    // Stamped a few seconds in the future: always at-or-after whatever postedAt the rotate above
+    // just set (clock.get() on the server), with no need to read the server's own clock.
+    const killedAt = Date.now() + 10_000;
+    await rcon.command(`minecraft:give ${sellerBot.username} minecraft:player_head[${playerHeadNbt(wantedTargetName, killedAt)}] 1`);
+    await waitFor(() => sellerBot.inventory.items().some((i) => i.name === 'player_head'), `${sellerBot.username} holds a fresh head`, 5_000);
+    await sellerBot.equip(sellerBot.inventory.items().find((i) => i.name === 'player_head'), 'hand');
+    const since = sellerBot.lines.length;
+    await clickSignAt(sellerBot, WANTED_SIGN, 'west');
+    await waitForLine(sellerBot, /fresh kill/, 5_000, since);
+    const after = await balance(sellerBot.username);
+    assert(Math.abs(after - before - freshPrice) < 0.001, `paid the fresh, full price $${freshPrice} (before $${before}, after $${after})`);
+  });
+
+  await step('the Homes shop sells the 4th home via LuckPerms and charges its price', async () => {
+    const [bot] = bots;
+    await rcon.command(`minecraft:clear ${SELLER}`);
+    await rcon.command(`eco set ${SELLER} 2000`);
+    const before = await balance();
+    await approach(bot, HOMES_SIGN, 'west');
+    const since = bot.lines.length;
+    await clickSignAt(bot, HOMES_SIGN, 'west');
+    await waitForLine(bot, /You can now set 4 homes/, 5_000, since);
+    const after = await balance();
+    assert(Math.abs(before - after - 500) < 0.001, `charged $500 for the 4th home (before $${before}, after $${after})`);
+    // LuckPerms answers `permission check`/`info` only through its own async messaging, which the
+    // RCON response never carries (confirmed live: both the reply and the log stay empty for a
+    // `check`, even though a `set` logs a line) - so read ConsoleHomeGrant's own
+    // `lp ... permission set huskhomes.max_homes.4 true` back from the server log instead, the one
+    // channel LuckPerms reliably logs a grant to.
+    await waitFor(() => new RegExp(`Set huskhomes\\.max_homes\\.4 to true for ${SELLER}`, 'i').test(readFileSync(LOG_PATH, 'utf8')),
+      `LuckPerms logs granting huskhomes.max_homes.4 to ${SELLER}`, 10_000);
+  });
+
+  await step('the Cosmetics shop sells a token, and /cosmetic spends it to stamp the held item', async () => {
+    const [bot] = bots;
+    await rcon.command(`minecraft:clear ${SELLER}`);
+    await rcon.command(`eco set ${SELLER} 3000`);
+    const before = await balance();
+    await approach(bot, COSMETICS_SIGN, 'east');
+    const since = bot.lines.length;
+    await clickSignAt(bot, COSMETICS_SIGN, 'east');
+    await waitForLine(bot, /bought a Cosmetic Token/, 5_000, since);
+    const after = await balance();
+    assert(Math.abs(before - after - 2500) < 0.001, `charged $2500 for the token (before $${before}, after $${after})`);
+    await waitFor(() => bot.inventory.items().some((i) => i.name === 'nether_star'), `${SELLER} holds a Cosmetic Token`, 5_000);
+
+    await rcon.command(`minecraft:give ${SELLER} minecraft:diamond 1`);
+    await waitFor(() => bot.inventory.items().filter((i) => i.name === 'diamond').length > 0, `${SELLER} holds a diamond`, 5_000);
+    await bot.equip(bot.inventory.items().find((i) => i.name === 'diamond'), 'hand');
+
+    const since2 = bot.lines.length;
+    bot.chat('/cosmetic a shiny purple glow');
+    await waitForLine(bot, /Token used! Request #(\d+)/, 5_000, since2);
+    assert(!bot.inventory.items().some((i) => i.name === 'nether_star'), 'the Cosmetic Token was spent');
+
+    const cmd = plain(await rcon.command(`minecraft:data get entity ${SELLER} SelectedItem.components."minecraft:custom_model_data".strings[0]`));
+    assert(/cosmetic_\d+/.test(cmd), `the held item carries a cosmetic_<id> custom_model_data string (got ${cmd})`);
+
+    await sleep(500); // the plugin's logger.info() call to flush to disk
+    const log = readFileSync(LOG_PATH, 'utf8');
+    assert(new RegExp(`Cosmetic request #\\d+ from ${SELLER} \\([0-9a-fA-F-]+\\): diamond - a shiny purple glow`).test(log),
+      'the exact log line Player Claude\'s listener tails is in the server log');
   });
 
   console.log(`\nMarket e2e: ${results.length} passed`);
@@ -222,7 +507,10 @@ try {
   await rcon.command(`deop ${SELLER}`).catch(() => {});
   await rcon.command(`minecraft:forceload remove ${SIGN.x - 8} ${SIGN.z - 8} ${SIGN.x + 8} ${SIGN.z + 8}`).catch(() => {});
   await rcon.command(`minecraft:forceload remove ${LECTERN.x} ${LECTERN.z}`).catch(() => {});
-  await rcon.command(`minecraft:forceload remove ${COLLECTOR.x} ${COLLECTOR.z}`).catch(() => {});
+  await rcon.command(`minecraft:forceload remove ${HEAD_STALL_CENTER.x - 8} ${HEAD_STALL_CENTER.z - 8} ${HEAD_STALL_CENTER.x + 8} ${HEAD_STALL_CENTER.z + 8}`).catch(() => {});
+  await rcon.command(`minecraft:forceload remove ${WANTED_SIGN.x - 8} ${WANTED_SIGN.z - 8} ${WANTED_SIGN.x + 8} ${WANTED_SIGN.z + 8}`).catch(() => {});
+  await rcon.command(`minecraft:forceload remove ${HOMES_SIGN.x - 8} ${HOMES_SIGN.z - 8} ${HOMES_SIGN.x + 8} ${HOMES_SIGN.z + 8}`).catch(() => {});
+  await rcon.command(`minecraft:forceload remove ${COSMETICS_SIGN.x - 8} ${COSMETICS_SIGN.z - 8} ${COSMETICS_SIGN.x + 8} ${COSMETICS_SIGN.z + 8}`).catch(() => {});
   await quit(...bots);
   rcon.close();
 }

@@ -22,7 +22,7 @@ const OUT = join(here, '..', '..', 'market', 'src', 'main', 'resources', 'prices
 const STALLS = join(here, '..', '..', 'market', 'src', 'main', 'resources', 'stalls.yml');
 export const MARKUP = 2;
 // Essentials item names on the stall signs that differ from the vanilla id.
-const ESSENTIALS_ALIASES = { membrane: 'phantom_membrane', withersskull: 'wither_skeleton_skull' };
+const ESSENTIALS_ALIASES = { membrane: 'phantom_membrane', withersskull: 'wither_skeleton_skull', torchseeds: 'torchflower_seeds' };
 
 const args = process.argv.slice(2);
 const check = args.includes('--check');

@@ -2,7 +2,20 @@
 # The Market plugin picks a few of each stall's buys every day and writes them onto its slots.
 sign-block: spruce_wall_sign
 price-lectern: {x: 415, y: 115, z: -865, facing: north}
-head-collector: {x: 430, y: 115, z: -856, facing: north}
+head-stall:
+  name: Heads
+  color: red
+  slots:
+    - {x: 432, y: 116, z: -841, facing: west}
+    - {x: 432, y: 116, z: -840, facing: west}
+    - {x: 432, y: 116, z: -839, facing: west}
+    - {x: 432, y: 117, z: -840, facing: west}
+wanted-board:
+  sign: {x: 431, y: 115, z: -868, facing: west}
+  head: {x: 431, y: 116, z: -868, facing: west}
+shops:
+  homes: {name: Homes, color: pink, sign: {x: 432, y: 116, z: -830, facing: west}}
+  cosmetics: {name: Cosmetics, color: magenta, sign: {x: 422, y: 116, z: -830, facing: east}}
 stalls:
   farmer:
     name: Farmer
@@ -11,6 +24,7 @@ stalls:
       - {x: 420, y: 116, z: -882, facing: south}
       - {x: 421, y: 116, z: -882, facing: south}
       - {x: 422, y: 116, z: -882, facing: south}
+      - {x: 421, y: 117, z: -882, facing: south}
     buys:
       - {item: wheat, amount: 64, price: 6.4}
       - {item: carrot, amount: 64, price: 6.4}
@@ -21,6 +35,12 @@ stalls:
       - {item: melon_slice, amount: 64, price: 2.56}
       - {item: cactus, amount: 64, price: 0.64}
       - {item: bamboo, amount: 64, price: 0.64}
+      - {item: wheat_seeds, amount: 64, price: 1}
+      - {item: beetroot_seeds, amount: 64, price: 1}
+      - {item: melon_seeds, amount: 64, price: 1}
+      - {item: pumpkin_seeds, amount: 64, price: 1}
+      - {item: torchseeds, amount: 16, price: 16}
+      - {item: pitcher_pod, amount: 16, price: 16}
   lumberjack:
     name: Lumberjack
     color: brown
@@ -48,8 +68,8 @@ stalls:
       - {x: 441, y: 116, z: -874, facing: west}
       - {x: 441, y: 116, z: -873, facing: west}
     buys:
-      - {item: cod, amount: 64, price: 32}
-      - {item: salmon, amount: 64, price: 32}
+      - {item: cod, amount: 64, price: 8}
+      - {item: salmon, amount: 64, price: 8}
       - {item: pufferfish, amount: 16, price: 16}
       - {item: tropical_fish, amount: 16, price: 16}
       - {item: ink_sac, amount: 64, price: 6.4}
@@ -61,13 +81,13 @@ stalls:
       - {x: 441, y: 116, z: -862, facing: west}
       - {x: 441, y: 116, z: -861, facing: west}
     buys:
-      - {item: coal, amount: 64, price: 4}
-      - {item: raw_iron, amount: 64, price: 40}
-      - {item: raw_gold, amount: 64, price: 80}
-      - {item: raw_copper, amount: 64, price: 12.8}
-      - {item: diamond, amount: 16, price: 160}
-      - {item: ancient_debris, amount: 16, price: 480}
-      - {item: netherite_scrap, amount: 16, price: 496}
+      - {item: coal, amount: 64, price: 4.4}
+      - {item: raw_iron, amount: 64, price: 44}
+      - {item: raw_gold, amount: 64, price: 88}
+      - {item: raw_copper, amount: 64, price: 14.08}
+      - {item: diamond, amount: 16, price: 176}
+      - {item: ancient_debris, amount: 16, price: 528}
+      - {item: netherite_scrap, amount: 16, price: 545.6}
   mob_drops:
     name: Mob drops
     color: green

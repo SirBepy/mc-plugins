@@ -58,9 +58,9 @@ test('prices.yml prices every item with a positive number', () => {
 });
 
 test('market items are twice their stall base and hand-gathered items stay dearer than farm output', () => {
-  assert.equal(items.diamond, 20);
-  assert.equal(items.raw_iron, 1.25);
-  assert.equal(items.raw_copper, 0.4);
+  assert.equal(items.diamond, 22);
+  assert.equal(items.raw_iron, 1.375);
+  assert.equal(items.raw_copper, 0.44);
   assert.equal(items.oak_log, 0.9);
   assert.equal(items.stripped_oak_log, items.oak_log);
   // Tall-tree logs pay half, Nether stems 20% over a log, and stripping keeps each one's price.
@@ -76,11 +76,11 @@ test('market items are twice their stall base and hand-gathered items stay deare
   assert.ok(items.netherite_ingot > 200);
 });
 
-test('food from the Farmer and Fishmonger stalls pays double, and what is made from it follows', () => {
+test('food from the Farmer and Fishmonger stalls pays double (cod and salmon excepted), and what is made from it follows', () => {
   assert.equal(items.wheat, 0.2);
   assert.equal(items.pumpkin, 0.4);
   assert.equal(items.melon_slice, 0.08);
-  assert.equal(items.cod, 1);
+  assert.equal(items.cod, 0.25, 'cod and salmon came back down to $8 a stack (2026-10-09)');
   assert.equal(items.pufferfish, 2);
   assert.equal(items.sugar_cane, 0.04, 'sugar cane is not food and keeps its price');
   assert.equal(items.ink_sac, 0.2, 'ink sacs are not food and keep their price');
@@ -91,7 +91,7 @@ test('food from the Farmer and Fishmonger stalls pays double, and what is made f
 
 test('every spawn-market item is suggested at twice its current stall price (rerun generate.mjs after a stall change)', () => {
   const stalls = readFileSync(join(here, '..', '..', 'market', 'src', 'main', 'resources', 'stalls.yml'), 'utf8');
-  const aliases = { membrane: 'phantom_membrane', withersskull: 'wither_skeleton_skull' };
+  const aliases = { membrane: 'phantom_membrane', withersskull: 'wither_skeleton_skull', torchseeds: 'torchflower_seeds' };
   for (const [, item, amount, price] of stalls.matchAll(/\{item: ([a-z_]+), amount: (\d+), price: ([\d.]+)\}/g)) {
     const id = aliases[item] ?? item;
     assert.ok(Math.abs(items[id] - (2 * Number(price)) / Number(amount)) < 1e-4, `${id}: ${items[id]} vs stall ${price}/${amount}`);
@@ -131,6 +131,7 @@ test('prices.yml prices every vanilla enchantment by max level, and only the cur
   assert.deepEqual(enchants.silk_touch, { max: 1, price: 60 });
   for (const curse of Object.keys(CURSES)) assert.ok(!(curse in enchants), curse);
   assert.deepEqual(section('curses'), CURSES);
-  // A max-level enchantment never costs less than a diamond, so it always shows in a quote.
-  for (const [id, { price }] of Object.entries(enchants)) assert.ok(price >= items.diamond, `${id} ${price}`);
+  // A max-level enchantment never costs less than the lowest tier, $20: a diamond's suggested price
+  // when the tiers were set (2026-10-08). Diamonds rose 10% on 2026-10-09; the tiers stayed.
+  for (const [id, { price }] of Object.entries(enchants)) assert.ok(price >= 20, `${id} ${price}`);
 });

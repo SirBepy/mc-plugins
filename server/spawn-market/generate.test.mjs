@@ -22,22 +22,26 @@ test('every fill stays under the 32768-block command limit', () => {
 });
 
 // The Market plugin owns the [Sell] signs; the datapack only leaves their spots free.
-const stalls = readFileSync(join(here, '..', '..', 'market', 'src', 'main', 'resources', 'stalls.yml'), 'utf8')
-  .split(/\n(?=  [a-z_]+:\n)/).slice(1).map((block) => ({
-    id: block.match(/^ {2}([a-z_]+):/)[1],
-    slots: [...block.matchAll(/\{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: (\w+)\}/g)].map((m) => m.slice(1, 4).join(' ')),
-    buys: [...block.matchAll(/\{item: ([a-z_]+), amount: (\d+), price: ([\d.]+)\}/g)].map(([, item, amount, price]) => ({ item, amount, price })),
-  }));
+// Scoped to the `stalls:` section only (readStallsYml() below reads the whole file): head-stall's
+// own `  slots:` line (2-space indent, bare key, exactly the split boundary pattern) would
+// otherwise be mistaken for a stall id.
+const readStallsYml = () => readFileSync(join(here, '..', '..', 'market', 'src', 'main', 'resources', 'stalls.yml'), 'utf8');
+const stallsSection = readStallsYml().slice(readStallsYml().indexOf('\nstalls:\n'));
+const stalls = stallsSection.split(/\n(?=  [a-z_]+:\n)/).slice(1).map((block) => ({
+  id: block.match(/^ {2}([a-z_]+):/)[1],
+  slots: [...block.matchAll(/\{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: (\w+)\}/g)].map((m) => m.slice(1, 4).join(' ')),
+  buys: [...block.matchAll(/\{item: ([a-z_]+), amount: (\d+), price: ([\d.]+)\}/g)].map(([, item, amount, price]) => ({ item, amount, price })),
+}));
 
 test('the datapack places no [Sell] signs', () => {
   assert.equal(all.filter((l) => l.includes('{text:"[Sell]"')).length, 0);
 });
 
-test('every selling stall has 3 free sign spots and a pool that fits on a sign', () => {
+test('every selling stall has a free sign spot per slot (farmer: 4, the rest: 3) and a pool that fits on a sign', () => {
   assert.deepEqual(stalls.map((s) => s.id), ['farmer', 'lumberjack', 'fishmonger', 'smith', 'mob_drops', 'rare_goods']);
   const placed = new Set(all.filter((l) => l.startsWith('setblock ')).map((l) => l.split(' ').slice(1, 4).join(' ')));
   for (const s of stalls) {
-    assert.equal(s.slots.length, 3, s.id);
+    assert.equal(s.slots.length, s.id === 'farmer' ? 4 : 3, s.id);
     for (const at of s.slots) assert.ok(!placed.has(at), `${s.id} spot ${at} is also set by the datapack`);
     assert.ok(s.buys.length >= 3, `${s.id} needs at least 3 things to rotate through`);
     for (const b of s.buys) {
@@ -45,6 +49,29 @@ test('every selling stall has 3 free sign spots and a pool that fits on a sign',
       assert.ok(Number(b.price) > 0, `${s.id}: ${b.item} has no price`);
     }
   }
+});
+
+test('the head-stall, wanted-board and shops spots are all 4/3/1 free sign (or head) slots, matching the model', () => {
+  const content = readStallsYml();
+  const headStall = content.match(/^head-stall:\n {2}name: (\w+)\n {2}color: (\w+)\n {2}slots:\n((?: {4}-.*\n)+)/m);
+  assert.ok(headStall, 'no head-stall block');
+  assert.equal(headStall[1], 'Heads');
+  const headSlots = [...headStall[3].matchAll(/\{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: (\w+)\}/g)];
+  assert.equal(headSlots.length, 4, 'head-stall needs the same 4 slots as the Farmer');
+  const placed = new Set(all.filter((l) => l.startsWith('setblock ')).map((l) => l.split(' ').slice(1, 4).join(' ')));
+  for (const m of headSlots) assert.ok(!placed.has(m.slice(1, 4).join(' ')), `head-stall spot ${m[0]} is also set by the datapack`);
+
+  const wanted = content.match(/^wanted-board:\n {2}sign: \{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: (\w+)\}\n {2}head: \{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: (\w+)\}/m);
+  assert.ok(wanted, 'no wanted-board block');
+  assert.equal(wanted[4], 'west');
+  assert.equal(wanted[8], 'west');
+  assert.ok(!placed.has(wanted.slice(1, 4).join(' ')), 'wanted-board sign spot is also set by the datapack');
+  assert.ok(!placed.has(wanted.slice(5, 8).join(' ')), 'wanted-board head spot is also set by the datapack');
+  assert.equal(Number(wanted[6]), Number(wanted[2]) + 1, 'the head sits one block above the sign');
+
+  const shops = [...content.matchAll(/^ {2}(\w+): \{name: (\w+), color: (\w+), sign: \{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: (\w+)\}\}$/mg)];
+  assert.deepEqual(shops.map((m) => m[1]).sort(), ['cosmetics', 'homes']);
+  for (const m of shops) assert.ok(!placed.has(m.slice(4, 7).join(' ')), `${m[1]} spot is also set by the datapack`);
 });
 
 test('the price lectern is an empty lectern labelled Prices that nothing else builds over', () => {
@@ -59,14 +86,9 @@ test('the price lectern is an empty lectern labelled Prices that nothing else bu
   assert.match(at(2)[0], /hanging_sign.*"Prices"/);
 });
 
-test('the Head collector spot is open floor the plugin can stand its NPC on', () => {
-  const m = readFileSync(join(here, '..', '..', 'market', 'src', 'main', 'resources', 'stalls.yml'), 'utf8')
-    .match(/^head-collector: \{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: (\w+)\}$/m);
-  assert.ok(m, 'stalls.yml has no head-collector');
-  const [, x, y, z] = m;
-  const at = (dy) => all.filter((l) => l.startsWith(`setblock ${x} ${Number(y) + dy} ${z} `));
-  assert.equal(at(-1).length, 1, 'something to stand on');
-  assert.deepEqual([...at(0), ...at(1)], [], 'two blocks of headroom');
+// head-collector is gone (replaced by the Heads corner stall, Joe 2026-10-09).
+test('stalls.yml no longer has a head-collector', () => {
+  assert.ok(!readStallsYml().includes('head-collector'));
 });
 
 test('every sign line fits on the sign', () => {
@@ -166,8 +188,17 @@ test('every exported display-head spot sits on a placed pedestal block', () => {
 });
 
 const model = JSON.parse(readFileSync(join(here, 'model.json'), 'utf8'));
-const lecternKey = Object.entries(model.blocks).find(([, s]) => s.includes('lectern[') && s.includes('title:"Dragon Balls"'))[0];
+// The Radars corner shop (2026-10-09) carries a second "Dragon Balls" lectern, so picking the
+// FIRST match by object-key order would be ambiguous; pick the one nearest the station's own
+// radar signs instead (same 5x3 stall, a few blocks apart, unlike the Radars shop's own copy).
+const dbLecterns = Object.entries(model.blocks).filter(([, s]) => s.includes('lectern[') && s.includes('title:"Dragon Balls"'));
+const distTo = (key, { x, z }) => { const [kx, , kz] = key.split(',').map(Number); return Math.abs(kx - x) + Math.abs(kz - z); };
+const [lecternKey] = [...dbLecterns].map(([k]) => k).sort((a, b) => distTo(a, station.radarSigns.overworld) - distTo(b, station.radarSigns.overworld));
 const [lecternX, lecternY, lecternZ] = lecternKey.split(',').map(Number);
+
+test('the Radars corner shop carries its own Dragon Balls lectern, distinct from the station\'s', () => {
+  assert.equal(dbLecterns.length, 2);
+});
 
 test('the radar signs, the lectern and all 7 display-head spots sit at distinct coordinates', () => {
   const keyOf = ({ x, y, z }) => `${x},${y},${z}`;
@@ -207,4 +238,97 @@ test('the lectern holds the Dragon Balls guide book, labelled by a matching sign
     'no lectern with the Dragon Balls book');
   assert.ok(all.some((l) => l.includes('_sign') && l.includes('"Dragon Balls"')),
     'no label sign reading Dragon Balls');
+});
+
+test('shopRadarSigns exports the same 3 sets, same shape as radarSigns, with the same sign text', () => {
+  assert.deepEqual(Object.keys(station.shopRadarSigns), SETS);
+  for (const s of SETS) {
+    assert.equal(station.shopRadarSigns[s].world, 'world');
+    for (const k of ['x', 'y', 'z']) assert.equal(typeof station.shopRadarSigns[s][k], 'number');
+    const { x, y, z } = station.shopRadarSigns[s];
+    const radarLine = lines('attach').find((l) => l.startsWith(`setblock ${x} ${y} ${z} `) && l.includes('_sign'));
+    assert.ok(radarLine, `no ${s} shop radar sign setblock at ${x} ${y} ${z}`);
+    const msgs = radarLine.slice(radarLine.indexOf('_text:')).replace(/color:"[a-z_]+"/g, '')
+      .match(/"((?:[^"\\]|\\.)*)"/g).map((m) => JSON.parse(m));
+    assert.deepEqual(msgs, RADAR_SIGNS[s].lines);
+  }
+});
+
+test('the head-stall, wanted-board and shops spots are all distinct coordinates and air in the model', () => {
+  const content = readStallsYml();
+  const headStall = content.match(/^head-stall:\n {2}name: \w+\n {2}color: \w+\n {2}slots:\n((?: {4}-.*\n)+)/m);
+  const headSlots = [...headStall[1].matchAll(/\{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: (\w+)\}/g)]
+    .map((m) => ({ x: +m[1], y: +m[2], z: +m[3] }));
+  const wanted = content.match(/^wanted-board:\n {2}sign: \{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: \w+\}\n {2}head: \{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: \w+\}/m);
+  const wantedSpots = [
+    { x: +wanted[1], y: +wanted[2], z: +wanted[3] },
+    { x: +wanted[4], y: +wanted[5], z: +wanted[6] },
+  ];
+  const shopSigns = [...content.matchAll(/sign: \{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: \w+\}\}$/mg)]
+    .map((m) => ({ x: +m[1], y: +m[2], z: +m[3] }));
+  const everySpot = [...headSlots, ...wantedSpots, ...shopSigns];
+  const seen = new Set();
+  for (const { x, y, z } of everySpot) {
+    const k = `${x},${y},${z}`;
+    assert.ok(!seen.has(k), `${k} is reused by two different plugin-owned spots`);
+    seen.add(k);
+    assert.ok(!(k in model.blocks), `${k} is not air in model.json`);
+  }
+});
+
+// Stalls must not overlap each other, any existing stall/station, a lantern post, or a path
+// (Joe, 2026-10-09: checked against the real side() math, not eyeballed).
+const { model: genModel } = await import('./core.mjs');
+const { side, CORE, STREET_V0, STREET_LEN } = genModel;
+function bbox(sideName, a0) {
+  const S = side(sideName);
+  const us = [], vs = [];
+  for (let a = -1; a <= 5; a++) for (const d of [-1, 4]) { const [u, v] = S.at(a0 + a, d); us.push(u); vs.push(v); }
+  return { u0: Math.min(...us), u1: Math.max(...us), v0: Math.min(...vs), v1: Math.max(...vs) };
+}
+const overlaps = (a, b) => a.u0 <= b.u1 && a.u1 >= b.u0 && a.v0 <= b.v1 && a.v1 >= b.v0;
+// The 8 plaza stalls (selling stalls + Guide + DragonBall), all still inside CORE.
+const PLAZA_SIDES = [
+  ['north', -8], ['north', 4],
+  ['east', -8], ['east', 4],
+  ['south', -8], ['south', 4],
+  ['west', 4], ['west', -8],
+];
+// The 4 shop-street stalls (Heads/Radars/Homes/Cosmetics, Joe's pick 2026-10-09), 2 per side.
+const STREET_SIDES = [['streetWest', 0], ['streetWest', 10], ['streetEast', 0], ['streetEast', 10]];
+const STALL_SIDES = [...PLAZA_SIDES, ...STREET_SIDES];
+
+test('no stall overlaps another stall or a lantern post; plaza stalls stay within CORE, street stalls stay within the street', () => {
+  const boxes = STALL_SIDES.map(([s, a0]) => bbox(s, a0));
+  for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+    assert.ok(!overlaps(boxes[i], boxes[j]), `${STALL_SIDES[i]} overlaps ${STALL_SIDES[j]}`);
+  }
+  for (const b of PLAZA_SIDES.map(([s, a0]) => bbox(s, a0))) {
+    assert.ok(Math.max(Math.abs(b.u0), Math.abs(b.u1), Math.abs(b.v0), Math.abs(b.v1)) <= CORE, 'plaza stall steps outside CORE');
+  }
+  for (const b of STREET_SIDES.map(([s, a0]) => bbox(s, a0))) {
+    assert.ok(b.v0 >= STREET_V0 - 1 && b.v1 <= STREET_V0 + STREET_LEN, 'street stall steps outside the street corridor');
+  }
+  const posts = [[-10, -10], [10, -10], [-10, 10], [10, 10]];
+  for (const [u, v] of posts) {
+    for (const b of boxes) assert.ok(!(u >= b.u0 && u <= b.u1 && v >= b.v0 && v <= b.v1), `post ${u},${v} sits inside a stall`);
+  }
+});
+
+test('the Wanted board does not overlap the centre mosaic or any stall', () => {
+  const wantedBox = { u0: 4, u1: 6, v0: -3, v1: 3 };
+  assert.ok(Math.max(Math.abs(wantedBox.u0), Math.abs(wantedBox.u1)) > 3, 'clear of the centre stone-brick points');
+  const boxes = STALL_SIDES.map(([s, a0]) => bbox(s, a0));
+  for (const b of boxes) assert.ok(!overlaps(wantedBox, b), 'Wanted board overlaps a stall');
+});
+
+test('every stall front faces open paving (no block sits on the tile right outside its entrance)', () => {
+  for (const [sideName, a0] of STALL_SIDES) {
+    const S = side(sideName);
+    for (let a = 0; a <= 4; a++) {
+      const [u, v] = S.at(a0 + a, -1);
+      const key = `${model.origin[0] + u},${model.y + 1},${model.origin[1] + v}`;
+      assert.ok(!(key in model.blocks), `${sideName}/${a0} front at a=${a} (${u},${v}) is blocked`);
+    }
+  }
 });

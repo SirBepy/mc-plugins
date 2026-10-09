@@ -19,15 +19,22 @@
 import { GUIDES, SERVER_NAME, lecternState } from './guide.mjs';
 import { model } from './core.mjs';
 import { buildTerrain } from './terrain.mjs';
+import { buildStreetTerrain } from './street.mjs';
 import { buildCentre } from './centre.mjs';
 import { buildRulesBoard } from './rules-board.mjs';
 import { buildStalls } from './stalls.mjs';
+import { buildWantedBoard } from './wanted-board.mjs';
 import { buildLanternPostsPathsGardens } from './lantern-paths-gardens.mjs';
 import { emit } from './emit.mjs';
 
 buildTerrain(model);
+// Must run before buildStalls so the street stalls' own floor/footing blocks (later writes) win
+// over this corridor's paving underneath them.
+buildStreetTerrain(model);
 buildCentre(model);
 buildRulesBoard(model, { SERVER_NAME });
 const MARKET = buildStalls(model, { GUIDES, lecternState });
+// Calls no rand()/pick(), so it can run anywhere in this order without touching the seeded RNG.
+const WANTED = buildWantedBoard(model);
 buildLanternPostsPathsGardens(model);
-emit(model, { MARKET });
+emit(model, { MARKET, WANTED });

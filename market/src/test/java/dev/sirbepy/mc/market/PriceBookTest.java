@@ -55,15 +55,15 @@ class PriceBookTest {
 
     @Test
     void marketItemsAreTwiceTheStallBasePrice() {
-        assertEquals(20.0, each(new ItemStack(Material.DIAMOND)), 1e-9); // stall base $10
-        assertEquals(1.25, each(new ItemStack(Material.RAW_IRON)), 1e-9); // stall base $0.625
+        assertEquals(22.0, each(new ItemStack(Material.DIAMOND)), 1e-9); // stall base $11
+        assertEquals(1.375, each(new ItemStack(Material.RAW_IRON)), 1e-9); // stall base $0.6875
     }
 
     @Test
     void craftedItemsCostTheirRecipe() {
         // 3 diamonds + 2 sticks, a stick being half a plank from a $0.90 log.
-        assertEquals(60.0, each(new ItemStack(Material.DIAMOND_PICKAXE)), 0.3);
-        assertEquals(180.0, each(new ItemStack(Material.DIAMOND_BLOCK)), 1e-9);
+        assertEquals(66.0, each(new ItemStack(Material.DIAMOND_PICKAXE)), 0.3);
+        assertEquals(198.0, each(new ItemStack(Material.DIAMOND_BLOCK)), 1e-9);
     }
 
     private static ItemStack book(Enchantment enchantment, int level) {
@@ -190,7 +190,7 @@ class PriceBookTest {
         PlayerMock player = server.addPlayer("Pricer");
         player.getInventory().setItemInMainHand(new ItemStack(Material.DIAMOND, 3));
         command().run(player);
-        assertEquals("Suggested price for Diamond: $20.00 each, $1280.00 for a stack of 64.", lastMessage(player));
+        assertEquals("Suggested price for Diamond: $22.00 each, $1408.00 for a stack of 64.", lastMessage(player));
     }
 
     @Test

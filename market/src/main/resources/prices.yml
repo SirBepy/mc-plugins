@@ -8,7 +8,7 @@ items:
   acacia_door: 0.45
   acacia_fence: 0.3267
   acacia_fence_gate: 0.61
-  acacia_hanging_sign: 1.4156
+  acacia_hanging_sign: 1.4666
   acacia_leaves: 0.02
   acacia_log: 0.9
   acacia_planks: 0.225
@@ -20,25 +20,25 @@ items:
   acacia_stairs: 0.3375
   acacia_trapdoor: 0.675
   acacia_wood: 1.2
-  activator_rail: 1.3065
+  activator_rail: 1.4315
   allium: 0.05
   amethyst_block: 0.8
   amethyst_cluster: 0.5
   amethyst_shard: 0.2
-  ancient_debris: 60
+  ancient_debris: 66
   andesite: 0.01
   andesite_slab: 0.005
   andesite_stairs: 0.01
   andesite_wall: 0.01
   angler_pottery_sherd: 2
-  anvil: 39.2344
+  anvil: 43.1094
   apple: 0.1
   archer_pottery_sherd: 2
   armadillo_scute: 0.5
   armor_stand: 0.2606
   arms_up_pottery_sherd: 2
   arrow: 0.0475
-  axolotl_bucket: 8.7969
+  axolotl_bucket: 9.1719
   azalea: 0.2
   azalea_leaves: 0.03
   azure_bluet: 0.05
@@ -50,7 +50,7 @@ items:
   bamboo_door: 0.18
   bamboo_fence: 0.1467
   bamboo_fence_gate: 0.34
-  bamboo_hanging_sign: 0.6956
+  bamboo_hanging_sign: 0.7466
   bamboo_mosaic: 0.09
   bamboo_mosaic_slab: 0.045
   bamboo_mosaic_stairs: 0.135
@@ -69,7 +69,7 @@ items:
   beef: 0.1
   beehive: 1.14
   beetroot: 0.2
-  beetroot_seeds: 0.01
+  beetroot_seeds: 0.0313
   beetroot_soup: 1.2675
   bell: 5
   big_dripleaf: 0.2
@@ -79,7 +79,7 @@ items:
   birch_door: 0.45
   birch_fence: 0.3267
   birch_fence_gate: 0.61
-  birch_hanging_sign: 1.4156
+  birch_hanging_sign: 1.4666
   birch_leaves: 0.02
   birch_log: 0.9
   birch_planks: 0.225
@@ -116,7 +116,7 @@ items:
   blackstone_stairs: 0.02
   blackstone_wall: 0.02
   blade_pottery_sherd: 2
-  blast_furnace: 6.5319
+  blast_furnace: 7.1569
   blaze_powder: 1
   blaze_rod: 2
   blue_banner: 2.74
@@ -186,11 +186,11 @@ items:
   brown_wool: 0.45
   brown_wool_slab: 0.225
   brown_wool_stairs: 0.65
-  brush: 0.5556
+  brush: 0.5956
   bubble_coral: 0.2
   bubble_coral_block: 0.2
   bubble_coral_fan: 0.2
-  bucket: 3.7969
+  bucket: 4.1719
   bundle: 1.1
   buried_ancient_city_map: 3
   buried_mineshaft_map: 3
@@ -200,16 +200,16 @@ items:
   bush: 0.01
   cactus: 0.02
   cactus_flower: 0.05
-  cake: 12.3906
+  cake: 13.5156
   calcite: 0.05
   calibrated_sculk_sensor: 4
-  campfire: 1.595
+  campfire: 1.6075
   candle: 0.3
   carrot: 0.2
   carrot_on_a_stick: 0.52
   cartography_table: 0.44
   carved_pumpkin: 0.4
-  cauldron: 8.8594
+  cauldron: 9.7344
   chainmail_boots: 2
   chainmail_chestplate: 5
   chainmail_helmet: 3
@@ -221,7 +221,7 @@ items:
   cherry_door: 0.45
   cherry_fence: 0.3267
   cherry_fence_gate: 0.61
-  cherry_hanging_sign: 1.4156
+  cherry_hanging_sign: 1.4666
   cherry_leaves: 0.02
   cherry_log: 0.9
   cherry_planks: 0.225
@@ -234,12 +234,12 @@ items:
   cherry_trapdoor: 0.675
   cherry_wood: 1.2
   chest: 0.72
-  chest_minecart: 7.0481
+  chest_minecart: 7.6731
   chicken: 0.1
   chipped_anvil: 10
   chiseled_bookshelf: 0.675
   chiseled_cinnabar: 0.02
-  chiseled_copper: 0.9352
+  chiseled_copper: 1.0252
   chiseled_deepslate: 0.01
   chiseled_nether_bricks: 0.1025
   chiseled_polished_blackstone: 0.02
@@ -265,8 +265,8 @@ items:
   clay_ball: 0.05
   clock: 2.5875
   closed_eyeblossom: 0.05
-  coal: 0.125
-  coal_block: 1.125
+  coal: 0.1375
+  coal_block: 1.2375
   coal_ore: 0.25
   coarse_dirt: 0.015
   coast_armor_trim_smithing_template: 10
@@ -280,53 +280,53 @@ items:
   cobblestone_wall: 0.01
   cobweb: 0.2
   cocoa_beans: 0.05
-  cod: 1
-  cod_bucket: 4.7969
+  cod: 0.25
+  cod_bucket: 4.4219
   comparator: 0.8219
-  compass: 5.1875
+  compass: 5.6875
   composter: 0.315
   conduit: 54
   cooked_beef: 0.1
   cooked_chicken: 0.1
-  cooked_cod: 1
+  cooked_cod: 0.25
   cooked_mutton: 0.1
   cooked_porkchop: 0.1
   cooked_rabbit: 0.1
-  cooked_salmon: 1
+  cooked_salmon: 0.25
   cookie: 0.0563
-  copper_axe: 1.3269
-  copper_bars: 0.1559
-  copper_block: 3.7406
-  copper_boots: 1.6625
-  copper_bulb: 3.3367
-  copper_chain: 0.508
-  copper_chest: 4.045
-  copper_chestplate: 3.325
-  copper_door: 0.8312
+  copper_axe: 1.4469
+  copper_bars: 0.1709
+  copper_block: 4.1006
+  copper_boots: 1.8225
+  copper_bulb: 3.6067
+  copper_chain: 0.5569
+  copper_chest: 4.365
+  copper_chestplate: 3.645
+  copper_door: 0.9113
   copper_golem_statue: 2
-  copper_grate: 0.9352
-  copper_helmet: 2.0781
-  copper_hoe: 0.9113
+  copper_grate: 1.0252
+  copper_helmet: 2.2781
+  copper_hoe: 0.9913
   copper_horse_armor: 2
-  copper_ingot: 0.4156
-  copper_lantern: 0.4222
-  copper_leggings: 2.9094
+  copper_ingot: 0.4556
+  copper_lantern: 0.462
+  copper_leggings: 3.1894
   copper_nautilus_armor: 2
-  copper_nugget: 0.0462
+  copper_nugget: 0.0506
   copper_ore: 0.8
-  copper_pickaxe: 1.3269
-  copper_shovel: 0.4956
-  copper_spear: 0.4956
-  copper_sword: 0.8713
-  copper_torch: 0.0528
-  copper_trapdoor: 1.6625
+  copper_pickaxe: 1.4469
+  copper_shovel: 0.5356
+  copper_spear: 0.5356
+  copper_sword: 0.9513
+  copper_torch: 0.057
+  copper_trapdoor: 1.8225
   cornflower: 0.05
   cracked_deepslate_bricks: 0.0256
   cracked_deepslate_tiles: 0.0256
   cracked_nether_bricks: 0.1181
   cracked_polished_blackstone_bricks: 0.0356
   cracked_stone_bricks: 0.0413
-  crafter: 7.1331
+  crafter: 7.7581
   crafting_table: 0.36
   creaking_heart: 3
   creeper_banner_pattern: 20.04
@@ -336,7 +336,7 @@ items:
   crimson_fence: 0.3867
   crimson_fence_gate: 0.7
   crimson_fungus: 0.1
-  crimson_hanging_sign: 1.5956
+  crimson_hanging_sign: 1.6466
   crimson_hyphae: 1.44
   crimson_nylium: 0.05
   crimson_planks: 0.27
@@ -348,11 +348,11 @@ items:
   crimson_stairs: 0.405
   crimson_stem: 1.08
   crimson_trapdoor: 0.81
-  crossbow: 2.2834
+  crossbow: 2.4709
   crying_obsidian: 1
-  cut_copper: 0.9352
-  cut_copper_slab: 0.4676
-  cut_copper_stairs: 0.9352
+  cut_copper: 1.0252
+  cut_copper_slab: 0.5126
+  cut_copper_stairs: 1.0252
   cut_red_sandstone: 0.12
   cut_red_sandstone_slab: 0.06
   cut_sandstone: 0.08
@@ -386,7 +386,7 @@ items:
   dark_oak_door: 0.225
   dark_oak_fence: 0.1767
   dark_oak_fence_gate: 0.385
-  dark_oak_hanging_sign: 0.9656
+  dark_oak_hanging_sign: 1.0166
   dark_oak_leaves: 0.02
   dark_oak_log: 0.45
   dark_oak_planks: 0.1125
@@ -438,22 +438,22 @@ items:
   deepslate_tiles: 0.01
   desert_pyramid_map: 3
   desert_village_map: 3
-  detector_rail: 1.295
-  diamond: 20
-  diamond_axe: 60.08
-  diamond_block: 180
-  diamond_boots: 80
-  diamond_chestplate: 160
-  diamond_helmet: 100
-  diamond_hoe: 40.08
+  detector_rail: 1.42
+  diamond: 22
+  diamond_axe: 66.08
+  diamond_block: 198
+  diamond_boots: 88
+  diamond_chestplate: 176
+  diamond_helmet: 110
+  diamond_hoe: 44.08
   diamond_horse_armor: 10
-  diamond_leggings: 140
+  diamond_leggings: 154
   diamond_nautilus_armor: 10
   diamond_ore: 22
-  diamond_pickaxe: 60.08
-  diamond_shovel: 20.08
-  diamond_spear: 20.08
-  diamond_sword: 40.04
+  diamond_pickaxe: 66.08
+  diamond_shovel: 22.08
+  diamond_spear: 22.08
+  diamond_sword: 44.04
   diorite: 0.01
   diorite_slab: 0.005
   diorite_stairs: 0.01
@@ -478,7 +478,7 @@ items:
   emerald_ore: 5
   enchanted_book: 0.5
   enchanted_golden_apple: 50
-  enchanting_table: 43.12
+  enchanting_table: 47.12
   end_crystal: 21.7494
   end_rod: 0.5289
   end_stone: 0.05
@@ -491,28 +491,28 @@ items:
   ender_pearl: 0.5
   experience_bottle: 1
   explorer_pottery_sherd: 2
-  exposed_chiseled_copper: 0.9352
-  exposed_copper: 3.7406
-  exposed_copper_bars: 0.1559
-  exposed_copper_bulb: 3.3367
-  exposed_copper_chain: 0.508
-  exposed_copper_chest: 4.045
-  exposed_copper_door: 0.8312
+  exposed_chiseled_copper: 1.0252
+  exposed_copper: 4.1006
+  exposed_copper_bars: 0.1709
+  exposed_copper_bulb: 3.6067
+  exposed_copper_chain: 0.5569
+  exposed_copper_chest: 4.365
+  exposed_copper_door: 0.9113
   exposed_copper_golem_statue: 2
-  exposed_copper_grate: 0.9352
-  exposed_copper_lantern: 0.4222
-  exposed_copper_trapdoor: 1.6625
-  exposed_cut_copper: 0.9352
-  exposed_cut_copper_slab: 0.4676
-  exposed_cut_copper_stairs: 0.9352
-  exposed_lightning_rod: 1.2469
+  exposed_copper_grate: 1.0252
+  exposed_copper_lantern: 0.462
+  exposed_copper_trapdoor: 1.8225
+  exposed_cut_copper: 1.0252
+  exposed_cut_copper_slab: 0.5126
+  exposed_cut_copper_stairs: 1.0252
+  exposed_lightning_rod: 1.3669
   eye_armor_trim_smithing_template: 10
   feather: 0.1
   fermented_spider_eye: 0.59
   fern: 0.01
   field_masoned_banner_pattern: 0.3025
   filled_map: 1
-  fire_charge: 0.4417
+  fire_charge: 0.4458
   fire_coral: 0.2
   fire_coral_block: 0.2
   fire_coral_fan: 0.2
@@ -522,7 +522,7 @@ items:
   fishing_rod: 0.32
   fletching_table: 0.46
   flint: 0.05
-  flint_and_steel: 1.3156
+  flint_and_steel: 1.4406
   flow_armor_trim_smithing_template: 10
   flow_banner_pattern: 5
   flow_pottery_sherd: 2
@@ -532,7 +532,7 @@ items:
   flowering_azalea_leaves: 0.03
   friend_pottery_sherd: 2
   furnace: 0.08
-  furnace_minecart: 6.4081
+  furnace_minecart: 7.0331
   ghast_tear: 20
   gilded_blackstone: 0.5
   glass: 0.0356
@@ -622,13 +622,13 @@ items:
   heart_pottery_sherd: 2
   heartbreak_pottery_sherd: 2
   heavy_core: 30
-  heavy_weighted_pressure_plate: 2.5313
+  heavy_weighted_pressure_plate: 2.7813
   honey_block: 1.2
   honey_bottle: 0.3
   honeycomb: 0.2
   honeycomb_block: 0.8
-  hopper: 7.0481
-  hopper_minecart: 13.3762
+  hopper: 7.6731
+  hopper_minecart: 14.6262
   horn_coral: 0.2
   horn_coral_block: 0.2
   horn_coral_fan: 0.2
@@ -636,36 +636,36 @@ items:
   howl_pottery_sherd: 2
   ice: 0.05
   ink_sac: 0.2
-  iron_axe: 3.8769
-  iron_bars: 0.4746
-  iron_block: 11.3906
-  iron_boots: 5.0625
-  iron_chain: 1.5469
-  iron_chestplate: 10.125
-  iron_door: 2.5313
-  iron_helmet: 6.3281
-  iron_hoe: 2.6113
+  iron_axe: 4.2519
+  iron_bars: 0.5215
+  iron_block: 12.5156
+  iron_boots: 5.5625
+  iron_chain: 1.6997
+  iron_chestplate: 11.125
+  iron_door: 2.7813
+  iron_helmet: 6.9531
+  iron_hoe: 2.8613
   iron_horse_armor: 3
-  iron_ingot: 1.2656
-  iron_leggings: 8.8594
+  iron_ingot: 1.3906
+  iron_leggings: 9.7344
   iron_nautilus_armor: 3
-  iron_nugget: 0.1406
+  iron_nugget: 0.1545
   iron_ore: 1.5
-  iron_pickaxe: 3.8769
-  iron_shovel: 1.3456
-  iron_spear: 1.3456
-  iron_sword: 2.5713
-  iron_trapdoor: 5.0625
+  iron_pickaxe: 4.2519
+  iron_shovel: 1.4706
+  iron_spear: 1.4706
+  iron_sword: 2.8213
+  iron_trapdoor: 5.5625
   item_frame: 1.32
-  jack_o_lantern: 0.4413
-  jukebox: 20.72
+  jack_o_lantern: 0.4444
+  jukebox: 22.72
   jungle_boat: 0.5625
   jungle_button: 0.1125
   jungle_chest_boat: 1.2825
   jungle_door: 0.225
   jungle_fence: 0.1767
   jungle_fence_gate: 0.385
-  jungle_hanging_sign: 0.9656
+  jungle_hanging_sign: 1.0166
   jungle_leaves: 0.02
   jungle_log: 0.45
   jungle_planks: 0.1125
@@ -680,13 +680,13 @@ items:
   jungle_wood: 0.6
   kelp: 0.01
   ladder: 0.0933
-  lantern: 1.1663
+  lantern: 1.2805
   lapis_block: 2.25
   lapis_lazuli: 0.25
   lapis_ore: 1.9
   large_amethyst_bud: 0.2
   large_fern: 0.01
-  lava_bucket: 4.2969
+  lava_bucket: 4.6719
   lead: 0.25
   leaf_litter: 0.01
   leather: 1
@@ -738,7 +738,7 @@ items:
   light_gray_wool_slab: 0.2175
   light_gray_wool_stairs: 0.635
   light_weighted_pressure_plate: 1.2312
-  lightning_rod: 1.2469
+  lightning_rod: 1.3669
   lilac: 0.1
   lily_of_the_valley: 0.05
   lily_pad: 0.05
@@ -763,7 +763,7 @@ items:
   lime_wool_slab: 0.2164
   lime_wool_stairs: 0.6328
   lingering_potion: 0.5
-  lodestone: 1.4706
+  lodestone: 1.5956
   loom: 0.38
   mace: 34
   magenta_banner: 2.71
@@ -794,7 +794,7 @@ items:
   mangrove_door: 0.45
   mangrove_fence: 0.3267
   mangrove_fence_gate: 0.61
-  mangrove_hanging_sign: 1.4156
+  mangrove_hanging_sign: 1.4666
   mangrove_leaves: 0.02
   mangrove_log: 0.9
   mangrove_planks: 0.225
@@ -807,13 +807,13 @@ items:
   mangrove_stairs: 0.3375
   mangrove_trapdoor: 0.675
   mangrove_wood: 1.2
-  map: 5.5075
+  map: 6.0075
   medium_amethyst_bud: 0.15
   melon: 0.72
-  melon_seeds: 0.08
+  melon_seeds: 0.0313
   melon_slice: 0.08
-  milk_bucket: 3.8969
-  minecart: 6.3281
+  milk_bucket: 4.2719
+  minecart: 6.9531
   miner_pottery_sherd: 2
   mojang_banner_pattern: 50.04
   moss_block: 0.05
@@ -873,21 +873,21 @@ items:
   nether_star: 100
   nether_wart: 0.1
   nether_wart_block: 0.9
-  netherite_axe: 330.5425
-  netherite_block: 2254.1625
-  netherite_boots: 350.4625
-  netherite_chestplate: 430.4625
-  netherite_helmet: 370.4625
-  netherite_hoe: 310.5425
+  netherite_axe: 361.3425
+  netherite_block: 2477.3625
+  netherite_boots: 383.2625
+  netherite_chestplate: 471.2625
+  netherite_helmet: 405.2625
+  netherite_hoe: 339.3425
   netherite_horse_armor: 60
-  netherite_ingot: 250.4625
-  netherite_leggings: 410.4625
+  netherite_ingot: 275.2625
+  netherite_leggings: 449.2625
   netherite_nautilus_armor: 60
-  netherite_pickaxe: 330.5425
-  netherite_scrap: 62
-  netherite_shovel: 290.5425
-  netherite_spear: 290.5425
-  netherite_sword: 310.5025
+  netherite_pickaxe: 361.3425
+  netherite_scrap: 68.2
+  netherite_shovel: 317.3425
+  netherite_spear: 317.3425
+  netherite_sword: 339.3025
   netherite_upgrade_smithing_template: 20
   netherrack: 0.01
   note_block: 0.845
@@ -897,7 +897,7 @@ items:
   oak_door: 0.45
   oak_fence: 0.3267
   oak_fence_gate: 0.61
-  oak_hanging_sign: 1.4156
+  oak_hanging_sign: 1.4666
   oak_leaves: 0.02
   oak_log: 0.9
   oak_planks: 0.225
@@ -939,21 +939,21 @@ items:
   orange_wool_slab: 0.225
   orange_wool_stairs: 0.65
   oxeye_daisy: 0.05
-  oxidized_chiseled_copper: 0.9352
-  oxidized_copper: 3.7406
-  oxidized_copper_bars: 0.1559
-  oxidized_copper_bulb: 3.3367
-  oxidized_copper_chain: 0.508
-  oxidized_copper_chest: 4.045
-  oxidized_copper_door: 0.8312
+  oxidized_chiseled_copper: 1.0252
+  oxidized_copper: 4.1006
+  oxidized_copper_bars: 0.1709
+  oxidized_copper_bulb: 3.6067
+  oxidized_copper_chain: 0.5569
+  oxidized_copper_chest: 4.365
+  oxidized_copper_door: 0.9113
   oxidized_copper_golem_statue: 2
-  oxidized_copper_grate: 0.9352
-  oxidized_copper_lantern: 0.4222
-  oxidized_copper_trapdoor: 1.6625
-  oxidized_cut_copper: 0.9352
-  oxidized_cut_copper_slab: 0.4676
-  oxidized_cut_copper_stairs: 0.9352
-  oxidized_lightning_rod: 1.2469
+  oxidized_copper_grate: 1.0252
+  oxidized_copper_lantern: 0.462
+  oxidized_copper_trapdoor: 1.8225
+  oxidized_cut_copper: 1.0252
+  oxidized_cut_copper_slab: 0.5126
+  oxidized_cut_copper_stairs: 1.0252
+  oxidized_lightning_rod: 1.3669
   packed_ice: 0.45
   packed_mud: 0.22
   painting: 0.72
@@ -966,7 +966,7 @@ items:
   pale_oak_door: 0.225
   pale_oak_fence: 0.1767
   pale_oak_fence_gate: 0.385
-  pale_oak_hanging_sign: 0.9656
+  pale_oak_hanging_sign: 1.0166
   pale_oak_leaves: 0.02
   pale_oak_log: 0.45
   pale_oak_planks: 0.1125
@@ -1006,7 +1006,7 @@ items:
   pink_wool: 0.44
   pink_wool_slab: 0.22
   pink_wool_stairs: 0.64
-  piston: 1.7006
+  piston: 1.8256
   pitcher_plant: 2
   pitcher_pod: 2
   plains_village_map: 3
@@ -1056,7 +1056,7 @@ items:
   poplar_door: 0.45
   poplar_fence: 0.3267
   poplar_fence_gate: 0.61
-  poplar_hanging_sign: 1.4156
+  poplar_hanging_sign: 1.4666
   poplar_log: 0.9
   poplar_planks: 0.225
   poplar_pressure_plate: 0.45
@@ -1073,7 +1073,7 @@ items:
   potato: 0.2
   potent_sulfur: 0.5
   potion: 0.05
-  powder_snow_bucket: 3.8969
+  powder_snow_bucket: 4.2719
   powered_rail: 0.6431
   prismarine: 0.8
   prismarine_brick_slab: 0.9
@@ -1086,10 +1086,10 @@ items:
   prismarine_wall: 0.8
   prize_pottery_sherd: 2
   pufferfish: 2
-  pufferfish_bucket: 5.7969
+  pufferfish_bucket: 6.1719
   pumpkin: 0.4
   pumpkin_pie: 0.46
-  pumpkin_seeds: 0.1
+  pumpkin_seeds: 0.0313
   purple_banner: 2.74
   purple_bed: 1.52
   purple_bundle: 1.15
@@ -1124,15 +1124,15 @@ items:
   rabbit_foot: 1
   rabbit_hide: 1
   rabbit_stew: 0.6175
-  rail: 0.4771
+  rail: 0.524
   raiser_armor_trim_smithing_template: 10
-  raw_copper: 0.4
-  raw_copper_block: 3.6
-  raw_gold: 2.5
-  raw_gold_block: 22.5
-  raw_iron: 1.25
-  raw_iron_block: 11.25
-  recovery_compass: 45.1875
+  raw_copper: 0.44
+  raw_copper_block: 3.96
+  raw_gold: 2.75
+  raw_gold_block: 24.75
+  raw_iron: 1.375
+  raw_iron_block: 12.375
+  recovery_compass: 45.6875
   red_banner: 2.74
   red_bed: 1.52
   red_bundle: 1.15
@@ -1186,8 +1186,8 @@ items:
   rose_bush: 0.1
   rotten_flesh: 0.02
   saddle: 3
-  salmon: 1
-  salmon_bucket: 4.7969
+  salmon: 0.25
+  salmon_bucket: 4.4219
   sand: 0.02
   sandstone: 0.08
   sandstone_slab: 0.04
@@ -1207,10 +1207,10 @@ items:
   sentry_armor_trim_smithing_template: 10
   shaper_armor_trim_smithing_template: 10
   sheaf_pottery_sherd: 2
-  shears: 2.5313
+  shears: 2.7813
   shelf_mushroom: 0.05
   shelter_pottery_sherd: 2
-  shield: 1.8056
+  shield: 1.9306
   short_dry_grass: 0.01
   short_grass: 0.01
   shroomlight: 0.3
@@ -1224,7 +1224,7 @@ items:
   slime_block: 4.5
   small_amethyst_bud: 0.1
   small_dripleaf: 0.05
-  smithing_table: 2.8912
+  smithing_table: 3.1412
   smoker: 1.88
   smooth_basalt: 0.0356
   smooth_quartz: 1.0156
@@ -1246,10 +1246,10 @@ items:
   snowball: 0.01
   snowy_village_map: 3
   soul_campfire: 1.52
-  soul_lantern: 1.1787
+  soul_lantern: 1.293
   soul_sand: 0.05
   soul_soil: 0.05
-  soul_torch: 0.0538
+  soul_torch: 0.0569
   spectral_arrow: 0.3237
   spider_eye: 0.5
   spire_armor_trim_smithing_template: 10
@@ -1262,7 +1262,7 @@ items:
   spruce_door: 0.225
   spruce_fence: 0.1767
   spruce_fence_gate: 0.385
-  spruce_hanging_sign: 0.9656
+  spruce_hanging_sign: 1.0166
   spruce_leaves: 0.02
   spruce_log: 0.45
   spruce_planks: 0.1125
@@ -1274,9 +1274,9 @@ items:
   spruce_stairs: 0.1688
   spruce_trapdoor: 0.3375
   spruce_wood: 0.6
-  spyglass: 1.0313
+  spyglass: 1.1113
   stick: 0.04
-  sticky_piston: 2.2006
+  sticky_piston: 2.3256
   stone: 0.0256
   stone_axe: 0.11
   stone_brick_slab: 0.0128
@@ -1292,7 +1292,7 @@ items:
   stone_spear: 0.09
   stone_stairs: 0.0256
   stone_sword: 0.06
-  stonecutter: 1.3425
+  stonecutter: 1.4675
   straw_bed: 1.35
   string: 0.1
   stripped_acacia_log: 0.9
@@ -1327,7 +1327,7 @@ items:
   sulfur_brick_stairs: 0.02
   sulfur_brick_wall: 0.02
   sulfur_bricks: 0.02
-  sulfur_cube_bucket: 5.7969
+  sulfur_cube_bucket: 6.1719
   sulfur_slab: 0.01
   sulfur_spike: 0.05
   sulfur_stairs: 0.02
@@ -1336,7 +1336,7 @@ items:
   suspicious_stew: 0.2175
   swamp_hut_map: 3
   sweet_berries: 0.05
-  tadpole_bucket: 4.2969
+  tadpole_bucket: 4.6719
   taiga_village_map: 3
   tall_dry_grass: 0.01
   tall_grass: 0.01
@@ -1346,17 +1346,17 @@ items:
   tinted_glass: 0.4178
   tipped_arrow: 0.3
   tnt: 1.08
-  tnt_minecart: 7.4081
-  torch: 0.0413
+  tnt_minecart: 8.0331
+  torch: 0.0444
   torchflower: 2
   torchflower_seeds: 2
   totem_of_undying: 5
-  trapped_chest: 1.4178
+  trapped_chest: 1.4803
   trial_key: 2
   trident: 30
-  tripwire_hook: 0.6978
+  tripwire_hook: 0.7603
   tropical_fish: 2
-  tropical_fish_bucket: 5.7969
+  tropical_fish_bucket: 6.1719
   tube_coral: 0.2
   tube_coral_block: 0.2
   tube_coral_fan: 0.2
@@ -1383,7 +1383,7 @@ items:
   warped_fence_gate: 0.7
   warped_fungus: 0.1
   warped_fungus_on_a_stick: 0.42
-  warped_hanging_sign: 1.5956
+  warped_hanging_sign: 1.6466
   warped_hyphae: 1.44
   warped_nylium: 0.05
   warped_planks: 0.27
@@ -1396,87 +1396,87 @@ items:
   warped_stem: 1.08
   warped_trapdoor: 0.81
   warped_wart_block: 0.1
-  water_bucket: 3.7969
-  waxed_chiseled_copper: 0.9852
-  waxed_copper_bars: 0.3559
-  waxed_copper_block: 3.9406
-  waxed_copper_bulb: 3.4867
-  waxed_copper_chain: 0.708
-  waxed_copper_chest: 4.245
-  waxed_copper_door: 1.0313
+  water_bucket: 4.1719
+  waxed_chiseled_copper: 1.0752
+  waxed_copper_bars: 0.3709
+  waxed_copper_block: 4.3006
+  waxed_copper_bulb: 3.7567
+  waxed_copper_chain: 0.7569
+  waxed_copper_chest: 4.565
+  waxed_copper_door: 1.1113
   waxed_copper_golem_statue: 2.2
-  waxed_copper_grate: 0.9852
-  waxed_copper_lantern: 0.6222
-  waxed_copper_trapdoor: 1.8625
-  waxed_cut_copper: 0.9852
-  waxed_cut_copper_slab: 0.4926
-  waxed_cut_copper_stairs: 0.9852
-  waxed_exposed_chiseled_copper: 0.9852
-  waxed_exposed_copper: 3.7406
-  waxed_exposed_copper_bars: 0.3559
-  waxed_exposed_copper_bulb: 3.4867
-  waxed_exposed_copper_chain: 0.708
-  waxed_exposed_copper_chest: 4.245
-  waxed_exposed_copper_door: 1.0313
+  waxed_copper_grate: 1.0752
+  waxed_copper_lantern: 0.662
+  waxed_copper_trapdoor: 2.0225
+  waxed_cut_copper: 1.0752
+  waxed_cut_copper_slab: 0.5376
+  waxed_cut_copper_stairs: 1.0752
+  waxed_exposed_chiseled_copper: 1.0752
+  waxed_exposed_copper: 4.1006
+  waxed_exposed_copper_bars: 0.3709
+  waxed_exposed_copper_bulb: 3.7567
+  waxed_exposed_copper_chain: 0.7569
+  waxed_exposed_copper_chest: 4.565
+  waxed_exposed_copper_door: 1.1113
   waxed_exposed_copper_golem_statue: 2.2
-  waxed_exposed_copper_grate: 0.9852
-  waxed_exposed_copper_lantern: 0.6222
-  waxed_exposed_copper_trapdoor: 1.8625
-  waxed_exposed_cut_copper: 0.9852
-  waxed_exposed_cut_copper_slab: 0.4926
-  waxed_exposed_cut_copper_stairs: 0.9852
-  waxed_exposed_lightning_rod: 1.4469
-  waxed_lightning_rod: 1.4469
-  waxed_oxidized_chiseled_copper: 0.9852
-  waxed_oxidized_copper: 3.7406
-  waxed_oxidized_copper_bars: 0.3559
-  waxed_oxidized_copper_bulb: 3.4867
-  waxed_oxidized_copper_chain: 0.708
-  waxed_oxidized_copper_chest: 4.245
-  waxed_oxidized_copper_door: 1.0313
+  waxed_exposed_copper_grate: 1.0752
+  waxed_exposed_copper_lantern: 0.662
+  waxed_exposed_copper_trapdoor: 2.0225
+  waxed_exposed_cut_copper: 1.0752
+  waxed_exposed_cut_copper_slab: 0.5376
+  waxed_exposed_cut_copper_stairs: 1.0752
+  waxed_exposed_lightning_rod: 1.5669
+  waxed_lightning_rod: 1.5669
+  waxed_oxidized_chiseled_copper: 1.0752
+  waxed_oxidized_copper: 4.1006
+  waxed_oxidized_copper_bars: 0.3709
+  waxed_oxidized_copper_bulb: 3.7567
+  waxed_oxidized_copper_chain: 0.7569
+  waxed_oxidized_copper_chest: 4.565
+  waxed_oxidized_copper_door: 1.1113
   waxed_oxidized_copper_golem_statue: 2.2
-  waxed_oxidized_copper_grate: 0.9852
-  waxed_oxidized_copper_lantern: 0.6222
-  waxed_oxidized_copper_trapdoor: 1.8625
-  waxed_oxidized_cut_copper: 0.9852
-  waxed_oxidized_cut_copper_slab: 0.4926
-  waxed_oxidized_cut_copper_stairs: 0.9852
-  waxed_oxidized_lightning_rod: 1.4469
-  waxed_weathered_chiseled_copper: 0.9852
-  waxed_weathered_copper: 3.7406
-  waxed_weathered_copper_bars: 0.3559
-  waxed_weathered_copper_bulb: 3.4867
-  waxed_weathered_copper_chain: 0.708
-  waxed_weathered_copper_chest: 4.245
-  waxed_weathered_copper_door: 1.0313
+  waxed_oxidized_copper_grate: 1.0752
+  waxed_oxidized_copper_lantern: 0.662
+  waxed_oxidized_copper_trapdoor: 2.0225
+  waxed_oxidized_cut_copper: 1.0752
+  waxed_oxidized_cut_copper_slab: 0.5376
+  waxed_oxidized_cut_copper_stairs: 1.0752
+  waxed_oxidized_lightning_rod: 1.5669
+  waxed_weathered_chiseled_copper: 1.0752
+  waxed_weathered_copper: 4.1006
+  waxed_weathered_copper_bars: 0.3709
+  waxed_weathered_copper_bulb: 3.7567
+  waxed_weathered_copper_chain: 0.7569
+  waxed_weathered_copper_chest: 4.565
+  waxed_weathered_copper_door: 1.1113
   waxed_weathered_copper_golem_statue: 2.2
-  waxed_weathered_copper_grate: 0.9852
-  waxed_weathered_copper_lantern: 0.6222
-  waxed_weathered_copper_trapdoor: 1.8625
-  waxed_weathered_cut_copper: 0.9852
-  waxed_weathered_cut_copper_slab: 0.4926
-  waxed_weathered_cut_copper_stairs: 0.9852
-  waxed_weathered_lightning_rod: 1.4469
+  waxed_weathered_copper_grate: 1.0752
+  waxed_weathered_copper_lantern: 0.662
+  waxed_weathered_copper_trapdoor: 2.0225
+  waxed_weathered_cut_copper: 1.0752
+  waxed_weathered_cut_copper_slab: 0.5376
+  waxed_weathered_cut_copper_stairs: 1.0752
+  waxed_weathered_lightning_rod: 1.5669
   wayfinder_armor_trim_smithing_template: 10
-  weathered_chiseled_copper: 0.9352
-  weathered_copper: 3.7406
-  weathered_copper_bars: 0.1559
-  weathered_copper_bulb: 3.3367
-  weathered_copper_chain: 0.508
-  weathered_copper_chest: 4.045
-  weathered_copper_door: 0.8312
+  weathered_chiseled_copper: 1.0252
+  weathered_copper: 4.1006
+  weathered_copper_bars: 0.1709
+  weathered_copper_bulb: 3.6067
+  weathered_copper_chain: 0.5569
+  weathered_copper_chest: 4.365
+  weathered_copper_door: 0.9113
   weathered_copper_golem_statue: 2
-  weathered_copper_grate: 0.9352
-  weathered_copper_lantern: 0.4222
-  weathered_copper_trapdoor: 1.6625
-  weathered_cut_copper: 0.9352
-  weathered_cut_copper_slab: 0.4676
-  weathered_cut_copper_stairs: 0.9352
-  weathered_lightning_rod: 1.2469
+  weathered_copper_grate: 1.0252
+  weathered_copper_lantern: 0.462
+  weathered_copper_trapdoor: 1.8225
+  weathered_cut_copper: 1.0252
+  weathered_cut_copper_slab: 0.5126
+  weathered_cut_copper_stairs: 1.0252
+  weathered_lightning_rod: 1.3669
   weeping_vines: 0.05
   wet_sponge: 3
   wheat: 0.2
-  wheat_seeds: 0.01
+  wheat_seeds: 0.0313
   white_banner: 2.44
   white_bed: 1.47
   white_bundle: 1.13

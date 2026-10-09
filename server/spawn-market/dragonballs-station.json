@@ -62,5 +62,25 @@
       "y": 116,
       "z": -877
     }
-  ]
+  ],
+  "shopRadarSigns": {
+    "overworld": {
+      "world": "world",
+      "x": 422,
+      "y": 116,
+      "z": -841
+    },
+    "nether": {
+      "world": "world",
+      "x": 422,
+      "y": 116,
+      "z": -839
+    },
+    "end": {
+      "world": "world",
+      "x": 422,
+      "y": 117,
+      "z": -840
+    }
+  }
 }
