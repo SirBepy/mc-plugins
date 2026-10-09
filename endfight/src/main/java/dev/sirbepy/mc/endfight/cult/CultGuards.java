@@ -192,7 +192,7 @@ public final class CultGuards implements Listener {
         if (type == null) {
             return false;
         }
-        Location at = new Location(world, post.x() + 0.5, post.y(), post.z() + 0.5);
+        Location at = SpawnSpot.at(world, post.x(), post.y(), post.z());
         Entity entity = world.spawnEntity(at, type);
         if (!(entity instanceof LivingEntity living)) {
             entity.remove();

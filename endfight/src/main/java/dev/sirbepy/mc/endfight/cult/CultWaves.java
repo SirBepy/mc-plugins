@@ -104,7 +104,7 @@ public final class CultWaves implements Listener {
         if (type == null) {
             return;
         }
-        Location at = new Location(world, point.x() + 0.5, point.y(), point.z() + 0.5);
+        Location at = SpawnSpot.at(world, point.x(), point.y(), point.z());
         Entity entity = world.spawnEntity(at, type);
         if (!(entity instanceof LivingEntity living)) {
             entity.remove();

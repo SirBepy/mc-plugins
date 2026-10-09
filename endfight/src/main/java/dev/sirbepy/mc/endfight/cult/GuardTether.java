@@ -95,6 +95,6 @@ final class GuardTether {
     }
 
     private static Location postLocation(World world, GuardPost post) {
-        return new Location(world, post.x() + 0.5, post.y(), post.z() + 0.5);
+        return SpawnSpot.at(world, post.x(), post.y(), post.z());
     }
 }
