@@ -18,6 +18,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.entity.EntityBreedEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
@@ -32,7 +35,8 @@ import java.util.Set;
 
 /**
  * Turns gameplay events into contract progress for whoever did them. Bosses go through {@link BossCredit};
- * every other kill passes {@link FarmGuard} first.
+ * every other kill passes {@link FarmGuard} first. Mine breaks pass {@link MineGuard}, which tracks
+ * player-placed ore so it never counts.
  */
 public final class ProgressListener implements Listener {
 
@@ -89,10 +93,29 @@ public final class ProgressListener implements Listener {
             }
             return;
         }
-        // Silk Touch would let one ore be placed and broken again forever.
-        if (!player.getInventory().getItemInMainHand().containsEnchantment(Enchantment.SILK_TOUCH)) {
+        boolean placedByPlayer = MineGuard.isPlayerPlaced(block);
+        MineGuard.unmark(block);
+        // A placed ore never counts (MineGuard), and Silk Touch still doesn't count on a natural one:
+        // that check isn't redundant, it stops a natural ore mined with Silk Touch from counting here
+        // and then again once it's placed and broken elsewhere (MineGuard would skip that second break).
+        if (!placedByPlayer && !player.getInventory().getItemInMainHand().containsEnchantment(Enchantment.SILK_TOUCH)) {
             guild.progress(player, Kind.MINE, Set.of(block.getType().name()), 1);
         }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlace(BlockPlaceEvent event) {
+        MineGuard.mark(event.getBlock());
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onPistonExtend(BlockPistonExtendEvent event) {
+        event.getBlocks().forEach(MineGuard::unmark);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onPistonRetract(BlockPistonRetractEvent event) {
+        event.getBlocks().forEach(MineGuard::unmark);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

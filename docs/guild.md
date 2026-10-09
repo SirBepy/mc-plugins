@@ -164,8 +164,17 @@ Elder Guardian, Warden, Ender Dragon) skip all of them and are credited as befor
   rounded up: 250 of the Great Hunt, 500 crops, 200 ores, 75 catches, 63 animals), every Grand Quest
   kind. Past that their deeds add nothing to the server's total, so a Grand Quest always needs at least
   four adventurers; they're told once in chat when they reach it.
+- **Mine, placed ore (2026-10-09)**: Silk Touch let a player mine one ore, place it back and break it
+  again with a plain pickaxe forever; Joe's decision was mine only, the other kinds unchanged.
+  `listener/MineGuard.java` marks a just-placed ore (any `*_ORE` plus Ancient Debris) in its chunk's
+  PersistentDataContainer, one packed position per block, so the mark survives a restart; a marked
+  block never counts when broken, by any tool, and the mark is cleared either way. A natural ore
+  mined with Silk Touch still doesn't count, unchanged. A piston push drops the mark rather than
+  following it: migrating it across a contraption (and possibly into another chunk) is a lot of
+  bookkeeping for a loophole that already needs redstone to build, so a pushed ore reverts to
+  counting normally once it settles.
 
-Not changed (todo 80): mine, harvest, fish, breed, trade and smelt have their own farm loopholes.
+Not changed (todo 80): harvest, fish, breed, trade and smelt have their own farm loopholes.
 
 Rerolls: E 1, D 1, C 2, B 2, A 3, S 3 a day, free, dailies only.
 

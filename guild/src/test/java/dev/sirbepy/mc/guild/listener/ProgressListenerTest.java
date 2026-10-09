@@ -9,21 +9,26 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Zombie;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.EntityMock;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -98,6 +103,49 @@ class ProgressListenerTest extends GuildTestBase {
         alice.getInventory().setItemInMainHand(silk);
         listener.onBreak(new BlockBreakEvent(ore, alice));
         assertEquals(1, daily.progress(0));
+    }
+
+    @Test
+    void silkTouchPlaceAndBreakLoopNeverCounts() {
+        Member member = join(alice);
+        ActiveContract daily = place(member, "e_coal");
+        Block ore = world.getBlockAt(1, 10, 1);
+        ore.setType(Material.COAL_ORE);
+
+        ItemStack silk = new ItemStack(Material.IRON_PICKAXE);
+        silk.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
+        alice.getInventory().setItemInMainHand(silk);
+        listener.onBreak(new BlockBreakEvent(ore, alice));
+        assertEquals(0, daily.progress(0), "Silk Touch mining never counts");
+
+        ItemStack plain = new ItemStack(Material.IRON_PICKAXE);
+        alice.getInventory().setItemInMainHand(plain);
+        Block against = ore.getRelative(0, -1, 0);
+        // MineGuard marks the ore on each place, so breaking it with a plain pickaxe never counts,
+        // no matter how many times the loop repeats.
+        for (int i = 0; i < 3; i++) {
+            ore.setType(Material.COAL_ORE);
+            listener.onPlace(new BlockPlaceEvent(ore, ore.getState(), against, plain, alice, true, EquipmentSlot.HAND));
+            listener.onBreak(new BlockBreakEvent(ore, alice));
+        }
+        assertEquals(0, daily.progress(0), "an ore the player placed back should never count, no matter how many times");
+    }
+
+    @Test
+    void aPistonPushedOreLosesItsMarkAndCountsAgain() {
+        Member member = join(alice);
+        ActiveContract daily = place(member, "e_coal");
+        Block ore = world.getBlockAt(1, 10, 1);
+        ore.setType(Material.COAL_ORE);
+        ItemStack plain = new ItemStack(Material.IRON_PICKAXE);
+        alice.getInventory().setItemInMainHand(plain);
+        listener.onPlace(new BlockPlaceEvent(ore, ore.getState(), ore.getRelative(0, -1, 0), plain, alice, true,
+                EquipmentSlot.HAND));
+
+        listener.onPistonExtend(new BlockPistonExtendEvent(ore.getRelative(-1, 0, 0), List.of(ore), BlockFace.EAST));
+
+        listener.onBreak(new BlockBreakEvent(ore, alice));
+        assertEquals(1, daily.progress(0), "a piston push drops the mark instead of following the ore to its new spot");
     }
 
     @Test
