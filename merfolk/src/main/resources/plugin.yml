@@ -1,0 +1,11 @@
+name: Merfolk
+version: ${version}
+main: dev.sirbepy.mc.merfolk.MerfolkPlugin
+api-version: "26.2"
+author: sirbepy
+softdepend: [Towny]
+
+permissions:
+  merfolk.admin:
+    description: The kingdom clause (built / revert / status) and who may call villagers to the sea.
+    default: op

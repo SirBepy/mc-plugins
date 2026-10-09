@@ -1,0 +1,12 @@
+# ItsLogiks' Merfolk wish (Nuova Shenron, Nether set, granted 2026-10-09 14:38 UTC). docs/merfolk.md
+# has the full terms.
+
+# The only player who can turn a villager into a merfolk (a nautilus shell, villager standing in
+# water). /merfolk owner <player|uuid> changes it (the e2e bots use that).
+owner: 3e0a4456-e2a3-4ea8-9bfa-8e38ee4c863d
+
+kingdom:
+  # 14 real days from the grant. Unless /merfolk kingdom built is run before then, the Fisher, Mason
+  # and Treasurer specialists turn back into ordinary novice fisherman/mason/cartographer merfolk and
+  # no new specialists appear.
+  deadline: "2026-10-23T14:38:00Z"
