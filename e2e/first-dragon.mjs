@@ -24,6 +24,8 @@ const X = 3000;
 const Y = 100;
 const Z = 3000;
 const END = 'execute in minecraft:the_end run';
+// Registering happens at the Guild Hall's desk, so the suite stands Lyra on the platform for it.
+const LYRA = { x: X + 6.5, y: Y + 1, z: Z + 6.5 };
 const GUILD_YML = fileURLToPath(new URL('../testserver/run-e2e/plugins/Guild/guild.yml', import.meta.url));
 
 const rcon = await Rcon.connect();
@@ -66,8 +68,12 @@ async function member(name) {
 
 async function register(bot) {
   await rcon.command(`eco set ${bot.username} 500`);
+  await toEnd(bot, 6, 4);
+  let lyra;
+  await waitFor(() => (lyra = Object.values(bot.entities)
+    .find((e) => e.name === 'mannequin' && e.position.distanceTo(LYRA) < 1)), `${bot.username} sees Lyra`, 10_000);
   const opened = nextWindow(bot);
-  bot.chat('/guild');
+  await bot.activateEntity(lyra);
   const menu = await opened;
   await bot.clickWindow(22, 0, 0);
   await waitFor(async () => /: E,/.test(await member(bot.username)), `${bot.username} registered`, 10_000);
@@ -105,6 +111,7 @@ try {
     await rcon.command(`minecraft:gamemode creative ${name}`);
     await rcon.command(`minecraft:clear ${name}`);
   }
+  await rcon.command(`guildadmin staff place receptionist world_the_end ${LYRA.x} ${LYRA.y} ${LYRA.z} 180`);
   for (const name of [HERO, BOMBER, AWAY, IDLE]) {
     await register(bots[name]);
   }
@@ -169,7 +176,8 @@ try {
 
   await step('the first dragon dies: its Guild fighters are announced, nobody else', async () => {
     const since = bots[IDLE].lines.length;
-    await rcon.command(`${END} damage ${dragon('fd_first')} 1000 minecraft:player_attack by ${HERO}`);
+    // EndFight raises a first dragon to its Ascended tier (1024 max health on 26.2), so 1000 left it alive.
+    await rcon.command(`${END} damage ${dragon('fd_first')} 5000 minecraft:player_attack by ${HERO}`);
     const line = await waitForLine(bots[IDLE], /first Ender Dragon has fallen/, 40_000, since);
     console.log(`  ${line}`);
     for (const name of [HERO, BOMBER, AWAY]) assert(line.includes(name), `${name} named`);
@@ -217,7 +225,7 @@ try {
     const idle = await balance(IDLE);
     const since = bots[HERO].lines.length;
     await rcon.command(`${END} damage ${dragon('fd_second')} 5 minecraft:player_attack by ${IDLE}`);
-    await rcon.command(`${END} damage ${dragon('fd_second')} 1000 minecraft:player_attack by ${IDLE}`);
+    await rcon.command(`${END} damage ${dragon('fd_second')} 5000 minecraft:player_attack by ${IDLE}`);
     await waitFor(async () => /failed/.test(await rcon.command(`${END} execute if entity ${dragon('fd_second')}`)),
       'the second dragon is gone', 40_000);
     await sleep(1_000);
@@ -233,6 +241,7 @@ try {
 } finally {
   await rcon.command(`${END} minecraft:kill @e[tag=fd_e2e]`).catch(() => {});
   await rcon.command('guildadmin firstdragon reset').catch(() => {});
+  await rcon.command('guildadmin staff remove receptionist').catch(() => {});
   await rcon.command(`${END} forceload remove ${X - 32} ${Z - 32} ${X + 32} ${Z + 32}`).catch(() => {});
   await quit(...Object.values(bots));
   await sleep(200);

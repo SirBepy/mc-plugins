@@ -107,7 +107,7 @@ public final class GuildCommand {
         if (player != null) {
             Member member = guild.member(player);
             if (member == null) {
-                Chat.send(player, "You aren't a member yet. Register with /guild.");
+                Chat.send(player, "You aren't a member yet. Register with Lyra at the Guild Hall: /warp guild");
             } else {
                 describe(player, member);
             }

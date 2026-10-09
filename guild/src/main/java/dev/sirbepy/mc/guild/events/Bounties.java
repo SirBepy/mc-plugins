@@ -132,7 +132,7 @@ final class Bounties {
             state().set("bounty.progress." + member.id(), after);
             guild.store().markDirty();
             if (after >= o.amount()) {
-                Chat.send(player, "Bounty done: " + bounty.title() + ". Claim it in /guild before anyone else does!", NamedTextColor.GOLD);
+                Chat.send(player, "Bounty done: " + bounty.title() + ". Claim it at the Guild Hall (/warp guild) before anyone else does!", NamedTextColor.GOLD);
             }
         }
     }

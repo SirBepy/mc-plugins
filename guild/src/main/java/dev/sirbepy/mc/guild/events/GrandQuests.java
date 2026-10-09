@@ -140,7 +140,7 @@ final class GrandQuests {
         Map<UUID, Integer> contributions = contributions();
         UUID champion = contributions.entrySet().stream().max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse(null);
         Bukkit.getServer().broadcast(Chat.line("The Grand Quest is complete: " + quest.title() + "! Everyone who gave at least "
-                + threshold() + " can claim a share in /guild.", NamedTextColor.GOLD));
+                + threshold() + " can claim a share at the Guild Hall (/warp guild).", NamedTextColor.GOLD));
         if (champion != null) {
             Member member = guild.store().member(champion);
             state().set("grand.champion", member.name());

@@ -38,6 +38,7 @@ class StaffTest extends GuildTestBase {
 
     private StaffNpcs npcs;
     private StaffListener listener;
+    private GuildMenus menus;
     private Dialogue dialogue;
     private final Set<UUID> bedrock = new HashSet<>();
     private final List<Staff> dressed = new ArrayList<>();
@@ -53,7 +54,8 @@ class StaffTest extends GuildTestBase {
             wiped.remove(mannequin.getUniqueId());
         }, (mannequin, staff) -> wiped.contains(mannequin.getUniqueId()));
         dialogue = new Dialogue(guild, new Random(7));
-        listener = new StaffListener(npcs, guild, new GuildMenus(guild), dialogue);
+        menus = new GuildMenus(guild);
+        listener = new StaffListener(npcs, guild, menus, dialogue);
         world.getChunkAt(0, 0);
     }
 
@@ -151,9 +153,9 @@ class StaffTest extends GuildTestBase {
         placeAll();
         join(gm);
         join(alice);
-        listener.talk(alice, Staff.TREASURER);
+        listener.talk(alice, Staff.TREASURER, alice.getLocation());
         assertTrue(!plain(alice.getOpenInventory().title()).contains("Office"));
-        listener.talk(gm, Staff.TREASURER);
+        listener.talk(gm, Staff.TREASURER, gm.getLocation());
         assertTrue(plain(gm.getOpenInventory().title()).contains("Guildmaster's Office"));
     }
 
@@ -193,6 +195,23 @@ class StaffTest extends GuildTestBase {
         String said = lastLine(alice);
         assertTrue(said != null && said.startsWith("Lyra: "), said);
         assertTrue(plain(alice.getOpenInventory().title()).contains("Adventurer's Guild"));
+    }
+
+    @Test
+    void talkingToBramPutsThePlayerAtTheDeskWhereTheBoardPays() {
+        placeAll();
+        Member member = join(alice);
+        var daily = placeDaily(member, "e_zombies");
+        guild.progress(alice, dev.sirbepy.mc.guild.contract.Objective.Kind.HUNT, Set.of("ZOMBIE"), 12);
+        alice.teleport(npcs.mannequin(Staff.CLERK).getLocation().add(0, 0, 2));
+        assertFalse(menus.desk().at(alice), "/guild alone is not the desk");
+
+        listener.onInteract(new PlayerInteractEntityEvent(alice, npcs.mannequin(Staff.CLERK), EquipmentSlot.HAND));
+        assertTrue(menus.desk().at(alice));
+        var board = (dev.sirbepy.mc.core.gui.Menu) alice.getOpenInventory().getTopInventory().getHolder();
+        board.click(20, org.bukkit.event.inventory.ClickType.LEFT); // daily slot 1 (dailies sit in 19-23)
+
+        assertTrue(daily.claimed());
     }
 
     @Test

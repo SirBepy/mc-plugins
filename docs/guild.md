@@ -218,7 +218,8 @@ in `/guild`, or a right-click on Silas the treasurer) has:
 
 ## Commands
 
-- `/guild` (everyone): the Guild menu (register, board, profile, commissions, office).
+- `/guild` (everyone): the Guild menu (register, board, profile, commissions, office). Anywhere but the
+  hall's desk it is for looking only: see "Taking and turning in work" below.
 - `/guild profile [player]`, `/guild board`, `/guild announce`, `/guild commission ...`, `/guild cancel <id>`, `/guild feature <id>`.
 - `/guildadmin` (ops, console, RCON): `status`, `member <player>`, `rep <player> <n>`, `contracts <player> <n>`,
   `newday <player>`, `newweek <player>`, `setrank <player> <rank>` and `resettrial <player>` (repairs only),
@@ -371,7 +372,7 @@ satchel. Lyra and Maren have slim arms.
 
 | Role id | Name | Title | Right-click opens |
 | --- | --- | --- | --- |
-| receptionist | Lyra Fennwick (cheerful, a little overworked, knows every file) | Guild Receptionist | registration for strangers, the board for members |
+| receptionist | Lyra Fennwick (cheerful, a little overworked, knows every file) | Guild Receptionist | registration for strangers (the only place to register), the board for members |
 | clerk | Bram Ashgrove (grumpy retired adventurer, lost a finger to a Breeze) | Quest Clerk | the board (members) |
 | treasurer | Silas Coinwright (fastidious, loves his ledger) | Guild Treasurer | the Guildmaster's office (Guildmaster only); others hear the balance |
 | examiner | Captain Maren Holt (stern, fair, ex-soldier) | Trial Examiner | the board when a trial is open or running; otherwise says what is still needed |
@@ -379,6 +380,37 @@ satchel. Lyra and Maren have slim arms.
 
 Dialogue depends on the first visit, the visitor's rank, finished-but-unclaimed work, a finished weekly,
 rerolls, the trial state and time left, the Guildmaster, night and thunder. Sneak-click only talks.
+
+### Taking and turning in work (since 2026-10-09)
+
+ImMijo asked that players have to come to the Guild Hall; Joe picked the compromise. `/guild` and every
+screen behind it still open anywhere for looking: today's contracts and their progress, the profile,
+ranks, commissions, bounty, Grand Quest, Hall of Fame, titles. **Doing** anything that takes or turns in
+work needs the hall's desk:
+
+- registering (only Lyra opens the registration screen, so registering means talking to her),
+- claiming a daily or the weekly, rerolling a daily,
+- claiming a commission (featured or from the Commissions screen), the bounty or a Grand Quest share,
+- beginning or completing a Promotion Trial.
+
+Elsewhere those clicks do nothing but say "Contracts are taken and turned in at the Guild Hall: talk to
+Lyra or Bram there. /warp guild" (registration: "Registration is at the Guild Hall's front desk: talk to
+Lyra there. /warp guild"). A ready contract's icon says "turn it in at the Guild Hall, /warp guild"
+instead of "click to claim", the reroll hint only shows at the desk, and the profile head always says
+where contracts are taken and turned in. "Done: ... Turn it in at the Guild Hall (/warp guild)" and the
+bounty and Grand Quest broadcasts point there too.
+
+The desk is a staff member, not a place (`gui/HallDesk.java`): right-clicking any of the five (either
+body) puts the player at the desk for as long as they stay within 6 blocks of where that staff member
+stood when talked to. Nothing about the hall's coordinates is coded, so the staff can be moved with
+`guildadmin staff place` and the desk moves with them. While still beside them, `/guild` itself counts
+too (a player who closed the board and typed `/guild commissions` at the counter isn't sent away). In
+practice: Lyra registers newcomers and opens the board, Bram opens the board for members, Captain Holt
+opens it for trial business, Silas opens the Guildmaster's office and Pip the Hall of Fame (whose back
+button leads to the board, also at the desk). The desk is memory only; a restart forgets it, so a
+player just talks to a staff member again. The Guildmaster's own office functions (Treasury withdrawals,
+posting, cancelling and featuring commissions, announcements, activities) work anywhere, unchanged.
+Caps, ranks and rewards are unchanged.
 
 ## Testing
 
@@ -392,4 +424,7 @@ rerolls, the trial state and time left, the Guildmaster, night and thunder. Snea
   same server (2026-10-09): a fighter's hit survives a restart mid-fight, the main island's own dragon
   pays its party, and after a full natural kill a restart with the record cleared logs the earlier
   kill and spends the event.
+- `e2e/guild.mjs` (private server): registering and claiming a finished daily from `/guild` away from the
+  hall are refused and cost or pay nothing; the same done after right-clicking Lyra pays; a commission
+  is turned in beside her.
 - Not testable by Claude: how menus look in a real 26.3 client.

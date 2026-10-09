@@ -243,7 +243,7 @@ public final class Guild {
             store.markDirty();
         }
         for (String title : finished) {
-            Chat.send(player, "Done: " + title + ". Claim it in /guild.", NamedTextColor.GREEN);
+            Chat.send(player, "Done: " + title + ". Turn it in at the Guild Hall (/warp guild).", NamedTextColor.GREEN);
         }
         if (!finished.isEmpty()) {
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.8f, 1.4f);
@@ -362,7 +362,7 @@ public final class Guild {
             player.showTitle(Title.title(Component.text("Promotion Trial", Chat.BRONZE),
                     Component.text("The " + next.name() + "-Rank trial awaits you", Chat.PARCHMENT)));
             Chat.send(player, "You have earned the right to attempt the " + next.name()
-                    + "-Rank Promotion Trial. Begin it from /guild when you are ready.", Chat.BRONZE);
+                    + "-Rank Promotion Trial. Begin it at the Guild Hall when you are ready.", Chat.BRONZE);
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.8f, 1.0f);
         }
     }

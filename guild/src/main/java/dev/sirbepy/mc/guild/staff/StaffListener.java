@@ -5,6 +5,7 @@ import dev.sirbepy.mc.guild.Guild;
 import dev.sirbepy.mc.guild.data.ActiveContract;
 import dev.sirbepy.mc.guild.data.Member;
 import dev.sirbepy.mc.guild.gui.GuildMenus;
+import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -26,7 +27,7 @@ import org.bukkit.inventory.EquipmentSlot;
 /**
  * Nothing hurts, burns, converts, leashes or re-skills the staff, and right-clicking one (either body)
  * never opens a villager trade: they speak, then open the Guild screen that fits their job. Sneak-click
- * just talks.
+ * just talks. Talking to any of them puts the player at the hall's desk, where work is taken and turned in.
  */
 public final class StaffListener implements Listener {
 
@@ -52,7 +53,7 @@ public final class StaffListener implements Listener {
         if (event.getHand() != EquipmentSlot.HAND) {
             return;
         }
-        talk(event.getPlayer(), staff);
+        talk(event.getPlayer(), staff, event.getRightClicked().getLocation());
     }
 
     /** Armor-stand style clicks arrive as this subclass first; only the cancel matters here. */
@@ -63,7 +64,8 @@ public final class StaffListener implements Listener {
         }
     }
 
-    void talk(Player player, Staff staff) {
+    void talk(Player player, Staff staff, Location at) {
+        menus.desk().visit(player, at);
         Member member = guild.member(player);
         player.sendMessage(Chat.speech(staff.shortName(), staff.color(), dialogue.line(staff, player, member)));
         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_AMBIENT, 0.6f, 1.1f);

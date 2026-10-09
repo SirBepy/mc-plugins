@@ -22,9 +22,11 @@ import java.util.function.BiConsumer;
 final class CommissionMenus {
 
     private final Guild guild;
+    private final HallDesk desk;
 
-    CommissionMenus(Guild guild) {
+    CommissionMenus(Guild guild, HallDesk desk) {
         this.guild = guild;
+        this.desk = desk;
     }
 
     Menu commissions(Player player, Member member, BiConsumer<Menu, GuildMenus.Screen> go) {
@@ -55,7 +57,7 @@ final class CommissionMenus {
                         Chat.send(player, "Commission featured.");
                     }
                 } else {
-                    claimCommission(player, commission);
+                    desk.require(player, () -> claimCommission(player, commission));
                 }
                 go.accept(shown, GuildMenus.Screen.COMMISSIONS);
             });

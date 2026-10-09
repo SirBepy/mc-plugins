@@ -28,7 +28,8 @@ import java.util.function.BiConsumer;
  * Every Guild screen. Rebuilt on each click (via {@link Menu#adopt}) so progress, caps and the
  * Treasury are always current. The Registration and Main board screens, and the pieces shared
  * across screens (contract icons, claiming), live here; the Office, Commissions and Trial
- * screens live in {@link OfficeMenus}, {@link CommissionMenus} and {@link TrialMenus}.
+ * screens live in {@link OfficeMenus}, {@link CommissionMenus} and {@link TrialMenus}. Every screen
+ * can be looked at anywhere; registering, claiming, rerolling and trials need the {@link HallDesk}.
  */
 public final class GuildMenus {
 
@@ -56,13 +57,18 @@ public final class GuildMenus {
     private final OfficeMenus office;
     private final CommissionMenus commissionMenus;
     private final TrialMenus trialMenus;
+    private final HallDesk desk = new HallDesk();
 
     public GuildMenus(Guild guild) {
         this.guild = guild;
         this.fame = new FameMenus(guild);
         this.office = new OfficeMenus(guild);
-        this.commissionMenus = new CommissionMenus(guild);
+        this.commissionMenus = new CommissionMenus(guild, desk);
         this.trialMenus = new TrialMenus(guild);
+    }
+
+    public HallDesk desk() {
+        return desk;
     }
 
     public void open(Player player, Screen screen) {
@@ -108,6 +114,7 @@ public final class GuildMenus {
 
     private Menu registration(Player player) {
         GuildConfig cfg = guild.config();
+        boolean atDesk = desk.at(player);
         Menu menu = new Menu(6, Component.text("The Adventurer's Guild", Chat.BRONZE));
         menu.set(PROFILE_SLOT, Icons.icon(Material.WRITABLE_BOOK, "Welcome, traveller", Chat.BRONZE,
                 "The Adventurer's Guild takes contracts from",
@@ -123,7 +130,13 @@ public final class GuildMenus {
                 "You start as an E-Rank Adventurer with",
                 cfg.dailyContracts() + " daily contracts and 1 weekly contract.",
                 "",
-                "!Click to register")), (shown, click) -> {
+                atDesk ? "!Click to register" : "Register with Lyra at the Guild Hall:",
+                atDesk ? "" : HallDesk.WARP)), (shown, click) -> {
+            if (!desk.at(player)) {
+                Chat.send(player, "Registration is at the Guild Hall's front desk: talk to Lyra there. "
+                        + HallDesk.WARP, NamedTextColor.YELLOW);
+                return;
+            }
             switch (guild.register(player)) {
                 case REGISTERED -> {
                     Chat.send(player, "Welcome to the Adventurer's Guild, " + player.getName()
@@ -144,14 +157,15 @@ public final class GuildMenus {
     // ---- Main board ----
 
     private Menu main(Player player, Member member) {
+        boolean atDesk = desk.at(player);
         Menu menu = new Menu(6, Component.text("Adventurer's Guild: " + member.rank().title(), Chat.BRONZE));
         menu.set(PROFILE_SLOT, profile(player, member), (shown, click) -> refresh(player, shown, Screen.TITLES, 0));
         menu.set(FameMenus.BOUNTY_SLOT, fame.bountyIcon(member), (shown, click) -> {
-            fame.claimBounty(player);
+            desk.require(player, () -> fame.claimBounty(player));
             refresh(player, shown, Screen.MAIN, 0);
         });
         menu.set(FameMenus.GRAND_SLOT, fame.grandIcon(member), (shown, click) -> {
-            fame.claimGrand(player);
+            desk.require(player, () -> fame.claimGrand(player));
             refresh(player, shown, Screen.MAIN, 0);
         });
         ItemStack activity = fame.activityIcon(member);
@@ -161,31 +175,31 @@ public final class GuildMenus {
         for (int i = 0; i < member.dailies().size() && i < DAILY_SLOTS.length; i++) {
             ActiveContract daily = member.dailies().get(i);
             int slot = i;
-            menu.set(DAILY_SLOTS[i], contractIcon(player, member, daily, slot), (shown, click) -> {
+            menu.set(DAILY_SLOTS[i], contractIcon(player, member, daily, slot, atDesk), (shown, click) -> {
                 if (click == ClickType.RIGHT || click == ClickType.SHIFT_RIGHT) {
-                    reroll(player, member, slot);
+                    desk.require(player, () -> reroll(player, member, slot));
                 } else {
-                    claim(player, guild, daily);
+                    desk.require(player, () -> claim(player, guild, daily));
                 }
                 refresh(player, shown, Screen.MAIN, 0);
             });
         }
         if (member.weekly() != null) {
             ActiveContract weekly = member.weekly();
-            menu.set(WEEKLY_SLOT, contractIcon(player, member, weekly, -1), (shown, click) -> {
-                claim(player, guild, weekly);
+            menu.set(WEEKLY_SLOT, contractIcon(player, member, weekly, -1, atDesk), (shown, click) -> {
+                desk.require(player, () -> claim(player, guild, weekly));
                 refresh(player, shown, Screen.MAIN, 0);
             });
         }
         Commission featured = guild.office().featured();
         if (featured != null) {
             menu.set(FEATURED_SLOT, Icons.glint(commissionMenus.commissionIcon(player, member, featured, true)), (shown, click) -> {
-                commissionMenus.claimCommission(player, featured);
+                desk.require(player, () -> commissionMenus.claimCommission(player, featured));
                 refresh(player, shown, Screen.MAIN, 0);
             });
         }
         menu.set(TRIAL_SLOT, trialMenus.trialIcon(player, member), (shown, click) -> {
-            trialMenus.trialClick(player, member);
+            desk.require(player, () -> trialMenus.trialClick(player, member));
             refresh(player, shown, Screen.MAIN, 0);
         });
         long open = guild.store().commissions().stream().filter(Commission::open).count();
@@ -228,6 +242,8 @@ public final class GuildMenus {
                 + member.levelsToday() + " / " + cfg.dailyLevelCap() + " levels");
         lore.add("Rerolls left today: " + Math.max(0, member.rank().rerolls() - member.rerollsUsed()));
         lore.add("New dailies at midnight, a new weekly on Monday.");
+        lore.add("Contracts are taken and turned in at the");
+        lore.add("Guild Hall's desk: " + HallDesk.WARP);
         lore.add("");
         lore.add("!Click for your titles");
         if (guild.isGuildmaster(player)) {
@@ -254,7 +270,7 @@ public final class GuildMenus {
                 "!Click for the Hall of Fame");
     }
 
-    private ItemStack contractIcon(Player player, Member member, ActiveContract active, int dailySlot) {
+    private ItemStack contractIcon(Player player, Member member, ActiveContract active, int dailySlot, boolean atDesk) {
         ContractDef def = active.def();
         if (def == null) {
             return new ItemStack(Material.BARRIER);
@@ -279,9 +295,11 @@ public final class GuildMenus {
         if (active.claimed()) {
             lore.add("Completed. The Guild thanks you.");
             color = NamedTextColor.DARK_GRAY;
+        } else if (ready && !atDesk) {
+            lore.add("!Ready: turn it in at the Guild Hall, " + HallDesk.WARP);
         } else if (ready) {
             lore.add(def.hasGather() ? "!Click to hand them in and claim" : "!Click to claim your reward");
-        } else if (dailySlot >= 0) {
+        } else if (dailySlot >= 0 && atDesk) {
             int left = member.rank().rerolls() - member.rerollsUsed();
             lore.add(left > 0 ? "Right-click for a different contract (" + left + " left)" : "No rerolls left today");
         }

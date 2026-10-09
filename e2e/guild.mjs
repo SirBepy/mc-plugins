@@ -3,10 +3,12 @@ import {
   waitForLine,
 } from './lib.mjs';
 
-// The Adventurer's Guild (ImMijo's Shenron wish): a stranger registers from /guild for the 500-coin fee
+// The Adventurer's Guild (ImMijo's Shenron wish): a stranger registers with Lyra for the 500-coin fee
 // (into the Treasury), claims a finished daily (paid in full, with a 5% commission minted on top for
 // the Treasury), works a Guildmaster commission by killing a mob, and the Guildmaster withdraws from
-// his office and announces. The suite makes its own bot the Guildmaster (`guildadmin guildmaster`).
+// his office and announces. Taking and turning in work only happens at the hall's desk, beside a staff
+// member the player talked to: /guild anywhere else only looks (ImMijo's ask, 2026-10-09). The suite
+// makes its own bot the Guildmaster (`guildadmin guildmaster`).
 const PLATFORM_Y = 200;
 const { bx: BX, bz: BZ } = randomOrigin();
 // Fresh names each run: the e2e server keeps guild.yml, so a reused name would already be a member
@@ -79,6 +81,33 @@ try {
   await rcon.command(`eco set ${HERO} 600`);
   await rcon.command(`eco set ${GM} 1000`);
 
+  // The staff stand wherever ImMijo asks in the hall he builds; the suite puts Lyra on its platform.
+  const LYRA = { x: BX + 0.5, y: PLATFORM_Y + 1, z: BZ + 4.5 };
+  await step('the receptionist is placed by console command at a given spot', async () => {
+    await rcon.command(`guildadmin staff place receptionist world ${LYRA.x} ${LYRA.y} ${LYRA.z} 180`);
+    await waitFor(async () => /receptionist \(Lyra Fennwick, Guild Receptionist\): present/
+      .test(await rcon.command('guildadmin staff list')), 'Lyra present', 20_000);
+  });
+
+  // Like Haru, each staff member is a skinned Mannequin for Java clients and a villager for Bedrock (or a
+  // declined pack). These bots are plain Java and the e2e server offers no pack, so they get the Mannequin.
+  const AT_LYRA = `x=${LYRA.x},y=${LYRA.y},z=${LYRA.z},distance=..1`;
+  const lyraFor = (bot, name) => Object.values(bot.entities).find((e) => e.name === name && e.position.distanceTo(LYRA) < 1);
+  // 2.5 blocks from Lyra: inside entity reach, so the right-click lands and she counts as the desk.
+  const toDesk = () => teleport(rcon, hero, BX, PLATFORM_Y + 1, BZ + 2);
+  // 10 blocks from Lyra: past the desk's reach.
+  const awayFromDesk = () => teleport(rcon, hero, BX + 5, PLATFORM_Y + 1, BZ - 5);
+  async function talkToLyra(bot) {
+    let lyra;
+    await waitFor(() => (lyra = lyraFor(bot, 'mannequin')), `${bot.username} sees Lyra`);
+    const since = bot.lines.length;
+    const opened = nextWindow(bot);
+    await bot.activateEntity(lyra);
+    const window = await opened;
+    await waitForLine(bot, /^Lyra: /, 5_000, since);
+    return window;
+  }
+
   let menu;
   await step('a stranger opens /guild and sees the registration desk', async () => {
     const opened = nextWindow(hero);
@@ -88,9 +117,22 @@ try {
     assert(menu.slots[22]?.name === 'name_tag', `register button at slot 22 (got ${menu.slots[22]?.name})`);
   });
 
+  await step('registering from /guild away from the hall is refused and costs nothing', async () => {
+    const since = hero.lines.length;
+    await hero.clickWindow(22, 0, 0);
+    await waitForLine(hero, /Registration is at the Guild Hall's front desk: talk to Lyra there\. \/warp guild/, 5_000, since);
+    await sleep(1_000);
+    assert((await balance(HERO)) === 600, 'balance untouched');
+    assert(!/: E,/.test(await member(HERO)), 'still a stranger');
+    hero.closeWindow(menu);
+  });
+
   let treasuryAfterFee;
-  await step('registering takes 500 coins into the Treasury and starts at E-Rank', async () => {
+  await step('registering with Lyra takes 500 coins into the Treasury and starts at E-Rank', async () => {
     const before = await treasury();
+    await toDesk();
+    menu = await talkToLyra(hero);
+    assert(menu.slots[22]?.name === 'name_tag', `Lyra opens registration (got ${menu.slots[22]?.name})`);
     await hero.clickWindow(22, 0, 0);
     await waitFor(async () => (await balance(HERO)) === 100, 'hero paid 500', 10_000);
     treasuryAfterFee = await treasury();
@@ -110,10 +152,22 @@ try {
     await rcon.command(`guildadmin complete ${HERO} ${slot}`);
     const before = await balance(HERO);
     const treasuryBefore = await treasury();
+
+    // /guild away from the hall shows the finished daily but won't pay it.
+    await awayFromDesk();
     const opened = nextWindow(hero);
     hero.chat('/guild');
     menu = await opened;
-    const since = hero.lines.length;
+    let since = hero.lines.length;
+    await hero.clickWindow(20, 0, 0);
+    await waitForLine(hero, /Contracts are taken and turned in at the Guild Hall/, 5_000, since);
+    await sleep(1_000);
+    assert((await balance(HERO)) === before, 'nothing paid away from the hall');
+    hero.closeWindow(menu);
+
+    await toDesk();
+    menu = await talkToLyra(hero);
+    since = hero.lines.length;
     await hero.clickWindow(20, 0, 0); // daily slot 1 (dailies sit in 19-23)
     const paidLine = await waitForLine(hero, /Contract complete/, 10_000, since);
     const coins = Number(paidLine.match(/Paid: (\d+) coins/)[1]);
@@ -145,7 +199,10 @@ try {
     }
     await waitForLine(hero, /commission/i, 10_000, heroSince);
 
+    // Turned in at the desk: talk to Lyra, then /guild commissions while still beside her.
     const heroBefore = await balance(HERO);
+    await toDesk();
+    hero.closeWindow(await talkToLyra(hero));
     const opened = nextWindow(hero);
     hero.chat('/guild commissions');
     menu = await opened;
@@ -155,6 +212,7 @@ try {
     await waitFor(async () => (await balance(HERO)) === heroBefore + 50, 'hero paid 50 from escrow', 10_000);
     assert((await treasury()) === before - 50, 'nothing minted for a commission');
     hero.closeWindow(menu);
+    await teleport(rcon, hero, BX + 3, PLATFORM_Y + 1, BZ);
   });
 
   // Farm rules (docs/guild.md): a mob that took most of its damage from a fall, like a grinder's drop,
@@ -244,18 +302,6 @@ try {
     hero.closeWindow(menu);
   });
 
-  // The staff stand wherever ImMijo asks in the hall he builds; the suite puts Lyra on its platform.
-  const LYRA = { x: BX + 0.5, y: PLATFORM_Y + 1, z: BZ + 4.5 };
-  await step('the receptionist is placed by console command at a given spot', async () => {
-    await rcon.command(`guildadmin staff place receptionist world ${LYRA.x} ${LYRA.y} ${LYRA.z} 180`);
-    await waitFor(async () => /receptionist \(Lyra Fennwick, Guild Receptionist\): present/
-      .test(await rcon.command('guildadmin staff list')), 'Lyra present', 20_000);
-  });
-
-  // Like Haru, each staff member is a skinned Mannequin for Java clients and a villager for Bedrock (or a
-  // declined pack). These bots are plain Java and the e2e server offers no pack, so they get the Mannequin.
-  const AT_LYRA = `x=${LYRA.x},y=${LYRA.y},z=${LYRA.z},distance=..1`;
-  const lyraFor = (bot, name) => Object.values(bot.entities).find((e) => e.name === name && e.position.distanceTo(LYRA) < 1);
   await step('a Java player sees Lyra as a Mannequin in her pack skin, never the villager', async () => {
     await teleport(rcon, hero, BX, PLATFORM_Y + 1, BZ + 2);
     await waitFor(() => lyraFor(hero, 'mannequin'), 'hero sees the Mannequin');
@@ -269,13 +315,8 @@ try {
   });
 
   await step('right-clicking the receptionist gets a word from Lyra and the Guild board', async () => {
-    const lyra = lyraFor(hero, 'mannequin');
-    const since = hero.lines.length;
-    const opened = nextWindow(hero);
-    await hero.activateEntity(lyra);
-    menu = await opened;
+    menu = await talkToLyra(hero);
     assert(/Adventurer's Guild/.test(titleOf(menu)), `board title (got ${titleOf(menu)})`);
-    await waitForLine(hero, /^Lyra: /, 5_000, since);
     hero.closeWindow(menu);
   });
 
