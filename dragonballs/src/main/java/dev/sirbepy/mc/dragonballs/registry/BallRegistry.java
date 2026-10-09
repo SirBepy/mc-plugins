@@ -313,12 +313,20 @@ public final class BallRegistry {
      * default. */
     public void applyStoneUntil(DragonBallsConfig config, long nowMillis) {
         if (config.stoneMode() == StoneMode.MINECRAFT_DAYS) {
-            World world = set.world(config);
+            World world = stoneClock(config);
             long currentDay = world == null ? 0 : Math.floorDiv(world.getFullTime(), 24000L);
             setStoneUntil(StoneMode.MINECRAFT_DAYS, currentDay + config.stoneDays());
         } else {
             setStoneUntil(StoneMode.REAL_HOURS, nowMillis + Duration.ofHours(config.stoneRealHours()).toMillis());
         }
+    }
+
+    /** The world whose day count every set's minecraft-days stone cooldown runs on: the main
+     * overworld, for all 3 sets, so sleeping skips count. On 26.3 the Nether and End have no day
+     * clock ("There is no default clock in dimension minecraft:the_nether"), so their own full time
+     * stays 0 and a cooldown counted on it never ends. Null if the overworld isn't loaded. */
+    public static World stoneClock(DragonBallsConfig config) {
+        return BallSet.OVERWORLD.world(config);
     }
 
     /** True once the stone cooldown has elapsed (or none is pending). */

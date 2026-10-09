@@ -45,7 +45,7 @@ public final class BallMaintenanceTask implements Runnable {
         if (!registry.isDormant()) {
             return;
         }
-        World world = registry.set().world(config.get());
+        World world = BallRegistry.stoneClock(config.get());
         if (world == null) {
             return;
         }
