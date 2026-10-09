@@ -39,7 +39,7 @@ wanted:
   cap: 500
   spread: 0.1
   online-chance: 0.8
-  old-head-share: 0.75
+  old-head-share: 0.5
   survivor-share: 0.5
 
 # The Homes shop sells huskhomes.max_homes.<n> above the default LuckPerms group's own .3 (Joe,

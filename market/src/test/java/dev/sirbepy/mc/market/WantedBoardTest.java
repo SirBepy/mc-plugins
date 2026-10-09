@@ -295,7 +295,7 @@ class WantedBoardTest {
         board.apply(world);
         Sign sign = (Sign) world.getBlockAt(20, 70, 0).getState();
         assertEquals("Fresh: $100", plainLine(sign, 2));
-        assertEquals("Old: $75", plainLine(sign, 3));
+        assertEquals("Old: $50", plainLine(sign, 3));
 
         alive.put(target.getUniqueId(), 6 * HOUR);
         // The tick leaves an unloaded sign chunk alone; someone standing at the board loads it.
@@ -303,9 +303,9 @@ class WantedBoardTest {
         board.tick();
         Sign later = (Sign) world.getBlockAt(20, 70, 0).getState();
         assertEquals("Fresh: $200", plainLine(later, 2), "6 h alive: $50 + 6 x $25");
-        assertEquals("Old: $150", plainLine(later, 3));
+        assertEquals("Old: $100", plainLine(later, 3));
         String line = PlainTextComponentSerializer.plainText().serialize(board.todayLines().getFirst());
-        assertTrue(line.contains("200") && line.contains("150"), line);
+        assertTrue(line.contains("200") && line.contains("100"), line);
     }
 
     @Test
@@ -361,7 +361,7 @@ class WantedBoardTest {
 
         seller.getInventory().setItemInMainHand(headOf(target.getUniqueId(), "Target"));
         board.sell(seller);
-        assertEquals(List.of(150.0), paid, "75% of today's $200");
+        assertEquals(List.of(100.0), paid, "50% of today's $200");
     }
 
     @Test
@@ -472,7 +472,7 @@ class WantedBoardTest {
         assertEquals("WANTED", plainLine(sign, 0));
         assertEquals("Target", plainLine(sign, 1));
         assertEquals("Fresh: $100", plainLine(sign, 2));
-        assertEquals("Old: $75", plainLine(sign, 3));
+        assertEquals("Old: $50", plainLine(sign, 3));
 
         // A kill timestamped after the bounty posted: a fresh head, full price.
         clock.set(board.state().postedAt().plusSeconds(10));
@@ -563,7 +563,7 @@ class WantedBoardTest {
         nameOnly.editMeta(SkullMeta.class, meta -> meta.setPlayerProfile(Bukkit.createProfile("Target")));
         seller.getInventory().setItemInMainHand(nameOnly);
         board.sell(seller);
-        assertEquals(List.of(75.0), paid, "name-only profile still matches when there is no id to compare");
+        assertEquals(List.of(50.0), paid, "name-only profile still matches when there is no id to compare");
     }
 
     @Test
@@ -631,7 +631,7 @@ class WantedBoardTest {
         oldSeller.getInventory().setItemInMainHand(
                 headOf(target.getUniqueId(), target.getName(), oldBoard.state().postedAt().minusSeconds(1)));
         oldBoard.sell(oldSeller);
-        assertEquals(List.of(75.0), paid, "a kill timestamped before the bounty posted pays the old-head share, rounded");
+        assertEquals(List.of(50.0), paid, "a kill timestamped before the bounty posted pays the old-head share, rounded");
 
         paid.clear();
         WantedBoard unstampedBoard = board(ALWAYS_ONLINE, flat(), new File(dir, "unstamped.yml"));
@@ -639,20 +639,20 @@ class WantedBoardTest {
         PlayerMock unstampedSeller = server.addPlayer("UnstampedSeller");
         unstampedSeller.getInventory().setItemInMainHand(headOf(target.getUniqueId(), target.getName()));
         unstampedBoard.sell(unstampedSeller);
-        assertEquals(List.of(75.0), paid, "a head with no stamp at all pays the old-head share too");
+        assertEquals(List.of(50.0), paid, "a head with no stamp at all pays the old-head share too");
     }
 
     @Test
     void oldHeadShareRoundsToTheNearestDollar() {
         PlayerMock target = server.addPlayer("Target");
         online.add(target);
-        // No growth, no spread: the value is $101 exactly. 101 * 0.75 = 75.75, rounds up to 76.
+        // No growth, no spread: the value is $101 exactly. 101 * 0.5 = 50.5, rounds up to 51.
         WantedBoard board = board(ALWAYS_ONLINE, config(101, 0, 1000, 0));
         board.rotate();
         PlayerMock seller = server.addPlayer("Seller");
         seller.getInventory().setItemInMainHand(headOf(target.getUniqueId(), target.getName()));
         board.sell(seller);
-        assertEquals(List.of(76.0), paid);
+        assertEquals(List.of(51.0), paid);
     }
 
     @Test
@@ -674,7 +674,7 @@ class WantedBoardTest {
         PlayerMock oldSeller = server.addPlayer("OldSeller");
         oldSeller.getInventory().setItemInMainHand(headOf(target.getUniqueId(), target.getName()));
         oldBoard.sell(oldSeller);
-        assertEquals(List.of("OldSeller brought in Target's head (old head) for $75!"), broadcasts);
+        assertEquals(List.of("OldSeller brought in Target's head (old head) for $50!"), broadcasts);
     }
 
     @Test
@@ -685,7 +685,7 @@ class WantedBoardTest {
         board.rotate();
 
         String line = PlainTextComponentSerializer.plainText().serialize(board.todayLines().getFirst());
-        assertTrue(line.contains("100") && line.contains("75"), "shows both the fresh and the old-head price: " + line);
+        assertTrue(line.contains("100") && line.contains("50"), "shows both the fresh and the old-head price: " + line);
     }
 
     @Test

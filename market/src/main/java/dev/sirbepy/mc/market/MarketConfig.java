@@ -53,7 +53,7 @@ public final class MarketConfig {
         this.wantedCap = Math.max(1, config.getLong("wanted.cap", 500));
         this.wantedSpread = Math.clamp(config.getDouble("wanted.spread", 0.1), 0.0, 0.9);
         this.wantedOnlineChance = Math.clamp(config.getDouble("wanted.online-chance", 0.8), 0.0, 1.0);
-        this.wantedOldHeadShare = Math.clamp(config.getDouble("wanted.old-head-share", 0.75), 0.0, 1.0);
+        this.wantedOldHeadShare = Math.clamp(config.getDouble("wanted.old-head-share", 0.5), 0.0, 1.0);
         this.wantedSurvivorShare = Math.clamp(config.getDouble("wanted.survivor-share", 0.5), 0.0, 1.0);
         this.maxHomes = Math.max(BASE_HOMES, config.getInt("homes.max", 6));
         Map<Integer, BigDecimal> prices = new LinkedHashMap<>();
@@ -131,7 +131,7 @@ public final class MarketConfig {
     }
 
     /** What a head taken before the bounty was posted (or with no kill stamp at all) pays, as a
-     * fraction of the full price (Joe, 2026-10-09: 0.75, a fresh kill pays full). */
+     * fraction of the full price (Joe, 2026-10-09: 0.5, lowered from 0.75 the same day; a fresh kill pays full). */
     public double wantedOldHeadShare() {
         return wantedOldHeadShare;
     }
