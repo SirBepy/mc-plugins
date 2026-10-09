@@ -8,9 +8,31 @@ arena:
   # a second time on its own - state.yml remembers. Set false to require a manual `endfight build`.
   auto-build: true
 
+rewards:
+  # Phase 3: every participant who damaged the dragon gets its full vanilla XP plus one reward
+  # bundle - see docs/endfight.md's Rewards section. Live for the first fight (Joe, 2026-10-09,
+  # Saturday 2026-10-10); false falls all the way back to vanilla (no suppressed orbs, no bundles).
+  enabled: true
+
+  bundle:
+    # PLACEHOLDER: the real contents are still being designed in another chat (Joe, 2026-10-09).
+    # This "Dragon Hoard" is a modest stand-in so the reward chain works end-to-end before the real
+    # loot is ready - replace name/lore/items below once Joe approves the real bundle.
+    name: "<gold>Dragon Hoard"
+    lore:
+      - "<gray>A token of the Guild's thanks."
+    items:
+      - material: DIAMOND
+        amount: 4
+      - material: GOLDEN_APPLE
+        amount: 2
+      - material: EXPERIENCE_BOTTLE
+        amount: 8
+
 messages:
   reload-success: "<green>EndFight config reloaded."
   build-success: "<green>Arena built: <pillars> pillars, <blocks> blocks."
   build-failed: "<red>Could not build the arena; see console."
   clear-success: "<green>Arena cleared."
   clear-failed: "<red>Could not clear the arena; see console."
+  reward-delivered: "<gold>The dragon's hoard: <xp> XP and a bundle went to your <where>."

@@ -55,3 +55,56 @@ All require `endfight.admin` (default: op).
 | `endfight rebuild` | Same as build - re-places everything |
 | `endfight clear` | Removes every tracked arena block (testing/repair) |
 | `endfight reload` | Reloads `config.yml` |
+| `endfight rewards status` | Pending reward entries, and the current dragon's fighter count |
+| `endfight rewards test <player>` | Gives that player one reward bundle through the live delivery chain, no XP |
+
+## Rewards (phase 3)
+
+Joe's decisions, 2026-10-09. Behind `rewards.enabled` in `config.yml` (default `true`, live for the
+first fight, Saturday 2026-10-10).
+
+**Who counts.** A participant is a player who *damaged the dragon* - nothing else. Standing in the
+End, healing someone, or being the one who ultimately gets credit as "killer" without ever landing
+a hit does not count on its own; dying's own participant set is fighters (melee, anything they shot
+or threw, TNT they lit, a crystal they broke, a bed/respawn anchor they set off within 2s/2 blocks)
+plus the dragon's killer. Fighter attribution is the same `DragonFighters` class the Guild's First
+Dragon event uses (moved to `core`, see below) under EndFight's own PDC key
+(`endfight:dragon-fighters`), so both plugins agree on who fought without re-implementing the rules
+differently. An op's `/kill` and a dragon dying outside the End spend nothing, exactly like the
+Guild's own filter.
+
+**XP.** Every participant gets the dragon's full vanilla XP straight into their XP bar: 12000 on
+the server's actual first Ender Dragon kill, 500 on every kill after (vanilla's own numbers).
+Vanilla never routes this through `EntityDeathEvent#getDroppedExp` - javap on `EnderDragon
+.tickDeath()` (26.3's `paper-26.3.jar`) shows it spawning `ExperienceOrb` entities directly in 10
+batches during the death animation, each going through a cancellable spawn event before ever
+reaching the world. `EndFight` cancels every one of those orbs in the dying dragon's world and
+sums their `getExperience()` as it does, then calls `Player#giveExp` with the total once the
+batches are done - giving the exact amount vanilla decided to award, deterministically, with no
+dependency on `DragonBattle` (which a dragon's own `tickDeath` also doesn't re-read at that point,
+and which `World.getEnderDragonBattle()` cannot even be unit-tested against here - MockBukkit's
+`WorldMock` throws unconditionally). No orbs reach the ground; nobody races for drops.
+
+**Bundle.** Every participant gets one reward bundle (a `BUNDLE` item) built from `rewards.bundle`
+in `config.yml` - a display name, lore and a flat item list (material/amount, optional name and a
+small fixed set of enchantments). The shipped bundle is a **placeholder** ("Dragon Hoard"): its
+real contents are still being designed in another chat, and the config comment says so.
+
+**Delivery.** Online: the bundle goes to the player's inventory, else their ender chest, else drops
+at their feet, and they're told which in chat along with the XP amount. Offline at the kill: the
+same chain runs on their next join (one second later), from `plugins/EndFight/pending-rewards.yml`
+(UUID -> list of `{xp, bundles}` entries, one per missed fight) - entries survive a restart and are
+removed only once actually delivered, so nothing pays twice and nothing is lost to being offline.
+
+**Not from EndFight.** The Guild's coins, reputation and the Dragonslayer title (First Dragon event,
+`guild/events/FirstDragon.java`) are paid separately by the Guild plugin, to Guild members only, and
+only for the server's first dragon ever. EndFight's XP + bundle go to every participant, Guild
+member or not, on every kill.
+
+### `DragonFighters` (core)
+
+The attribution logic itself - melee/projectile/pet blame via the damage source, and the bed/anchor
+blast-window matching - lives in `core/dragon/DragonFighters.java`, parameterised by the caller's
+own `NamespacedKey` and clock. Guild's `DragonSlayers` and EndFight's `DragonDeathListener` each
+hold their own instance under their own key; since `core` is shaded + relocated into each plugin
+(see `mc.plugin-conventions`), the two copies never collide even on the same dragon's PDC.
