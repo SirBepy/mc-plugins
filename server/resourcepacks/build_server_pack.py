@@ -1,9 +1,10 @@
-"""Builds the one resource pack the server offers on join: Backpacks! textures, the RMF 26.3 fix
-and the server's own custom item looks.
+"""Builds the one resource pack the server offers on join: Backpacks! textures, the RMF 26.3 fix,
+the server's own custom item looks and Dragonkind Evolved's dragon names and item textures.
 
-Merges server/resourcepacks/eclipse-backpacks/, client/resourcepack/rmf-26.3-fix/ and
-server/resourcepacks/claudesmp-items/ (their only shared path is pack.mcmeta, replaced by PACK_META
-below) into server/resourcepacks/dist/ClaudeSMP-server-pack-26.3.zip and prints its sha1.
+Merges server/resourcepacks/eclipse-backpacks/, client/resourcepack/rmf-26.3-fix/,
+server/resourcepacks/claudesmp-items/ and server/resourcepacks/dragonkind-evolved/ (their only
+shared path is pack.mcmeta, replaced by PACK_META below) into
+server/resourcepacks/dist/ClaudeSMP-server-pack-26.3.zip and prints its sha1.
 
 Every entry gets a fixed timestamp, so an unchanged source tree always rebuilds to the same sha1
 and server.properties' resource-pack-sha1 only has to change when the pack really changes.
@@ -28,6 +29,7 @@ SOURCES = [
     ROOT / "server" / "resourcepacks" / "eclipse-backpacks",
     ROOT / "client" / "resourcepack" / "rmf-26.3-fix",
     ROOT / "server" / "resourcepacks" / "claudesmp-items",
+    ROOT / "server" / "resourcepacks" / "dragonkind-evolved",
 ]
 OUT = ROOT / "server" / "resourcepacks" / "dist" / "ClaudeSMP-server-pack-26.3.zip"
 DOWNLOADS = "https://sirbepy.github.io/sirbepys-minecraft-server/downloads/"

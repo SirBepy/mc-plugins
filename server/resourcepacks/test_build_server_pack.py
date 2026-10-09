@@ -404,6 +404,21 @@ class BuiltPackTest(unittest.TestCase):
         cape = Image.open(io.BytesIO(self.entries[asset("claudesmp:entity/guild/examiner_cape", "textures", "png")]))
         self.assertEqual(cape.size, (64, 32))
 
+    def test_dragonkind_evolved_names_its_dragons(self):
+        # The datapack names each dragon with translation keys; without these the boss bar shows them raw.
+        lang = self.json("assets/minecraft/lang/en_us.json")
+        for key in ("dragon.dke.difficulty.ferocious", "dragon.dke.difficulty.ascended", "dragon.dke.type.zombie"):
+            self.assertIn(key, lang)
+
+    def test_dragonkind_evolved_items_resolve_to_their_models(self):
+        items = [n for n in self.entries if n.startswith("assets/dke/items/") and n.endswith(".json")]
+        self.assertTrue(items)
+        for name in items:
+            refs = re.findall(r'"model":\s*"([^"]+)"', self.entries[name].decode("utf-8"))
+            self.assertTrue(refs, name)
+            for ref in refs:
+                self.assertIn(asset(ref, "models", "json"), self.entries, f"{name} -> {ref}")
+
 
 if __name__ == "__main__":
     unittest.main()

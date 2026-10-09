@@ -51,10 +51,10 @@ are committed as files and copied into `world/datapacks` by `:server:assembleSer
   Ascended), crystal abilities, servants and its own portal loot; EndFight picks the tier for each
   fight (docs/endfight.md). Its license (github.com/kanokarob/Dragonkind-Evolved, license.txt)
   allows running it on a public server but forbids distributing the pack, whole or in part,
-  edited or not, without the author's written permission: so it is only committed here (private
-  repo) and installed on the server. Its custom items need its own resource pack
-  (`dragonkind-evolved-RP-by-kanokarob-v1.10.zip`, same Modrinth version), which must NOT be merged
-  into our published server pack for the same reason.
+  edited or not, without the author's written permission. Its dragon names and custom items need
+  its own resource pack (`dragonkind-evolved-RP-by-kanokarob-v1.10.zip`, same Modrinth version);
+  Joe got kanokarob's permission on 2026-10-09 to merge that into our join pack, which it now is
+  (`server/resourcepacks/dragonkind-evolved/`).
 
 ## Vanilla Tweaks (vanillatweaks.net), generated 2026-10-02 for Minecraft 26.3
 

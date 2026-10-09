@@ -1,0 +1,10 @@
+{
+    "layers": {
+        "wings": [
+            {
+                "texture": "dke:dragon_wings",
+                "use_player_texture": false
+            }
+        ]
+    }
+}

@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "down": "dke:block/dragonheart_anchor_top",
+    "east": "dke:block/dragonheart_anchor_side",
+    "north": "dke:block/dragonheart_anchor_side",
+    "particle": "dke:block/dragonheart_anchor_side",
+    "south": "dke:block/dragonheart_anchor_side",
+    "up": "dke:block/dragonheart_anchor_top",
+    "west": "dke:block/dragonheart_anchor_side"
+  }
+}
