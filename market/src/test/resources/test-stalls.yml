@@ -1,0 +1,121 @@
+# Test fixture only: mirrors the shape server/spawn-market/generate.mjs writes into the real
+# stalls.yml (head-stall, wanted-board, shops, no head-collector), so MarketLayout/Market/PriceList
+# tests don't depend on the live resource while another builder regenerates it (2026-10-09).
+sign-block: spruce_wall_sign
+price-lectern: {x: 415, y: 115, z: -865, facing: north}
+head-stall:
+  name: Heads
+  color: red
+  slots:
+    - {x: 430, y: 115, z: -856, facing: north}
+    - {x: 429, y: 115, z: -856, facing: north}
+    - {x: 428, y: 115, z: -856, facing: north}
+    - {x: 427, y: 115, z: -856, facing: north}
+wanted-board:
+  sign: {x: 440, y: 115, z: -856, facing: west}
+  head: {x: 440, y: 116, z: -856, facing: west}
+shops:
+  homes: {name: Homes, color: light_blue, sign: {x: 450, y: 115, z: -856, facing: west}}
+  cosmetics: {name: Cosmetics, color: pink, sign: {x: 451, y: 115, z: -856, facing: west}}
+stalls:
+  farmer:
+    name: Farmer
+    color: yellow
+    slots:
+      - {x: 420, y: 116, z: -882, facing: south}
+      - {x: 421, y: 116, z: -882, facing: south}
+      - {x: 422, y: 116, z: -882, facing: south}
+      - {x: 423, y: 116, z: -882, facing: south}
+    buys:
+      - {item: wheat, amount: 64, price: 6.4}
+      - {item: carrot, amount: 64, price: 6.4}
+      - {item: potato, amount: 64, price: 6.4}
+      - {item: beetroot, amount: 64, price: 6.4}
+      - {item: pumpkin, amount: 64, price: 12.8}
+      - {item: sugar_cane, amount: 64, price: 1.28}
+      - {item: melon_slice, amount: 64, price: 2.56}
+      - {item: cactus, amount: 64, price: 0.64}
+      - {item: bamboo, amount: 64, price: 0.64}
+  lumberjack:
+    name: Lumberjack
+    color: brown
+    slots:
+      - {x: 432, y: 116, z: -882, facing: south}
+      - {x: 433, y: 116, z: -882, facing: south}
+      - {x: 434, y: 116, z: -882, facing: south}
+    buys:
+      - {item: oak_log, amount: 64, price: 28.8}
+      - {item: spruce_log, amount: 64, price: 14.4}
+      - {item: birch_log, amount: 64, price: 28.8}
+      - {item: jungle_log, amount: 64, price: 14.4}
+      - {item: acacia_log, amount: 64, price: 28.8}
+      - {item: dark_oak_log, amount: 64, price: 14.4}
+      - {item: mangrove_log, amount: 64, price: 28.8}
+      - {item: cherry_log, amount: 64, price: 28.8}
+      - {item: pale_oak_log, amount: 64, price: 14.4}
+      - {item: crimson_stem, amount: 64, price: 34.56}
+      - {item: warped_stem, amount: 64, price: 34.56}
+  fishmonger:
+    name: Fishmonger
+    color: light_blue
+    slots:
+      - {x: 441, y: 116, z: -875, facing: west}
+      - {x: 441, y: 116, z: -874, facing: west}
+      - {x: 441, y: 116, z: -873, facing: west}
+    buys:
+      - {item: cod, amount: 64, price: 32}
+      - {item: salmon, amount: 64, price: 32}
+      - {item: pufferfish, amount: 16, price: 16}
+      - {item: tropical_fish, amount: 16, price: 16}
+      - {item: ink_sac, amount: 64, price: 6.4}
+  smith:
+    name: Smith
+    color: gray
+    slots:
+      - {x: 441, y: 116, z: -863, facing: west}
+      - {x: 441, y: 116, z: -862, facing: west}
+      - {x: 441, y: 116, z: -861, facing: west}
+    buys:
+      - {item: coal, amount: 64, price: 4}
+      - {item: raw_iron, amount: 64, price: 40}
+      - {item: raw_gold, amount: 64, price: 80}
+      - {item: raw_copper, amount: 64, price: 12.8}
+      - {item: diamond, amount: 16, price: 160}
+      - {item: ancient_debris, amount: 16, price: 480}
+      - {item: netherite_scrap, amount: 16, price: 496}
+  mob_drops:
+    name: Mob drops
+    color: green
+    slots:
+      - {x: 434, y: 116, z: -854, facing: north}
+      - {x: 433, y: 116, z: -854, facing: north}
+      - {x: 432, y: 116, z: -854, facing: north}
+    buys:
+      - {item: rotten_flesh, amount: 64, price: 0.64}
+      - {item: bone, amount: 64, price: 3.2}
+      - {item: string, amount: 64, price: 3.2}
+      - {item: feather, amount: 64, price: 3.2}
+      - {item: leather, amount: 64, price: 32}
+      - {item: rabbit_hide, amount: 64, price: 32}
+      - {item: gunpowder, amount: 64, price: 6.4}
+      - {item: spider_eye, amount: 64, price: 16}
+      - {item: slime_ball, amount: 64, price: 16}
+      - {item: zombie_head, amount: 1, price: 10}
+      - {item: skeleton_skull, amount: 1, price: 10}
+      - {item: creeper_head, amount: 1, price: 10}
+      - {item: piglin_head, amount: 1, price: 10}
+  rare_goods:
+    name: Rare goods
+    color: purple
+    slots:
+      - {x: 422, y: 116, z: -854, facing: north}
+      - {x: 421, y: 116, z: -854, facing: north}
+      - {x: 420, y: 116, z: -854, facing: north}
+    buys:
+      - {item: blaze_rod, amount: 16, price: 16}
+      - {item: membrane, amount: 16, price: 32}
+      - {item: ghast_tear, amount: 16, price: 160}
+      - {item: ender_pearl, amount: 16, price: 4}
+      - {item: breeze_rod, amount: 16, price: 32}
+      - {item: withersskull, amount: 1, price: 20}
+      - {item: dragon_head, amount: 1, price: 100}

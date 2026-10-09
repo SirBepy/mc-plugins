@@ -31,7 +31,9 @@ class PriceListTest {
     @BeforeEach
     void setUp() {
         MockBukkit.mock();
-        layout = MarketLayout.load(Objects.requireNonNull(getClass().getResourceAsStream("/stalls.yml")));
+        // A fixture, not the shipped stalls.yml: server/spawn-market/generate.mjs is regenerating
+        // that file to the head-stall/wanted-board/shops schema at the same time as this change.
+        layout = MarketLayout.load(Objects.requireNonNull(getClass().getResourceAsStream("/test-stalls.yml")));
         heads = MobHeads.load(Objects.requireNonNull(getClass().getResourceAsStream("/heads.yml")));
         var stream = Objects.requireNonNull(getClass().getResourceAsStream("/config.yml"));
         config = new MarketConfig(YamlConfiguration.loadConfiguration(new InputStreamReader(stream, StandardCharsets.UTF_8)));
@@ -66,11 +68,13 @@ class PriceListTest {
     }
 
     @Test
-    void shippedLayoutNamesItsStallsAndPlacesThePriceLectern() {
+    void shippedLayoutNamesItsStallsAndPlacesThePriceLecternAndTheHeadsStallAndWantedBoard() {
         assertEquals(List.of("Farmer", "Lumberjack", "Fishmonger", "Smith", "Mob drops", "Rare goods"),
                 layout.stalls().stream().map(Stall::name).toList());
         assertNotNull(layout.priceLectern(), "stalls.yml has a price-lectern");
-        assertNotNull(layout.headCollector(), "stalls.yml has a head-collector spot");
+        assertNotNull(layout.headStall(), "stalls.yml has a head-stall spot");
+        assertEquals(4, layout.headStall().slots().size());
+        assertNotNull(layout.wantedBoard(), "stalls.yml has a wanted-board spot");
     }
 
     @Test
@@ -90,7 +94,7 @@ class PriceListTest {
         for (MobHeads.Mob mob : heads.mobs()) {
             assertTrue(all.contains(PriceList.headsName(mob) + "\n  1 for "), mob.id());
         }
-        assertTrue(all.contains("Head collector\nAllay head\n  1 for $2.50"), "the collector's pages start with a heading");
+        assertTrue(all.contains("Heads\nAllay head\n  1 for $2.50"), "the Heads stall's pages start with a heading");
         assertTrue(all.contains("Axolotl heads\n  1 for $0.50 to $2.50"), "a mob with several looks shows its range");
         for (Component page : pages.subList(1, pages.size())) {
             assertTrue(plain(page).split("\n").length <= 14, plain(page));
@@ -119,7 +123,7 @@ class PriceListTest {
                 " - 16 diamond $150.00",
                 "Rare goods",
                 " - 1 wither skeleton skull $21.50",
-                "Head collector",
+                "Heads",
                 " - Breeze head $5.50",
                 " - Axolotl heads $0.55 to $2.75"), lines);
     }

@@ -3,8 +3,10 @@ version: ${version}
 main: dev.sirbepy.mc.market.MarketPlugin
 api-version: "26.2"
 author: sirbepy
-# The Head collector pays through Vault and shows Bedrock players (Floodgate) their own body.
-softdepend: [Vault, VaultUnlocked, floodgate]
+# The Heads stall and the Wanted board pay through Vault. No Floodgate dependency: the Heads stall
+# used to need it for its NPC's Bedrock body, removed 2026-10-09 now that spawn protection is off
+# and the stall is sign-based like every other.
+softdepend: [Vault, VaultUnlocked]
 
 permissions:
   market.price:
@@ -14,5 +16,8 @@ permissions:
     description: Use /market (today's buyers) and /market prices (the price book).
     default: true
   market.admin:
-    description: Force a new set of buyers at the spawn market.
+    description: Force a new set of buyers at the spawn market, and /cosmetic list/done/refund.
     default: op
+  market.cosmetic:
+    description: Spend a Cosmetic Token with /cosmetic <idea>.
+    default: true

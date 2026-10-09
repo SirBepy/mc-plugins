@@ -2,7 +2,6 @@ package dev.sirbepy.mc.market;
 
 import com.mojang.brigadier.Command;
 import io.papermc.paper.command.brigadier.Commands;
-import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.core.econ.VaultEconomy;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.milkbowl.vault.economy.Economy;
@@ -28,7 +27,11 @@ public final class MarketPlugin extends JavaPlugin {
 
     private final AtomicReference<MarketConfig> config = new AtomicReference<>();
     private Market market;
-    private HeadCollector collector;
+    private HeadsStall headsStall;
+    private WantedBoard wantedBoard;
+    private HomeShop homeShop;
+    private CosmeticShop cosmeticShop;
+    private CosmeticRequests cosmeticRequests;
 
     @Override
     public void onEnable() {
@@ -52,8 +55,21 @@ public final class MarketPlugin extends JavaPlugin {
         }
         market = new Market(layout, heads, config::get, this::period, new SecureRandom(),
                 new File(getDataFolder(), "state.yml"), getLogger());
-        collector = new HeadCollector(this, market, config::get, BedrockForms.create(this)::isBedrock, this::pay);
-        getServer().getPluginManager().registerEvents(collector, this);
+        headsStall = new HeadsStall(this, market, config::get, this::pay);
+        getServer().getPluginManager().registerEvents(headsStall, this);
+        wantedBoard = new WantedBoard(this, layout, config::get, this::period, new SecureRandom(), Instant::now,
+                () -> List.copyOf(getServer().getOnlinePlayers()), () -> List.of(getServer().getOfflinePlayers()),
+                this::pay, getServer(), new File(getDataFolder(), "wanted.yml"), getLogger());
+        getServer().getPluginManager().registerEvents(wantedBoard, this);
+        homeShop = new HomeShop(layout, config::get, this::charge, this::balance, this::pay,
+                new ConsoleHomeGrant(getServer()), new File(getDataFolder(), "homes.yml"), getLogger());
+        getServer().getPluginManager().registerEvents(homeShop, this);
+        CosmeticToken cosmeticToken = new CosmeticToken(this);
+        cosmeticShop = new CosmeticShop(layout, config::get, cosmeticToken, this::charge, this::balance);
+        getServer().getPluginManager().registerEvents(cosmeticShop, this);
+        cosmeticRequests = new CosmeticRequests(this, config::get, cosmeticToken, new File(getDataFolder(), "cosmetics.yml"), getLogger());
+        getServer().getPluginManager().registerEvents(cosmeticRequests, this);
+        CosmeticCommand cosmeticCommand = new CosmeticCommand(cosmeticRequests);
         PriceCommand price;
         try (InputStream stream = Objects.requireNonNull(getResource("prices.yml"), "prices.yml missing from the jar")) {
             price = new PriceCommand(PriceBook.load(stream), config::get, ItemStack::effectiveName, Enchantment::displayName);
@@ -64,15 +80,28 @@ public final class MarketPlugin extends JavaPlugin {
         // Signs are rewritten on every start too, in case the spawn-market datapack rebuilt the stalls.
         market.refresh();
         applyIfWorldLoaded();
+        wantedBoard.refresh();
+        wantedBoard.applyIfWorldLoaded();
+        World enableWorld = getServer().getWorld(config.get().world());
+        if (enableWorld != null) {
+            headsStall.removeOldNpcs(enableWorld);
+        }
 
         getServer().getScheduler().runTaskTimer(this, () -> {
-            if (market.refresh()) {
+            boolean rotated = market.refresh();
+            if (rotated) {
                 applyIfWorldLoaded();
                 config.get().messages().send(getServer(), "rotated");
             }
+            if (wantedBoard.refresh()) {
+                wantedBoard.applyIfWorldLoaded();
+            }
+            if (rotated) {
+                wantedBoard.broadcastRotated(getServer());
+            }
             World world = getServer().getWorld(config.get().world());
             if (world != null) {
-                collector.ensure(world);
+                headsStall.removeOldNpcs(world);
             }
         }, CHECK_TICKS, CHECK_TICKS);
 
@@ -84,6 +113,7 @@ public final class MarketPlugin extends JavaPlugin {
                         return Command.SINGLE_SUCCESS;
                     })
                     .build(), "Suggests a price for the item in your hand", List.of("price"));
+            cosmeticCommand.registerInto(event.registrar());
             event.registrar().register(Commands.literal("market")
                         .requires(src -> src.getSender().hasPermission("market.use") || src.getSender().hasPermission("market.admin"))
                         .executes(ctx -> today(ctx.getSource().getSender()))
@@ -100,6 +130,8 @@ public final class MarketPlugin extends JavaPlugin {
                                 .executes(ctx -> {
                                     market.rotate();
                                     applyIfWorldLoaded();
+                                    wantedBoard.rotate();
+                                    wantedBoard.applyIfWorldLoaded();
                                     config.get().messages().send(ctx.getSource().getSender(), "rotate-success");
                                     return Command.SINGLE_SUCCESS;
                                 }))
@@ -117,6 +149,7 @@ public final class MarketPlugin extends JavaPlugin {
     private int today(CommandSender sender) {
         PriceList.today(market.layout(), market::buying, market.wantedMobs(), market::headPrice, config.get())
                 .forEach(sender::sendMessage);
+        wantedBoard.todayLines().forEach(sender::sendMessage);
         return Command.SINGLE_SUCCESS;
     }
 
@@ -124,10 +157,25 @@ public final class MarketPlugin extends JavaPlugin {
     private boolean pay(Player player, double amount) {
         Economy economy = VaultEconomy.find(getServer());
         if (economy == null) {
-            getLogger().warning("Head collector: no Vault Economy provider registered; nothing bought.");
+            getLogger().warning("Market: no Vault Economy provider registered; nothing bought.");
             return false;
         }
         return economy.depositPlayer(player, amount).transactionSuccess();
+    }
+
+    /** Charges the Homes/Cosmetics shops' price: false on no economy, a short balance, or a failed withdrawal. */
+    private boolean charge(Player player, double amount) {
+        Economy economy = VaultEconomy.find(getServer());
+        if (economy == null || !economy.has(player, amount)) {
+            return false;
+        }
+        return economy.withdrawPlayer(player, amount).transactionSuccess();
+    }
+
+    /** The player's balance for a Homes/Cosmetics refusal message, or null when no economy is registered. */
+    private Double balance(Player player) {
+        Economy economy = VaultEconomy.find(getServer());
+        return economy == null ? null : economy.getBalance(player);
     }
 
     // stalls.yml and prices.yml ship inside the jar, so only config.yml can change without a restart.
@@ -149,5 +197,8 @@ public final class MarketPlugin extends JavaPlugin {
             return;
         }
         market.apply(world);
+        headsStall.apply(world);
+        homeShop.apply(world);
+        cosmeticShop.apply(world);
     }
 }

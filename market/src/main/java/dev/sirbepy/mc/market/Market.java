@@ -25,7 +25,7 @@ import java.util.logging.Logger;
  * The current market day's buyers per stall, each at a price rolled around its base. A market day is
  * whatever the {@code period} supplier says (an in-game day by default). Picks and prices are random
  * and saved to {@code state.yml}, so a restart keeps the day's market and nothing about the next one
- * can be worked out in advance. The Head collector's wanted mobs rotate with the stalls, each with
+ * can be worked out in advance. The Heads stall's wanted mobs rotate with the stalls, each with
  * its own price factor for the day.
  */
 public final class Market {
@@ -82,7 +82,10 @@ public final class Market {
         // After the stalls, so a seed's stall picks don't depend on the head catalogue.
         List<MobHeads.Mob> mobs = new ArrayList<>(heads.mobs());
         Collections.shuffle(mobs, random);
-        List<MobHeads.Mob> wanted = new ArrayList<>(mobs.subList(0, Math.min(cfg.headsPerDay(), mobs.size())));
+        // Capped by the Heads stall's own sign count too, same as a sell stall is capped by its slots.
+        int headSlots = layout.headStall() == null ? 0 : layout.headStall().slots().size();
+        int headCount = Math.min(Math.min(cfg.headsPerDay(), headSlots), mobs.size());
+        List<MobHeads.Mob> wanted = new ArrayList<>(mobs.subList(0, headCount));
         wanted.sort(Comparator.comparingInt(heads.mobs()::indexOf));
         Map<String, BigDecimal> factors = new LinkedHashMap<>();
         for (MobHeads.Mob mob : wanted) {
@@ -108,12 +111,12 @@ public final class Market {
         return base.multiply(factor).setScale(2, RoundingMode.HALF_UP).max(MIN_PRICE);
     }
 
-    /** Today's wanted mobs for the Head collector, in catalogue order. */
+    /** Today's wanted mobs for the Heads stall, in catalogue order. */
     public List<MobHeads.Mob> wantedMobs() {
         return headFactors.keySet().stream().map(heads::mob).filter(Objects::nonNull).toList();
     }
 
-    /** What the Head collector pays today for one of this head, or null when its mob isn't wanted today. */
+    /** What the Heads stall pays today for one of this head, or null when its mob isn't wanted today. */
     public BigDecimal headPrice(MobHeads.Head head) {
         BigDecimal factor = headFactors.get(head.mob());
         return factor == null ? null : scaled(head.price(), factor);

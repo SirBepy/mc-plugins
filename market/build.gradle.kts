@@ -12,7 +12,7 @@ dependencies {
     testImplementation("io.papermc.paper:paper-api:26.2.build.+")
 
     // Same coordinates dragonballs and guild already use: VaultUnlocked on the server serves the
-    // classic Vault Economy API the Head collector pays through.
+    // classic Vault Economy API the Heads stall and Wanted board pay through.
     compileOnly("com.github.MilkBowl:VaultAPI:1.7.1") {
         exclude(group = "org.bukkit")
     }

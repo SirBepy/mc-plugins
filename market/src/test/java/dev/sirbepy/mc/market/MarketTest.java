@@ -55,7 +55,9 @@ class MarketTest {
     @BeforeEach
     void setUp() {
         server = MockBukkit.mock();
-        layout = MarketLayout.load(Objects.requireNonNull(getClass().getResourceAsStream("/stalls.yml")));
+        // A fixture, not the shipped stalls.yml: server/spawn-market/generate.mjs is regenerating
+        // that file to the head-stall/wanted-board/shops schema at the same time as this change.
+        layout = MarketLayout.load(Objects.requireNonNull(getClass().getResourceAsStream("/test-stalls.yml")));
         heads = MobHeads.load(Objects.requireNonNull(getClass().getResourceAsStream("/heads.yml")));
         var stream = Objects.requireNonNull(getClass().getResourceAsStream("/config.yml"));
         config = new MarketConfig(YamlConfiguration.loadConfiguration(new InputStreamReader(stream, StandardCharsets.UTF_8)));
@@ -71,23 +73,28 @@ class MarketTest {
     }
 
     @Test
-    void shippedLayoutHasSixStallsWithThreeSpotsEach() {
+    void shippedLayoutHasSixStallsWithFourSlotsOnTheFarmerAndThreeOnEveryOtherStall() {
         assertEquals(List.of("farmer", "lumberjack", "fishmonger", "smith", "mob_drops", "rare_goods"),
                 layout.stalls().stream().map(Stall::id).toList());
+        assertEquals(4, layout.stalls().stream().filter(s -> s.id().equals("farmer")).findFirst().orElseThrow().slots().size());
         for (Stall stall : layout.stalls()) {
-            assertEquals(3, stall.slots().size(), stall.id());
+            if (!stall.id().equals("farmer")) {
+                assertEquals(3, stall.slots().size(), stall.id());
+            }
         }
         assertEquals(Material.SPRUCE_WALL_SIGN, layout.signBlock());
     }
 
     @Test
-    void eachStallBuysThreeDistinctItemsInPoolOrder() {
+    void eachStallBuysAsManyDistinctItemsAsItHasSignsInPoolOrder() {
         for (long seed = 0; seed < 200; seed++) {
             Market market = market(seed);
             market.rotate();
             for (Stall stall : layout.stalls()) {
                 List<Offer> buying = market.buying(stall.id());
-                assertEquals(3, buying.size(), stall.id() + " buys " + buying.size());
+                // items-per-stall is 4/4; every stall's pool has at least as many items as it has
+                // signs, so the cap-by-slot-count (Math.min(buys, slots)) is what actually limits it.
+                assertEquals(stall.slots().size(), buying.size(), stall.id() + " buys " + buying.size());
                 List<String> items = buying.stream().map(Offer::item).toList();
                 assertEquals(items.size(), new HashSet<>(items).size(), "duplicate offer at " + stall.id());
                 List<String> poolItems = stall.buys().stream().map(Offer::item).toList();
@@ -102,7 +109,7 @@ class MarketTest {
     void reloadedConfigAppliesFromTheNextRotation() {
         Market market = market(5);
         market.rotate();
-        assertEquals(3, market.buying("farmer").size());
+        assertEquals(4, market.buying("farmer").size());
 
         // What /market reload does: a fresh MarketConfig swapped into the supplier the Market reads.
         YamlConfiguration edited = YamlConfiguration.loadConfiguration(new InputStreamReader(
@@ -111,7 +118,7 @@ class MarketTest {
         edited.set("items-per-stall.max", 1);
         config = new MarketConfig(edited);
 
-        assertEquals(3, market.buying("farmer").size(), "today's picks stay until the market rotates");
+        assertEquals(4, market.buying("farmer").size(), "today's picks stay until the market rotates");
         market.rotate();
         for (Stall stall : layout.stalls()) {
             assertEquals(1, market.buying(stall.id()).size(), stall.id());
@@ -263,11 +270,12 @@ class MarketTest {
     }
 
     @Test
-    void headCollectorWantsAFewMobsADayAtRolledPricesThatSurviveARestart() {
+    void headsStallWantsAFewMobsADayAtRolledPricesThatSurviveARestart() {
         Market market = market(3);
         market.refresh();
         List<MobHeads.Mob> wanted = market.wantedMobs();
         assertEquals(config.headsPerDay(), wanted.size());
+        assertEquals(layout.headStall().slots().size(), wanted.size(), "matches the 4 head-stall signs");
         assertEquals(wanted.size(), new HashSet<>(wanted).size(), "distinct mobs");
         for (MobHeads.Mob mob : wanted) {
             for (MobHeads.Head head : mob.heads()) {
@@ -284,6 +292,19 @@ class MarketTest {
         assertFalse(restarted.refresh(), "same day");
         assertEquals(wanted, restarted.wantedMobs());
         assertEquals(market.headPrice(wanted.getFirst().heads().getFirst()), restarted.headPrice(wanted.getFirst().heads().getFirst()));
+    }
+
+    @Test
+    void headsStallCapsWantedMobsByItsOwnSlotCountNotJustConfigHeadsPerDay() {
+        // A head-stall with fewer signs than heads-per-day: the cap matches SignWriter's cap-by-slots
+        // on a regular stall (Math.min(stall.buys().size(), stall.slots().size())).
+        MarketLayout.HeadStall smallStall = new MarketLayout.HeadStall("Heads", layout.headStall().color(),
+                layout.headStall().slots().subList(0, 2));
+        MarketLayout small = new MarketLayout(layout.signBlock(), layout.priceLectern(), smallStall, layout.wantedBoard(),
+                layout.shops(), layout.stalls());
+        Market market = new Market(small, heads, () -> config, period::get, new Random(1), new File(dir, "state.yml"), LOG);
+        market.refresh();
+        assertEquals(2, market.wantedMobs().size(), "capped to the 2 signs, not the configured " + config.headsPerDay());
     }
 
     @Test
@@ -324,7 +345,7 @@ class MarketTest {
     void applyUsesTodaysPicksForEveryStall() {
         WorldMock world = server.addSimpleWorld("world");
         // MockBukkit has no lectern block state, so this test leaves the price lectern to e2e/market.mjs.
-        layout = new MarketLayout(layout.signBlock(), null, null, layout.stalls());
+        layout = new MarketLayout(layout.signBlock(), null, layout.headStall(), layout.wantedBoard(), layout.shops(), layout.stalls());
         Market market = market(5);
         market.refresh();
         market.apply(world);

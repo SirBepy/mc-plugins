@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * The market as text: the price book (every stall item and every Head collector mob at its base
+ * The market as text: the price book (every stall item and every Heads stall mob at its base
  * price, the middle of its daily roll) for /market prices and the Guide stall's lectern, and today's
  * buyers for /market today.
  */
@@ -31,7 +31,7 @@ final class PriceList {
     // Sign names Essentials needs because the vanilla id overflows a sign line, and that read badly
     // as words. Membrane reads fine as it is.
     private static final Map<String, String> SIGN_ALIASES = Map.of("withersskull", "wither_skeleton_skull");
-    static final String COLLECTOR = "Head collector";
+    private static final String DEFAULT_HEADS_STALL_NAME = "Heads";
 
     /** One priced line of the book or of /market: what, and for how much. */
     private record Entry(String name, String price) {
@@ -62,7 +62,7 @@ final class PriceList {
             addPages(pages, stall.name(), stall.buys().stream()
                     .map(o -> new Entry(name(o.item()), o.amount() + " for " + money(o.price()))).toList());
         }
-        addPages(pages, COLLECTOR, heads.mobs().stream()
+        addPages(pages, headsStallName(layout), heads.mobs().stream()
                 .map(m -> new Entry(headsName(m), "1 for " + range(m.minPrice(), m.maxPrice()))).toList());
         return pages;
     }
@@ -89,7 +89,7 @@ final class PriceList {
     }
 
     /**
-     * A heading, then a block per stall buying anything today and one for the Head collector: the
+     * A heading, then a block per stall buying anything today and one for the Heads stall: the
      * stall's name in its colour on its own line, then one line per item with its price.
      */
     static List<Component> today(MarketLayout layout, Function<String, List<Offer>> buying, List<MobHeads.Mob> wanted,
@@ -105,13 +105,18 @@ final class PriceList {
             }
         }
         if (!wanted.isEmpty()) {
-            block(lines, config, COLLECTOR, NamedTextColor.GOLD, wanted.stream().map(m -> {
+            block(lines, config, headsStallName(layout), NamedTextColor.GOLD, wanted.stream().map(m -> {
                 List<BigDecimal> prices = m.heads().stream().map(headPrice).toList();
                 return new Entry(headsName(m), range(prices.stream().min(BigDecimal::compareTo).orElseThrow(),
                         prices.stream().max(BigDecimal::compareTo).orElseThrow()));
             }).toList());
         }
         return lines;
+    }
+
+    /** The Heads stall's configured name, or a fallback when stalls.yml has no head-stall spot. */
+    private static String headsStallName(MarketLayout layout) {
+        return layout.headStall() == null ? DEFAULT_HEADS_STALL_NAME : layout.headStall().name();
     }
 
     private static void block(List<Component> lines, MarketConfig config, String title, TextColor color, List<Entry> entries) {
@@ -128,7 +133,7 @@ final class PriceList {
         return mob.name() + (mob.heads().size() == 1 ? " head" : " heads");
     }
 
-    private static String range(BigDecimal min, BigDecimal max) {
+    static String range(BigDecimal min, BigDecimal max) {
         return min.compareTo(max) == 0 ? money(min) : money(min) + " to " + money(max);
     }
 
