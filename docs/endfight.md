@@ -1,10 +1,10 @@
 # EndFight
 
 `endfight` redesigns the End main island into an illager-cult fortress around the 10 vanilla
-end-spike pillars and the exit portal. This is phase 1: the structures themselves, their
-protection, and rebuilding them after a dragon respawn regenerates the pillars. Later phases add
-the illager cult (guards, waves) and rewards on top of the guard posts and wave spawns this phase
-already records.
+end-spike pillars and the exit portal. Phase 1 built the structures themselves, their protection,
+and rebuilding them after a dragon respawn regenerates the pillars. Phase 2 (this doc's Cult and
+Perch gate sections) adds the illager cult itself - guards, waves, and a gate that keeps the dragon
+fighting instead of perching early.
 
 Built from the approved mockup (`.for_bepy/end-build/gen_island.py` and its renders), verified
 against vanilla's own end-spike/cage geometry by disassembling the 26.3 server jar
@@ -44,6 +44,36 @@ then. `EndFight` auto-builds the arena the moment it does see an End world with 
 live before the End is open. Set `arena.auto-build: false` in `config.yml` to require a manual
 `endfight build` instead.
 
+## The cult
+
+Illager guards hold every outpost, balcony, gatehouse and wall spot the arena recorded in phase 1.
+The dragon controls them and doesn't care if its own attacks hurt them - crystal blasts, wing/head
+hits and breath attacks near a guard still hurt it like any other mob, same as vanilla.
+
+- **Guards** spawn once a dragon is alive in the End, the arena is built, and a player has been
+  within 160 blocks of 0,0 in the last couple of seconds - one per post, plus a bonus mob once per
+  physical outpost/gatehouse (one vindicator per stair/ladder outpost tier, one evoker per
+  gatehouse). They hold their post: no wandering off, and a guard that strays or falls too far with
+  no target is walked or teleported straight back. They never hurt or target each other (the
+  dragon's attacks and a player's are the only things that land). When the dragon dies, every
+  surviving cultist vanishes with it in a puff of soul particles a couple of seconds later - unless
+  `cult.die-with-dragon` is off.
+- **Waves** pour out of all 4 fortress gates when the dragon's health crosses 75%, 50% and 25% of
+  its (possibly datapack-raised) max health, once per threshold per dragon. Each wave is bigger
+  with more players in the End near the portal, and a chat line announces it. A hard cap
+  (`cult.max-alive`, default 60) on live cult mobs holds regardless of how big a wave's math says it
+  should be.
+- Everything here is behind `cult.guards.enabled` / `cult.waves.enabled`, both on by default, plus
+  the composition and timing knobs in `config.yml`'s `cult` section.
+
+## Perch gate
+
+The dragon is meant to be fought down, not landed on early: while any pillar still has a living
+crystal, `endfight` keeps the dragon from phasing into landing on the exit portal (it stays in
+whatever phase it was already in - circling, strafing, whatever - so the fight just continues).
+Dying is never touched, and the 4 crystals players place on the exit portal during a dragon respawn
+never count as "a pillar is still guarded". Off switch: `perch-gate.enabled`.
+
 ## Commands
 
 All require `endfight.admin` (default: op).
@@ -57,6 +87,9 @@ All require `endfight.admin` (default: op).
 | `endfight reload` | Reloads `config.yml` |
 | `endfight rewards status` | Pending reward entries, and the current dragon's fighter count |
 | `endfight rewards test <player>` | Gives that player one reward bundle through the live delivery chain, no XP |
+| `endfight cult status` | Cult mobs alive, which wave thresholds each tracked dragon has crossed |
+| `endfight cult spawn` | Force-spawns guards now, ignoring the once-per-dragon rule |
+| `endfight cult clear` | Removes every live cult mob (testing/repair) |
 
 ## Rewards (phase 3)
 

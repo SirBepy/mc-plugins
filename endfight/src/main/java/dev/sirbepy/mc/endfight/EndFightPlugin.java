@@ -7,6 +7,11 @@ import dev.sirbepy.mc.endfight.arena.ArenaService;
 import dev.sirbepy.mc.endfight.arena.EndWorldLoadListener;
 import dev.sirbepy.mc.endfight.arena.RespawnRebuildListener;
 import dev.sirbepy.mc.endfight.command.EndFightCommand;
+import dev.sirbepy.mc.endfight.cult.CultCommand;
+import dev.sirbepy.mc.endfight.cult.CultFriendlyFire;
+import dev.sirbepy.mc.endfight.cult.CultGuards;
+import dev.sirbepy.mc.endfight.cult.CultWaves;
+import dev.sirbepy.mc.endfight.perch.PerchGateListener;
 import dev.sirbepy.mc.endfight.reward.DragonDeathListener;
 import dev.sirbepy.mc.endfight.reward.PendingRewardsStore;
 import dev.sirbepy.mc.endfight.reward.RewardJoinListener;
@@ -22,6 +27,7 @@ public final class EndFightPlugin extends JavaPlugin {
     private final AtomicReference<EndFightConfig> config = new AtomicReference<>();
     private ArenaRegistry registry;
     private ArenaService service;
+    private CultGuards cultGuards;
 
     @Override
     public void onEnable() {
@@ -42,19 +48,37 @@ public final class EndFightPlugin extends JavaPlugin {
             autoBuildIfEnabled();
         }
 
-        // --- Rewards (phase 3): who gets paid for fighting the dragon - see docs/endfight.md -----
+        // Phase 2: the illager cult guarding the arena, and the perch gate keeping the dragon off
+        // the exit portal while any pillar crystal survives. Each has its own config.yml switch.
+        cultGuards = new CultGuards(this, registry, () -> config.get().cult());
+        cultGuards.start();
+        getServer().getPluginManager().registerEvents(cultGuards, this);
+        getServer().getPluginManager().registerEvents(
+                new CultWaves(registry, () -> config.get().cult(), getLogger()), this);
+        getServer().getPluginManager().registerEvents(new CultFriendlyFire(), this);
+        getServer().getPluginManager().registerEvents(
+                new PerchGateListener(registry, () -> config.get().perchGate()), this);
+
+        // Phase 3: who gets paid for fighting the dragon, see docs/endfight.md.
         PendingRewardsStore pendingRewards = new PendingRewardsStore(new File(getDataFolder(), "pending-rewards.yml"), getLogger());
         RewardService rewards = new RewardService(this, config::get, pendingRewards);
         getServer().getPluginManager().registerEvents(new DragonDeathListener(rewards), this);
         getServer().getPluginManager().registerEvents(new RewardJoinListener(this, rewards), this);
-        // --- end rewards ---------------------------------------------------------------------------
 
-        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
-                new EndFightCommand(service, config::get, this::reload, rewards).registerInto(event.registrar()));
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
+            EndFightCommand command = new EndFightCommand(service, config::get, this::reload, rewards);
+            command.registerInto(event.registrar(), new CultCommand(cultGuards));
+        });
     }
 
-    /** Lets a later phase (the illager cult) hear about every (re)build without this plugin
-     * knowing it exists. */
+    @Override
+    public void onDisable() {
+        if (cultGuards != null) {
+            cultGuards.stop();
+        }
+    }
+
+    /** Lets a later phase hear about every (re)build without this plugin knowing it exists. */
     public void addArenaListener(ArenaListener listener) {
         registry.registerListener(listener);
     }

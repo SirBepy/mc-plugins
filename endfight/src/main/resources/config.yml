@@ -36,3 +36,84 @@ messages:
   clear-success: "<green>Arena cleared."
   clear-failed: "<red>Could not clear the arena; see console."
   reward-delivered: "<gold>The dragon's hoard: <xp> XP and a bundle went to your <where>."
+
+# The illager cult guarding the arena: guards on every outpost/balcony/gatehouse/wall, and waves
+# that pour out of the fortress gates as the dragon loses health. Short notice before the first
+# fight (2026-10-10), so every part of this has its own switch, default on.
+cult:
+  # Hard cap on live cult mobs at once (guards + wave mobs together) - a wave that would push past
+  # it just spawns fewer mobs, in composition order.
+  max-alive: 60
+  # When the dragon dies, every remaining cult mob dies with it in a puff of soul particles.
+  # Unconfirmed with Joe - off this switch if it turns out wrong.
+  die-with-dragon: true
+  guards:
+    enabled: true
+    # How far (horizontally, from 0,0) a player in the End has to be before guards spawn at all.
+    range: 160
+    # How often (in ticks) to check for "arena built + dragon alive + a player in range" before
+    # spawning guards for the first time this dragon.
+    check-interval-ticks: 40
+    # How often (in ticks) a guard's tether task re-checks its distance from its own post.
+    tether-interval-ticks: 20
+    # A guard with no current target wandering more than this many blocks from its post pathfinds
+    # straight back to it.
+    tether-range: 3
+    # A guard teleported back to its post if it fell this far below it with no target...
+    fall-teleport-distance: 6
+    # ...or wandered this far from it with no target.
+    wander-teleport-distance: 24
+    # Base mob per post, plus one bonus mob once per physical outpost/gatehouse (not per post -
+    # see GuardPlan's javadoc for how posts are grouped back into outposts/gatehouses).
+    composition:
+      STAIR_OUTPOST:
+        base: pillager
+        bonus: vindicator
+      LADDER_OUTPOST:
+        base: pillager
+      BALCONY:
+        base: pillager
+      GATEHOUSE:
+        base: pillager
+        bonus: evoker
+      WALL:
+        base: pillager
+  waves:
+    enabled: true
+    # How far (horizontally, from 0,0) a player in the End has to be to count towards a wave's size.
+    range: 160
+    # Fractions of the dragon's (possibly datapack-raised) max health that trigger a wave, each one
+    # only once per dragon.
+    thresholds: [0.75, 0.5, 0.25]
+    # Wave 1 at the first threshold, wave 2 at the second, wave 3 at the third - each wave's own
+    # full composition (not a delta from the last one). base is the mob count with no players
+    # around; per-n-players adds one more mob for every N players in range (1 = "per player").
+    compositions:
+      - entries:
+          - { type: pillager, base: 4, per-n-players: 1 }
+          - { type: vindicator, base: 2, per-n-players: 1 }
+      - entries:
+          - { type: pillager, base: 4, per-n-players: 1 }
+          - { type: vindicator, base: 2, per-n-players: 1 }
+          - { type: evoker, base: 1, per-n-players: 0 }
+      - entries:
+          - { type: pillager, base: 4, per-n-players: 1 }
+          - { type: vindicator, base: 2, per-n-players: 1 }
+          - { type: evoker, base: 1, per-n-players: 0 }
+          - { type: ravager, base: 1, per-n-players: 3 }
+  messages:
+    wave-announce: "<red>The cult answers the dragon's call!"
+
+# Keeps the dragon fighting instead of perching on the exit portal while any pillar's crystal is
+# still alive - the fight is meant to end by killing the dragon, not by it landing early.
+perch-gate:
+  enabled: true
+  # How close (blocks) an end crystal has to be to a pillar's own crystal spot to count as "that
+  # pillar is still guarded".
+  pillar-top-radius: 3
+  # Fallback only used if the arena registry has no pillars yet: any crystal within this many
+  # blocks horizontally of 0,0...
+  fallback-radius: 60
+  # ...and above this Y - keeps it from ever matching the 4 crystals players place on the exit
+  # portal itself during a respawn, which sit far below this.
+  fallback-min-y: 70

@@ -2,10 +2,12 @@ package dev.sirbepy.mc.endfight.command;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import dev.sirbepy.mc.endfight.EndFightConfig;
 import dev.sirbepy.mc.endfight.arena.ArenaRegistry;
 import dev.sirbepy.mc.endfight.arena.ArenaService;
+import dev.sirbepy.mc.endfight.cult.CultCommand;
 import dev.sirbepy.mc.endfight.reward.RewardService;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -17,8 +19,9 @@ import org.bukkit.entity.Player;
 
 import java.util.function.Supplier;
 
-/** {@code /endfight status|build|rebuild|clear|reload|rewards}, console+op only. Thin: every
- * branch calls straight into {@link ArenaService} or {@link RewardService}. */
+/** {@code /endfight status|build|rebuild|clear|reload|rewards}, plus whatever {@link CultCommand}
+ * attaches ({@code cult status|spawn|clear}), console+op only. Thin: every branch calls straight
+ * into {@link ArenaService} or {@link RewardService}. */
 public final class EndFightCommand {
 
     private final ArenaService service;
@@ -33,8 +36,8 @@ public final class EndFightCommand {
         this.rewards = rewards;
     }
 
-    public void registerInto(Commands registrar) {
-        registrar.register(Commands.literal("endfight")
+    public void registerInto(Commands registrar, CultCommand cultCommand) {
+        LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("endfight")
                 .requires(src -> src.getSender().hasPermission("endfight.admin"))
                 .then(Commands.literal("status").executes(this::status))
                 .then(Commands.literal("build").executes(this::build))
@@ -44,8 +47,8 @@ public final class EndFightCommand {
                 .then(Commands.literal("rewards")
                         .then(Commands.literal("status").executes(this::rewardsStatus))
                         .then(Commands.literal("test")
-                                .then(Commands.argument("player", StringArgumentType.word()).executes(this::rewardsTest))))
-                .build(), "Manage the End Fight arena");
+                                .then(Commands.argument("player", StringArgumentType.word()).executes(this::rewardsTest))));
+        registrar.register(cultCommand.attach(root).build(), "Manage the End Fight arena");
     }
 
     private int rewardsStatus(CommandContext<CommandSourceStack> ctx) {
