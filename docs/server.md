@@ -205,6 +205,14 @@ data on the live server, not in the repo: `/warp guild` (set by ImMijo, 2026-10-
 live got the two nodes from the console (`lp group default permission set huskhomes.command.warp true`,
 same for `warplist`).
 
+## Anti-xray (2026-10-09)
+
+Paper's built-in anti-xray, no plugin, engine-mode 3 (Joe's pick: fake ores like mode 2, at about
+half its join bandwidth). The Overworld settings live in `server/config/config/paper-world-defaults.yml`
+(ores hidden below y 64), the Nether's in `server/config/world/dimensions/minecraft/the_nether/paper-world.yml`
+(debris, quartz and gold up to y 128), and the End's override turns it off. All three are Paper's own
+recommended lists. Applies from the next restart after the files are uploaded; there is no reload.
+
 ## Phantoms (CoffiebagSupreme's Shenron wish, 2026-10-07)
 
 Granted by a 4-1 council vote in a toned-down, server-wide form, then extended by Joe the same night.

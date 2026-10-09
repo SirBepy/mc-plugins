@@ -15,39 +15,51 @@
 
 _version: 31
 anticheat:
+  # Paper's own Overworld recommendation for engine-mode 3 (docs.papermc.io/paper/anti-xray):
+  # stone below y 64 is sent with fake ores, so an xray client sees ores everywhere. Mode 3 over
+  # mode 2 because it randomizes per chunk layer, about half mode 2's join bandwidth (Joe,
+  # 2026-10-09). The Nether and the End override this in their own paper-world.yml under
+  # world/dimensions/minecraft/.
   anti-xray:
-    enabled: false
-    engine-mode: 1
+    enabled: true
+    engine-mode: 3
     hidden-blocks:
+    - air
     - copper_ore
     - deepslate_copper_ore
     - raw_copper_block
+    - diamond_ore
+    - deepslate_diamond_ore
     - gold_ore
     - deepslate_gold_ore
     - iron_ore
     - deepslate_iron_ore
     - raw_iron_block
-    - coal_ore
-    - deepslate_coal_ore
     - lapis_ore
     - deepslate_lapis_ore
-    - mossy_cobblestone
-    - obsidian
-    - chest
-    - diamond_ore
-    - deepslate_diamond_ore
     - redstone_ore
     - deepslate_redstone_ore
-    - clay
-    - emerald_ore
-    - deepslate_emerald_ore
-    - ender_chest
     lava-obscures: false
     max-block-height: 64
     replacement-blocks:
-    - stone
-    - oak_planks
+    - chest
+    - amethyst_block
+    - andesite
+    - budding_amethyst
+    - calcite
+    - coal_ore
+    - deepslate_coal_ore
     - deepslate
+    - diorite
+    - dirt
+    - emerald_ore
+    - deepslate_emerald_ore
+    - granite
+    - gravel
+    - oak_planks
+    - smooth_basalt
+    - stone
+    - tuff
     update-radius: 2
     use-permission: false
 chunks:

@@ -1,0 +1,8 @@
+# Per-world Paper config for the End, overriding config/paper-world-defaults.yml.
+# Anti-xray off here, as Paper's docs recommend: the End has no ores to hide, and the defaults'
+# Overworld lists would only cost bandwidth.
+
+_version: 31
+anticheat:
+  anti-xray:
+    enabled: false
