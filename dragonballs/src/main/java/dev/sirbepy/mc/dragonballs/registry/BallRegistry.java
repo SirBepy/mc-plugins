@@ -1,10 +1,12 @@
 package dev.sirbepy.mc.dragonballs.registry;
 
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
+import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.config.StoneMode;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -13,13 +15,12 @@ import org.bukkit.entity.Entity;
 import org.bukkit.inventory.PlayerInventory;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -46,10 +47,7 @@ public final class BallRegistry {
     private long wishCount;
 
     private BallScatterer scatterer;
-    private PlacedBallLook look = PlacedBallLook.NONE;
-    // Stars still PLACED on paper but already flying off after a wish, until their new spot lands;
-    // never shown again at the old spot (memory only: a restart mid-flight just shows the old spot).
-    private final Set<Integer> hidden = new HashSet<>();
+    private final PlacedLookTracker lookTracker = new PlacedLookTracker();
 
     public BallRegistry(File file, Logger logger, BallItems items, BallSet set) {
         this.store = new BallRegistryStore(file, logger);
@@ -74,16 +72,16 @@ public final class BallRegistry {
 
     /** Set once at startup, before {@link #showPlaced}. */
     public void setLook(PlacedBallLook look) {
-        this.look = look;
+        lookTracker.setLook(look);
     }
 
     /** Shows every PLACED ball's look; called once at startup, after {@link #setLook}. */
     public void showPlaced() {
         for (Ball ball : balls.values()) {
-            if (ball.state == BallState.PLACED && !hidden.contains(ball.star)) {
+            if (ball.state == BallState.PLACED && !lookTracker.isHidden(ball.star)) {
                 Location block = blockLocation(ball);
                 if (block != null) {
-                    look.show(set, ball.star, block, ball.stone);
+                    lookTracker.show(set, ball.star, block, ball.stone);
                 }
             }
         }
@@ -93,18 +91,17 @@ public final class BallRegistry {
     public void hidePlaced(int star) {
         Ball ball = balls.get(star);
         if (ball != null && ball.state == BallState.PLACED) {
-            hidden.add(star);
-            look.hide(set, star);
+            lookTracker.hide(set, star);
         }
     }
 
     /** Whether {@code star} is still PLACED on paper but already flying off after a wish. */
     public boolean isFlying(int star) {
-        return hidden.contains(star);
+        return lookTracker.isHidden(star);
     }
 
     public void glowPlaced(boolean on) {
-        look.glow(set, on);
+        lookTracker.glow(set, on);
     }
 
     public boolean hasSavedState() {
@@ -185,8 +182,7 @@ public final class BallRegistry {
         ball.holderName = null;
         ball.entityId = null;
         save();
-        hidden.remove(star);
-        look.show(set, star, location, stone);
+        lookTracker.show(set, star, location, stone);
     }
 
     /** {@code stone} carries over the item's own look: a stone ball stays stone while held, same as
@@ -265,7 +261,7 @@ public final class BallRegistry {
         int minX = chunkX * 16;
         int minZ = chunkZ * 16;
         for (Ball ball : balls.values()) {
-            if (ball.state != BallState.PLACED || hidden.contains(ball.star) || !worldName.equals(ball.worldName)) {
+            if (ball.state != BallState.PLACED || lookTracker.isHidden(ball.star) || !worldName.equals(ball.worldName)) {
                 continue;
             }
             int bx = (int) Math.floor(ball.x);
@@ -307,6 +303,22 @@ public final class BallRegistry {
             ball.stone = true;
         }
         save();
+    }
+
+    /** Starts the stone cooldown using {@code config}'s configured mode/duration: the same rule a
+     * granted wish applies (see {@code SummonSessionManager.applyStoneUntil}, which now delegates
+     * here). Used by an admin {@code stone} scatter that finds no cooldown already running, so the
+     * set stays as consistently dormant as a wish-stoned one. Never called while already dormant:
+     * the caller keeps a running cooldown's own end time instead of resetting it to the config
+     * default. */
+    public void applyStoneUntil(DragonBallsConfig config, long nowMillis) {
+        if (config.stoneMode() == StoneMode.MINECRAFT_DAYS) {
+            World world = set.world(config);
+            long currentDay = world == null ? 0 : Math.floorDiv(world.getFullTime(), 24000L);
+            setStoneUntil(StoneMode.MINECRAFT_DAYS, currentDay + config.stoneDays());
+        } else {
+            setStoneUntil(StoneMode.REAL_HOURS, nowMillis + Duration.ofHours(config.stoneRealHours()).toMillis());
+        }
     }
 
     /** True once the stone cooldown has elapsed (or none is pending). */
@@ -354,8 +366,8 @@ public final class BallRegistry {
                 }
                 case PLACED -> {
                     Location block = blockLocation(ball);
-                    if (block != null && !hidden.contains(ball.star)) {
-                        look.show(set, ball.star, block, false);
+                    if (block != null && !lookTracker.isHidden(ball.star)) {
+                        lookTracker.show(set, ball.star, block, false);
                     }
                 }
                 case DROPPED -> swapDroppedEntityIfLoaded(ball);
@@ -413,8 +425,7 @@ public final class BallRegistry {
 
     private void leavePlaced(Ball ball) {
         if (ball.state == BallState.PLACED) {
-            hidden.remove(ball.star);
-            look.hide(set, ball.star);
+            lookTracker.leave(set, ball.star);
         }
     }
 

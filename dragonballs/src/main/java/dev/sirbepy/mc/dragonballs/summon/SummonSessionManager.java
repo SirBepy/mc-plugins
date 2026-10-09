@@ -2,7 +2,6 @@ package dev.sirbepy.mc.dragonballs.summon;
 
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
-import dev.sirbepy.mc.dragonballs.config.StoneMode;
 import dev.sirbepy.mc.dragonballs.effects.DragonType;
 import dev.sirbepy.mc.dragonballs.effects.SummonEffects;
 import dev.sirbepy.mc.dragonballs.effects.SummonScene;
@@ -21,7 +20,6 @@ import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -308,7 +306,7 @@ public final class SummonSessionManager {
         }
         Location center = s.scene.center();
         registry.setLastSummon(center);
-        applyStoneUntil(registry, s.set);
+        applyStoneUntil(registry);
         Map<Integer, Location> destinations = registry.scatterAll(center, true);
         if (disabling) {
             effects.shutdown();
@@ -319,15 +317,8 @@ public final class SummonSessionManager {
         session = null;
     }
 
-    private void applyStoneUntil(BallRegistry registry, BallSet set) {
-        DragonBallsConfig cfg = config.get();
-        if (cfg.stoneMode() == StoneMode.MINECRAFT_DAYS) {
-            World world = set.world(cfg);
-            long currentDay = world == null ? 0 : Math.floorDiv(world.getFullTime(), 24000L);
-            registry.setStoneUntil(StoneMode.MINECRAFT_DAYS, currentDay + cfg.stoneDays());
-        } else {
-            registry.setStoneUntil(StoneMode.REAL_HOURS, clock.getAsLong() + Duration.ofHours(cfg.stoneRealHours()).toMillis());
-        }
+    private void applyStoneUntil(BallRegistry registry) {
+        registry.applyStoneUntil(config.get(), clock.getAsLong());
     }
 
     private void speak(SummonSession s, String text) {

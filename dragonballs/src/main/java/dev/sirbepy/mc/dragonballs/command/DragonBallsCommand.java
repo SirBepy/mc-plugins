@@ -140,6 +140,16 @@ public final class DragonBallsCommand {
         for (BallView view : registry.getBalls()) {
             teardown(registry, view);
         }
+        // Keep isDormant() agreeing with the look the new balls are about to get: a plain scatter wakes
+        // the set (Joe, 2026-10-09), a stone scatter starts the usual wish cooldown unless one is already
+        // running (a live re-scatter mid-cooldown must not reset a wish's own end time).
+        if (stone) {
+            if (!registry.isDormant()) {
+                registry.applyStoneUntil(config.get(), System.currentTimeMillis());
+            }
+        } else {
+            registry.clearStone();
+        }
         registry.scatterAll(center, stone);
         config.get().messages().send(sender, "scatter-success");
         return Command.SINGLE_SUCCESS;

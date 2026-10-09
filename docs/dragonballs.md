@@ -270,7 +270,10 @@ is), `dragonballs give <player> <star> [overworld|nether|end]`, `dragonballs sca
 early; no set = all), `dragonballs reload`, and `shenron summon <player> <shenron|porunga>
 [overworld|nether|end]` (summons for a player whose 7 balls of a set are already placed together,
 same checks as right-clicking except the radar: it neither needs nor uses one; no set = the first
-ready set).
+ready set). A scatter always leaves a summon attempt refused as stone exactly when the set's balls
+look stone: plain `dragonballs scatter <set>` wakes the set (same as `wake`) so the fresh balls are
+summonable right away, while `dragonballs scatter <set> stone` starts the usual wish cooldown unless
+one is already running, in which case the running cooldown's own end time is left alone.
 
 Granting a wish: run the vanilla commands that deliver it (`minecraft:give`, `minecraft:item modify`,
 `minecraft:attribute`, `minecraft:xp`, `eco give` for money, and so on; `minecraft:` prefixes because

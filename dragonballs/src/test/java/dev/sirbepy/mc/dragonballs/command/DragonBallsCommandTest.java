@@ -2,6 +2,7 @@ package dev.sirbepy.mc.dragonballs.command;
 
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
+import dev.sirbepy.mc.dragonballs.config.StoneMode;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
 import dev.sirbepy.mc.dragonballs.placed.FloatingBalls;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DragonBallsCommandTest {
@@ -84,5 +86,42 @@ class DragonBallsCommandTest {
         assertTrue(balls.displayOf(BallSet.NETHER, 1).isEmpty(), "the old ball doesn't linger until the new spot lands");
         assertTrue(world.getEntitiesByClass(Interaction.class).isEmpty());
         assertEquals(1, scatterCenters.size());
+    }
+
+    // Reproduces the 2026-10-08 live mismatch: 57ca's plain re-scatter during a stone window left
+    // the Nether set refusing summons as stone while its fresh balls weren't stone-looking.
+    @Test
+    void scatterWithoutStoneWakesAnAlreadyDormantSet() {
+        nether.setLastSummon(new Location(world, 0, 40, 0));
+        nether.setStoneUntil(StoneMode.MINECRAFT_DAYS, 999);
+        assertTrue(nether.isDormant());
+
+        command.scatter(server.getConsoleSender(), BallSet.NETHER, false);
+
+        assertFalse(nether.isDormant(), "a plain scatter must wake the set, matching the non-stone balls it just placed");
+    }
+
+    // The reverse mismatch: an admin stone-scatter with no cooldown running placed stone-looking
+    // balls that a summon attempt would never actually refuse.
+    @Test
+    void scatterWithStoneStartsTheCooldownWhenNoneIsRunning() {
+        nether.setLastSummon(new Location(world, 0, 40, 0));
+        assertFalse(nether.isDormant());
+
+        command.scatter(server.getConsoleSender(), BallSet.NETHER, true);
+
+        assertTrue(nether.isDormant(), "a stone scatter must leave the set dormant, matching the stone balls it just placed");
+    }
+
+    @Test
+    void scatterWithStoneKeepsAnAlreadyRunningCooldownsEndTime() {
+        nether.setLastSummon(new Location(world, 0, 40, 0));
+        nether.setStoneUntil(StoneMode.MINECRAFT_DAYS, 42);
+
+        command.scatter(server.getConsoleSender(), BallSet.NETHER, true);
+
+        assertTrue(nether.isDormant());
+        assertFalse(nether.isStoneExpired(3, 0),
+                "a re-scatter mid-cooldown must not reset a wish's own end time to the config default");
     }
 }
