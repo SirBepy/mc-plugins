@@ -10,8 +10,8 @@ import org.bukkit.plugin.Plugin;
 /**
  * When a fresh Ender Dragon spawns in the End, vanilla has just regenerated every end-spike pillar
  * ({@code EndSpikeFeature} runs again as part of the respawn sequence, clearing each pillar's own
- * footprint box and rebuilding its obsidian cylinder from scratch - see
- * {@link Geometry#RESPAWN_CLEAR_Y}), eating anything of ours that sat on one. Schedule a rescan +
+ * square footprint above y 65 and rebuilding its obsidian cylinder from scratch, see
+ * {@link Geometry}), eating the parts of ours closest to each pillar. Schedule a rescan +
  * rebuild a couple seconds later so the structures reappear on the regenerated pillars.
  */
 public final class RespawnRebuildListener implements Listener {

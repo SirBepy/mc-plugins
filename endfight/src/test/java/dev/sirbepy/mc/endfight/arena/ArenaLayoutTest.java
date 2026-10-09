@@ -40,6 +40,18 @@ class ArenaLayoutTest {
         assertEquals(layout.waveSpawns(), again.waveSpawns());
     }
 
+    // ArenaBuilder skips a block whose id the server rejects with only a log warning, so a renamed
+    // block (26.x calls the chain iron_chain) would quietly leave holes in the arena.
+    @Test
+    void everyPlacementNamesABlockTheServerKnows() {
+        for (Placement placement : layout.placements()) {
+            String id = placement.blockData().replaceFirst("\\[.*$", "");
+            org.bukkit.Material material = org.bukkit.Material.matchMaterial(id);
+            assertTrue(material != null && material.isBlock(), "unknown block " + id + " at "
+                    + placement.x() + "," + placement.y() + "," + placement.z());
+        }
+    }
+
     @Test
     void everyConsecutiveTreadIsChebyshevAdjacentAndExactlyOneStepHigher() {
         assertFalse(layout.treads().isEmpty());
@@ -47,40 +59,116 @@ class ArenaLayoutTest {
         for (Tread t : layout.treads()) {
             byPillarAndLane.computeIfAbsent(t.pillarCx() + "," + t.pillarCz() + "," + t.lane(), k -> new ArrayList<>()).add(t);
         }
-        for (List<Tread> treads : byPillarAndLane.values()) {
+        for (Map.Entry<String, List<Tread>> lane : byPillarAndLane.entrySet()) {
+            if (!lane.getKey().endsWith(",outer")) {
+                continue;
+            }
+            List<Tread> treads = lane.getValue();
             for (int i = 1; i < treads.size(); i++) {
                 Tread prev = treads.get(i - 1);
                 Tread cur = treads.get(i);
-                int chebyshev = Math.max(Math.abs(cur.x() - prev.x()), Math.abs(cur.z() - prev.z()));
-                assertTrue(chebyshev <= 1, "gap of " + chebyshev + " between " + prev + " and " + cur);
+                int sideSteps = Math.abs(cur.x() - prev.x()) + Math.abs(cur.z() - prev.z());
+                assertEquals(1, sideSteps, "the walking lane should step one block to the side between " + prev + " and " + cur);
                 assertEquals(prev.y() + 1, cur.y(), "tread should climb exactly 1 block at a time: " + prev + " -> " + cur);
             }
         }
     }
 
     @Test
-    void everyTreadHasASolidSupportBlockDirectlyBelowIt() {
-        Set<String> solidBelow = new HashSet<>();
-        for (Placement p : layout.placements()) {
-            if (p.blockData().equals("minecraft:polished_blackstone_bricks")) {
-                solidBelow.add(p.x() + "," + p.y() + "," + p.z());
+    void everyInnerTreadSitsBesideAnOuterTreadAtTheSameHeight() {
+        Set<String> outer = new HashSet<>();
+        for (Tread t : layout.treads()) {
+            if (t.lane().equals("outer")) {
+                outer.add(t.pillarCx() + "," + t.pillarCz() + "," + t.y() + ":" + t.x() + "," + t.z());
             }
         }
         for (Tread t : layout.treads()) {
-            assertTrue(solidBelow.contains(t.x() + "," + (t.y() - 1) + "," + t.z()),
-                    "no support under tread " + t);
+            if (!t.lane().equals("inner")) {
+                continue;
+            }
+            String prefix = t.pillarCx() + "," + t.pillarCz() + "," + t.y() + ":";
+            boolean beside = outer.contains(prefix + (t.x() + 1) + "," + t.z()) || outer.contains(prefix + (t.x() - 1) + "," + t.z())
+                    || outer.contains(prefix + t.x() + "," + (t.z() + 1)) || outer.contains(prefix + t.x() + "," + (t.z() - 1));
+            assertTrue(beside, "inner tread " + t + " has no outer tread beside it");
         }
     }
 
     @Test
-    void nothingIsPlacedInsideAnyPillarsCylinderOrItsRespawnClearBox() {
-        for (Placement p : layout.placements()) {
-            if (p.blockData().equals("minecraft:iron_bars")) {
-                continue; // the cage is the one sanctioned on-top-of-a-pillar exception
-            }
-            assertFalse(Geometry.violatesAnyPillar(pillars, p.x(), p.y(), p.z()),
-                    "placement " + p + " is inside a pillar's cylinder or respawn-clear box");
+    void everyTreadStandsOnASolidBlockOrTheTreadBelowIt() {
+        Map<String, String> at = blocksByPosition();
+        for (Tread t : layout.treads()) {
+            String below = at.get(t.x() + "," + (t.y() - 1) + "," + t.z());
+            assertTrue(below != null && !below.equals("minecraft:air"), "nothing under tread " + t);
         }
+    }
+
+    @Test
+    void everyTreadHasTwoClearBlocksAboveIt() {
+        Map<String, String> at = blocksByPosition();
+        for (Tread t : layout.treads()) {
+            for (int dy = 1; dy <= 2; dy++) {
+                String above = at.get(t.x() + "," + (t.y() + dy) + "," + t.z());
+                assertTrue(above == null || above.equals("minecraft:air"),
+                        "tread " + t + " has " + above + " " + dy + " above it, so nobody can climb past");
+            }
+        }
+    }
+
+    @Test
+    void eachSpiralClimbsAllTheWayToItsBalconyFloor() {
+        for (Pillar p : tallPillars()) {
+            int top = layout.treads().stream().filter(t -> t.pillarCx() == p.cx() && t.pillarCz() == p.cz())
+                    .mapToInt(Tread::y).max().orElseThrow();
+            assertEquals(p.topY() - 4, top, "stairs on " + p + " stop short of the balcony");
+        }
+    }
+
+    @Test
+    void laddersFaceAwayFromThePillarHoldingThemAndReachTheBalcony() {
+        for (Pillar p : shortPillars()) {
+            List<Placement> ladders = layout.placements().stream()
+                    .filter(pl -> pl.blockData().startsWith("minecraft:ladder")
+                            && Math.abs(pl.x() - p.cx()) <= p.radius() + 1 && Math.abs(pl.z() - p.cz()) <= p.radius() + 1)
+                    .toList();
+            assertFalse(ladders.isEmpty(), "no ladder on " + p);
+            for (Placement ladder : ladders) {
+                assertEquals("minecraft:ladder[facing=north]", ladder.blockData());
+                // facing north means the block holding it is to the south (+z)
+                assertTrue(Geometry.insideCylinder(p, ladder.x(), ladder.y(), ladder.z() + 1),
+                        "ladder " + ladder + " has no obsidian behind it");
+            }
+            assertEquals(p.topY() - 4, ladders.stream().mapToInt(Placement::y).max().orElseThrow(),
+                    "ladder on " + p + " stops short of the balcony");
+        }
+    }
+
+    @Test
+    void pillarGuardPostsStandOnAFloorWithRoomAbove() {
+        Map<String, String> at = blocksByPosition();
+        for (GuardPost g : layout.guardPosts()) {
+            if (g.kind() == GuardKind.GATEHOUSE || g.kind() == GuardKind.WALL) {
+                continue;
+            }
+            assertTrue(at.containsKey(g.x() + "," + (g.y() - 1) + "," + g.z()), "no floor under guard post " + g);
+            assertFalse(at.containsKey(g.x() + "," + g.y() + "," + g.z()), "guard post " + g + " is inside a block");
+            assertFalse(at.containsKey(g.x() + "," + (g.y() + 1) + "," + g.z()), "no headroom at guard post " + g);
+        }
+    }
+
+    @Test
+    void nothingReplacesAPillarsObsidian() {
+        for (Placement p : layout.placements()) {
+            assertFalse(Geometry.insideAnyPillar(pillars, p.x(), p.y(), p.z()), "placement " + p + " is inside a pillar");
+        }
+    }
+
+    /** The block each position ends up as, last placement winning, the way ArenaBuilder applies them. */
+    private Map<String, String> blocksByPosition() {
+        Map<String, String> at = new HashMap<>();
+        for (Placement p : layout.placements()) {
+            at.put(p.x() + "," + p.y() + "," + p.z(), p.blockData());
+        }
+        return at;
     }
 
     @Test
@@ -128,7 +216,29 @@ class ArenaLayoutTest {
         for (Placement p : fortress.placements()) {
             double distance = Math.hypot(p.x(), p.z());
             assertTrue(distance <= 22.0, "fortress block " + p + " is further than 22 from the portal");
-            assertTrue(distance >= 14.0, "fortress block " + p + " is above the open courtyard");
+            // Paving at or below the surface and air cleared out of the gate paths may reach inside.
+            if (p.y() > EndFightTestSupport.SURFACE_Y && !p.blockData().equals("minecraft:air")) {
+                assertTrue(distance >= 14.0, "fortress block " + p + " is above the open courtyard");
+            }
+        }
+    }
+
+    @Test
+    void everyGatePassageIsClearedAndPaved() {
+        FortressResult fortress = FortressStructures.build(EndFightTestSupport.SURFACE_Y);
+        Map<String, String> at = new HashMap<>();
+        for (Placement p : fortress.placements()) {
+            at.put(p.x() + "," + p.y() + "," + p.z(), p.blockData());
+        }
+        int y = EndFightTestSupport.SURFACE_Y;
+        for (int[] gate : new int[][] {{0, -1}, {0, 1}, {1, 0}, {-1, 0}}) {
+            for (int d = 11; d <= 20; d++) {
+                int x = gate[0] * d;
+                int z = gate[1] * d;
+                assertEquals("minecraft:polished_blackstone_bricks", at.get(x + "," + y + "," + z), "no paving at " + x + "," + z);
+                assertEquals("minecraft:air", at.get(x + "," + (y + 1) + "," + z), "gate path blocked at " + x + "," + z);
+                assertEquals("minecraft:air", at.get(x + "," + (y + 2) + "," + z), "gate path blocked at " + x + "," + z);
+            }
         }
     }
 

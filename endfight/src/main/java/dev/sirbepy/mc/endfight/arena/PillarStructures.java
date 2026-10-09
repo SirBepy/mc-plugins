@@ -1,17 +1,22 @@
 package dev.sirbepy.mc.endfight.arena;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static dev.sirbepy.mc.endfight.arena.Geometry.cardinalFacing;
 import static dev.sirbepy.mc.endfight.arena.Geometry.round;
-import static dev.sirbepy.mc.endfight.arena.Geometry.squarePoint;
-import static dev.sirbepy.mc.endfight.arena.Geometry.violatesAnyPillar;
 
 /**
- * Per-pillar structures, ported from gen_island.py's pillar-level functions: the 5 tallest pillars
- * get a spiral staircase + outposts + a top balcony, the 5 shortest get a ladder strip, a halfway
- * outpost, a top balcony and the vanilla cage shape around every one of their crystals.
+ * Per-pillar structures, ported from gen_island.py's generate_pillars: the 5 tallest pillars get a
+ * spiral staircase, two outposts and a top balcony, the 5 shortest get a ladder, a halfway outpost,
+ * a top balcony and vanilla's cage around the crystal. Rings and stair lanes are circles around the
+ * pillar exactly as in the approved mockup.
+ *
+ * <p>Everything is collected per position, so a later block replaces an earlier one at the same
+ * spot: a tread or ladder at an outpost's height becomes part of that floor, and the two blocks
+ * above every tread are cleared, which cuts the hole each staircase climbs through.
  */
 final class PillarStructures {
 
@@ -29,167 +34,285 @@ final class PillarStructures {
             new BannerPattern("light_gray", "circle"),
             new BannerPattern("black", "border"));
 
+    private static final String FLOOR = "minecraft:polished_blackstone_bricks";
+    private static final String FENCE = "minecraft:dark_oak_fence";
+
     private PillarStructures() {
     }
 
     static PillarResult tallPillar(Pillar p, List<Pillar> allPillars) {
-        List<Placement> placements = new ArrayList<>();
+        Blocks blocks = new Blocks(allPillars);
         List<GuardPost> guards = new ArrayList<>();
-        int balconyY = p.topY() - 1 - 3;
+        int baseY = p.surfaceY() + 1;
+        int balconyY = p.topY() - 4;
+        int third = baseY + (balconyY - baseY) / 3;
+        int twoThird = baseY + 2 * (balconyY - baseY) / 3;
+        double r = p.radius();
 
-        List<Tread> treads = spiralStaircase(p, allPillars, p.surfaceY(), balconyY, placements);
+        ring(p, blocks, third, r + 1, r + 3, true, true, 3, GuardKind.STAIR_OUTPOST, guards);
+        ring(p, blocks, twoThird, r + 1, r + 3, false, true, 2, GuardKind.STAIR_OUTPOST, guards);
+        ring(p, blocks, balconyY, r + 0.5, r + 2, true, false, 2, GuardKind.BALCONY, guards);
+        List<Tread> treads = spiralStaircase(p, blocks, baseY, balconyY);
 
-        int third = p.surfaceY() + (balconyY - p.surfaceY()) / 3;
-        int twoThird = p.surfaceY() + 2 * (balconyY - p.surfaceY()) / 3;
-        // baseRadius is always pillar.radius()+2, never a bare literal: it must scale with the
-        // pillar (see outpostRing's javadoc) or a wide pillar's box swallows the whole ring.
-        int baseRadius = p.radius() + 2;
-        outpostRing(p, allPillars, third, baseRadius, true, true, 3, GuardKind.STAIR_OUTPOST, placements, guards);
-        outpostRing(p, allPillars, twoThird, baseRadius, false, true, 2, GuardKind.STAIR_OUTPOST, placements, guards);
-        outpostRing(p, allPillars, balconyY, baseRadius, true, false, 2, GuardKind.BALCONY, placements, guards);
-
-        return new PillarResult(placements, guards, treads);
+        return new PillarResult(blocks.placements(), standable(guards, blocks), treads);
     }
 
     static PillarResult shortPillar(Pillar p, List<Pillar> allPillars) {
-        List<Placement> placements = new ArrayList<>();
+        Blocks blocks = new Blocks(allPillars);
         List<GuardPost> guards = new ArrayList<>();
-        int balconyY = p.topY() - 1 - 3;
+        int baseY = p.surfaceY() + 1;
+        int balconyY = p.topY() - 4;
+        int half = baseY + (balconyY - baseY) / 2;
+        double r = p.radius();
 
-        placements.addAll(cage(p));
-        placements.addAll(ladderStrip(p, allPillars));
+        ring(p, blocks, half, r + 1, r + 3, true, true, 2, GuardKind.LADDER_OUTPOST, guards);
+        ring(p, blocks, balconyY, r + 0.5, r + 2, false, false, 2, GuardKind.BALCONY, guards);
+        ladder(p, blocks, baseY, balconyY);
+        cage(p, blocks);
 
-        int half = p.surfaceY() + (balconyY - p.surfaceY()) / 2;
-        int baseRadius = p.radius() + 2;
-        outpostRing(p, allPillars, half, baseRadius, true, true, 2, GuardKind.LADDER_OUTPOST, placements, guards);
-        outpostRing(p, allPillars, balconyY, baseRadius, false, false, 2, GuardKind.BALCONY, placements, guards);
-
-        return new PillarResult(placements, guards, List.of());
+        return new PillarResult(blocks.placements(), standable(guards, blocks), List.of());
     }
 
     /** Vanilla's own cage shape (EndSpikeFeature.placeSpike, isGuarded branch, javap-verified): a
-     * 5x5 lattice from topY to topY+3, iron bars on every edge column and the full roof at topY+3.
-     * Deliberately NOT run through the box/cylinder exclusion check below - this is the one
-     * sanctioned "on top of a pillar" exception. */
-    private static List<Placement> cage(Pillar p) {
-        List<Placement> placements = new ArrayList<>(100);
+     * 5x5 lattice from topY to topY+3, iron bars on every edge column and the full roof at topY+3. */
+    private static void cage(Pillar p, Blocks blocks) {
         for (int dx = -2; dx <= 2; dx++) {
             for (int dz = -2; dz <= 2; dz++) {
                 boolean edge = Math.abs(dx) == 2 || Math.abs(dz) == 2;
                 for (int dy = 0; dy <= 3; dy++) {
                     if (edge || dy == 3) {
-                        placements.add(new Placement(p.cx() + dx, p.topY() + dy, p.cz() + dz, "minecraft:iron_bars"));
+                        blocks.put(p.cx() + dx, p.topY() + dy, p.cz() + dz, "minecraft:iron_bars");
                     }
                 }
             }
         }
-        return placements;
     }
 
-    /** A ladder strip up one face. On a cardinal axis (dz = radius+1, dx = 0), so it's always
-     * exactly 1 block outside the respawn box regardless of pillar radius - no diagonal risk the
-     * way a ring has, so this needs no square-metric adjustment. */
-    private static List<Placement> ladderStrip(Pillar p, List<Pillar> allPillars) {
-        List<Placement> placements = new ArrayList<>();
+    /** A ladder up the north face, from the ground to the balcony floor, through a hole in each ring
+     * floor. A ladder faces away from the block holding it, so north of the pillar it faces north. */
+    private static void ladder(Pillar p, Blocks blocks, int baseY, int balconyY) {
+        int x = p.cx();
         int z = p.cz() - p.radius() - 1;
-        for (int y = p.surfaceY(); y < p.topY() - 4; y++) {
-            addIfSafe(placements, allPillars, p.cx(), y, z, "minecraft:ladder[facing=south]");
+        for (int y = baseY; y <= balconyY; y++) {
+            blocks.put(x, y, z, "minecraft:ladder[facing=north]");
         }
-        return placements;
+        // Room to climb off the top onto the balcony.
+        blocks.remove(x, balconyY + 1, z);
+        blocks.remove(x, balconyY + 2, z);
     }
 
-    private static List<Tread> spiralStaircase(Pillar p, List<Pillar> allPillars, int baseY, int balconyY,
-                                                List<Placement> out) {
+    /**
+     * A 2-wide spiral rising one block per step from the ground to the balcony floor. The outer lane
+     * walks a ring of blocks 2 out from the pillar where each block shares a side with the next, so
+     * every step is a plain one-forward-one-up stair. Beside each outer tread, one block toward the
+     * pillar, sits an inner tread, left out where it would land under another tread. Every tread gets
+     * a solid block under it and two clear blocks above it, and a fence rail runs along the outside.
+     */
+    private static List<Tread> spiralStaircase(Pillar p, Blocks blocks, int baseY, int balconyY) {
+        List<int[]> loop = sideConnectedRing(p.cx(), p.cz(), p.radius() + 2.0);
+
         List<Tread> treads = new ArrayList<>();
-        double innerR = p.radius() + 1.0;
-        double outerR = p.radius() + 2.0;
-        double railR = outerR + 1.0;
-        // Conservative worst-case step: a square-metric lane's actual radius can be up to
-        // outerR*sqrt(2) at a 45-degree angle, so size the angle step off that (not outerR alone,
-        // the way gen_island.py does for its circular lane) to keep every arc length <= 1 block
-        // even at the diagonal; the extra 1.5x margin absorbs the +/-0.5 rounding each endpoint
-        // can drift by once it snaps to the integer block grid. See Geometry.squarePoint's javadoc
-        // for why this plugin can't use a constant-Euclidean-radius spiral the way the mockup does.
-        double angleStep = 1.0 / (outerR * Geometry.SQRT2 * 1.5);
+        List<String> facings = new ArrayList<>();
+        for (int k = 0, y = baseY; y <= balconyY; k++, y++) {
+            int[] cell = loop.get(k % loop.size());
+            int[] next = loop.get((k + 1) % loop.size());
+            treads.add(new Tread(p.cx(), p.cz(), "outer", cell[0], y, cell[1]));
+            facings.add(cardinalFacing(next[0] - cell[0], next[1] - cell[1]));
+            int[] out = stepRadially(p, cell, 1);
+            blocks.put(out[0], y + 1, out[1], FENCE);
+        }
+        int outerCount = treads.size();
+        long lastInner = Long.MIN_VALUE;
+        for (int i = 0; i < outerCount; i++) {
+            Tread o = treads.get(i);
+            int[] in = stepRadially(p, new int[] {o.x(), o.z()}, -1);
+            long column = key(in[0], 0, in[1]);
+            if (column == lastInner || underAnOuterTread(treads, outerCount, in[0], o.y(), in[1])) {
+                continue;
+            }
+            lastInner = column;
+            treads.add(new Tread(p.cx(), p.cz(), "inner", in[0], o.y(), in[1]));
+            facings.add(facings.get(i));
+        }
 
-        int i = 0;
-        for (int y = baseY; y < balconyY; y++, i++) {
-            double theta = i * angleStep;
-            String facing = cardinalFacing(-Math.sin(theta), Math.cos(theta));
-
-            double[] inner = squarePoint(p.cx(), p.cz(), innerR, theta);
-            double[] outer = squarePoint(p.cx(), p.cz(), outerR, theta);
-            placeTread(p, allPillars, inner, y, facing, "inner", treads, out);
-            placeTread(p, allPillars, outer, y, facing, "outer", treads, out);
-
-            double[] rail = squarePoint(p.cx(), p.cz(), railR, theta);
-            addIfSafe(out, allPillars, round(rail[0]), y + 1, round(rail[1]), "minecraft:dark_oak_fence");
+        Map<Long, Tread> treadAt = new LinkedHashMap<>();
+        for (Tread t : treads) {
+            treadAt.put(key(t.x(), t.y(), t.z()), t);
+        }
+        for (Tread t : treads) {
+            blocks.remove(t.x(), t.y() + 1, t.z());
+            blocks.remove(t.x(), t.y() + 2, t.z());
+        }
+        for (int i = 0; i < treads.size(); i++) {
+            Tread t = treads.get(i);
+            blocks.put(t.x(), t.y(), t.z(), "minecraft:dark_oak_stairs[facing=" + facings.get(i) + ",half=bottom]");
+        }
+        for (Tread t : treads) {
+            long below = key(t.x(), t.y() - 1, t.z());
+            if (!treadAt.containsKey(below) && !inHeadroom(treads, t.x(), t.y() - 1, t.z())) {
+                blocks.put(t.x(), t.y() - 1, t.z(), FLOOR);
+            }
         }
         return treads;
     }
 
-    private static void placeTread(Pillar p, List<Pillar> allPillars, double[] xz, int y, String facing,
-                                    String lane, List<Tread> treads, List<Placement> out) {
-        int x = round(xz[0]);
-        int z = round(xz[1]);
-        addIfSafe(out, allPillars, x, y, z, "minecraft:dark_oak_stairs[facing=" + facing + ",half=bottom]");
-        addIfSafe(out, allPillars, x, y - 1, z, "minecraft:polished_blackstone_bricks");
-        treads.add(new Tread(p.cx(), p.cz(), lane, x, y, z));
+    /** True if an outer tread stands within two blocks above or below (x, y, z)'s column. */
+    private static boolean underAnOuterTread(List<Tread> treads, int outerCount, int x, int y, int z) {
+        for (int i = 0; i < outerCount; i++) {
+            Tread t = treads.get(i);
+            if (t.x() == x && t.z() == z && Math.abs(t.y() - y) <= 2) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
-     * A ring platform around the pillar at height y, from {@code baseRadius} to
-     * {@code baseRadius + 2}: floor, a fence rail around the rim, guards, and (optionally) a
-     * banner and a lantern. Unlike gen_island.py's circular annulus, this fills a SQUARE
-     * (Chebyshev) annulus with {@code baseRadius >= pillar.radius() + 2} - a guaranteed 1-block
-     * safety margin outside the respawn-clear box at every angle, not just the cardinals (see
-     * Geometry.squarePoint). The corners read a little more angular than the mockup's round
-     * platform; functionally identical.
+     * The blocks at distance {@code radius} around (cx, cz), in order of angle, one full loop, each
+     * sharing a side with the next (a corner-only step gets the in-between block that sits closest to
+     * the circle), so a staircase walking it never has to cut a corner.
      */
-    private static void outpostRing(Pillar p, List<Pillar> allPillars, int y, int baseRadius, boolean withBanner,
-                                     boolean withLantern, int guardCount, GuardKind kind, List<Placement> out,
-                                     List<GuardPost> guards) {
-        int outerRadius = baseRadius + 2;
-        for (int dx = -outerRadius; dx <= outerRadius; dx++) {
-            for (int dz = -outerRadius; dz <= outerRadius; dz++) {
-                int cheb = Math.max(Math.abs(dx), Math.abs(dz));
-                if (cheb >= baseRadius && cheb <= outerRadius) {
-                    addIfSafe(out, allPillars, p.cx() + dx, y, p.cz() + dz, "minecraft:polished_blackstone_bricks");
+    static List<int[]> sideConnectedRing(int cx, int cz, double radius) {
+        List<int[]> cells = new ArrayList<>();
+        int samples = (int) Math.ceil(radius * 64);
+        for (int i = 0; i < samples; i++) {
+            double theta = 2 * Math.PI * i / samples;
+            int[] cell = {round(cx + radius * Math.cos(theta)), round(cz + radius * Math.sin(theta))};
+            if (cells.isEmpty() || !java.util.Arrays.equals(cells.get(cells.size() - 1), cell)) {
+                cells.add(cell);
+            }
+        }
+        if (cells.size() > 1 && java.util.Arrays.equals(cells.get(0), cells.get(cells.size() - 1))) {
+            cells.remove(cells.size() - 1);
+        }
+        List<int[]> loop = new ArrayList<>();
+        for (int i = 0; i < cells.size(); i++) {
+            int[] a = cells.get(i);
+            int[] b = cells.get((i + 1) % cells.size());
+            loop.add(a);
+            if (Math.abs(b[0] - a[0]) == 1 && Math.abs(b[1] - a[1]) == 1) {
+                int[] viaX = {b[0], a[1]};
+                int[] viaZ = {a[0], b[1]};
+                loop.add(offCircle(viaX, cx, cz, radius) <= offCircle(viaZ, cx, cz, radius) ? viaX : viaZ);
+            }
+        }
+        return loop;
+    }
+
+    private static double offCircle(int[] cell, int cx, int cz, double radius) {
+        return Math.abs(Math.hypot(cell[0] - cx, cell[1] - cz) - radius);
+    }
+
+    /** One block away from (+1) or toward (-1) the pillar, along whichever axis points at it most. */
+    private static int[] stepRadially(Pillar p, int[] cell, int direction) {
+        int dx = cell[0] - p.cx();
+        int dz = cell[1] - p.cz();
+        if (Math.abs(dx) >= Math.abs(dz)) {
+            return new int[] {cell[0] + direction * Integer.signum(dx), cell[1]};
+        }
+        return new int[] {cell[0], cell[1] + direction * Integer.signum(dz)};
+    }
+
+    private static boolean inHeadroom(List<Tread> treads, int x, int y, int z) {
+        for (Tread t : treads) {
+            if (t.x() == x && t.z() == z && (t.y() + 1 == y || t.y() + 2 == y)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * A ring platform around the pillar at height y, from {@code inner} to {@code outer} blocks out:
+     * floor, a fence rail around the rim, guards and (optionally) a banner facing outward and a
+     * lantern. Guard posts are feet positions, one above the floor.
+     */
+    private static void ring(Pillar p, Blocks blocks, int y, double inner, double outer, boolean withBanner,
+                             boolean withLantern, int guardCount, GuardKind kind, List<GuardPost> guards) {
+        double in2 = inner * inner;
+        double out2 = outer * outer;
+        int reach = (int) Math.ceil(outer) + 1;
+        for (int dx = -reach; dx <= reach; dx++) {
+            for (int dz = -reach; dz <= reach; dz++) {
+                int d2 = dx * dx + dz * dz;
+                if (d2 >= in2 && d2 <= out2) {
+                    blocks.put(p.cx() + dx, y, p.cz() + dz, FLOOR);
                 }
             }
         }
-        int midR = (baseRadius + outerRadius) / 2;
         for (int i = 0; i < 16; i++) {
             double ang = Math.toRadians(i * 360.0 / 16);
-            double[] rim = squarePoint(p.cx(), p.cz(), outerRadius, ang);
-            addIfSafe(out, allPillars, round(rim[0]), y + 1, round(rim[1]), "minecraft:dark_oak_fence");
+            blocks.put(round(p.cx() + outer * Math.cos(ang)), y + 1, round(p.cz() + outer * Math.sin(ang)), FENCE);
         }
+        double mid = (inner + outer) / 2;
         if (withLantern) {
-            double[] lp = squarePoint(p.cx(), p.cz(), midR, Math.toRadians(20));
-            addIfSafe(out, allPillars, round(lp[0]), y + 1, round(lp[1]), "minecraft:soul_lantern[hanging=false]");
+            double ang = Math.toRadians(20);
+            blocks.put(round(p.cx() + mid * Math.cos(ang)), y + 1, round(p.cz() + mid * Math.sin(ang)),
+                    "minecraft:soul_lantern[hanging=false]");
         }
         if (withBanner) {
-            double[] bp = squarePoint(p.cx(), p.cz(), outerRadius, Math.toRadians(160));
-            int bx = round(bp[0]);
-            int bz = round(bp[1]);
-            if (!violatesAnyPillar(allPillars, bx, y + 1, bz)) {
-                out.add(new Placement(bx, y + 1, bz, "minecraft:white_banner[rotation=8]", OMINOUS_BANNER));
-            }
+            double ang = Math.toRadians(160);
+            int bx = round(p.cx() + outer * Math.cos(ang));
+            int bz = round(p.cz() + outer * Math.sin(ang));
+            blocks.put(new Placement(bx, y + 1, bz,
+                    "minecraft:white_banner[rotation=" + outwardRotation(Math.cos(ang), Math.sin(ang)) + "]", OMINOUS_BANNER));
         }
         for (int i = 0; i < guardCount; i++) {
             double ang = Math.toRadians(90 + i * (180.0 / Math.max(guardCount - 1, 1)));
-            double[] gp = squarePoint(p.cx(), p.cz(), midR, ang);
-            int gx = round(gp[0]);
-            int gz = round(gp[1]);
-            if (!violatesAnyPillar(allPillars, gx, y, gz)) {
-                guards.add(new GuardPost(gx, y, gz, kind));
-            }
+            guards.add(new GuardPost(round(p.cx() + mid * Math.cos(ang)), y + 1, round(p.cz() + mid * Math.sin(ang)), kind));
         }
     }
 
-    static void addIfSafe(List<Placement> out, List<Pillar> allPillars, int x, int y, int z, String blockData) {
-        if (!violatesAnyPillar(allPillars, x, y, z)) {
-            out.add(new Placement(x, y, z, blockData));
+    /** A standing banner's rotation (0 = facing south, +x east, 16 steps) facing direction (ux, uz). */
+    static int outwardRotation(double ux, double uz) {
+        double degrees = Math.toDegrees(Math.atan2(-ux, uz));
+        return Math.floorMod((int) Math.round(degrees / 22.5), 16);
+    }
+
+    /** Drops posts whose floor was cut away by a staircase hole or whose space is taken. */
+    private static List<GuardPost> standable(List<GuardPost> posts, Blocks blocks) {
+        List<GuardPost> out = new ArrayList<>();
+        for (GuardPost g : posts) {
+            if (blocks.has(g.x(), g.y() - 1, g.z()) && !blocks.has(g.x(), g.y(), g.z()) && !blocks.has(g.x(), g.y() + 1, g.z())) {
+                out.add(g);
+            }
+        }
+        return out;
+    }
+
+    private static long key(int x, int y, int z) {
+        return ArenaRegistry.pack(x, y, z);
+    }
+
+    /** One pillar's placements by position; never lets anything replace the pillar's obsidian. */
+    private static final class Blocks {
+        private final List<Pillar> pillars;
+        private final Map<Long, Placement> byPos = new LinkedHashMap<>();
+
+        Blocks(List<Pillar> pillars) {
+            this.pillars = pillars;
+        }
+
+        void put(int x, int y, int z, String blockData) {
+            put(new Placement(x, y, z, blockData));
+        }
+
+        void put(Placement placement) {
+            if (!Geometry.insideAnyPillar(pillars, placement.x(), placement.y(), placement.z())) {
+                byPos.put(key(placement.x(), placement.y(), placement.z()), placement);
+            }
+        }
+
+        void remove(int x, int y, int z) {
+            byPos.remove(key(x, y, z));
+        }
+
+        boolean has(int x, int y, int z) {
+            return byPos.containsKey(key(x, y, z));
+        }
+
+        List<Placement> placements() {
+            return new ArrayList<>(byPos.values());
         }
     }
 }

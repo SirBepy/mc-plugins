@@ -9,11 +9,11 @@ import java.util.List;
  * and wave spawns out. No world access, no randomness - same input always gives the same output,
  * so this is the one class {@code ArenaLayoutTest} exercises directly.
  *
- * <p>Ports gen_island.py's {@code generate_pillars}/{@code generate_fortress} 1:1 for the overall
- * shape; see {@link Geometry#squarePoint} and {@link FortressStructures} for the two deliberate
- * deviations (stair/outpost lanes use a square radius, the watchtower moved outward) that keep
- * every placement outside vanilla's respawn-clear zones - gen_island.py never had to care, since
- * it only renders a single static mockup, never a spike that regenerates mid-game.
+ * <p>Ports gen_island.py's {@code generate_pillars}/{@code generate_fortress} for the overall
+ * shape. Deviations from the mockup, all for the real world's sake: the watchtowers sit just past
+ * the outer wall, the fortress has foundations and paved gate paths for uneven ground, and stairs
+ * and ladders cut holes through the floors they climb past (see {@link PillarStructures} and
+ * {@link FortressStructures}).
  */
 public final class ArenaLayout {
 
