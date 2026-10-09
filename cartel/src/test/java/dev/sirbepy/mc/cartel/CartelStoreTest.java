@@ -7,6 +7,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -49,6 +50,38 @@ class CartelStoreTest {
         assertEquals(victim, heads.getFirst().player());
         assertEquals("Victim", heads.getFirst().name());
         assertTrue(reloaded.takePendingHeads(owner).isEmpty(), "a second take finds nothing left");
+    }
+
+    @Test
+    void aPendingHeadsKillTimeSurvivesARestart(@TempDir Path dir) {
+        File file = new File(dir.toFile(), "state.yml");
+        UUID owner = UUID.randomUUID();
+        UUID victim = UUID.randomUUID();
+        Instant killedAt = Instant.parse("2026-10-09T12:00:00Z");
+        CartelStore store = new CartelStore(file, Logger.getAnonymousLogger());
+        store.addPendingHead(owner, new CartelStore.PendingHead(victim, "Victim", killedAt));
+
+        CartelStore reloaded = new CartelStore(file, Logger.getAnonymousLogger());
+        List<CartelStore.PendingHead> heads = reloaded.takePendingHeads(owner);
+
+        assertEquals(1, heads.size());
+        assertEquals(killedAt, heads.getFirst().killedAt());
+    }
+
+    @Test
+    void aPendingHeadSavedWithNoKillTimeLoadsBackUnstamped(@TempDir Path dir) {
+        File file = new File(dir.toFile(), "state.yml");
+        UUID owner = UUID.randomUUID();
+        UUID victim = UUID.randomUUID();
+        CartelStore store = new CartelStore(file, Logger.getAnonymousLogger());
+        // The pre-stamp 2-arg constructor: what an entry saved before this feature existed looks like.
+        store.addPendingHead(owner, new CartelStore.PendingHead(victim, "Victim"));
+
+        CartelStore reloaded = new CartelStore(file, Logger.getAnonymousLogger());
+        List<CartelStore.PendingHead> heads = reloaded.takePendingHeads(owner);
+
+        assertEquals(1, heads.size());
+        assertEquals(null, heads.getFirst().killedAt());
     }
 
     @Test

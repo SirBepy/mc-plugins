@@ -5,6 +5,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -59,13 +60,21 @@ public final class CartelStore {
         set(owner + ".phone-given", given);
     }
 
-    /** A trophy head waiting for an offline owner. */
-    public record PendingHead(UUID player, String name) {
+    /** A trophy head waiting for an offline owner, with the time the hit landed ({@code null} for
+     * an entry saved before this stamp existed, which loads back as unstamped = old head), so a
+     * delayed delivery still stamps the trophy with its original kill time, not the moment it's
+     * finally handed over. */
+    public record PendingHead(UUID player, String name, Instant killedAt) {
+
+        public PendingHead(UUID player, String name) {
+            this(player, name, null);
+        }
     }
 
     public void addPendingHead(UUID owner, PendingHead head) {
         List<String> heads = new ArrayList<>(yaml.getStringList(owner + ".pending-heads"));
-        heads.add(head.player() + "|" + head.name());
+        String killedAt = head.killedAt() == null ? "" : String.valueOf(head.killedAt().toEpochMilli());
+        heads.add(head.player() + "|" + head.name() + "|" + killedAt);
         set(owner + ".pending-heads", heads);
     }
 
@@ -77,9 +86,16 @@ public final class CartelStore {
         }
         List<PendingHead> heads = new ArrayList<>();
         for (String entry : raw) {
-            int bar = entry.indexOf('|');
+            // A pre-stamp entry is just "uuid|name" (2 fields): the split's 3rd slot stays absent,
+            // same as a 3-field entry whose time was blank, so both load back unstamped.
+            String[] parts = entry.split("\\|", 3);
+            if (parts.length < 2) {
+                logger.warning("Skipping a malformed pending head: " + entry);
+                continue;
+            }
             try {
-                heads.add(new PendingHead(UUID.fromString(entry.substring(0, bar)), entry.substring(bar + 1)));
+                Instant killedAt = parts.length == 3 && !parts[2].isEmpty() ? Instant.ofEpochMilli(Long.parseLong(parts[2])) : null;
+                heads.add(new PendingHead(UUID.fromString(parts[0]), parts[1], killedAt));
             } catch (RuntimeException e) {
                 logger.warning("Skipping a malformed pending head: " + entry);
             }

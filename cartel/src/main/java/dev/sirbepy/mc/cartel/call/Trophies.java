@@ -2,6 +2,7 @@ package dev.sirbepy.mc.cartel.call;
 
 import dev.sirbepy.mc.cartel.CartelStore;
 import dev.sirbepy.mc.cartel.Inventories;
+import dev.sirbepy.mc.core.item.KillStamp;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -49,6 +50,12 @@ public final class Trophies {
         SkullMeta meta = (SkullMeta) item.getItemMeta();
         meta.setPlayerProfile(Bukkit.createProfile(head.player(), head.name()));
         meta.displayName(Component.text(head.name(), NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+        // Stamped with the hit's own kill time, whether handed over now or after a wait in
+        // CartelStore: both paths carry the same PendingHead, so the stamp is the same either way.
+        // A pre-stamp PendingHead (killedAt null) leaves the head unstamped, same as any old head.
+        if (head.killedAt() != null) {
+            KillStamp.stamp(meta, head.killedAt());
+        }
         item.setItemMeta(meta);
         return item;
     }

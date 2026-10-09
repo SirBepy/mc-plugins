@@ -18,6 +18,7 @@ import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -234,7 +235,7 @@ public final class CallManager {
             UUID owner = call.owner;
             end("The job is done. " + call.targetName + " is dead.");
             if (killer != null && cousins.isCousin(killer)) {
-                trophies.deliver(owner, new CartelStore.PendingHead(dead.getUniqueId(), dead.getName()));
+                trophies.deliver(owner, new CartelStore.PendingHead(dead.getUniqueId(), dead.getName(), Instant.ofEpochMilli(clock.getAsLong())));
             }
         } else if (call.mode == Mode.GUARD && dead.getUniqueId().equals(call.owner)) {
             end("You died. The cousins leave.");
