@@ -59,7 +59,10 @@ hits and breath attacks near a guard still hurt it like any other mob, same as v
   surviving cultist vanishes with it in a puff of soul particles a couple of seconds later - unless
   `cult.die-with-dragon` is off.
 - **Waves** pour out of all 4 fortress gates when the dragon's health crosses 75%, 50% and 25% of
-  its (possibly datapack-raised) max health, once per threshold per dragon. Each wave is bigger
+  its (possibly datapack-raised) max health, once per threshold per dragon. At 20% the Nether
+  paratroopers come (Joe, 2026-10-09): piglin brutes in gold armor gliding in on elytras from 30
+  blocks above the gates, Incendium's castle reinforcements (50 health, fast), 4 plus 1 per 2
+  players; their elytras never drop and they never turn into zombified piglins. Each wave is bigger
   with more players in the End near the portal, and a chat line announces it. A cap
   (`cult.max-alive`, default 60) on live wave mobs holds regardless of how big a wave's math says it
   should be; guards don't count toward it.

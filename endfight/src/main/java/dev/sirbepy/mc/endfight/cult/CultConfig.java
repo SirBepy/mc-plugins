@@ -142,7 +142,7 @@ public final class CultConfig {
 
         private static List<Double> readThresholds(ConfigurationSection section) {
             if (section == null || !section.isList("thresholds")) {
-                return List.of(0.75, 0.5, 0.25);
+                return List.of(0.75, 0.5, 0.25, 0.2);
             }
             List<Double> out = new ArrayList<>();
             for (Object value : section.getList("thresholds", List.of())) {
@@ -150,7 +150,7 @@ public final class CultConfig {
                     out.add(number.doubleValue());
                 }
             }
-            return out.isEmpty() ? List.of(0.75, 0.5, 0.25) : out;
+            return out.isEmpty() ? List.of(0.75, 0.5, 0.25, 0.2) : out;
         }
 
         private static List<List<WaveMath.WaveEntry>> readCompositions(ConfigurationSection section) {
@@ -181,7 +181,10 @@ public final class CultConfig {
                     new WaveMath.WaveEntry("vindicator", 2, 1),
                     new WaveMath.WaveEntry("evoker", 1, 0),
                     new WaveMath.WaveEntry("ravager", 1, 3));
-            return List.of(wave1, wave2, wave3);
+            // the Nether paratroopers glide in for the dragon's last 20% (Joe, 2026-10-09)
+            List<WaveMath.WaveEntry> wave4 = List.of(
+                    new WaveMath.WaveEntry(Paratroopers.TYPE, 4, 2));
+            return List.of(wave1, wave2, wave3, wave4);
         }
 
         @SuppressWarnings("unchecked")

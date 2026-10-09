@@ -13,6 +13,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
+import org.bukkit.entity.PiglinBrute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -100,6 +101,12 @@ public final class CultWaves implements Listener {
     }
 
     private void spawnWaveMob(World world, WaveSpawn point, String typeName) {
+        if (Paratroopers.isParatrooper(typeName)) {
+            Location ground = SpawnSpot.at(world, point.x(), point.y(), point.z());
+            PiglinBrute brute = Paratroopers.spawn(world, point.x(), ground.getBlockY(), point.z());
+            nearestPlayer(world, ground).ifPresent(brute::setTarget);
+            return;
+        }
         EntityType type = CultEntityTypes.parse(typeName, logger);
         if (type == null) {
             return;

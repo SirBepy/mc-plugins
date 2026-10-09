@@ -5,11 +5,13 @@ import dev.sirbepy.mc.endfight.arena.ArenaRegistry;
 import dev.sirbepy.mc.endfight.arena.Pillar;
 import dev.sirbepy.mc.endfight.arena.PillarScanner;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Evoker;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.PiglinBrute;
 import org.bukkit.entity.Pillager;
 import org.bukkit.entity.Vindicator;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -25,6 +27,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CultWavesTest {
 
@@ -134,6 +137,28 @@ class CultWavesTest {
         assertEquals(12, end.getEntitiesByClass(Pillager.class).stream().filter(CultMarker::isCult).count());
         assertEquals(6, end.getEntitiesByClass(Vindicator.class).stream().filter(CultMarker::isCult).count());
         assertEquals(2, end.getEntitiesByClass(Evoker.class).stream().filter(CultMarker::isCult).count());
+    }
+
+    @Test
+    void theLastTwentyPercentDropsGlidingPiglinParatroopersThatKeepTheirElytras() {
+        EnderDragon dragon = dragonWithMaxHealth(200);
+        dragon.setHealth(60);
+        waves.onDamage(new EntityDamageEvent(dragon, EntityDamageEvent.DamageCause.ENTITY_ATTACK, 140));
+        assertEquals(0, end.getEntitiesByClass(PiglinBrute.class).size(), "not before 20%");
+
+        dragon.setHealth(38);
+        waves.onDamage(new EntityDamageEvent(dragon, EntityDamageEvent.DamageCause.ENTITY_ATTACK, 22));
+
+        List<PiglinBrute> brutes = new ArrayList<>(end.getEntitiesByClass(PiglinBrute.class));
+        assertEquals(4, brutes.size(), "4 paratroopers with nobody in range");
+        for (PiglinBrute brute : brutes) {
+            assertTrue(CultMarker.isCult(brute));
+            assertTrue(brute.isImmuneToZombification());
+            assertTrue(brute.isGliding());
+            assertEquals(Material.ELYTRA, brute.getEquipment().getChestplate().getType());
+            assertEquals(0f, brute.getEquipment().getChestplateDropChance());
+            assertTrue(brute.getLocation().getY() >= SURFACE_Y + Paratroopers.DROP_HEIGHT, "they start high above the gate");
+        }
     }
 
     @Test

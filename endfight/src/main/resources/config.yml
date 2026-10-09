@@ -162,7 +162,7 @@ cult:
     range: 160
     # Fractions of the dragon's (possibly datapack-raised) max health that trigger a wave, each one
     # only once per dragon.
-    thresholds: [0.75, 0.5, 0.25]
+    thresholds: [0.75, 0.5, 0.25, 0.2]
     # Wave 1 at the first threshold, wave 2 at the second, wave 3 at the third - each wave's own
     # full composition (not a delta from the last one). base is the mob count with no players
     # around; per-n-players adds one more mob for every N players in range (1 = "per player").
@@ -179,6 +179,10 @@ cult:
           - { type: vindicator, base: 2, per-n-players: 1 }
           - { type: evoker, base: 1, per-n-players: 0 }
           - { type: ravager, base: 1, per-n-players: 3 }
+      # The Nether paratroopers: piglin brutes in gold armor gliding in on elytras from 30 blocks
+      # up for the dragon's last 20%. Their elytras never drop and they never zombify.
+      - entries:
+          - { type: paratrooper, base: 4, per-n-players: 2 }
   messages:
     wave-announce: "<red>The cult answers the dragon's call!"
 
