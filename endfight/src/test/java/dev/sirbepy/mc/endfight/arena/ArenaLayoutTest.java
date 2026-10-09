@@ -290,4 +290,67 @@ class ArenaLayoutTest {
         }
         assertEquals(Set.of("north", "south", "east", "west"), gates);
     }
+
+    // Joe, 2026-10-09: every other pillar around the ring is Nether-themed.
+    @Test
+    void pillarsAlternateIllagerAndNetherAroundTheRing() {
+        Map<Pillar, Faction> factions = ArenaLayout.factions(pillars);
+        List<Pillar> byAngle = new ArrayList<>(pillars);
+        byAngle.sort(Comparator.comparingDouble(p -> {
+            double a = Math.atan2(p.cz(), p.cx());
+            return a < 0 ? a + 2 * Math.PI : a;
+        }));
+
+        assertEquals(5, factions.values().stream().filter(f -> f == Faction.NETHER).count());
+        for (int i = 0; i < byAngle.size(); i++) {
+            Faction here = factions.get(byAngle.get(i));
+            Faction next = factions.get(byAngle.get((i + 1) % byAngle.size()));
+            assertTrue(here != next, "neighbours " + i + " and " + (i + 1) + " differ");
+        }
+    }
+
+    @Test
+    void netherPillarsAreBuiltInNetherBlocksAndHeldByTheNether() {
+        Map<Pillar, Faction> factions = ArenaLayout.factions(pillars);
+        for (Pillar p : pillars) {
+            boolean nether = factions.get(p) == Faction.NETHER;
+            Set<String> blocks = new HashSet<>();
+            for (Placement placement : layout.placements()) {
+                if (Math.hypot(placement.x() - p.cx(), placement.z() - p.cz()) <= p.radius() + 4
+                        && placement.y() > EndFightTestSupport.SURFACE_Y) {
+                    blocks.add(placement.blockData().replaceFirst("\\[.*$", ""));
+                }
+            }
+            assertEquals(nether, blocks.contains("minecraft:nether_bricks"), "nether bricks on " + p);
+            assertEquals(nether, blocks.contains("minecraft:shroomlight"), "shroomlight on " + p);
+            assertEquals(!nether, blocks.contains("minecraft:polished_blackstone_bricks"), "illager floor on " + p);
+            List<GuardPost> posts = layout.guardPosts().stream()
+                    .filter(g -> Math.hypot(g.x() - p.cx(), g.z() - p.cz()) <= p.radius() + 4)
+                    .toList();
+            assertFalse(posts.isEmpty());
+            for (GuardPost post : posts) {
+                assertEquals(nether ? Faction.NETHER : Faction.ILLAGER, post.faction(), "post " + post);
+            }
+        }
+        assertTrue(layout.guardPosts().stream().filter(g -> g.kind() == GuardKind.GATEHOUSE || g.kind() == GuardKind.WALL)
+                .allMatch(g -> g.faction() == Faction.ILLAGER), "the fortress stays the illagers'");
+    }
+
+    @Test
+    void netherOutpostsHaveASoulFireOnSoulSoil() {
+        Map<String, String> at = new HashMap<>();
+        for (Placement placement : layout.placements()) {
+            at.put(placement.x() + "," + placement.y() + "," + placement.z(), placement.blockData());
+        }
+        int fires = 0;
+        for (Placement placement : layout.placements()) {
+            // The fortress's own braziers (inside radius 25) burn on blackstone; only the pillars'.
+            if (placement.blockData().equals("minecraft:soul_fire") && Math.hypot(placement.x(), placement.z()) > 25) {
+                fires++;
+                assertEquals("minecraft:soul_soil", at.get(placement.x() + "," + (placement.y() - 1) + "," + placement.z()),
+                        "under the fire at " + placement.x() + "," + placement.y() + "," + placement.z());
+            }
+        }
+        assertTrue(fires >= 5, "at least one per Nether pillar (got " + fires + ")");
+    }
 }

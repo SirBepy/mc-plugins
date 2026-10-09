@@ -34,13 +34,45 @@ final class PillarStructures {
             new BannerPattern("light_gray", "circle"),
             new BannerPattern("black", "border"));
 
-    private static final String FLOOR = "minecraft:polished_blackstone_bricks";
-    private static final String FENCE = "minecraft:dark_oak_fence";
+    /** A Nether war banner: black with a red rise, an orange piglin snout and a black rim. The
+     * {@code piglin} and {@code gradient_up} pattern ids are checked against the 26.3 jar's
+     * {@code data/minecraft/banner_pattern/} listing. */
+    static final List<BannerPattern> PIGLIN_BANNER = List.of(
+            new BannerPattern("red", "gradient_up"),
+            new BannerPattern("orange", "piglin"),
+            new BannerPattern("black", "border"));
+
+    /** One faction's palette. {@code support} is what holds up a stair tread, {@code light} stands
+     * on an outpost floor; Nether outposts also get a soul fire on soul soil near the rim. */
+    record Theme(Faction faction, String floor, String support, String fence, String stairs, String light,
+                 String banner, List<BannerPattern> bannerPatterns, boolean soulFire) {
+    }
+
+    static final Theme ILLAGER = new Theme(Faction.ILLAGER, "minecraft:polished_blackstone_bricks",
+            "minecraft:polished_blackstone_bricks", "minecraft:dark_oak_fence", "minecraft:dark_oak_stairs",
+            "minecraft:soul_lantern[hanging=false]", "minecraft:white_banner", OMINOUS_BANNER, false);
+    // Joe's Nether palette (2026-10-09): blackstone, nether bricks, crimson wood, shroomlights, soul fire.
+    static final Theme NETHER = new Theme(Faction.NETHER, "minecraft:nether_bricks", "minecraft:blackstone",
+            "minecraft:crimson_fence", "minecraft:crimson_stairs", "minecraft:shroomlight", "minecraft:black_banner",
+            PIGLIN_BANNER, true);
 
     private PillarStructures() {
     }
 
+    static Theme theme(Faction faction) {
+        return faction == Faction.NETHER ? NETHER : ILLAGER;
+    }
+
     static PillarResult tallPillar(Pillar p, List<Pillar> allPillars) {
+        return tallPillar(p, allPillars, Faction.ILLAGER);
+    }
+
+    static PillarResult shortPillar(Pillar p, List<Pillar> allPillars) {
+        return shortPillar(p, allPillars, Faction.ILLAGER);
+    }
+
+    static PillarResult tallPillar(Pillar p, List<Pillar> allPillars, Faction faction) {
+        Theme theme = theme(faction);
         Blocks blocks = new Blocks(allPillars);
         List<GuardPost> guards = new ArrayList<>();
         int baseY = p.surfaceY() + 1;
@@ -49,15 +81,17 @@ final class PillarStructures {
         int twoThird = baseY + 2 * (balconyY - baseY) / 3;
         double r = p.radius();
 
-        ring(p, blocks, third, r + 1, r + 3, true, true, 3, GuardKind.STAIR_OUTPOST, guards);
-        ring(p, blocks, twoThird, r + 1, r + 3, false, true, 2, GuardKind.STAIR_OUTPOST, guards);
-        ring(p, blocks, balconyY, r + 0.5, r + 2, true, false, 2, GuardKind.BALCONY, guards);
-        List<Tread> treads = spiralStaircase(p, blocks, baseY, balconyY);
+        ring(p, theme, blocks, third, r + 1, r + 3, true, true, 3, GuardKind.STAIR_OUTPOST, guards);
+        ring(p, theme, blocks, twoThird, r + 1, r + 3, false, true, 2, GuardKind.STAIR_OUTPOST, guards);
+        ring(p, theme, blocks, balconyY, r + 0.5, r + 2, true, false, 2, GuardKind.BALCONY, guards);
+        List<Tread> treads = spiralStaircase(p, theme, blocks, baseY, balconyY);
+        lightSoulFires(theme, blocks);
 
         return new PillarResult(blocks.placements(), standable(guards, blocks), treads);
     }
 
-    static PillarResult shortPillar(Pillar p, List<Pillar> allPillars) {
+    static PillarResult shortPillar(Pillar p, List<Pillar> allPillars, Faction faction) {
+        Theme theme = theme(faction);
         Blocks blocks = new Blocks(allPillars);
         List<GuardPost> guards = new ArrayList<>();
         int baseY = p.surfaceY() + 1;
@@ -65,10 +99,11 @@ final class PillarStructures {
         int half = baseY + (balconyY - baseY) / 2;
         double r = p.radius();
 
-        ring(p, blocks, half, r + 1, r + 3, true, true, 2, GuardKind.LADDER_OUTPOST, guards);
-        ring(p, blocks, balconyY, r + 0.5, r + 2, false, false, 2, GuardKind.BALCONY, guards);
+        ring(p, theme, blocks, half, r + 1, r + 3, true, true, 2, GuardKind.LADDER_OUTPOST, guards);
+        ring(p, theme, blocks, balconyY, r + 0.5, r + 2, false, false, 2, GuardKind.BALCONY, guards);
         ladder(p, blocks, baseY, balconyY);
         cage(p, blocks);
+        lightSoulFires(theme, blocks);
 
         return new PillarResult(blocks.placements(), standable(guards, blocks), List.of());
     }
@@ -108,7 +143,7 @@ final class PillarStructures {
      * pillar, sits an inner tread, left out where it would land under another tread. Every tread gets
      * a solid block under it and two clear blocks above it, and a fence rail runs along the outside.
      */
-    private static List<Tread> spiralStaircase(Pillar p, Blocks blocks, int baseY, int balconyY) {
+    private static List<Tread> spiralStaircase(Pillar p, Theme theme, Blocks blocks, int baseY, int balconyY) {
         List<int[]> loop = sideConnectedRing(p.cx(), p.cz(), p.radius() + 2.0);
 
         List<Tread> treads = new ArrayList<>();
@@ -119,7 +154,7 @@ final class PillarStructures {
             treads.add(new Tread(p.cx(), p.cz(), "outer", cell[0], y, cell[1]));
             facings.add(cardinalFacing(next[0] - cell[0], next[1] - cell[1]));
             int[] out = stepRadially(p, cell, 1);
-            blocks.put(out[0], y + 1, out[1], FENCE);
+            blocks.put(out[0], y + 1, out[1], theme.fence());
         }
         int outerCount = treads.size();
         long lastInner = Long.MIN_VALUE;
@@ -145,12 +180,12 @@ final class PillarStructures {
         }
         for (int i = 0; i < treads.size(); i++) {
             Tread t = treads.get(i);
-            blocks.put(t.x(), t.y(), t.z(), "minecraft:dark_oak_stairs[facing=" + facings.get(i) + ",half=bottom]");
+            blocks.put(t.x(), t.y(), t.z(), theme.stairs() + "[facing=" + facings.get(i) + ",half=bottom]");
         }
         for (Tread t : treads) {
             long below = key(t.x(), t.y() - 1, t.z());
             if (!treadAt.containsKey(below) && !inHeadroom(treads, t.x(), t.y() - 1, t.z())) {
-                blocks.put(t.x(), t.y() - 1, t.z(), FLOOR);
+                blocks.put(t.x(), t.y() - 1, t.z(), theme.support());
             }
         }
         return treads;
@@ -225,9 +260,9 @@ final class PillarStructures {
     /**
      * A ring platform around the pillar at height y, from {@code inner} to {@code outer} blocks out:
      * floor, a fence rail around the rim, guards and (optionally) a banner facing outward and a
-     * lantern. Guard posts are feet positions, one above the floor.
+     * light. Guard posts are feet positions, one above the floor.
      */
-    private static void ring(Pillar p, Blocks blocks, int y, double inner, double outer, boolean withBanner,
+    private static void ring(Pillar p, Theme theme, Blocks blocks, int y, double inner, double outer, boolean withBanner,
                              boolean withLantern, int guardCount, GuardKind kind, List<GuardPost> guards) {
         double in2 = inner * inner;
         double out2 = outer * outer;
@@ -236,30 +271,37 @@ final class PillarStructures {
             for (int dz = -reach; dz <= reach; dz++) {
                 int d2 = dx * dx + dz * dz;
                 if (d2 >= in2 && d2 <= out2) {
-                    blocks.put(p.cx() + dx, y, p.cz() + dz, FLOOR);
+                    blocks.put(p.cx() + dx, y, p.cz() + dz, theme.floor());
                 }
             }
         }
         for (int i = 0; i < 16; i++) {
             double ang = Math.toRadians(i * 360.0 / 16);
-            blocks.put(round(p.cx() + outer * Math.cos(ang)), y + 1, round(p.cz() + outer * Math.sin(ang)), FENCE);
+            blocks.put(round(p.cx() + outer * Math.cos(ang)), y + 1, round(p.cz() + outer * Math.sin(ang)), theme.fence());
         }
         double mid = (inner + outer) / 2;
         if (withLantern) {
             double ang = Math.toRadians(20);
-            blocks.put(round(p.cx() + mid * Math.cos(ang)), y + 1, round(p.cz() + mid * Math.sin(ang)),
-                    "minecraft:soul_lantern[hanging=false]");
+            blocks.put(round(p.cx() + mid * Math.cos(ang)), y + 1, round(p.cz() + mid * Math.sin(ang)), theme.light());
+        }
+        if (withLantern && theme.soulFire()) {
+            // Just inside the rim at 340 degrees: the guards stand between 90 and 270, the light at
+            // 20 and the banner at 160, so nobody spawns in it. Lit after the stairs are cut.
+            double ang = Math.toRadians(340);
+            double rim = outer - 1;
+            blocks.fireSpots.add(new int[] {round(p.cx() + rim * Math.cos(ang)), y, round(p.cz() + rim * Math.sin(ang))});
         }
         if (withBanner) {
             double ang = Math.toRadians(160);
             int bx = round(p.cx() + outer * Math.cos(ang));
             int bz = round(p.cz() + outer * Math.sin(ang));
             blocks.put(new Placement(bx, y + 1, bz,
-                    "minecraft:white_banner[rotation=" + outwardRotation(Math.cos(ang), Math.sin(ang)) + "]", OMINOUS_BANNER));
+                    theme.banner() + "[rotation=" + outwardRotation(Math.cos(ang), Math.sin(ang)) + "]", theme.bannerPatterns()));
         }
         for (int i = 0; i < guardCount; i++) {
             double ang = Math.toRadians(90 + i * (180.0 / Math.max(guardCount - 1, 1)));
-            guards.add(new GuardPost(round(p.cx() + mid * Math.cos(ang)), y + 1, round(p.cz() + mid * Math.sin(ang)), kind));
+            guards.add(new GuardPost(round(p.cx() + mid * Math.cos(ang)), y + 1, round(p.cz() + mid * Math.sin(ang)), kind,
+                    theme.faction()));
         }
     }
 
@@ -280,6 +322,21 @@ final class PillarStructures {
         return out;
     }
 
+    /** Soul fire on soul soil at each spot an outpost asked for, but only where the floor is still
+     * floor with nothing above it: a staircase climbing through that spot would leave the fire
+     * hanging in its headroom or standing on a stair. */
+    private static void lightSoulFires(Theme theme, Blocks blocks) {
+        for (int[] spot : blocks.fireSpots) {
+            int x = spot[0];
+            int y = spot[1];
+            int z = spot[2];
+            if (theme.floor().equals(blocks.at(x, y, z)) && !blocks.has(x, y + 1, z) && !blocks.has(x, y + 2, z)) {
+                blocks.put(x, y, z, "minecraft:soul_soil");
+                blocks.put(x, y + 1, z, "minecraft:soul_fire");
+            }
+        }
+    }
+
     private static long key(int x, int y, int z) {
         return ArenaRegistry.pack(x, y, z);
     }
@@ -288,6 +345,7 @@ final class PillarStructures {
     private static final class Blocks {
         private final List<Pillar> pillars;
         private final Map<Long, Placement> byPos = new LinkedHashMap<>();
+        final List<int[]> fireSpots = new ArrayList<>();
 
         Blocks(List<Pillar> pillars) {
             this.pillars = pillars;
@@ -309,6 +367,12 @@ final class PillarStructures {
 
         boolean has(int x, int y, int z) {
             return byPos.containsKey(key(x, y, z));
+        }
+
+        /** The block data placed at (x, y, z), or null. */
+        String at(int x, int y, int z) {
+            Placement placement = byPos.get(key(x, y, z));
+            return placement != null ? placement.blockData() : null;
         }
 
         List<Placement> placements() {

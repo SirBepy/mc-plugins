@@ -15,6 +15,9 @@ public final class CultMarker {
 
     static final NamespacedKey CULT = new NamespacedKey("endfight", "cult");
     static final NamespacedKey POST_INDEX = new NamespacedKey("endfight", "post");
+    /** The config type name it was spawned as ({@code pillager}, {@code paratrooper}...), for the
+     * mob counter and per-type kill tallies; a paratrooper is a piglin brute underneath. */
+    static final NamespacedKey TYPE = new NamespacedKey("endfight", "cult-type");
 
     private CultMarker() {
     }
@@ -30,6 +33,20 @@ public final class CultMarker {
 
     public static boolean isCult(Entity entity) {
         return entity != null && entity.getPersistentDataContainer().has(CULT, PersistentDataType.BYTE);
+    }
+
+    public static void setType(Entity entity, String type) {
+        entity.getPersistentDataContainer().set(TYPE, PersistentDataType.STRING, type);
+    }
+
+    /** The type it was spawned as, or its entity type's own name for a cult mob from before the
+     * tag existed; null if it isn't cult at all. */
+    public static String type(Entity entity) {
+        if (!isCult(entity)) {
+            return null;
+        }
+        String type = entity.getPersistentDataContainer().get(TYPE, PersistentDataType.STRING);
+        return type != null ? type : entity.getType().name().toLowerCase(java.util.Locale.ROOT);
     }
 
     /** -1 if this entity isn't a guard (a wave mob, or not cult at all). */

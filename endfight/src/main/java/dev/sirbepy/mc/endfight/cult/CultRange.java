@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.endfight.cult;
 
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.LivingEntity;
@@ -21,6 +22,17 @@ final class CultRange {
         return world.getPlayers().stream()
                 .filter(player -> horizontalDistanceSquared(player.getLocation()) <= rangeSq)
                 .toList();
+    }
+
+    /** The players actually fighting: in range, alive, and in survival or adventure. Waves scale
+     * with how many there are, and only they are chased - never a creative or spectating op. */
+    static List<Player> fighters(World world, double range) {
+        return playersInRange(world, range).stream().filter(CultRange::isFighting).toList();
+    }
+
+    static boolean isFighting(Player player) {
+        GameMode mode = player.getGameMode();
+        return !player.isDead() && (mode == GameMode.SURVIVAL || mode == GameMode.ADVENTURE);
     }
 
     static int aliveCultCount(World world) {

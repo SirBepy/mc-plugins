@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.endfight.cult;
 
+import dev.sirbepy.mc.endfight.arena.Faction;
 import dev.sirbepy.mc.endfight.arena.GuardKind;
 import dev.sirbepy.mc.endfight.arena.GuardPost;
 
@@ -49,10 +50,17 @@ public final class GuardPlan {
      * back up against {@code posts} by position (e.g. to recover each post's index for
      * {@link CultMarker#markGuard}). */
     public static List<PlannedGuard> plan(List<GuardPost> posts, Map<GuardKind, Composition> compositions) {
+        return plan(posts, compositions, compositions);
+    }
+
+    /** As above, with the Nether pillars' posts ({@link Faction#NETHER}) drawing from
+     * {@code netherCompositions} instead. */
+    public static List<PlannedGuard> plan(List<GuardPost> posts, Map<GuardKind, Composition> compositions,
+                                          Map<GuardKind, Composition> netherCompositions) {
         Set<GuardPost> bonusPosts = firstOfEachGroup(posts);
         List<PlannedGuard> out = new ArrayList<>(posts.size());
         for (GuardPost post : posts) {
-            Composition composition = compositions.get(post.kind());
+            Composition composition = (post.faction() == Faction.NETHER ? netherCompositions : compositions).get(post.kind());
             if (composition == null) {
                 out.add(new PlannedGuard(post, List.of()));
                 continue;
@@ -79,7 +87,7 @@ public final class GuardPlan {
         if (post.kind() == GuardKind.GATEHOUSE) {
             return "GATEHOUSE:" + cardinal(post.x(), post.z());
         }
-        return post.kind() + ":" + post.y();
+        return post.kind() + ":" + post.faction() + ":" + post.y();
     }
 
     /** Same "dominant axis" rule {@code Geometry.cardinalFacing} uses: +x=east, -x=west,

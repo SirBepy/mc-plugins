@@ -1,8 +1,7 @@
 package dev.sirbepy.mc.endfight.cult;
 
-import dev.sirbepy.mc.endfight.arena.ArenaRegistry;
-import dev.sirbepy.mc.endfight.arena.WaveSpawn;
-import org.bukkit.Location;
+import dev.sirbepy.mc.core.Messages;
+import dev.sirbepy.mc.endfight.fight.FightStats;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
@@ -10,10 +9,6 @@ import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.ComplexEntityPart;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Mob;
-import org.bukkit.entity.PiglinBrute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -23,31 +18,30 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Supplier;
-import java.util.logging.Logger;
 
 /**
- * Pours a wave of cultists out of the fortress gates each time the dragon's health crosses one of
- * {@code cult.waves.thresholds} for the first time this fight. Health bookkeeping is read fresh off
- * the dragon (so a datapack-raised max health is respected) and "already crossed" lives on the
- * dragon's own PDC, same restart-safe pattern as {@code CultGuards}' spawn flag.
+ * Fires each wave of {@code cult.waves.schedule} the first time the dragon's health drops to its
+ * fraction of max health this fight (Joe's HP schedule, 2026-10-09), sized by the players actually
+ * fighting, and hands the mobs to {@link WaveSpawner} to bring out over a couple of seconds.
+ * Health bookkeeping is read fresh off the dragon (so a datapack-raised max health is respected)
+ * and "already crossed" lives on the dragon's own PDC, same restart-safe pattern as
+ * {@code CultGuards}' spawn flag.
  */
 public final class CultWaves implements Listener {
 
     static final NamespacedKey CROSSED = new NamespacedKey("endfight", "waves-crossed");
 
-    private final ArenaRegistry registry;
     private final Supplier<CultConfig> config;
-    private final Logger logger;
+    private final WaveSpawner spawner;
 
-    public CultWaves(ArenaRegistry registry, Supplier<CultConfig> config, Logger logger) {
-        this.registry = registry;
+    public CultWaves(Supplier<CultConfig> config, WaveSpawner spawner) {
         this.config = config;
-        this.logger = logger;
+        this.spawner = spawner;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -61,8 +55,10 @@ public final class CultWaves implements Listener {
             return;
         }
         double maxHealth = maxHealth(dragon);
-        double healthAfter = Math.max(0, dragon.getHealth());
-        double healthBefore = Math.min(maxHealth, healthAfter + event.getFinalDamage());
+        // The event fires before the hit lands (javap on 26.3: LivingEntity.actuallyHurt checks
+        // the event, then calls setHealth), so the dragon's health here is still from before it.
+        double healthBefore = Math.min(maxHealth, dragon.getHealth());
+        double healthAfter = Math.max(0, healthBefore - event.getFinalDamage());
         PersistentDataContainer pdc = dragon.getPersistentDataContainer();
         Set<Integer> crossed = crossedIndices(pdc);
         List<Integer> newly = WaveMath.newlyCrossedIndices(healthBefore, healthAfter, maxHealth,
@@ -74,57 +70,42 @@ public final class CultWaves implements Listener {
     }
 
     private void spawnWave(EnderDragon dragon, int waveIndex, CultConfig cfg) {
-        List<WaveMath.WaveEntry> entries = cfg.waves().composition(waveIndex);
-        if (entries.isEmpty()) {
-            return;
-        }
+        WaveMath.Wave wave = cfg.waves().schedule().get(waveIndex);
         World world = dragon.getWorld();
-        List<Player> nearby = CultRange.playersInRange(world, cfg.waves().range());
-        int alive = CultRange.aliveWaveCount(world);
-        List<String> spawnTypes = WaveMath.spawnList(entries, nearby.size(), alive, cfg.maxAlive());
-        if (spawnTypes.isEmpty()) {
+        List<Player> fighters = CultRange.fighters(world, cfg.waves().range());
+        List<UUID> damagers = topDamagers(dragon, fighters);
+        int alive = CultRange.aliveWaveCount(world) + spawner.queued();
+        List<WaveMath.PlannedSpawn> spawns = WaveMath.plan(wave.entries(), fighters.size(), damagers, alive, cfg.maxAlive());
+        if (spawns.isEmpty()) {
             return;
         }
-        List<WaveSpawn> points = registry.waveSpawns();
-        if (points.isEmpty()) {
-            logger.warning("Cult wave triggered with no wave spawn points registered; is the arena built?");
-            return;
-        }
-        int i = 0;
-        for (String typeName : spawnTypes) {
-            spawnWaveMob(world, points.get(i % points.size()), typeName);
-            i++;
-        }
-        for (Player player : nearby) {
-            cfg.messages().send(player, "wave-announce");
+        spawner.enqueue(dragon, spawns);
+        for (Player player : CultRange.playersInRange(world, cfg.waves().range())) {
+            if (wave.announce() != null && !wave.announce().isBlank()) {
+                player.sendMessage(Messages.mini().deserialize(wave.announce()));
+            } else {
+                cfg.messages().send(player, "wave-announce");
+            }
         }
     }
 
-    private void spawnWaveMob(World world, WaveSpawn point, String typeName) {
-        if (Paratroopers.isParatrooper(typeName)) {
-            Location ground = SpawnSpot.at(world, point.x(), point.y(), point.z());
-            PiglinBrute brute = Paratroopers.spawn(world, point.x(), ground.getBlockY(), point.z());
-            nearestPlayer(world, ground).ifPresent(brute::setTarget);
-            return;
+    /** The fighters who hurt this dragon most, most first; if nobody has been credited with any
+     * damage (an op's {@code /damage}, say), every fighter in range is fair game instead. */
+    private static List<UUID> topDamagers(EnderDragon dragon, List<Player> fighters) {
+        Set<UUID> fighting = new HashSet<>();
+        for (Player player : fighters) {
+            fighting.add(player.getUniqueId());
         }
-        EntityType type = CultEntityTypes.parse(typeName, logger);
-        if (type == null) {
-            return;
+        List<UUID> top = new ArrayList<>();
+        for (UUID id : FightStats.topDamagers(dragon.getPersistentDataContainer(), Integer.MAX_VALUE)) {
+            if (fighting.contains(id)) {
+                top.add(id);
+            }
         }
-        Location at = SpawnSpot.at(world, point.x(), point.y(), point.z());
-        Entity entity = world.spawnEntity(at, type);
-        if (!(entity instanceof LivingEntity living)) {
-            entity.remove();
-            return;
+        if (top.isEmpty()) {
+            top.addAll(fighting);
         }
-        CultIdentity.apply(living);
-        if (living instanceof Mob mob) {
-            nearestPlayer(world, at).ifPresent(mob::setTarget);
-        }
-    }
-
-    private static java.util.Optional<Player> nearestPlayer(World world, Location at) {
-        return world.getPlayers().stream().min(Comparator.comparingDouble(p -> p.getLocation().distanceSquared(at)));
+        return top;
     }
 
     private static double maxHealth(EnderDragon dragon) {

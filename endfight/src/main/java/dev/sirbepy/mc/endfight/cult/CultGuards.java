@@ -12,9 +12,11 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Creature;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
@@ -171,6 +173,15 @@ public final class CultGuards implements Listener {
         }
     }
 
+    /** A sleeping guard (see {@link GuardTether}) wakes the moment anything hurts it, so a player
+     * shooting it from past the sleep range still gets a fight. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onGuardHurt(EntityDamageEvent event) {
+        if (event.getEntity() instanceof Mob mob && CultMarker.postIndex(mob) >= 0) {
+            GuardTether.wake(mob);
+        }
+    }
+
     private void vanish(LivingEntity entity) {
         if (!entity.isValid()) {
             return;
@@ -184,7 +195,8 @@ public final class CultGuards implements Listener {
         if (posts.isEmpty()) {
             return 0;
         }
-        List<GuardPlan.PlannedGuard> plan = GuardPlan.plan(posts, cfg.guards().composition());
+        List<GuardPlan.PlannedGuard> plan = GuardPlan.plan(posts, cfg.guards().composition(),
+                cfg.guards().netherComposition());
         World world = dragon.getWorld();
         int spawned = 0;
         for (int i = 0; i < plan.size(); i++) {
@@ -210,7 +222,7 @@ public final class CultGuards implements Listener {
             entity.remove();
             return false;
         }
-        CultIdentity.applyGuard(living, postIndex);
+        CultIdentity.applyGuard(living, postIndex, typeName);
         if (living instanceof Creature creature) {
             CultIdentity.holdPosition(creature);
         }

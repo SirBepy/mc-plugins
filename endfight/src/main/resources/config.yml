@@ -115,15 +115,15 @@ messages:
   tier-set: "<green>The next dragon will be <tier>."
   tier-locked-first-kill: "<red>The server's first dragon is always Ferocious; the altar is locked until it falls."
 
-# The illager cult guarding the arena: guards on every outpost/balcony/gatehouse/wall, and waves
-# that pour out of the fortress gates as the dragon loses health. Short notice before the first
-# fight (2026-10-10), so every part of this has its own switch, default on.
+# The dragon's army: illager guards on every outpost/balcony/gatehouse/wall and piglins on the
+# Nether pillars, plus waves on an HP schedule as the dragon loses health (Joe, 2026-10-09). Every
+# part has its own switch, default on.
 cult:
-  # Cap on live wave mobs at once (guards don't count: there is one per post) - a wave that would
-  # push past it just spawns fewer mobs, in composition order.
-  max-alive: 60
-  # When the dragon dies, every remaining cult mob dies with it in a puff of soul particles.
-  # Unconfirmed with Joe - off this switch if it turns out wrong.
+  # Cap on live wave mobs at once, queued ones included (guards don't count: there is one per
+  # post) - a wave that would push past it just spawns fewer mobs, in entry order.
+  max-alive: 150
+  # When the dragon dies, every remaining cult mob dies with it in a puff of soul particles, and
+  # any wave mobs still queued never come.
   die-with-dragon: true
   guards:
     enabled: true
@@ -141,49 +141,92 @@ cult:
     fall-teleport-distance: 6
     # ...or wandered this far from it with no target.
     wander-teleport-distance: 24
+    # A guard with no player within this many blocks has its AI switched off until one comes
+    # back (or something hurts it). Performance: most of ~100 guards are far from any fight.
+    sleep-range: 48
     # Base mob per post, plus one bonus mob once per physical outpost/gatehouse (not per post -
-    # see GuardPlan's javadoc for how posts are grouped back into outposts/gatehouses).
+    # see GuardPlan's javadoc for how posts are grouped back into outposts/gatehouses). The
+    # illager pillars and the fortress: crossbows and axes.
     composition:
       STAIR_OUTPOST:
         base: pillager
         bonus: vindicator
       LADDER_OUTPOST:
         base: pillager
+        bonus: vindicator
       BALCONY:
         base: pillager
+        bonus: vindicator
       GATEHOUSE:
         base: pillager
         bonus: evoker
       WALL:
         base: pillager
+    # The Nether-themed pillars (every other one around the ring).
+    nether-composition:
+      STAIR_OUTPOST:
+        base: piglin
+        bonus: piglin_brute
+      LADDER_OUTPOST:
+        base: piglin
+        bonus: piglin_brute
+      BALCONY:
+        base: piglin
+        bonus: piglin_brute
   waves:
     enabled: true
-    # How far (horizontally, from 0,0) a player in the End has to be to count towards a wave's size.
+    # How far (horizontally, from 0,0) a player in the End has to be to count as fighting. Only
+    # survival/adventure players who are alive count; waves scale with how many there are.
     range: 160
-    # Fractions of the dragon's (possibly datapack-raised) max health that trigger a wave, each one
-    # only once per dragon.
-    thresholds: [0.75, 0.5, 0.25, 0.2]
-    # Wave 1 at the first threshold, wave 2 at the second, wave 3 at the third - each wave's own
-    # full composition (not a delta from the last one). base is the mob count with no players
-    # around; per-n-players adds one more mob for every N players in range (1 = "per player").
-    compositions:
-      - entries:
+    # A wave's mobs come out over about this many ticks (50 = 2.5 s) instead of all at once.
+    spread-ticks: 50
+    # New wave mobs wait while the server's average tick time is above this many milliseconds.
+    max-mspt: 40
+    # Mobs dropped off the dragon start at most this far (horizontally) from the portal, so a
+    # dragon out over the void drops them onto the island instead.
+    drop-radius: 60
+    # Each wave fires once per dragon, the first time its health drops to `at` of its (possibly
+    # datapack-raised) max. Entries: `base` mobs of `type`, plus one more per `per-n-players`
+    # fighters (1 = per player, 0 = never more). `from`: gates (march out of the fortress gates,
+    # default), dragon (dropped off the dragon: Nether troops float down with slow falling,
+    # paratroopers glide), or damagers (`base` mobs over each of the top `top-damagers` dragon
+    # damage dealers, sent after that player). `announce` is the chat line for the wave.
+    schedule:
+      - at: 0.90
+        announce: "<red>Cult scouts pour out of the fortress gates!"
+        entries:
+          - { type: pillager, base: 2, per-n-players: 2 }
+          - { type: vindicator, base: 1, per-n-players: 3 }
+      - at: 0.75
+        announce: "<red>A pillager squad marches out, and the dragon drops piglins from the sky!"
+        entries:
           - { type: pillager, base: 4, per-n-players: 1 }
-          - { type: vindicator, base: 2, per-n-players: 1 }
-      - entries:
-          - { type: pillager, base: 4, per-n-players: 1 }
-          - { type: vindicator, base: 2, per-n-players: 1 }
-          - { type: evoker, base: 1, per-n-players: 0 }
-      - entries:
-          - { type: pillager, base: 4, per-n-players: 1 }
-          - { type: vindicator, base: 2, per-n-players: 1 }
-          - { type: evoker, base: 1, per-n-players: 0 }
-          - { type: ravager, base: 1, per-n-players: 3 }
-      # The Nether paratroopers: piglin brutes in gold armor gliding in on elytras from 30 blocks
-      # up for the dragon's last 20%. Their elytras never drop and they never zombify.
-      - entries:
-          - { type: paratrooper, base: 4, per-n-players: 2 }
+          - { type: vindicator, base: 2, per-n-players: 2 }
+          - { type: piglin, base: 2, per-n-players: 2, from: dragon }
+      - at: 0.50
+        announce: "<dark_purple>The dragon calls phantoms down on its fiercest foes!"
+        entries:
+          - { type: phantom, base: 3, from: damagers, top-damagers: 6 }
+          - { type: piglin_brute, base: 1, per-n-players: 4, from: dragon }
+      - at: 0.35
+        announce: "<red>Evokers and ravagers storm the gates, and brutes fall from the dragon!"
+        entries:
+          - { type: evoker, base: 1, per-n-players: 4 }
+          - { type: ravager, base: 1, per-n-players: 4 }
+          - { type: vindicator, base: 2, per-n-players: 2 }
+          - { type: piglin_brute, base: 1, per-n-players: 3, from: dragon }
+      # The Nether paratroopers: piglin brutes in gold armor gliding off the dragon for its last
+      # 15%. Their elytras never drop and they never zombify.
+      - at: 0.15
+        announce: "<gold>Nether paratroopers leap off the dragon!"
+        entries:
+          - { type: paratrooper, base: 4, per-n-players: 2, from: dragon }
+  # A boss bar under the dragon's counting the army still alive, guards included.
+  counter:
+    enabled: true
+    interval-ticks: 20
   messages:
+    # Used for a wave with no `announce` line of its own.
     wave-announce: "<red>The cult answers the dragon's call!"
 
 # Keeps the dragon fighting instead of perching on the exit portal while any pillar's crystal is

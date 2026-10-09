@@ -46,26 +46,60 @@ live before the End is open. Set `arena.auto-build: false` in `config.yml` to re
 
 ## The cult
 
-Illager guards hold every outpost, balcony, gatehouse and wall spot the arena recorded in phase 1.
-The dragon controls them and doesn't care if its own attacks hurt them - crystal blasts, wing/head
-hits and breath attacks near a guard still hurt it like any other mob, same as vanilla.
+The dragon's army holds every outpost, balcony, gatehouse and wall spot the arena recorded in
+phase 1. The dragon controls it and doesn't care if its own attacks hurt it - crystal blasts,
+wing/head hits and breath attacks near a cultist still hurt it like any other mob, same as vanilla.
 
+- **Two factions** (Joe, 2026-10-09). Walking the ring of pillars by angle around the portal,
+  every other pillar is Nether-themed (`ArenaLayout.factions`): nether brick floors, blackstone
+  stair supports, crimson stairs and fences, a shroomlight on each outpost, a soul fire on soul
+  soil near each outpost's rim, and a black piglin war banner. Those are held by piglins, with a
+  brute on every outpost tier and balcony. The other 5 keep the illager look and are held by
+  crossbows and axes: a pillager on every post, a vindicator on every outpost tier and balcony.
+  The fortress ring is always the illagers' (an evoker on each gatehouse). Piglins never turn
+  into zombified piglins in the End and never spawn as babies.
 - **Guards** spawn once a dragon is alive in the End, the arena is built, and a player has been
-  within 160 blocks of 0,0 in the last couple of seconds - one per post, plus a bonus mob once per
-  physical outpost/gatehouse (one vindicator per stair/ladder outpost tier, one evoker per
-  gatehouse). They hold their post: no wandering off, and a guard that strays or falls too far with
-  no target is walked or teleported straight back. They never hurt or target each other (the
-  dragon's attacks and a player's are the only things that land). When the dragon dies, every
-  surviving cultist vanishes with it in a puff of soul particles a couple of seconds later - unless
+  within 160 blocks of 0,0 in the last couple of seconds - one per post, plus the bonus mob once
+  per physical outpost/gatehouse. They hold their post: no wandering off, and a guard that strays
+  or falls too far with no target is walked or teleported straight back. A guard with no player
+  within `cult.guards.sleep-range` (48) has its AI switched off until one comes back or something
+  hurts it. They never hurt or target each other (the dragon's attacks and a player's are the only
+  things that land). When the dragon dies, every surviving cultist vanishes with it in a puff of
+  soul particles a couple of seconds later, and any wave mobs still queued never come - unless
   `cult.die-with-dragon` is off.
-- **Waves** pour out of all 4 fortress gates when the dragon's health crosses 75%, 50% and 25% of
-  its (possibly datapack-raised) max health, once per threshold per dragon. At 20% the Nether
-  paratroopers come (Joe, 2026-10-09): piglin brutes in gold armor gliding in on elytras from 30
-  blocks above the gates, Incendium's castle reinforcements (50 health, fast), 4 plus 1 per 2
-  players; their elytras never drop and they never turn into zombified piglins. Each wave is bigger
-  with more players in the End near the portal, and a chat line announces it. A cap
-  (`cult.max-alive`, default 60) on live wave mobs holds regardless of how big a wave's math says it
-  should be; guards don't count toward it.
+- **Waves** follow an HP schedule (`cult.waves.schedule`), each wave once per dragon, the first
+  time its health drops to that fraction of its (possibly datapack-raised) max:
+
+  | At | Wave | Comes from |
+  | --- | --- | --- |
+  | 90% | Scouts: 2 pillagers + 1 per 2 fighters, 1 vindicator + 1 per 3 | the 4 fortress gates |
+  | 75% | Pillager squad: 4 pillagers + 1 per fighter, 2 vindicators + 1 per 2; 2 piglins + 1 per 2 | gates; piglins dropped off the dragon |
+  | 50% | 3 phantoms on each of the top 6 dragon damage dealers; 1 brute + 1 per 4 | over each of those players; brutes off the dragon |
+  | 35% | 1 evoker + 1 per 4, 1 ravager + 1 per 4, 2 vindicators + 1 per 2; 1 brute + 1 per 3 | gates; brutes off the dragon |
+  | 15% | Nether paratroopers: 4 + 1 per 2 | gliding off the dragon |
+
+  "Fighters" are the players actually fighting: alive, survival or adventure, within 160 blocks
+  of 0,0. Gate mobs march out at the nearest fighter. Nether troops dropped off the dragon start 6
+  blocks under it (its wings and head hurt what they touch), pulled in to 60 blocks of the portal
+  if it is out over the void, and float down with slow falling until they land. Paratroopers are
+  Incendium's castle reinforcements (piglin brutes in gold armor, 50 health, fast) launched off
+  the dragon towards the nearest fighter on elytras that never drop. Phantoms start 14 blocks over
+  the player they were sent after. Piglins and brutes are made angry at their player (their brain
+  ignores `Mob#setTarget`, javap on the 26.3 jar). Each wave has its own chat line.
+- **Performance** (Joe's rules, 2026-10-09, for ~15 players): at most `cult.max-alive` (150) wave
+  mobs alive at once, queued ones included (guards don't count); a wave's mobs come out over
+  `cult.waves.spread-ticks` (50 ticks) instead of all in one tick; and nothing new spawns while
+  the server's average tick time is over `cult.waves.max-mspt` (40 ms) - the queue just waits.
+- **Mob counter.** A boss bar under the dragon's counts the army still alive, guards included,
+  with the title naming the biggest types ("Dragon's army: 42 left (18 Pillagers, 9 Piglins,
+  ...)"). It is shown only to players who already see the dragon's own bar, so the client draws
+  it underneath, and only while a dragon lives and the army isn't empty. AuraSkills owns the
+  action bar, so it can't go there. Off switch: `cult.counter.enabled`.
+- **Fight tallies** (`fight.FightStats`, on the dragon's PDC like the fighter list): damage dealt
+  to the dragon per player (blamed by the same `DragonFighters` rules; a killing blow counts only
+  the health that was left) and cult kills per player per type (`pillager`, `piglin_brute`,
+  `paratrooper`, `phantom`...). The 50% phantoms use the damage ranking; the extra rewards for the
+  top dealer and the top killer of each type read them too. `/endfight cult stats` prints them.
 - Everything here is behind `cult.guards.enabled` / `cult.waves.enabled`, both on by default, plus
   the composition and timing knobs in `config.yml`'s `cult` section.
 
@@ -123,7 +157,8 @@ All require `endfight.admin` (default: op).
 | `endfight reload` | Reloads `config.yml` |
 | `endfight rewards status` | Pending reward entries, the current dragon's fighter count, and the current tier |
 | `endfight rewards test <player> [tier]` | Gives that player one Dragon Hoard through the live delivery chain (default: the current tier), no XP, ignoring the weekly limit |
-| `endfight cult status` | Cult mobs alive, which wave thresholds each tracked dragon has crossed |
+| `endfight cult status` | Cult mobs alive (by type), which wave thresholds each tracked dragon has crossed, mobs still queued |
+| `endfight cult stats` | This fight's damage per player and the top killer of each mob type |
 | `endfight cult spawn` | Force-spawns guards now, ignoring the once-per-dragon rule |
 | `endfight cult clear` | Removes every live cult mob (testing/repair) |
 | `endfight snapshot` | Retakes the whole-island snapshot now |

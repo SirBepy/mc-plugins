@@ -1,12 +1,20 @@
 package dev.sirbepy.mc.endfight.cult;
 
 import org.bukkit.Material;
+import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Creature;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
+import org.bukkit.entity.Piglin;
+import org.bukkit.entity.PiglinAbstract;
 import org.bukkit.entity.Pillager;
+import org.bukkit.entity.Player;
 import org.bukkit.entity.Raider;
+import org.bukkit.entity.memory.MemoryKey;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
+
+import java.util.Locale;
 
 /**
  * Turns a freshly spawned raider into an Ender cultist: persistent so it never despawns or gets
@@ -25,6 +33,12 @@ final class CultIdentity {
     }
 
     static void apply(LivingEntity mob) {
+        apply(mob, mob.getType().name().toLowerCase(Locale.ROOT));
+    }
+
+    /** {@code type} is the config name it was spawned as, kept on it for the mob counter and the
+     * per-type kill tallies. */
+    static void apply(LivingEntity mob, String type) {
         tryRun(() -> mob.setPersistent(true));
         tryRun(() -> mob.setRemoveWhenFarAway(false));
         tryRun(() -> mob.setCanPickupItems(false));
@@ -41,12 +55,42 @@ final class CultIdentity {
         if (mob instanceof Pillager pillager) {
             arm(pillager);
         }
+        // Piglins turn into zombified piglins after 15 s outside the Nether, and a baby piglin
+        // never fights.
+        if (mob instanceof PiglinAbstract piglin) {
+            tryRun(() -> piglin.setImmuneToZombification(true));
+        }
+        if (mob instanceof Piglin piglin) {
+            tryRun(() -> piglin.setIsAbleToHunt(false));
+        }
+        if (mob instanceof Ageable ageable) {
+            tryRun(ageable::setAdult);
+        }
         CultMarker.mark(mob);
+        CultMarker.setType(mob, type);
     }
 
     static void applyGuard(LivingEntity mob, int postIndex) {
-        apply(mob);
+        applyGuard(mob, postIndex, mob.getType().name().toLowerCase(Locale.ROOT));
+    }
+
+    static void applyGuard(LivingEntity mob, int postIndex, String type) {
+        apply(mob, type);
         CultMarker.markGuard(mob, postIndex);
+    }
+
+    /**
+     * Sends a cult mob after {@code player}. Piglins and brutes pick targets with their brain, and
+     * javap on the 26.3 jar shows {@code AbstractPiglin.getTarget()} reading the brain's attack
+     * memory rather than the field {@code Mob#setTarget} writes, so they are made angry at the
+     * player instead, which their brain turns into an attack.
+     */
+    static void sendAfter(Mob mob, Player player) {
+        if (mob instanceof PiglinAbstract) {
+            tryRun(() -> mob.setMemory(MemoryKey.ANGRY_AT, player.getUniqueId()));
+            return;
+        }
+        tryRun(() -> mob.setTarget(player));
     }
 
     private static void arm(Pillager pillager) {

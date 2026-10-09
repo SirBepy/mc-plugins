@@ -124,7 +124,8 @@ public final class DragonFighters {
         return entity instanceof EnderDragon dragon ? dragon : null;
     }
 
-    Player responsible(EntityDamageEvent event) {
+    /** The player to blame for a hit, by the rules in the class docs; null if nobody is. */
+    public Player responsible(EntityDamageEvent event) {
         DamageSource source = event.getDamageSource();
         if (source.getCausingEntity() instanceof Player player) {
             return player;

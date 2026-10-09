@@ -2,19 +2,19 @@ package dev.sirbepy.mc.endfight.cult;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.PiglinBrute;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.Vector;
 
 import java.util.function.Consumer;
 
 /**
  * The last wave's Nether paratroopers (Joe, 2026-10-09): Incendium's castle reinforcements, piglin
- * brutes in gold armor gliding in on elytras, here dropped from high above the island when the
- * dragon is nearly dead. Built like Incendium's own
+ * brutes in gold armor gliding in on elytras, here leaping off the dragon when it is nearly dead.
+ * Built like Incendium's own
  * ({@code data/incendium/function/admin/spawn/castle/paratrooper.mcfunction}: 50 health, speed
  * 0.345, follow range 100), but their elytras never drop, and they don't turn into zombified
  * piglins outside the Nether.
@@ -23,12 +23,12 @@ final class Paratroopers {
 
     /** The wave composition type name that spawns one of these instead of a plain mob. */
     static final String TYPE = "paratrooper";
-    /** How far above the ground they start gliding. */
-    static final int DROP_HEIGHT = 30;
     static final double HEALTH = 50.0;
     static final double SPEED = 0.345;
     static final double FOLLOW_RANGE = 100.0;
     static final float ELYTRA_DROP_CHANCE = 0f;
+    /** The push off the dragon, towards their target: a glide needs forward speed to carry. */
+    static final double LAUNCH_SPEED = 0.8;
 
     private Paratroopers() {
     }
@@ -37,15 +37,26 @@ final class Paratroopers {
         return TYPE.equalsIgnoreCase(typeName.trim());
     }
 
-    /** Spawns one gliding in {@link #DROP_HEIGHT} above (x, groundY, z), already a cult mob. */
-    static PiglinBrute spawn(World world, int x, int groundY, int z) {
-        Location at = new Location(world, x + 0.5, groundY + DROP_HEIGHT, z + 0.5);
-        return world.spawn(at, PiglinBrute.class, (Consumer<PiglinBrute>) Paratroopers::equip);
+    /** Spawns one gliding from {@code at}, launched towards {@code toward} (null: straight on). */
+    static PiglinBrute spawn(Location at, Location toward) {
+        PiglinBrute brute = at.getWorld().spawn(at, PiglinBrute.class, (Consumer<PiglinBrute>) Paratroopers::equip);
+        brute.setVelocity(launch(at, toward));
+        return brute;
+    }
+
+    static Vector launch(Location from, Location toward) {
+        if (toward == null) {
+            return new Vector(0, -0.1, 0);
+        }
+        Vector flat = new Vector(toward.getX() - from.getX(), 0, toward.getZ() - from.getZ());
+        if (flat.lengthSquared() < 1e-6) {
+            return new Vector(0, -0.1, 0);
+        }
+        return flat.normalize().multiply(LAUNCH_SPEED).setY(-0.1);
     }
 
     static void equip(PiglinBrute brute) {
-        CultIdentity.apply(brute);
-        brute.setImmuneToZombification(true);
+        CultIdentity.apply(brute, TYPE);
         setBase(brute, Attribute.MAX_HEALTH, HEALTH);
         setBase(brute, Attribute.MOVEMENT_SPEED, SPEED);
         setBase(brute, Attribute.FOLLOW_RANGE, FOLLOW_RANGE);

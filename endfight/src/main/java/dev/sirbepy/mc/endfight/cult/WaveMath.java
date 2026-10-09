@@ -2,22 +2,52 @@ package dev.sirbepy.mc.endfight.cult;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
+import java.util.UUID;
 
 /**
- * Pure: when a wave's health threshold is newly crossed, and how big that wave is. No world
- * access, no randomness - a dragon's current/max health and "already crossed" bookkeeping are read
- * by the caller ({@code CultWaves}) and handed in as plain numbers.
+ * Pure: when a wave's health threshold is newly crossed, and what that wave spawns. No world
+ * access, no randomness - a dragon's current/max health, the fighter count and the top damage
+ * dealers are read by the caller ({@code CultWaves}) and handed in as plain values.
  */
 public final class WaveMath {
 
     private WaveMath() {
     }
 
-    /** One entry in a wave's composition: {@code base} mobs of {@code type}, plus one more for
-     * every {@code perNPlayers} players in range (so "+1 per player" is {@code perNPlayers == 1},
-     * "+1 per 3 players" is {@code perNPlayers == 3}). */
-    public record WaveEntry(String type, int base, int perNPlayers) {
+    /** Where a wave mob comes from (Joe, 2026-10-09). */
+    public enum From {
+        /** Marches out of the fortress gates (the illager cult). */
+        GATES,
+        /** Dropped off the dragon: Nether troops fall with slow falling, paratroopers glide. */
+        DRAGON,
+        /** Spawned over each of the top dragon damage dealers and sent after that player (phantoms). */
+        DAMAGERS;
+
+        static From parse(Object raw) {
+            if (raw == null) {
+                return GATES;
+            }
+            try {
+                return valueOf(raw.toString().trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                return GATES;
+            }
+        }
+    }
+
+    /**
+     * One entry in a wave: {@code base} mobs of {@code type}, plus one more for every
+     * {@code perNPlayers} fighters (so "+1 per player" is {@code perNPlayers == 1}). A
+     * {@link From#DAMAGERS} entry instead puts {@code base} mobs on each of the top
+     * {@code topDamagers} dragon damage dealers.
+     */
+    public record WaveEntry(String type, int base, int perNPlayers, From from, int topDamagers) {
+
+        public WaveEntry(String type, int base, int perNPlayers) {
+            this(type, base, perNPlayers, From.GATES, 0);
+        }
 
         int count(int players) {
             if (perNPlayers <= 0) {
@@ -25,6 +55,14 @@ public final class WaveMath {
             }
             return base + players / perNPlayers;
         }
+    }
+
+    /** One wave: fires once per dragon when its health first drops to {@code at} of its max. */
+    public record Wave(double at, String announce, List<WaveEntry> entries) {
+    }
+
+    /** One mob to spawn; {@code target} is the player a {@link From#DAMAGERS} mob is sent after. */
+    public record PlannedSpawn(String type, From from, UUID target) {
     }
 
     /**
@@ -55,21 +93,43 @@ public final class WaveMath {
         return out;
     }
 
-    /** The mob types to spawn for one wave, scaled by {@code players} and capped so
-     * {@code currentAlive} plus the spawn never exceeds {@code maxAlive} (extra mobs past the cap
-     * are simply dropped, in composition order). */
-    public static List<String> spawnList(List<WaveEntry> entries, int players, int currentAlive, int maxAlive) {
-        List<String> out = new ArrayList<>();
+    /**
+     * What one wave spawns, in entry order: {@code players} fighters scale the gate and dragon
+     * entries, and a damagers entry puts its mobs on each of the first {@code topDamagers} of
+     * {@code damagers} (already sorted, most damage first). Capped so {@code currentAlive} plus the
+     * spawn never exceeds {@code maxAlive}; mobs past the cap are dropped, in entry order.
+     */
+    public static List<PlannedSpawn> plan(List<WaveEntry> entries, int players, List<UUID> damagers,
+                                          int currentAlive, int maxAlive) {
+        List<PlannedSpawn> out = new ArrayList<>();
         int budget = Math.max(0, maxAlive - currentAlive);
         for (WaveEntry entry : entries) {
-            int count = entry.count(players);
-            for (int i = 0; i < count && out.size() < budget; i++) {
-                out.add(entry.type());
+            if (entry.from() == From.DAMAGERS) {
+                int targets = Math.min(entry.topDamagers(), damagers.size());
+                for (int t = 0; t < targets; t++) {
+                    for (int i = 0; i < entry.base() && out.size() < budget; i++) {
+                        out.add(new PlannedSpawn(entry.type(), From.DAMAGERS, damagers.get(t)));
+                    }
+                }
+            } else {
+                int count = entry.count(players);
+                for (int i = 0; i < count && out.size() < budget; i++) {
+                    out.add(new PlannedSpawn(entry.type(), entry.from(), null));
+                }
             }
             if (out.size() >= budget) {
                 break;
             }
         }
         return out;
+    }
+
+    /** How many queued mobs to spawn per tick so {@code queued} of them come out over about
+     * {@code spreadTicks} ticks - never fewer than one a tick. */
+    public static int perTick(int queued, int spreadTicks) {
+        if (queued <= 0) {
+            return 0;
+        }
+        return Math.max(1, (int) Math.ceil(queued / (double) Math.max(1, spreadTicks)));
     }
 }

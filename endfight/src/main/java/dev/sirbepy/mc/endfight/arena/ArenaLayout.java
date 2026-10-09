@@ -2,7 +2,9 @@ package dev.sirbepy.mc.endfight.arena;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Pure geometry: 10 {@link Pillar}s in, an ordered list of block placements plus named guard posts
@@ -50,11 +52,13 @@ public final class ArenaLayout {
         List<WaveSpawn> waveSpawns = new ArrayList<>();
         List<Tread> treads = new ArrayList<>();
 
+        Map<Pillar, Faction> factions = factions(pillars);
         for (int i = 0; i < byHeight.size(); i++) {
             Pillar p = byHeight.get(i);
+            Faction faction = factions.get(p);
             PillarResult result = i >= tallFrom
-                    ? PillarStructures.tallPillar(p, pillars)
-                    : PillarStructures.shortPillar(p, pillars);
+                    ? PillarStructures.tallPillar(p, pillars, faction)
+                    : PillarStructures.shortPillar(p, pillars, faction);
             placements.addAll(result.placements());
             guardPosts.addAll(result.guardPosts());
             treads.addAll(result.treads());
@@ -68,6 +72,28 @@ public final class ArenaLayout {
         placements.addAll(AltarStructures.build(terrain.altarY()).placements());
 
         return new ArenaLayout(placements, guardPosts, waveSpawns, treads);
+    }
+
+    /**
+     * Pillars alternate illager, Nether, illager... walking the ring by angle around the portal
+     * (Joe, 2026-10-09), starting from the one nearest due east (angle 0), so the same pillars
+     * always get the same faction. Vanilla's 10 pillars sit evenly around the ring, so this splits
+     * them 5 and 5 with no two neighbours alike.
+     */
+    public static Map<Pillar, Faction> factions(List<Pillar> pillars) {
+        List<Pillar> byAngle = new ArrayList<>(pillars);
+        byAngle.sort(Comparator.comparingDouble(ArenaLayout::angle));
+        Map<Pillar, Faction> out = new HashMap<>();
+        for (int i = 0; i < byAngle.size(); i++) {
+            out.put(byAngle.get(i), i % 2 == 0 ? Faction.ILLAGER : Faction.NETHER);
+        }
+        return out;
+    }
+
+    /** 0 to 2pi, counting from +x towards +z. */
+    private static double angle(Pillar p) {
+        double a = Math.atan2(p.cz(), p.cx());
+        return a < 0 ? a + 2 * Math.PI : a;
     }
 
     public List<Placement> placements() {

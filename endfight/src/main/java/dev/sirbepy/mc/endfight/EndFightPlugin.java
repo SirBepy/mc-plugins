@@ -14,9 +14,12 @@ import dev.sirbepy.mc.endfight.arena.EndWorldLoadListener;
 import dev.sirbepy.mc.endfight.arena.RespawnRebuildListener;
 import dev.sirbepy.mc.endfight.command.EndFightCommand;
 import dev.sirbepy.mc.endfight.cult.CultCommand;
+import dev.sirbepy.mc.endfight.cult.CultCounter;
 import dev.sirbepy.mc.endfight.cult.CultFriendlyFire;
 import dev.sirbepy.mc.endfight.cult.CultGuards;
 import dev.sirbepy.mc.endfight.cult.CultWaves;
+import dev.sirbepy.mc.endfight.cult.WaveSpawner;
+import dev.sirbepy.mc.endfight.fight.FightStatsListener;
 import dev.sirbepy.mc.endfight.perch.PerchGateListener;
 import dev.sirbepy.mc.endfight.reset.BukkitDragonBattleView;
 import dev.sirbepy.mc.endfight.reset.IslandResetService;
@@ -60,6 +63,8 @@ public final class EndFightPlugin extends JavaPlugin {
     private ArenaRegistry registry;
     private ArenaService service;
     private CultGuards cultGuards;
+    private WaveSpawner waveSpawner;
+    private CultCounter cultCounter;
     private RespawnWatcher respawnWatcher;
 
     @Override
@@ -98,8 +103,14 @@ public final class EndFightPlugin extends JavaPlugin {
                 () -> watcherRef.get() != null && watcherRef.get().busy());
         cultGuards.start();
         getServer().getPluginManager().registerEvents(cultGuards, this);
-        getServer().getPluginManager().registerEvents(
-                new CultWaves(registry, () -> config.get().cult(), getLogger()), this);
+        // Waves come out a few mobs a tick, and wait while the server is over its tick budget.
+        waveSpawner = new WaveSpawner(this, registry, () -> config.get().cult(), () -> getServer().getAverageTickTime());
+        waveSpawner.start();
+        getServer().getPluginManager().registerEvents(waveSpawner, this);
+        getServer().getPluginManager().registerEvents(new CultWaves(() -> config.get().cult(), waveSpawner), this);
+        cultCounter = new CultCounter(this, () -> config.get().cult());
+        cultCounter.start();
+        getServer().getPluginManager().registerEvents(cultCounter, this);
         getServer().getPluginManager().registerEvents(new CultFriendlyFire(), this);
         getServer().getPluginManager().registerEvents(
                 new PerchGateListener(registry, () -> config.get().perchGate()), this);
@@ -135,6 +146,8 @@ public final class EndFightPlugin extends JavaPlugin {
         RewardService rewards = new RewardService(this, config::get, pendingRewards, rewardProgress, tiers,
                 new Random(), clock);
         getServer().getPluginManager().registerEvents(new DragonDeathListener(rewards), this);
+        // Per-player damage and kills this fight: the 50% wave's phantoms and the extra rewards.
+        getServer().getPluginManager().registerEvents(new FightStatsListener(rewards.fighters()), this);
         getServer().getPluginManager().registerEvents(new RewardJoinListener(this, rewards), this);
 
         DragonAuraService auras = new DragonAuraService(rewardProgress);
@@ -152,7 +165,7 @@ public final class EndFightPlugin extends JavaPlugin {
         ResetCommand resetCommand = new ResetCommand(resetService, respawnWatcher, restorer, snapshotStore, service::endWorld);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             EndFightCommand command = new EndFightCommand(service, config::get, this::reload, rewards, tiers);
-            command.registerInto(event.registrar(), new CultCommand(cultGuards), resetCommand);
+            command.registerInto(event.registrar(), new CultCommand(cultGuards, cultCounter, waveSpawner), resetCommand);
             new DragonAuraCommand(auras).registerInto(event.registrar());
         });
     }
@@ -161,6 +174,12 @@ public final class EndFightPlugin extends JavaPlugin {
     public void onDisable() {
         if (cultGuards != null) {
             cultGuards.stop();
+        }
+        if (waveSpawner != null) {
+            waveSpawner.stop();
+        }
+        if (cultCounter != null) {
+            cultCounter.stop();
         }
         if (respawnWatcher != null) {
             respawnWatcher.stop();

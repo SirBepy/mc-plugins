@@ -181,4 +181,56 @@ class CultGuardsTest {
         assertEquals(0, guards.aliveCount());
         assertTrue(bystander.isValid(), "clear only removes cult mobs");
     }
+
+    // Joe, 2026-10-09: the Nether pillars are held by piglins and brutes, the rest by crossbows
+    // and axes.
+    @Test
+    void netherPillarsGetPiglinsThatNeverZombifyAndTheRestGetIllagers() {
+        dragon();
+        guards.forceSpawn();
+
+        List<LivingEntity> cult = end.getEntitiesByClass(LivingEntity.class).stream().filter(CultMarker::isCult).toList();
+        long piglins = cult.stream().filter(e -> e instanceof org.bukkit.entity.Piglin).count();
+        long brutes = cult.stream().filter(e -> e instanceof org.bukkit.entity.PiglinBrute).count();
+        assertTrue(piglins >= 15, "a piglin on every Nether post (got " + piglins + ")");
+        assertTrue(brutes >= 5, "a brute on every Nether outpost tier and balcony (got " + brutes + ")");
+        for (LivingEntity e : cult) {
+            if (e instanceof org.bukkit.entity.PiglinAbstract piglin) {
+                assertTrue(piglin.isImmuneToZombification());
+                assertTrue(piglin.isAdult());
+                assertEquals(e instanceof org.bukkit.entity.Piglin ? "piglin" : "piglin_brute", CultMarker.type(e));
+                assertTrue(CultMarker.postIndex(e) >= 0);
+            }
+        }
+        List<dev.sirbepy.mc.endfight.arena.GuardPost> posts = registry.guardPosts();
+        for (LivingEntity e : cult) {
+            dev.sirbepy.mc.endfight.arena.GuardPost post = posts.get(CultMarker.postIndex(e));
+            boolean piglin = e instanceof org.bukkit.entity.PiglinAbstract;
+            assertEquals(post.faction() == dev.sirbepy.mc.endfight.arena.Faction.NETHER, piglin, "faction of " + post);
+        }
+    }
+
+    // Performance (Joe, 2026-10-09): a guard with nobody near thinks nothing.
+    @Test
+    void guardsSleepWithNobodyNearAndWakeWhenSomeoneComesOrHurtsThem() {
+        dragon();
+        guards.forceSpawn();
+        List<org.bukkit.entity.Mob> all = end.getEntitiesByClass(org.bukkit.entity.Mob.class).stream()
+                .filter(m -> CultMarker.postIndex(m) >= 0).toList();
+        org.bukkit.entity.Mob guard = all.get(0);
+
+        GuardTether.tickAll(end, registry.guardPosts(), config.guards());
+        assertTrue(all.stream().noneMatch(org.bukkit.entity.Mob::isAware), "nobody in the End: all asleep");
+
+        PlayerMock player = server.addPlayer();
+        player.teleport(guard.getLocation().clone().add(5, 0, 0));
+        GuardTether.tickAll(end, registry.guardPosts(), config.guards());
+        assertTrue(guard.isAware(), "awake with a player 5 blocks off");
+        assertTrue(all.stream().anyMatch(m -> !m.isAware()), "guards far from that player stay asleep");
+
+        org.bukkit.entity.Mob sleeper = all.stream().filter(m -> !m.isAware()).findFirst().orElseThrow();
+        guards.onGuardHurt(new org.bukkit.event.entity.EntityDamageEvent(sleeper,
+                org.bukkit.event.entity.EntityDamageEvent.DamageCause.PROJECTILE, 2));
+        assertTrue(sleeper.isAware(), "hurting a sleeping guard wakes it");
+    }
 }
