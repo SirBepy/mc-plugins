@@ -2,79 +2,84 @@ package dev.sirbepy.mc.endfight.reward;
 
 import dev.sirbepy.mc.core.dragon.DragonFighters;
 import dev.sirbepy.mc.endfight.EndFightConfig;
+import dev.sirbepy.mc.endfight.tier.Tier;
+import dev.sirbepy.mc.endfight.tier.TierChoice;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.scheduler.BukkitTask;
 
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
 /**
- * Ties the fighter tracking, the dragon's vanilla XP and the reward bundle together.
+ * Ties the fighter tracking, the per-tier reward table and the Dragon Hoard together (Joe's
+ * reward spec, 2026-10-09).
  *
- * <p>Vanilla never routes the dragon's XP through {@code EntityDeathEvent#getDroppedExp}: javap on
- * {@code EnderDragon.tickDeath()} (26.3's {@code paper-26.3.jar}, extracted to
- * {@code .for_bepy/end-build/jar3}) shows it spawning {@link ExperienceOrb} entities directly via
- * {@code ExperienceOrb.awardWithDirection(..., SpawnReason.ENTITY_DEATH, ...)} in 10 batches
- * between {@code dragonDeathTime} 155 and 200 (every 5 ticks during the death animation), each
- * batch going through {@code ServerLevel.addFreshEntity} -&gt; {@code CraftEventFactory
- * .doEntityAddEventCalling}, which fires a cancellable spawn event before the orb is ever added to
- * the world (an {@code EntitySpawnEvent}, since {@code ExperienceOrb} is not a {@code LivingEntity}
- * and so never gets a {@code CreatureSpawnEvent}).
- *
- * <p>The total (12000 on the dragon's first-ever kill, 500 after) is read from a private
- * {@code expToDrop} field rather than recomputed from {@code EnderDragonFight.hasPreviouslyKilledDragon()}
- * at tick time, and that flag itself only flips to {@code true} much later - when the death
- * sequence places the dragon egg, around {@code dragonDeathTime} 200 - so reading it any earlier
- * (e.g. from {@code EntityDeathEvent}) would still observe the pre-kill value, which happens to be
- * correct here but is fragile to depend on. Summing the suppressed orbs' own
- * {@link ExperienceOrb#getExperience()} as they are cancelled sidesteps both: it reads the exact
- * amount vanilla decided to award, with no dependency on {@code DragonBattle} at all - which matters
- * because {@code World.getEnderDragonBattle()} throws {@code UnimplementedOperationException}
- * unconditionally in the MockBukkit version this repo pins (confirmed via javap on
- * {@code mockbukkit-v26.2-4.116.1.jar}'s {@code WorldMock.class}; guild's own
- * {@code DragonSlayers.checkEarlierKill}, the only other caller of that method, has no test
- * coverage for the same reason).
+ * <p>XP is read straight from {@link TierRewardRow#xp()} - 500 to 4000 by tier, 12000 on the
+ * server's actual first-ever kill - never summed from the dragon's death-animation orbs. It used
+ * to be: javap on {@code EnderDragon.tickDeath()} showed vanilla spawning those orbs directly via
+ * a cancellable {@code EntitySpawnEvent}, and cancelling them looked like a clean way to both stop
+ * double-dipping and read vanilla's own total. In practice it does not work - a live kill on the
+ * e2e server (Paper 26.2) showed orbs landing on the ground 7-10s after death with the fighter's
+ * XP bar never moving, meaning the cancelled-orb total was reading 0. See {@link OrbSweep} for the
+ * sweep that replaced it: since the reward table decides the XP amount now anyway, the orbs only
+ * need to disappear, not be read.
  */
 public final class RewardService {
 
-    /** Vanilla's own orb batches land between dragonDeathTime 155 and 200 (20 ticks/s = 7.75-10s
-     * after death); this leaves a margin either side before summing and delivering. */
+    /** How long the orb sweep keeps running, and how long delivery waits, after a death - plenty
+     * of margin around vanilla's own ~7.75-10s death-animation orb batches. */
     static final long ORB_WINDOW_TICKS = 240L;
+    static final double ORB_SUPPRESSION_RADIUS = 24.0;
+
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ISO_LOCAL_DATE;
 
     private final Plugin plugin;
     private final Supplier<EndFightConfig> config;
     private final DragonFighters fighters;
     private final PendingRewardsStore pending;
+    private final RewardProgressStore progress;
+    private final TierChoice tierChoice;
+    private final Random random;
+    private final Clock clock;
     private final Logger logger;
 
     private final Map<UUID, Tracking> dying = new ConcurrentHashMap<>();
 
-    private static final class Tracking {
-        final Set<UUID> participants;
-        final AtomicInteger xp = new AtomicInteger();
-
-        Tracking(Set<UUID> participants) {
-            this.participants = participants;
-        }
+    private record Tracking(Set<UUID> participants, Location deathLocation, Tier tier, boolean firstKillEver) {
     }
 
-    public RewardService(Plugin plugin, Supplier<EndFightConfig> config, PendingRewardsStore pending) {
+    public RewardService(Plugin plugin, Supplier<EndFightConfig> config, PendingRewardsStore pending,
+                          RewardProgressStore progress, TierChoice tierChoice, Random random, Clock clock) {
         this.plugin = plugin;
         this.config = config;
         this.fighters = new DragonFighters(new NamespacedKey("endfight", "dragon-fighters"), System::currentTimeMillis);
         this.pending = pending;
+        this.progress = progress;
+        this.tierChoice = tierChoice;
+        this.random = random;
+        this.clock = clock;
         this.logger = plugin.getLogger();
     }
 
@@ -84,9 +89,9 @@ public final class RewardService {
 
     /**
      * The dragon died (caller has already filtered to a real kill in the End, not an op's
-     * {@code /kill} - see {@link DragonDeathListener#onDeath}). Participants = everyone who hurt it
-     * plus its killer. Starts suppressing/summing this world's death-animation orbs and schedules
-     * delivery once vanilla's batches are done.
+     * {@code /kill} - see {@link DragonDeathListener#onDeath}). Participants = everyone who hurt
+     * it plus its killer. Starts sweeping this death's XP orbs (see {@link OrbSweep}) and
+     * schedules delivery once the sweep window ends.
      */
     public void onDragonDeath(EnderDragon dragon) {
         if (!config.get().rewardsEnabled()) {
@@ -99,20 +104,35 @@ public final class RewardService {
         if (participants.isEmpty()) {
             return;
         }
-        UUID worldId = dragon.getWorld().getUID();
-        dying.put(worldId, new Tracking(participants));
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> finalizeRewards(worldId), ORB_WINDOW_TICKS);
+        boolean firstKillEver = tierChoice.firstKillEver();
+        Tier tier = firstKillEver ? Tier.FEROCIOUS : tierChoice.current();
+        World world = dragon.getWorld();
+        UUID worldId = world.getUID();
+        Location deathLocation = dragon.getLocation();
+        dying.put(worldId, new Tracking(participants, deathLocation, tier, firstKillEver));
+
+        // Immediately, to clear any orb already lying nearby before the window's own sweeps start.
+        sweepOrbs(world, deathLocation);
+
+        BukkitTask sweepTask = plugin.getServer().getScheduler()
+                .runTaskTimer(plugin, () -> sweepOrbs(world, deathLocation), 1L, 1L);
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            sweepTask.cancel();
+            finalizeRewards(worldId);
+        }, ORB_WINDOW_TICKS);
     }
 
-    /** True if {@code orb} belongs to a dragon this service is currently tracking (the caller
-     * cancels its spawn when this returns true, so the orb never reaches the ground). */
-    public boolean suppressIfDying(ExperienceOrb orb) {
-        Tracking tracking = dying.get(orb.getWorld().getUID());
-        if (tracking == null) {
-            return false;
+    private void sweepOrbs(World world, Location deathLocation) {
+        for (ExperienceOrb orb : world.getEntitiesByClass(ExperienceOrb.class)) {
+            if (OrbSweep.inRange(orb.getLocation(), deathLocation, ORB_SUPPRESSION_RADIUS)) {
+                orb.remove();
+            }
         }
-        tracking.xp.addAndGet(orb.getExperience());
-        return true;
+    }
+
+    /** Package-visible so tests can check/trigger without waiting on the real scheduler delay. */
+    boolean isTracking(UUID worldId) {
+        return dying.containsKey(worldId);
     }
 
     /** Package-visible so tests can trigger delivery without waiting on the real scheduler delay. */
@@ -121,25 +141,122 @@ public final class RewardService {
         if (tracking == null) {
             return;
         }
-        int xp = tracking.xp.get();
-        for (UUID id : tracking.participants) {
+        TierRewardRow row = tracking.firstKillEver() ? config.get().firstKillRow() : config.get().tierRow(tracking.tier());
+        String weekKey = WeekKeys.current(clock);
+        String dateLabel = DATE_FORMAT.format(LocalDate.now(clock.withZone(WeekKeys.ZONE)));
+
+        for (UUID id : tracking.participants()) {
+            PendingReward reward = buildReward(id, tracking.tier(), row, weekKey, dateLabel, false);
             Player online = Bukkit.getPlayer(id);
             if (online != null) {
-                deliverNow(online, new PendingReward(xp, 1));
+                deliverNow(online, reward);
             } else {
-                pending.add(id, new PendingReward(xp, 1));
+                pending.add(id, reward);
             }
         }
     }
 
+    /** Decides (and persists) this participant's reward for one kill: the weekly limit gates the
+     * hoard only, never the XP. Rolling happens here, at kill time, not on delivery, so a player
+     * offline for a while still rolls against their progress as it stood at the kill. */
+    private PendingReward buildReward(UUID id, Tier tier, TierRewardRow row, String weekKey, String dateLabel,
+                                       boolean ignoreWeeklyLimit) {
+        PlayerProgress current = progress.load(id);
+        boolean hoardAllowed = ignoreWeeklyLimit || !weekKey.equals(current.weeklyHoards().get(tier));
+        if (!hoardAllowed) {
+            return new PendingReward(row.xp(), null);
+        }
+
+        Set<ArmorPiece> armor = new LinkedHashSet<>(current.armor());
+        Set<DragonAura> auras = new LinkedHashSet<>(current.auras());
+        Set<String> heads = new LinkedHashSet<>(current.heads());
+        List<PendingReward.RollGrant> grants = new ArrayList<>();
+
+        int rolls = RollEngine.rollCount(row.rollChance(), random);
+        for (int i = 0; i < rolls; i++) {
+            RollEngine.Outcome outcome = RollEngine.roll(armor, auras, heads, random);
+            switch (outcome.kind()) {
+                case ARMOR -> armor.add(outcome.armor());
+                case AURA -> auras.add(outcome.aura());
+                case HEAD -> heads.add(outcome.head().id());
+                case DUP_ARMOR -> {
+                    // Already owns everything; the duplicate piece is granted but not newly "owned".
+                }
+            }
+            grants.add(toGrant(outcome));
+        }
+
+        int scrap = row.scrapMax() <= 0 ? 0 : row.scrapMin() + random.nextInt(row.scrapMax() - row.scrapMin() + 1);
+        if (grants.size() >= 2) {
+            // Ascended's second roll landing drops the netherite scrap (Joe's spec).
+            scrap = 0;
+        }
+
+        Map<Tier, String> weeklyHoards = new EnumMap<>(current.weeklyHoards());
+        weeklyHoards.put(tier, weekKey);
+        progress.save(id, new PlayerProgress(armor, auras, current.activeAura(), heads, weeklyHoards));
+
+        return new PendingReward(row.xp(),
+                new PendingReward.HoardSpec(tier, dateLabel, row.diamonds(), row.shells(), row.gapples(), scrap, grants));
+    }
+
+    private static PendingReward.RollGrant toGrant(RollEngine.Outcome outcome) {
+        return switch (outcome.kind()) {
+            case ARMOR, DUP_ARMOR -> new PendingReward.RollGrant(outcome.kind(), outcome.armor().name());
+            case AURA -> new PendingReward.RollGrant(outcome.kind(), outcome.aura().name());
+            case HEAD -> new PendingReward.RollGrant(outcome.kind(), outcome.head().id());
+        };
+    }
+
     private void deliverNow(Player player, PendingReward reward) {
         player.giveExp(reward.xp());
-        String where = "inventory";
-        for (int i = 0; i < reward.bundles(); i++) {
-            where = RewardDelivery.deliver(player, config.get().rewardBundle().toItemStack());
+        if (reward.hoard() == null) {
+            config.get().messages().send(player, "reward-xp-only", Map.of(),
+                    Placeholder.unparsed("xp", String.valueOf(reward.xp())));
+            return;
+        }
+        ItemStack hoardItem = buildHoardItem(reward.hoard());
+        String where = RewardDelivery.deliver(player, hoardItem);
+        for (PendingReward.RollGrant grant : reward.hoard().rolls()) {
+            if (grant.kind() == RollEngine.Kind.AURA) {
+                DragonAura aura = DragonAura.valueOf(grant.id());
+                config.get().messages().send(player, "aura-unlocked", Map.of(),
+                        Placeholder.unparsed("aura", aura.displayName()));
+            }
         }
         config.get().messages().send(player, "reward-delivered", Map.of(),
                 Placeholder.unparsed("xp", String.valueOf(reward.xp())), Placeholder.unparsed("where", where));
+    }
+
+    private ItemStack buildHoardItem(PendingReward.HoardSpec hoard) {
+        List<ItemStack> contents = new ArrayList<>();
+        if (hoard.diamonds() > 0) {
+            contents.add(new ItemStack(Material.DIAMOND, hoard.diamonds()));
+        }
+        if (hoard.shells() > 0) {
+            contents.add(new ItemStack(Material.SHULKER_SHELL, hoard.shells()));
+        }
+        if (hoard.gapples() > 0) {
+            contents.add(new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, hoard.gapples()));
+        }
+        if (hoard.scrap() > 0) {
+            contents.add(new ItemStack(Material.NETHERITE_SCRAP, hoard.scrap()));
+        }
+        for (PendingReward.RollGrant grant : hoard.rolls()) {
+            switch (grant.kind()) {
+                case ARMOR, DUP_ARMOR -> contents.add(DragonscaleArmor.build(ArmorPiece.valueOf(grant.id())));
+                case HEAD -> {
+                    DragonTrophyHeads.Head head = DragonTrophyHeads.byId(grant.id());
+                    if (head != null) {
+                        contents.add(head.item());
+                    }
+                }
+                case AURA -> {
+                    // An aura is an unlock, not an item - nothing physical goes in the hoard for it.
+                }
+            }
+        }
+        return DragonHoard.build(hoard.tier(), hoard.dateLabel(), contents);
     }
 
     /** {@code PlayerJoinEvent} handler body (delayed by the caller): runs the same delivery chain
@@ -168,8 +285,19 @@ public final class RewardService {
         return 0;
     }
 
-    /** {@code /endfight rewards test <player>}: one bundle through the live delivery chain, no XP. */
-    public void testBundle(Player player) {
-        deliverNow(player, new PendingReward(0, 1));
+    /** The tier the next fight (or the server's forced first-ever kill) would pay at, for
+     * {@code /endfight rewards status}. */
+    public Tier currentTier() {
+        return tierChoice.firstKillEver() ? Tier.FEROCIOUS : tierChoice.current();
+    }
+
+    /** {@code /endfight rewards test <player> [tier]}: one Dragon Hoard through the live delivery
+     * chain, no XP, ignoring the weekly limit. */
+    public void testHoard(Player player, Tier tier) {
+        TierRewardRow row = config.get().tierRow(tier);
+        String weekKey = WeekKeys.current(clock);
+        String dateLabel = DATE_FORMAT.format(LocalDate.now(clock.withZone(WeekKeys.ZONE)));
+        PendingReward reward = buildReward(player.getUniqueId(), tier, row, weekKey, dateLabel, true);
+        deliverNow(player, new PendingReward(0, reward.hoard()));
     }
 }

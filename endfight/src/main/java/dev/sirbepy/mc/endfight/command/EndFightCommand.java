@@ -53,7 +53,10 @@ public final class EndFightCommand {
                 .then(Commands.literal("rewards")
                         .then(Commands.literal("status").executes(this::rewardsStatus))
                         .then(Commands.literal("test")
-                                .then(Commands.argument("player", StringArgumentType.word()).executes(this::rewardsTest))))
+                                .then(Commands.argument("player", StringArgumentType.word())
+                                        .executes(this::rewardsTest)
+                                        .then(Commands.argument("tier", StringArgumentType.word())
+                                                .executes(this::rewardsTestWithTier)))))
                 .then(Commands.literal("tier")
                         .then(Commands.literal("status").executes(this::tierStatus))
                         .then(Commands.literal("set")
@@ -89,11 +92,26 @@ public final class EndFightCommand {
 
     private int rewardsStatus(CommandContext<CommandSourceStack> ctx) {
         ctx.getSource().getSender().sendMessage(Component.text(
-                "Rewards pending: " + rewards.pendingCount() + ", current dragon fighters: " + rewards.currentFighterCount()));
+                "Rewards pending: " + rewards.pendingCount() + ", current dragon fighters: " + rewards.currentFighterCount()
+                        + ", current tier: " + rewards.currentTier().displayName()));
         return Command.SINGLE_SUCCESS;
     }
 
     private int rewardsTest(CommandContext<CommandSourceStack> ctx) {
+        return rewardsTest(ctx, rewards.currentTier());
+    }
+
+    private int rewardsTestWithTier(CommandContext<CommandSourceStack> ctx) {
+        String raw = StringArgumentType.getString(ctx, "tier");
+        Tier tier = parseTier(raw);
+        if (tier == null) {
+            ctx.getSource().getSender().sendMessage(Component.text("Unknown tier: " + raw));
+            return Command.SINGLE_SUCCESS;
+        }
+        return rewardsTest(ctx, tier);
+    }
+
+    private int rewardsTest(CommandContext<CommandSourceStack> ctx, Tier tier) {
         String name = StringArgumentType.getString(ctx, "player");
         Player target = Bukkit.getPlayerExact(name);
         CommandSender sender = ctx.getSource().getSender();
@@ -101,9 +119,17 @@ public final class EndFightCommand {
             sender.sendMessage(Component.text("Player not found or offline: " + name));
             return Command.SINGLE_SUCCESS;
         }
-        rewards.testBundle(target);
-        sender.sendMessage(Component.text("Gave " + target.getName() + " one test reward bundle."));
+        rewards.testHoard(target, tier);
+        sender.sendMessage(Component.text("Gave " + target.getName() + " one test Dragon Hoard (" + tier.displayName() + ")."));
         return Command.SINGLE_SUCCESS;
+    }
+
+    private static Tier parseTier(String raw) {
+        try {
+            return Tier.valueOf(raw.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     private int status(CommandContext<CommandSourceStack> ctx) {

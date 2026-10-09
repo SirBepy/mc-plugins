@@ -8,6 +8,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
 
+import java.util.function.Consumer;
+
 /**
  * Marks {@link TierService#recordKill()} on a real dragon kill, so {@link TierService
  * #firstKillEver()} has its own independent memory even if {@link EndDragonBattleHistory}'s
@@ -18,9 +20,13 @@ import org.bukkit.event.entity.EntityDeathEvent;
 public final class TierKillTracker implements Listener {
 
     private final TierService tiers;
+    private final Consumer<Runnable> nextTick;
 
-    public TierKillTracker(TierService tiers) {
+    /** {@code nextTick} runs the recording a tick later, so every other listener handling this
+     * same death (the rewards' first-kill check above all) still sees it as the first. */
+    public TierKillTracker(TierService tiers, Consumer<Runnable> nextTick) {
         this.tiers = tiers;
+        this.nextTick = nextTick;
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -29,6 +35,6 @@ public final class TierKillTracker implements Listener {
                 || event.getDamageSource().getDamageType() == DamageType.GENERIC_KILL) {
             return;
         }
-        tiers.recordKill();
+        nextTick.accept(tiers::recordKill);
     }
 }

@@ -8,3 +8,6 @@ permissions:
   endfight.admin:
     description: Build, rebuild and clear the End Fight arena.
     default: op
+  endfight.dragonaura:
+    description: Switch your own worn dragon aura with /dragonaura.
+    default: true

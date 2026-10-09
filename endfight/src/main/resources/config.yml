@@ -9,25 +9,80 @@ arena:
   auto-build: true
 
 rewards:
-  # Phase 3: every participant who damaged the dragon gets its full vanilla XP plus one reward
-  # bundle - see docs/endfight.md's Rewards section. Live for the first fight (Joe, 2026-10-09,
-  # Saturday 2026-10-10); false falls all the way back to vanilla (no suppressed orbs, no bundles).
+  # Phase 3: every participant who damaged the dragon gets XP (by tier, below) and - once a week
+  # per tier - a Dragon Hoard. See docs/endfight.md's Rewards section. Live for the first fight
+  # (Joe, 2026-10-09, Saturday 2026-10-10); false falls all the way back to vanilla (no orb
+  # sweeping, no hoards, no pending deliveries).
   enabled: true
 
-  bundle:
-    # PLACEHOLDER: the real contents are still being designed in another chat (Joe, 2026-10-09).
-    # This "Dragon Hoard" is a modest stand-in so the reward chain works end-to-end before the real
-    # loot is ready - replace name/lore/items below once Joe approves the real bundle.
-    name: "<gold>Dragon Hoard"
-    lore:
-      - "<gray>A token of the Guild's thanks."
-    items:
-      - material: DIAMOND
-        amount: 4
-      - material: GOLDEN_APPLE
-        amount: 2
-      - material: EXPERIENCE_BOTTLE
-        amount: 8
+  # Joe's reward spec (2026-10-09): XP (always given, never weekly-limited) and a Dragon Hoard's
+  # raw materials (always in the hoard) plus its armor-roll chance - 1.0 means guaranteed; 1.5
+  # (Ascended only) means guaranteed plus a 50% chance at a second roll. scrap-min/scrap-max are
+  # the netherite scrap range (0/0 = never any scrap). Every field below is the approved default;
+  # only override what Joe explicitly changes.
+  tiers:
+    fledgeling:
+      xp: 500
+      diamonds: 2
+      shells: 2
+      gapples: 0
+      scrap-min: 0
+      scrap-max: 0
+      roll-chance: 0.10
+    powerful:
+      xp: 750
+      diamonds: 3
+      shells: 2
+      gapples: 1
+      scrap-min: 0
+      scrap-max: 0
+      roll-chance: 0.15
+    cruel:
+      xp: 1000
+      diamonds: 4
+      shells: 4
+      gapples: 1
+      scrap-min: 0
+      scrap-max: 0
+      roll-chance: 0.25
+    immortal:
+      xp: 1500
+      diamonds: 6
+      shells: 4
+      gapples: 2
+      scrap-min: 0
+      scrap-max: 0
+      roll-chance: 0.50
+    ferocious:
+      xp: 2000
+      diamonds: 8
+      shells: 6
+      gapples: 2
+      scrap-min: 0
+      scrap-max: 0
+      roll-chance: 0.75
+    primordial:
+      xp: 3000
+      diamonds: 9
+      shells: 6
+      gapples: 3
+      scrap-min: 1
+      scrap-max: 2
+      roll-chance: 1.00
+    ascended:
+      xp: 4000
+      diamonds: 10
+      shells: 6
+      gapples: 4
+      scrap-min: 1
+      scrap-max: 2
+      roll-chance: 1.50
+
+  # The server's actual first-ever dragon kill: the Ferocious row's materials, a guaranteed roll,
+  # and 12000 XP instead of Ferocious's 2000.
+  first-kill:
+    xp: 12000
+    roll-chance: 1.0
 
 tiers:
   # The altar's pick before anyone has ever touched it, and what a fresh plugins/EndFight/tier.yml
@@ -53,7 +108,9 @@ messages:
   build-failed: "<red>Could not build the arena; see console."
   clear-success: "<green>Arena cleared."
   clear-failed: "<red>Could not clear the arena; see console."
-  reward-delivered: "<gold>The dragon's hoard: <xp> XP and a bundle went to your <where>."
+  reward-delivered: "<gold>The dragon's hoard: <xp> XP and a Dragon Hoard went to your <where>."
+  reward-xp-only: "<gold>The dragon's hoard: <xp> XP (you already have this tier's Dragon Hoard this week)."
+  aura-unlocked: "<light_purple>Dragon aura unlocked: <aura>! Wear it with /dragonaura <aura>."
   tier-announce: "<light_purple><player> set the next dragon to <tier>."
   tier-set: "<green>The next dragon will be <tier>."
   tier-locked-first-kill: "<red>The server's first dragon is always Ferocious; the altar is locked until it falls."

@@ -85,16 +85,16 @@ All require `endfight.admin` (default: op).
 | `endfight rebuild` | Same as build - re-places everything |
 | `endfight clear` | Removes every tracked arena block (testing/repair) |
 | `endfight reload` | Reloads `config.yml` |
-| `endfight rewards status` | Pending reward entries, and the current dragon's fighter count |
-| `endfight rewards test <player>` | Gives that player one reward bundle through the live delivery chain, no XP |
+| `endfight rewards status` | Pending reward entries, the current dragon's fighter count, and the current tier |
+| `endfight rewards test <player> [tier]` | Gives that player one Dragon Hoard through the live delivery chain (default: the current tier), no XP, ignoring the weekly limit |
 | `endfight cult status` | Cult mobs alive, which wave thresholds each tracked dragon has crossed |
 | `endfight cult spawn` | Force-spawns guards now, ignoring the once-per-dragon rule |
 | `endfight cult clear` | Removes every live cult mob (testing/repair) |
 
 ## Rewards (phase 3)
 
-Joe's decisions, 2026-10-09. Behind `rewards.enabled` in `config.yml` (default `true`, live for the
-first fight, Saturday 2026-10-10).
+Joe's full reward spec, 2026-10-09. Behind `rewards.enabled` in `config.yml` (default `true`, live
+for the first fight, Saturday 2026-10-10).
 
 **Who counts.** A participant is a player who *damaged the dragon* - nothing else. Standing in the
 End, healing someone, or being the one who ultimately gets credit as "killer" without ever landing
@@ -106,33 +106,62 @@ Dragon event uses (moved to `core`, see below) under EndFight's own PDC key
 differently. An op's `/kill` and a dragon dying outside the End spend nothing, exactly like the
 Guild's own filter.
 
-**XP.** Every participant gets the dragon's full vanilla XP straight into their XP bar: 12000 on
-the server's actual first Ender Dragon kill, 500 on every kill after (vanilla's own numbers).
-Vanilla never routes this through `EntityDeathEvent#getDroppedExp` - javap on `EnderDragon
-.tickDeath()` (26.3's `paper-26.3.jar`) shows it spawning `ExperienceOrb` entities directly in 10
-batches during the death animation, each going through a cancellable spawn event before ever
-reaching the world. `EndFight` cancels every one of those orbs in the dying dragon's world and
-sums their `getExperience()` as it does, then calls `Player#giveExp` with the total once the
-batches are done - giving the exact amount vanilla decided to award, deterministically, with no
-dependency on `DragonBattle` (which a dragon's own `tickDeath` also doesn't re-read at that point,
-and which `World.getEnderDragonBattle()` cannot even be unit-tested against here - MockBukkit's
-`WorldMock` throws unconditionally). No orbs reach the ground; nobody races for drops.
+**Tier.** The tier the altar locked in when this dragon spawned (`TierService`, see Altar & tiers
+below), read when the dragon dies; while no dragon has ever died in this End it is Ferocious with
+the first-kill row. `TierService` records the kill one tick after the death, so every listener
+handling that death still sees it as the first.
 
-**Bundle.** Every participant gets one reward bundle (a `BUNDLE` item) built from `rewards.bundle`
-in `config.yml` - a display name, lore and a flat item list (material/amount, optional name and a
-small fixed set of enchantments). The shipped bundle is a **placeholder** ("Dragon Hoard"): its
-real contents are still being designed in another chat, and the config comment says so.
+**XP.** Every participant gets `Player#giveExp` on every kill, by tier, from `rewards.tiers.<tier>`
+in `config.yml`: Fledgeling 500, Powerful 750, Cruel 1000, Immortal 1500, Ferocious 2000,
+Primordial 3000, Ascended 4000 - except the server's actual first-ever kill (Ferocious), which pays
+12000 (`rewards.first-kill.xp`). The weekly Dragon Hoard limit (below) never touches XP.
 
-**Delivery.** Online: the bundle goes to the player's inventory, else their ender chest, else drops
+Vanilla's own XP used to be read by cancelling the dragon's death-animation `ExperienceOrb` spawns
+and summing them (javap on `EnderDragon.tickDeath()` showed them spawned directly through a
+cancellable `EntitySpawnEvent`), but that does not actually work: a live kill on the e2e server
+(Paper 26.2) showed the orbs landing on the ground 7-10s after death with the fighter's XP bar
+never moving, and the summed total reading 0 - either the spawn event never fires for them, or
+Paper/vanilla folds the dragon's XP into orbs already lying on the ground instead of creating new
+ones. Since the per-tier table decides the XP amount now, EndFight only needs the orbs gone, not
+read: `OrbSweep` removes every live `ExperienceOrb` within 24 blocks of the dragon's death location
+on every tick for ~12s after death (plus once immediately, to catch orbs already lying there) -
+cultists and endermen dying farther than 24 blocks away keep their own orbs.
+
+**Dragon Hoard.** Each fighter gets at most one Dragon Hoard *per tier per week* (the week resets
+Monday 00:00 Europe/Zagreb - a stable date key, not a week-of-year number, so it survives a DST
+edge). A fighter who already has that tier's hoard this week gets XP only, with a chat line saying
+so. The hoard is a `minecraft:black_shulker_box` with an enchantment glint, named "Dragon Hoard"
+(dark purple, not italic), lore naming the tier and the date, holding (in its own 27-slot
+inventory): diamonds, shulker shells, enchanted golden apples, netherite scrap (only Primordial and
+Ascended), and a chance at one bonus roll - all from `rewards.tiers.<tier>` in `config.yml`. A roll
+chance of 1.0 is a single guaranteed roll; Ascended's 1.5 guarantees the first and spends the
+remaining 0.5 on an independent second roll - if that second roll lands, the hoard gets no
+netherite scrap. The server's actual first-ever kill uses the Ferocious row's materials with a
+guaranteed roll (`rewards.first-kill.roll-chance: 1.0`) and counts as that week's Ferocious hoard.
+
+A roll grants, in order (`RollEngine`, tracked per player in `rewards.yml`): a **Dragonscale** armor
+piece the player doesn't own yet (plain netherite, no enchantments, `custom_model_data` string
+"dragonscale" and equippable asset `claudesmp:dragonscale` - the same look shipped on main in
+9d59217, keeping netherite's vanilla slot and equip sound); once all 4 pieces are owned, a **dragon
+aura** they don't own yet (Dragon's Breath, Ender, Void Ember - an unlock, not an item, announced in
+chat, worn one at a time with `/dragonaura <name|off>`, default permission true, API:
+`DragonAuraService#toggle`, which the altar menu will call directly later); once all 3 auras are
+owned, a **trophy head** they don't own yet (5 dragon/End-themed player heads, wired through
+`core.item.Heads` the same way haru's own heads are - see `DragonTrophyHeads` for the texture
+sourcing and verification trail); once everything is owned, a duplicate random armor piece.
+
+**Delivery.** Online: the hoard goes to the player's inventory, else their ender chest, else drops
 at their feet, and they're told which in chat along with the XP amount. Offline at the kill: the
 same chain runs on their next join (one second later), from `plugins/EndFight/pending-rewards.yml`
-(UUID -> list of `{xp, bundles}` entries, one per missed fight) - entries survive a restart and are
-removed only once actually delivered, so nothing pays twice and nothing is lost to being offline.
+- entries survive a restart and are removed only once actually delivered, so nothing pays twice and
+nothing is lost to being offline. The hoard is rolled once, at kill time (not re-rolled on
+delivery), so a player's owned-armor/aura/head progress stays correct even while they're offline.
 
 **Not from EndFight.** The Guild's coins, reputation and the Dragonslayer title (First Dragon event,
 `guild/events/FirstDragon.java`) are paid separately by the Guild plugin, to Guild members only, and
-only for the server's first dragon ever. EndFight's XP + bundle go to every participant, Guild
-member or not, on every kill.
+only for the server's first dragon ever. Dragon's breath, elytra, damage-share/head-count scaling
+and Dragonkind Evolved's own portal drop are not part of the hoard either. EndFight's XP + Dragon
+Hoard go to every participant, Guild member or not, on every kill.
 
 ## Altar & tiers
 

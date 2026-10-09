@@ -1,6 +1,8 @@
 package dev.sirbepy.mc.endfight.reward;
 
 import dev.sirbepy.mc.endfight.EndFightConfig;
+import dev.sirbepy.mc.endfight.tier.Tier;
+import dev.sirbepy.mc.endfight.tier.TierChoice;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -8,11 +10,9 @@ import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
-import org.bukkit.event.entity.EntitySpawnEvent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,10 +23,11 @@ import org.mockbukkit.mockbukkit.plugin.PluginMock;
 import org.mockbukkit.mockbukkit.world.WorldMock;
 
 import java.io.File;
+import java.time.Clock;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.logging.Logger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -49,8 +50,21 @@ class DragonDeathListenerTest {
         end.setEnvironment(World.Environment.THE_END);
         alice = server.addPlayer("Alice");
         EndFightConfig config = new EndFightConfig(new YamlConfiguration());
+        TierChoice tierChoice = new TierChoice() {
+            @Override
+            public Tier current() {
+                return Tier.FLEDGELING;
+            }
+
+            @Override
+            public boolean firstKillEver() {
+                return false;
+            }
+        };
         rewards = new RewardService(plugin, () -> config,
-                new PendingRewardsStore(new File(tempDir, "pending-rewards.yml"), Logger.getLogger("test")));
+                new PendingRewardsStore(new File(tempDir, "pending-rewards.yml"), Logger.getLogger("test")),
+                new RewardProgressStore(new File(tempDir, "rewards.yml"), Logger.getLogger("test")),
+                tierChoice, new Random(0), Clock.systemUTC());
         listener = new DragonDeathListener(rewards);
     }
 
@@ -68,13 +82,6 @@ class DragonDeathListenerTest {
                 DamageSource.builder(DamageType.PLAYER_ATTACK).withDirectEntity(alice).build(), 6));
     }
 
-    private boolean isTracking(EnderDragon dragon) {
-        // An active tracking window suppresses the dragon's own orbs; no tracking means they pass through.
-        ExperienceOrb orb = (ExperienceOrb) dragon.getWorld().spawnEntity(new Location(dragon.getWorld(), 0, 70, 0), EntityType.EXPERIENCE_ORB);
-        orb.setExperience(1);
-        return rewards.suppressIfDying(orb);
-    }
-
     @Test
     void anOpsKillCommandSpendsNoReward() {
         EnderDragon dragon = dragon(end);
@@ -82,8 +89,8 @@ class DragonDeathListenerTest {
 
         listener.onDeath(new EntityDeathEvent(dragon, DamageSource.builder(DamageType.GENERIC_KILL).build(), new ArrayList<>()));
 
-        assertFalse(isTracking(dragon));
-        assertEquals(0, alice.getTotalExperience());
+        assertFalse(rewards.isTracking(end.getUID()));
+        assertTrue(alice.getTotalExperience() == 0);
     }
 
     @Test
@@ -94,8 +101,8 @@ class DragonDeathListenerTest {
 
         listener.onDeath(new EntityDeathEvent(dragon, DamageSource.builder(DamageType.GENERIC).build(), new ArrayList<>()));
 
-        assertFalse(isTracking(dragon));
-        assertEquals(0, alice.getTotalExperience());
+        assertFalse(rewards.isTracking(overworld.getUID()));
+        assertTrue(alice.getTotalExperience() == 0);
     }
 
     @Test
@@ -105,20 +112,6 @@ class DragonDeathListenerTest {
 
         listener.onDeath(new EntityDeathEvent(dragon, DamageSource.builder(DamageType.GENERIC).build(), new ArrayList<>()));
 
-        assertTrue(isTracking(dragon));
-    }
-
-    @Test
-    void theOrbListenerCancelsOnlyWhatRewardServiceSaysToSuppress() {
-        EnderDragon dragon = dragon(end);
-        melee(dragon);
-        listener.onDeath(new EntityDeathEvent(dragon, DamageSource.builder(DamageType.GENERIC).build(), new ArrayList<>()));
-
-        ExperienceOrb orb = (ExperienceOrb) end.spawnEntity(new Location(end, 0, 70, 0), EntityType.EXPERIENCE_ORB);
-        orb.setExperience(40);
-        EntitySpawnEvent spawnEvent = new EntitySpawnEvent(orb);
-        listener.onOrbSpawn(spawnEvent);
-
-        assertTrue(spawnEvent.isCancelled());
+        assertTrue(rewards.isTracking(end.getUID()));
     }
 }
