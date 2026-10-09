@@ -10,6 +10,7 @@ import dev.sirbepy.mc.tweaks.listener.SpawnGuardListener;
 import dev.sirbepy.mc.tweaks.listener.TownyAdminBypass;
 import dev.sirbepy.mc.tweaks.listener.TownyAdminOffListener;
 import dev.sirbepy.mc.tweaks.listener.VoidTridentListener;
+import dev.sirbepy.mc.tweaks.listener.WitherGuardListener;
 import dev.sirbepy.mc.tweaks.netherwishes.AutoReplant;
 import dev.sirbepy.mc.tweaks.netherwishes.HeartyFood;
 import dev.sirbepy.mc.tweaks.netherwishes.NetherWishesCommand;
@@ -18,6 +19,7 @@ import dev.sirbepy.mc.tweaks.seagifts.SeaGifts;
 import dev.sirbepy.mc.tweaks.seagifts.SeaGiftsCommand;
 import dev.sirbepy.mc.tweaks.seagifts.SeaGiftsStore;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import org.bukkit.Location;
 import org.bukkit.configuration.Configuration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -27,6 +29,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public final class TweaksPlugin extends JavaPlugin {
@@ -63,6 +66,16 @@ public final class TweaksPlugin extends JavaPlugin {
             EarthbreakerListener earthbreaker = new EarthbreakerListener(getServer());
             getServer().getPluginManager().registerEvents(earthbreaker, this);
             getServer().getScheduler().runTaskTimer(this, earthbreaker::tick, 1L, 1L);
+        }
+        if (getConfig().getBoolean("wither-guard.enabled", true)) {
+            // A lambda keeps TownyTowns (and so Towny's classes) unloaded when Towny isn't there.
+            Predicate<Location> inTown = getServer().getPluginManager().isPluginEnabled("Towny")
+                    ? location -> TownyTowns.inAnyTown(location)
+                    : location -> false;
+            WitherGuardListener witherGuard = new WitherGuardListener(inTown);
+            getServer().getPluginManager().registerEvents(witherGuard, this);
+            witherGuard.trackLoaded(getServer().getWorlds());
+            getServer().getScheduler().runTaskTimer(this, witherGuard::tick, 20L, 20L);
         }
         // ScytheMasterListener references AuraSkills API classes, so it must not load without it.
         if (getServer().getPluginManager().isPluginEnabled("AuraSkills")) {

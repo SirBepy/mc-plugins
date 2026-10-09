@@ -229,6 +229,34 @@ deletes it 64 blocks under the world's floor. Now:
 - Tridents without Loyalty, and creative throws (the inventory kept the trident), stay vanilla.
 - Bedrock players behave the same: it all happens on the server. e2e: `e2e/void-tridents.mjs`.
 
+## The Wither fight (Joe, 2026-10-09)
+
+Two parts. The fight itself is the **Wither's Wrath** datapack (`server/datapacks/withers-wrath`, ported
+to 26.3, see its `PORTED.md`): 600 HP, armor, charge/dash/homing-skull phases, a blaze and skeleton
+archer burst at the midpoint, a trophy. It lets only one Wither live at a time and keeps the Wither's
+own block damage on. Its settings menu is `/function wither:config` (op).
+
+The anti-cheese is Tweaks' `WitherGuardListener` (switch: `wither-guard.enabled` in Tweaks'
+`config.yml`):
+
+- **Where it can be summoned**: building a Wither (by hand or with a dispenser) is refused inside any
+  Towny town (Towny blocks the Wither's block damage there, so an obsidian box would hold it), above
+  the Nether roof (y 128 and up), and when a block the Wither can't break (bedrock, barrier, reinforced
+  deepslate, end portal frame: the `wither_immune` tag) is within 4 blocks sideways and 0 to 7 blocks
+  up of where it would appear. The skulls and soul sand stay put, and players within 16 blocks get a
+  red chat line saying why.
+- **Blasts**: beds and respawn anchors (damage type `bad_respawn_point`), primed TNT, TNT minecarts and
+  End Crystals do no damage to a Wither. Weapons, arrows, potions and everything else are vanilla.
+- **Unstick** (checked once a second): a Wither whose body is inside a `wither_immune` block, or one
+  that hasn't had line of sight to any survival/adventure player within 64 blocks for 10 checks in a
+  row, teleports onto the nearest such player (3 blocks above them, lower under a ceiling) and
+  targets them. Nobody within 64 blocks: nothing happens. Its summoning phase, and any time it is
+  Invulnerable (Wither's Wrath's midpoint cutscene), don't count.
+- e2e: `e2e/wither-guard.mjs` on the 26.2 e2e server (dispenser-built summons in the wilderness, under
+  bedrock and in a real Towny town; anchor/TNT/crystal blasts against a player hit; both unstick
+  cases). The datapack was boot-checked on a 26.3 test server; its fight was not played there (bots
+  can't join 26.3).
+
 ## Shenron's Earthbreaker (dvolic21's Shenron wish, 2026-10-09)
 
 Granted by Shenron (Overworld set, session `gcg0zu`, council 5-0 for a deal, 4-1 for 5x5). The pickaxe

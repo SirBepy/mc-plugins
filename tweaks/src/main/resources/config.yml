@@ -37,6 +37,14 @@ void-tridents:
 earthbreaker:
   enabled: true
 
+# Wither anti-cheese (Joe, 2026-10-09; the harder fight itself is the Wither's Wrath datapack): no
+# summoning in a Towny town, above the Nether roof, or near bedrock and other blocks it can't break;
+# beds, respawn anchors, TNT and End Crystals don't hurt it; a Wither stuck in bedrock, or out of sight
+# of every player within 64 blocks for 10 s, appears next to the nearest one (WitherGuardListener).
+# Off = vanilla Wither rules after the next restart.
+wither-guard:
+  enabled: true
+
 # Porunga's sea gifts: permanent Dolphin's Grace and Conduit Power that each owner switches for himself
 # with /seagifts dolphin|conduit, each at most once per real hour; death switches both off. Owners:
 # ItsLogiks (2026-10-08, session jam0yw) and SirBepy (2026-10-08, session ay4gtv). Switches and cooldowns
