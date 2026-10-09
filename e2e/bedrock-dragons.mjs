@@ -22,7 +22,8 @@ import { Rcon } from './lib.mjs';
 //   node bedrock-dragons.mjs --restore  (server/local stopped again; puts the old balls.yml back)
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const localDir = path.join(here, '..', 'server', 'local');
+// BEDROCK_SERVER_DIR points the suite at another Geyser server folder (a private test copy).
+const localDir = process.env.BEDROCK_SERVER_DIR ?? path.join(here, '..', 'server', 'local');
 const ballsFile = path.join(localDir, 'plugins', 'DragonBalls', 'balls.yml');
 const backupFile = `${ballsFile}.bedrock-dragons-backup`;
 const logFile = path.join(localDir, 'logs', 'latest.log');
@@ -99,7 +100,8 @@ let kickReason = null;
 
 // Geyser's own bedrock port, from the config the server booted with (25572 on the live layout).
 const geyserConfig = fs.readFileSync(path.join(localDir, 'plugins', 'Geyser-Spigot', 'config.yml'), 'utf8');
-const bedrockPort = Number(geyserConfig.match(/^bedrock:\s*\n(?:[ \t]+.*\n)*?[ \t]+port:\s*(\d+)/m)?.[1] ?? 19132);
+// \r?: a config rewritten on Windows is CRLF, and JS's . never matches \r.
+const bedrockPort = Number(geyserConfig.match(/^bedrock:[ \t]*\r?\n(?:[ \t]+.*\r?\n)*?[ \t]+port:[ \t]*(\d+)/m)?.[1] ?? 19132);
 const client = bedrock.createClient({ host: '127.0.0.1', port: bedrockPort, username: USERNAME, offline: true });
 client.on('kick', (reason) => { kickReason = reason; });
 client.on('error', (err) => console.error('[bedrock client error]', err.message));
