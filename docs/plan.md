@@ -32,7 +32,7 @@ docs/         this plan
 Downloaded by `testserver/build.gradle.kts` (`downloadPlugins { modrinth(...) }`), never committed:
 
 - LuckPerms (permissions; `/lp editor` for the web UI)
-- HuskHomes (`/tpa`, `/tpaccept`, `/sethome`, `/home`, `/back`)
+- HuskHomes (`/tpa`, `/tpaccept`, `/sethome`, `/home`, `/back`, `/warp`, `/warplist`)
 - PvPManager (per-player `/pvp` toggle with cooldown)
 - Bolt (chest protection, SafeChests builds on its API)
 - PacketEvents (Names uses it for the floating nametag)

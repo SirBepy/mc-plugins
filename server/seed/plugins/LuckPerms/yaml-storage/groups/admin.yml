@@ -7,8 +7,6 @@ permissions:
 - quickshop.browse.teleport
 - quickshop.tag.tagged.teleport
 - huskhomes.command.rtp
-- huskhomes.command.warp
-- huskhomes.command.warplist
 - huskhomes.command.phome
 - huskhomes.command.phomelist
 - huskhomes.command.edithome.privacy

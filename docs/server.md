@@ -194,6 +194,17 @@ voice chat bound 25604, all 16 datapacks + vanilla + paper loaded with no errors
 Overworld/Nether pregen (`chunky`, square, center 0 0, radius 5000/1250) started via console
 commands; nether finished in 8:40 (25,281 chunks), overworld left running.
 
+## Warps (2026-10-09)
+
+Players have HuskHomes `/warp <name>` and `/warplist` (Joe's call, 2026-10-09): the default group
+grants `huskhomes.command.warp` and `huskhomes.command.warplist`. HuskHomes' other extras (`/rtp`,
+`/phome`, `/phomelist`, home privacy) stay switched off for default, see the comment in
+`server/seed/plugins/LuckPerms/yaml-storage/groups/default.yml`. The warps themselves are HuskHomes
+data on the live server, not in the repo: `/warp guild` (set by ImMijo, 2026-10-09) leads to world
+4472 226 551, in front of his Adventurer's Guild hall. The seed group files only reach a fresh server;
+live got the two nodes from the console (`lp group default permission set huskhomes.command.warp true`,
+same for `warplist`).
+
 ## Phantoms (CoffiebagSupreme's Shenron wish, 2026-10-07)
 
 Granted by a 4-1 council vote in a toned-down, server-wide form, then extended by Joe the same night.

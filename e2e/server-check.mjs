@@ -71,8 +71,13 @@ try {
   groups = new Map(groupNames.map((g) => [g, []]));
 }
 
+const defaultEffective = resolveEffective(groups, 'default');
 const modEffective = resolveEffective(groups, 'mod');
 const adminEffective = resolveEffective(groups, 'admin');
+report(
+  'lp group default permission check huskhomes.command.warp and warplist -> true',
+  hasPermission(defaultEffective, 'huskhomes.command.warp') && hasPermission(defaultEffective, 'huskhomes.command.warplist'),
+);
 report('lp group mod permission check tag.admin -> true', hasPermission(modEffective, 'tag.admin'));
 report('lp group mod permission check essentials.tempban -> true', hasPermission(modEffective, 'essentials.tempban'));
 report('lp group mod permission check names.admin -> not true', !hasPermission(modEffective, 'names.admin'));

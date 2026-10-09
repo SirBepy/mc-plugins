@@ -40,10 +40,9 @@ permissions:
 - huskhomes.max_homes.3
 - huskhomes.command.rtp:
     value: false
-- huskhomes.command.warp:
-    value: false
-- huskhomes.command.warplist:
-    value: false
+# Everyone can /warp and /warplist (Joe, 2026-10-09).
+- huskhomes.command.warp
+- huskhomes.command.warplist
 - huskhomes.command.phome:
     value: false
 - huskhomes.command.phomelist:
