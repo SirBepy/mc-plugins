@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.tweaks;
 
 import dev.sirbepy.mc.tweaks.listener.DailyMotdListener;
+import dev.sirbepy.mc.tweaks.listener.EarthbreakerListener;
 import dev.sirbepy.mc.tweaks.listener.MinecartSpeedListener;
 import dev.sirbepy.mc.tweaks.listener.PhantomBuffListener;
 import dev.sirbepy.mc.tweaks.listener.PollosGunListener;
@@ -54,6 +55,11 @@ public final class TweaksPlugin extends JavaPlugin {
             VoidTridentListener tridents = new VoidTridentListener(getServer());
             getServer().getPluginManager().registerEvents(tridents, this);
             getServer().getScheduler().runTaskTimer(this, tridents::tick, 1L, 1L);
+        }
+        if (getConfig().getBoolean("earthbreaker.enabled", true)) {
+            EarthbreakerListener earthbreaker = new EarthbreakerListener(getServer());
+            getServer().getPluginManager().registerEvents(earthbreaker, this);
+            getServer().getScheduler().runTaskTimer(this, earthbreaker::tick, 1L, 1L);
         }
         // ScytheMasterListener references AuraSkills API classes, so it must not load without it.
         if (getServer().getPluginManager().isPluginEnabled("AuraSkills")) {

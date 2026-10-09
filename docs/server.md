@@ -229,6 +229,32 @@ deletes it 64 blocks under the world's floor. Now:
 - Tridents without Loyalty, and creative throws (the inventory kept the trident), stay vanilla.
 - Bedrock players behave the same: it all happens on the server. e2e: `e2e/void-tridents.mjs`.
 
+## Shenron's Earthbreaker (dvolic21's Shenron wish, 2026-10-09)
+
+Granted by Shenron (Overworld set, session `gcg0zu`, council 5-0 for a deal, 4-1 for 5x5). The pickaxe
+was given by console: netherite, named "Shenron's Earthbreaker", Efficiency V, Unbreaking III, Fortune
+III, Mending, and the PDC tag `claudesmp:earthbreaker` (byte 1, plus `claudesmp:earthbreaker_owner`).
+Tweaks plugin, `EarthbreakerListener` (switch: `earthbreaker.enabled` in Tweaks' `config.yml`) knows it
+by the tag alone, never the name, and it works for whoever holds it.
+
+- **5x5**: breaking a block also breaks the 24 around it in the plane of the face that was dug (the face
+  comes from the dig start, or from where the player looks).
+- **Stone and ores only** (`AREA_MINEABLE`): stone, cobblestone, deepslate, cobbled deepslate, andesite,
+  diorite, granite, tuff, calcite, netherrack, blackstone, basalt, smooth basalt, end stone, terracotta
+  (plain and the 16 dyed, not glazed), and every ore incl. deepslate, nether gold and quartz. The area
+  only starts when the broken block is one of those or ancient debris; debris itself is never taken as a
+  neighbour. Dirt, logs, bricks, planks, glass, containers, spawners, bedrock and the rest stay.
+- **Each neighbour is a real player break** (`Player.breakBlock`): Towny, MineGuard, CoreProtect and
+  AuraSkills see an ordinary BlockBreakEvent, and a block the player couldn't break by hand (someone
+  else's town) is skipped. Drops get Fortune, ores drop XP, and each block wears the pickaxe 1 point
+  through Unbreaking, like vanilla. A pickaxe that breaks mid-area stops there.
+- **Slower**: while it is in the main hand and the player isn't sneaking, a transient
+  `block_break_speed` x0.25 modifier is on (never saved with the player). Deepslate goes from 3 ticks a
+  block to 11, stone from 2 to 6; with the 5-tick pause between blocks that is about twice as long a
+  swing, for up to 25 blocks.
+- **Sneaking** mines one block at full speed.
+- e2e: `e2e/earthbreaker.mjs` (dig speed, the 5x5 with ore drops and wear, sneaking, a real Towny town).
+
 ## Phantoms (CoffiebagSupreme's Shenron wish, 2026-10-07)
 
 Granted by a 4-1 council vote in a toned-down, server-wide form, then extended by Joe the same night.
