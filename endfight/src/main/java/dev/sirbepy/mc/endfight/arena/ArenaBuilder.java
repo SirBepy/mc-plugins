@@ -22,7 +22,6 @@ public final class ArenaBuilder {
 
     /** Covers the pillar ring (radius 42) and the fortress (radius ~22) with margin. */
     private static final int RADIUS_BLOCKS = 60;
-    private static final int RADIUS_CHUNKS = (RADIUS_BLOCKS >> 4) + 1;
 
     private final Plugin plugin;
 
@@ -126,29 +125,10 @@ public final class ArenaBuilder {
     }
 
     private void loadArenaChunks(World end) {
-        for (int cx = -RADIUS_CHUNKS; cx <= RADIUS_CHUNKS; cx++) {
-            for (int cz = -RADIUS_CHUNKS; cz <= RADIUS_CHUNKS; cz++) {
-                try {
-                    end.addPluginChunkTicket(cx, cz, plugin);
-                    end.getChunkAt(cx, cz);
-                } catch (RuntimeException e) {
-                    // A test double (or a future API change) that doesn't implement ticketing is
-                    // not fatal here - getBlockAt below still works either way.
-                    plugin.getLogger().log(java.util.logging.Level.FINE, "Could not force-load chunk " + cx + "," + cz, e);
-                }
-            }
-        }
+        ChunkTickets.load(end, plugin, RADIUS_BLOCKS);
     }
 
     private void unloadArenaChunks(World end) {
-        for (int cx = -RADIUS_CHUNKS; cx <= RADIUS_CHUNKS; cx++) {
-            for (int cz = -RADIUS_CHUNKS; cz <= RADIUS_CHUNKS; cz++) {
-                try {
-                    end.removePluginChunkTicket(cx, cz, plugin);
-                } catch (RuntimeException e) {
-                    plugin.getLogger().log(java.util.logging.Level.FINE, "Could not release chunk ticket " + cx + "," + cz, e);
-                }
-            }
-        }
+        ChunkTickets.unload(end, plugin, RADIUS_BLOCKS);
     }
 }

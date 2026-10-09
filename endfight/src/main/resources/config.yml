@@ -199,3 +199,33 @@ perch-gate:
   # ...and above this Y - keeps it from ever matching the 4 crystals players place on the exit
   # portal itself during a respawn, which sit far below this.
   fallback-min-y: 70
+
+# The whole-island reset (Joe, 2026-10-09): every new dragon summon locks players onto the
+# obsidian arrival platform, then restores the ENTIRE main island (not just our own structures)
+# back to right after the first build - see docs/endfight.md's "Summoning a new dragon" section.
+# With no snapshot on disk yet (a fresh install), or with this disabled, nothing here runs and
+# RespawnRebuildListener's old per-pillar rebuild behaves exactly as it always has.
+reset:
+  enabled: true
+  # How many block checks a restore spends per tick while putting the island back - keeps a huge
+  # restore from freezing the server for one giant tick.
+  restore-blocks-per-tick: 40000
+  # How often (ticks) the watcher polls DragonBattle#getRespawnPhase().
+  poll-interval-ticks: 10
+  # How often (ticks) players are swept back onto the platform while a respawn/restore is active.
+  lockout-interval-ticks: 20
+  # How far (horizontally, from 0,0) in the End counts as "needs to be pulled onto the platform".
+  lockout-radius: 80
+  # The obsidian arrival platform a locked-out player stands on, facing the island (yaw 90 = west).
+  # Defaults are vanilla's own ServerLevel.END_SPAWN_POINT (100, 50, 0), verified by javap against
+  # the 26.3 server jar: the player's Y is the platform's own stand height, one block above the
+  # obsidian EndPlatformFeature places at y-1.
+  platform:
+    x: 100.5
+    y: 50
+    z: 0.5
+    yaw: 90
+  messages:
+    lockout-start: "<red>A new dragon is being summoned. Wait on the platform."
+    lockout-teleport: "<yellow>Pulled back to the platform - the island is resetting."
+    arena-ready: "<green>The arena is ready."

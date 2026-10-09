@@ -8,6 +8,7 @@ import dev.sirbepy.mc.endfight.EndFightConfig;
 import dev.sirbepy.mc.endfight.arena.ArenaRegistry;
 import dev.sirbepy.mc.endfight.arena.ArenaService;
 import dev.sirbepy.mc.endfight.cult.CultCommand;
+import dev.sirbepy.mc.endfight.reset.ResetCommand;
 import dev.sirbepy.mc.endfight.reward.RewardService;
 import dev.sirbepy.mc.endfight.tier.Tier;
 import dev.sirbepy.mc.endfight.tier.TierService;
@@ -42,7 +43,7 @@ public final class EndFightCommand {
         this.tiers = tiers;
     }
 
-    public void registerInto(Commands registrar, CultCommand cultCommand) {
+    public void registerInto(Commands registrar, CultCommand cultCommand, ResetCommand resetCommand) {
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("endfight")
                 .requires(src -> src.getSender().hasPermission("endfight.admin"))
                 .then(Commands.literal("status").executes(this::status))
@@ -61,7 +62,9 @@ public final class EndFightCommand {
                         .then(Commands.literal("status").executes(this::tierStatus))
                         .then(Commands.literal("set")
                                 .then(Commands.argument("tier", StringArgumentType.word()).executes(this::tierSet))));
-        registrar.register(cultCommand.attach(root).build(), "Manage the End Fight arena");
+        root = cultCommand.attach(root);
+        root = resetCommand.attach(root);
+        registrar.register(root.build(), "Manage the End Fight arena");
     }
 
     private int tierStatus(CommandContext<CommandSourceStack> ctx) {

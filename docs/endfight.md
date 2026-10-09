@@ -77,6 +77,39 @@ whatever phase it was already in - circling, strafing, whatever - so the fight j
 Dying is never touched, and the 4 crystals players place on the exit portal during a dragon respawn
 never count as "a pillar is still guarded". Off switch: `perch-gate.enabled`.
 
+## Summoning a new dragon
+
+Joe's decisions, 2026-10-09. Placing the 4 end crystals on the exit portal starts vanilla's own
+dragon respawn sequence; from that moment EndFight takes the whole island out of play until the
+new dragon is standing there:
+
+1. **Lockout.** The instant `RespawnWatcher` sees `DragonBattle#getRespawnPhase()` leave `NONE`,
+   every player in the End within 80 blocks (horizontal) of 0,0 gets pulled onto the obsidian
+   arrival platform (vanilla's own `ServerLevel.END_SPAWN_POINT`, built if it was ever mined out)
+   and told to wait there. Survival/adventure players only - creative/spectator are left alone.
+   That sweep repeats every 20 ticks for as long as the respawn + restore take, so nobody can walk
+   back onto the island mid-reset.
+2. **Full island restore.** Once the new dragon has actually spawned, the ENTIRE main island (not
+   just the arena's own structures) is set back to exactly how it looked right after the very
+   first build: anything dug out comes back, anything players built gets removed, the fortress and
+   pillars reappear. This only runs if a snapshot exists (see below) and `reset.enabled` is true;
+   otherwise behaviour is unchanged from phase 1's own per-pillar rebuild. It never touches
+   entities - the new crystals, players and items all stay exactly where they are. Once every
+   differing block is back in place, every remaining cult mob is cleared, the arena is
+   re-registered (from the saved pillar/terrain state - no rescan needed, the snapshot already
+   contains the arena), and everyone in the End is told "The arena is ready."
+3. **The snapshot.** `IslandSnapshot`/`IslandSnapshotStore` (package `reset`) capture every block
+   in x -64..64, z -64..64, the world's own min height up to 160, as a palette of `BlockData`
+   strings plus one index per block, GZIP-compressed to `plugins/EndFight/island-snapshot.bin`.
+   Taken automatically right after the very first arena build ever completes, and only if no
+   snapshot file already exists - never again after a rebuild, and never overwritten by a later
+   auto-trigger once one exists.
+
+Commands (admin): `endfight snapshot` retakes it on demand; `endfight restore` runs the restore
+right now; `endfight respawn` starts a respawn sequence with no crystals needed (testing only -
+`DragonBattle#initiateRespawn()`); `endfight reset status` shows the watcher's phase, the
+snapshot's presence/size/age, and the last restore's stats.
+
 ## Commands
 
 All require `endfight.admin` (default: op).
@@ -93,6 +126,10 @@ All require `endfight.admin` (default: op).
 | `endfight cult status` | Cult mobs alive, which wave thresholds each tracked dragon has crossed |
 | `endfight cult spawn` | Force-spawns guards now, ignoring the once-per-dragon rule |
 | `endfight cult clear` | Removes every live cult mob (testing/repair) |
+| `endfight snapshot` | Retakes the whole-island snapshot now |
+| `endfight restore` | Runs the whole-island restore now |
+| `endfight respawn` | Starts a dragon respawn sequence with no crystals needed (testing) |
+| `endfight reset status` | Watcher phase, snapshot presence/size/age, last restore stats |
 
 ## Rewards (phase 3)
 

@@ -18,6 +18,13 @@ import dev.sirbepy.mc.endfight.cult.CultFriendlyFire;
 import dev.sirbepy.mc.endfight.cult.CultGuards;
 import dev.sirbepy.mc.endfight.cult.CultWaves;
 import dev.sirbepy.mc.endfight.perch.PerchGateListener;
+import dev.sirbepy.mc.endfight.reset.BukkitDragonBattleView;
+import dev.sirbepy.mc.endfight.reset.IslandResetService;
+import dev.sirbepy.mc.endfight.reset.IslandRestorer;
+import dev.sirbepy.mc.endfight.reset.IslandSnapshotStore;
+import dev.sirbepy.mc.endfight.reset.IslandSnapshotTaker;
+import dev.sirbepy.mc.endfight.reset.ResetCommand;
+import dev.sirbepy.mc.endfight.reset.RespawnWatcher;
 import dev.sirbepy.mc.endfight.reward.DragonAuraCommand;
 import dev.sirbepy.mc.endfight.reward.DragonAuraJoinListener;
 import dev.sirbepy.mc.endfight.reward.DragonAuraService;
@@ -36,6 +43,8 @@ import dev.sirbepy.mc.endfight.tier.TierKillTracker;
 import dev.sirbepy.mc.endfight.tier.TierService;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -51,6 +60,7 @@ public final class EndFightPlugin extends JavaPlugin {
     private ArenaRegistry registry;
     private ArenaService service;
     private CultGuards cultGuards;
+    private RespawnWatcher respawnWatcher;
 
     @Override
     public void onEnable() {
@@ -61,9 +71,20 @@ public final class EndFightPlugin extends JavaPlugin {
         service = new ArenaService(this, registry);
         service.restoreFromState();
 
+        // Island reset (Joe, 2026-10-09): every new dragon summon gets the whole main island back
+        // to right after the first build, not just a rebuild of our own structures. See
+        // docs/endfight.md's "Summoning a new dragon" section.
+        IslandSnapshotStore snapshotStore = new IslandSnapshotStore(
+                new File(getDataFolder(), "island-snapshot.bin"), getLogger());
+        IslandSnapshotTaker snapshotTaker = new IslandSnapshotTaker(this, snapshotStore);
+        IslandResetService resetService = new IslandResetService(snapshotTaker, snapshotStore, getLogger());
+        service.setOnFirstBuild(resetService::onFirstBuild);
+        AtomicReference<RespawnWatcher> watcherRef = new AtomicReference<>();
+
         getServer().getPluginManager().registerEvents(new ArenaProtection(registry), this);
         getServer().getPluginManager().registerEvents(
-                new RespawnRebuildListener(this, () -> service.buildNow()), this);
+                new RespawnRebuildListener(this, () -> service.buildNow(),
+                        () -> config.get().reset().enabled() && snapshotStore.exists()), this);
         getServer().getPluginManager().registerEvents(
                 new EndWorldLoadListener(world -> autoBuildIfEnabled()), this);
 
@@ -73,7 +94,8 @@ public final class EndFightPlugin extends JavaPlugin {
 
         // Phase 2: the illager cult guarding the arena, and the perch gate keeping the dragon off
         // the exit portal while any pillar crystal survives. Each has its own config.yml switch.
-        cultGuards = new CultGuards(this, registry, () -> config.get().cult());
+        cultGuards = new CultGuards(this, registry, () -> config.get().cult(),
+                () -> watcherRef.get() != null && watcherRef.get().busy());
         cultGuards.start();
         getServer().getPluginManager().registerEvents(cultGuards, this);
         getServer().getPluginManager().registerEvents(
@@ -81,6 +103,17 @@ public final class EndFightPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new CultFriendlyFire(), this);
         getServer().getPluginManager().registerEvents(
                 new PerchGateListener(registry, () -> config.get().perchGate()), this);
+
+        // The reset's own restore + watcher: replaces RespawnRebuildListener's rebuild whenever a
+        // snapshot exists and reset is enabled (see RespawnRebuildListener's skipIfResetActive
+        // guard above); otherwise it stays inert and that listener behaves exactly as before.
+        IslandRestorer restorer = new IslandRestorer(this, () -> config.get().reset(), cultGuards::clearAll,
+                service::restoreFromState, world -> announceToEnd(world, "arena-ready"));
+        respawnWatcher = new RespawnWatcher(this, new BukkitDragonBattleView(), () -> config.get().reset(),
+                snapshotStore::exists, snapshotStore::load, restorer, world -> announceToEnd(world, "lockout-start"));
+        watcherRef.set(respawnWatcher);
+        getServer().getPluginManager().registerEvents(respawnWatcher, this);
+        respawnWatcher.start();
 
         // Tiers: the altar picks the next fight's tier, pushed into Dragonkind Evolved (or the
         // dragon's health) when it spawns, and read by the rewards when it dies.
@@ -116,9 +149,10 @@ public final class EndFightPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new AltarInteractListener(new AltarLocator(registry), altarMenu), this);
         getServer().getPluginManager().registerEvents(new MenuListener(), this);
 
+        ResetCommand resetCommand = new ResetCommand(resetService, respawnWatcher, restorer, snapshotStore, service::endWorld);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             EndFightCommand command = new EndFightCommand(service, config::get, this::reload, rewards, tiers);
-            command.registerInto(event.registrar(), new CultCommand(cultGuards));
+            command.registerInto(event.registrar(), new CultCommand(cultGuards), resetCommand);
             new DragonAuraCommand(auras).registerInto(event.registrar());
         });
     }
@@ -127,6 +161,15 @@ public final class EndFightPlugin extends JavaPlugin {
     public void onDisable() {
         if (cultGuards != null) {
             cultGuards.stop();
+        }
+        if (respawnWatcher != null) {
+            respawnWatcher.stop();
+        }
+    }
+
+    private void announceToEnd(World world, String messageKey) {
+        for (Player player : world.getPlayers()) {
+            config.get().reset().messages().send(player, messageKey);
         }
     }
 

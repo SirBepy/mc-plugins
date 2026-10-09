@@ -68,6 +68,30 @@ class RespawnRebuildListenerTest {
     }
 
     @Test
+    void neverSchedulesARebuildWhenTheIslandResetHasTakenOver() {
+        RespawnRebuildListener gated = new RespawnRebuildListener(plugin, rebuildCount::incrementAndGet, () -> true);
+        EnderDragon dragon = endWorld.spawn(new Location(endWorld, 0, 80, 0), EnderDragon.class);
+        CreatureSpawnEvent event = new CreatureSpawnEvent(dragon, CreatureSpawnEvent.SpawnReason.DEFAULT);
+
+        gated.onSpawn(event);
+        server.getScheduler().performTicks(100);
+
+        assertEquals(0, rebuildCount.get(), "the island reset replaces this rebuild once it's active");
+    }
+
+    @Test
+    void stillSchedulesARebuildWhenTheGuardSaysResetIsNotActive() {
+        RespawnRebuildListener gated = new RespawnRebuildListener(plugin, rebuildCount::incrementAndGet, () -> false);
+        EnderDragon dragon = endWorld.spawn(new Location(endWorld, 0, 80, 0), EnderDragon.class);
+        CreatureSpawnEvent event = new CreatureSpawnEvent(dragon, CreatureSpawnEvent.SpawnReason.DEFAULT);
+
+        gated.onSpawn(event);
+        server.getScheduler().performTicks(40);
+
+        assertEquals(1, rebuildCount.get());
+    }
+
+    @Test
     void aNonDragonSpawningInTheEndNeverSchedulesARebuild() {
         Zombie zombie = endWorld.spawn(new Location(endWorld, 0, 80, 0), Zombie.class);
         CreatureSpawnEvent event = new CreatureSpawnEvent(zombie, CreatureSpawnEvent.SpawnReason.NATURAL);

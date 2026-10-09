@@ -154,6 +154,21 @@ class CultGuardsTest {
     }
 
     @Test
+    void theAutomaticCheckSkipsEntirelyWhileTheArenaIsBusyButSpawnIfDueStillWorks() {
+        playerNearPortal();
+        EnderDragon dragon = dragon();
+        java.util.concurrent.atomic.AtomicBoolean busy = new java.util.concurrent.atomic.AtomicBoolean(true);
+        CultGuards busyGuards = new CultGuards(plugin, registry, () -> config, busy::get);
+
+        busyGuards.checkAndSpawn();
+        assertEquals(0, busyGuards.aliveCount(), "the periodic check must skip while the island reset is busy");
+
+        busy.set(false);
+        busyGuards.checkAndSpawn();
+        assertTrue(busyGuards.aliveCount() > 0, "the check resumes once the reset is no longer busy");
+    }
+
+    @Test
     void clearAllRemovesEveryCultMobButNothingElse() {
         dragon();
         guards.forceSpawn();

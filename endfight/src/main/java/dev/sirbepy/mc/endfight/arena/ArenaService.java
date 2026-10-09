@@ -7,6 +7,7 @@ import org.bukkit.plugin.Plugin;
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 /**
@@ -21,12 +22,21 @@ public final class ArenaService {
     private final ArenaStateStore stateStore;
     private final Logger logger;
 
+    /** Fired once, after {@link #buildNow()} completes a build that started from an unbuilt state
+     * - never for a rebuild. The island reset module hooks this to take its one-time snapshot
+     * without this package needing to know it exists. */
+    private Consumer<World> onFirstBuild = world -> { };
+
     public ArenaService(Plugin plugin, ArenaRegistry registry) {
         this.plugin = plugin;
         this.registry = registry;
         this.builder = new ArenaBuilder(plugin);
         this.stateStore = new ArenaStateStore(new File(plugin.getDataFolder(), "state.yml"), plugin.getLogger());
         this.logger = plugin.getLogger();
+    }
+
+    public void setOnFirstBuild(Consumer<World> onFirstBuild) {
+        this.onFirstBuild = onFirstBuild != null ? onFirstBuild : world -> { };
     }
 
     public ArenaRegistry registry() {
@@ -72,6 +82,7 @@ public final class ArenaService {
             logger.warning("No End world loaded; can't build the arena yet.");
             return false;
         }
+        boolean wasBuilt = stateStore.load().built();
         ArenaBuilder.BuildResult result = builder.build(end.get(), stateStore.load().terrain());
         if (result.pillars().isEmpty()) {
             logger.warning("Scanned 0 end-spike pillars; the End may not have generated yet. Nothing built.");
@@ -81,6 +92,9 @@ public final class ArenaService {
         stateStore.save(new ArenaState(true, ArenaState.CURRENT_LAYOUT_VERSION, result.pillars(), result.terrain()));
         logger.info("EndFight arena built: " + result.pillars().size() + " pillars, "
                 + result.layout().placements().size() + " blocks, " + result.layout().guardPosts().size() + " guard posts.");
+        if (!wasBuilt) {
+            onFirstBuild.accept(end.get());
+        }
         return true;
     }
 

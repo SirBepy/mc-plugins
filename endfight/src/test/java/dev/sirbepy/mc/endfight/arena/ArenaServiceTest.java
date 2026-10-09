@@ -11,6 +11,7 @@ import org.mockbukkit.mockbukkit.world.WorldMock;
 
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -80,6 +81,22 @@ class ArenaServiceTest {
 
         assertEquals(1, registry.pillars().size(), "should not have rescanned the real 10-pillar world");
         assertEquals(blockCountAfterRestore, registry.blockCount());
+    }
+
+    // The island reset's one-time snapshot hooks here - it must fire for the very first build
+    // ever, and never again for a later rebuild (that would silently re-snapshot over a since-
+    // changed island every time the pillars regenerate).
+    @Test
+    void onFirstBuildFiresOnceForTheFirstBuildEverButNeverAgainForARebuild() {
+        seededEndWorld();
+        AtomicInteger firstBuildCalls = new AtomicInteger();
+        service.setOnFirstBuild(world -> firstBuildCalls.incrementAndGet());
+
+        service.buildNow();
+        assertEquals(1, firstBuildCalls.get(), "the first build ever must fire the hook");
+
+        service.buildNow();
+        assertEquals(1, firstBuildCalls.get(), "a rebuild must never fire it again");
     }
 
     // A rebuild must stand where the first build did: reading the ground again would find our own

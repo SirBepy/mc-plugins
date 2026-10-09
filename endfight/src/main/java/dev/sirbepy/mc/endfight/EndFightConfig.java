@@ -3,6 +3,7 @@ package dev.sirbepy.mc.endfight;
 import dev.sirbepy.mc.core.Messages;
 import dev.sirbepy.mc.endfight.cult.CultConfig;
 import dev.sirbepy.mc.endfight.perch.PerchGateConfig;
+import dev.sirbepy.mc.endfight.reset.ResetConfig;
 import dev.sirbepy.mc.endfight.reward.TierRewardRow;
 import dev.sirbepy.mc.endfight.tier.Tier;
 import org.bukkit.configuration.ConfigurationSection;
@@ -17,6 +18,7 @@ public final class EndFightConfig {
     private final Messages messages;
     private final CultConfig cult;
     private final PerchGateConfig perchGate;
+    private final ResetConfig reset;
     private final boolean rewardsEnabled;
     private final Map<Tier, TierRewardRow> tierTable;
     private final TierRewardRow firstKillRow;
@@ -29,6 +31,7 @@ public final class EndFightConfig {
         this.messages = new Messages(config.getConfigurationSection("messages"));
         this.cult = new CultConfig(config.getConfigurationSection("cult"));
         this.perchGate = new PerchGateConfig(config.getConfigurationSection("perch-gate"));
+        this.reset = new ResetConfig(config.getConfigurationSection("reset"));
         this.rewardsEnabled = config.getBoolean("rewards.enabled", true);
         ConfigurationSection rewardsSection = config.getConfigurationSection("rewards");
         this.tierTable = TierRewardRow.load(rewardsSection);
@@ -64,6 +67,10 @@ public final class EndFightConfig {
 
     public PerchGateConfig perchGate() {
         return perchGate;
+    }
+
+    public ResetConfig reset() {
+        return reset;
     }
 
     /** Phase 3 (per-participant rewards) is live for the first fight (2026-10-10); false falls all

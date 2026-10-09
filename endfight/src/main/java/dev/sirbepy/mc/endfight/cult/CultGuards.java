@@ -21,6 +21,7 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
@@ -39,15 +40,25 @@ public final class CultGuards implements Listener {
     private final Plugin plugin;
     private final ArenaRegistry registry;
     private final Supplier<CultConfig> config;
+    private final BooleanSupplier arenaBusy;
     private final Logger logger;
 
     private BukkitTask checkTask;
     private BukkitTask tetherTask;
 
     public CultGuards(Plugin plugin, ArenaRegistry registry, Supplier<CultConfig> config) {
+        this(plugin, registry, config, () -> false);
+    }
+
+    /** {@code arenaBusy}: the island reset's lockout/restore window - the periodic natural spawn
+     * check skips entirely while it's true, so guards never spawn mid-restore onto blocks about to
+     * be overwritten. {@code forceSpawn}/{@code spawnIfDue} (the {@code /endfight cult spawn}
+     * command and tests) are untouched - only the automatic check is gated. */
+    public CultGuards(Plugin plugin, ArenaRegistry registry, Supplier<CultConfig> config, BooleanSupplier arenaBusy) {
         this.plugin = plugin;
         this.registry = registry;
         this.config = config;
+        this.arenaBusy = arenaBusy;
         this.logger = plugin.getLogger();
     }
 
@@ -69,9 +80,10 @@ public final class CultGuards implements Listener {
         }
     }
 
-    private void checkAndSpawn() {
+    /** Package-visible so a test can call it directly instead of waiting on the repeating task. */
+    void checkAndSpawn() {
         CultConfig cfg = config.get();
-        if (!cfg.guards().enabled() || !registry.isBuilt()) {
+        if (!cfg.guards().enabled() || !registry.isBuilt() || arenaBusy.getAsBoolean()) {
             return;
         }
         for (World world : endWorlds()) {
