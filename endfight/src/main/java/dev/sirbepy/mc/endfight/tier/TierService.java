@@ -19,7 +19,7 @@ import java.util.logging.Logger;
  * <p>{@link #firstKillEver()} stays true until EITHER this plugin's own persisted {@code
  * kill-recorded} flag OR {@link EndDragonBattleHistory} says a dragon has died here - either
  * signal remembering a kill is enough, so losing one of them (a corrupted {@code tier.yml}, or an
- * End world recreated from a backup that predates the flag) never un-forces Ferocious for the
+ * End world recreated from a backup that predates the flag) never un-forces the first-kill tier for the
  * first fight twice.
  */
 public final class TierService implements TierChoice {
@@ -47,7 +47,7 @@ public final class TierService implements TierChoice {
         if (activeTier != null) {
             return activeTier;
         }
-        return firstKillEver() ? Tier.FEROCIOUS : nextChoice;
+        return firstKillEver() ? Tier.FIRST_KILL : nextChoice;
     }
 
     @Override
@@ -70,13 +70,13 @@ public final class TierService implements TierChoice {
 
     /**
      * A fresh dragon just spawned: snapshots the tier this fight is held at (forced
-     * {@link Tier#FEROCIOUS} if no dragon has ever died here yet, regardless of what the altar
+     * {@link Tier#FIRST_KILL} if no dragon has ever died here yet, regardless of what the altar
      * says) and returns it so the caller can push it to DKE/the fallback. {@link #current()}
      * returns this locked value for the rest of the fight even if the altar's {@link #next()}
      * pick changes mid-fight.
      */
     public Tier lockForSpawn() {
-        Tier locked = firstKillEver() ? Tier.FEROCIOUS : nextChoice;
+        Tier locked = firstKillEver() ? Tier.FIRST_KILL : nextChoice;
         this.activeTier = locked;
         save();
         return locked;

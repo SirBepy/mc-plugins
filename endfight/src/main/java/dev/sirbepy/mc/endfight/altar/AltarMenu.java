@@ -22,7 +22,7 @@ import java.util.function.Supplier;
  * The altar's 27-slot "Dragon Altar" menu ({@code core.gui.Menu}, the same cancel-every-click
  * pattern as {@code guild.gui.GuildMenus}): one icon per {@link Tier} - click to set it as the
  * altar's pick for the next fight and announce it to everyone currently in the End - plus a
- * locked, explained Ferocious during the server's first-kill-ever state, and an "Auras" slot
+ * locked, explained first-kill tier (Ascended) during the server's first-kill-ever state, and an "Auras" slot
  * ({@link AuraMenu}).
  */
 public final class AltarMenu {
@@ -50,12 +50,12 @@ public final class AltarMenu {
      * {@code InventoryView} open on a player, the same pattern {@code GuildMenus#build} uses. */
     Menu build(Player player) {
         Menu menu = new Menu(3, Component.text("Dragon Altar", NamedTextColor.LIGHT_PURPLE));
-        boolean forcedFerocious = tiers.firstKillEver();
+        boolean forcedFirstKill = tiers.firstKillEver();
         Tier[] values = Tier.values();
         for (int i = 0; i < values.length && i < TIER_SLOTS.length; i++) {
             Tier tier = values[i];
-            menu.set(TIER_SLOTS[i], tierIcon(player, tier, forcedFerocious), (shown, click) -> {
-                if (forcedFerocious) {
+            menu.set(TIER_SLOTS[i], tierIcon(player, tier, forcedFirstKill), (shown, click) -> {
+                if (forcedFirstKill) {
                     return;
                 }
                 tiers.setNext(tier, player);
@@ -68,12 +68,12 @@ public final class AltarMenu {
         return menu;
     }
 
-    private ItemStack tierIcon(Player player, Tier tier, boolean forcedFerocious) {
+    private ItemStack tierIcon(Player player, Tier tier, boolean forcedFirstKill) {
         List<String> lines = new ArrayList<>();
         lines.add(tier.health() + " HP");
-        if (forcedFerocious) {
-            lines.add(tier == Tier.FEROCIOUS
-                    ? "Locked: the server's first dragon is always Ferocious."
+        if (forcedFirstKill) {
+            lines.add(tier == Tier.FIRST_KILL
+                    ? "Locked: the server's first dragon is always " + Tier.FIRST_KILL.displayName() + "."
                     : "Locked until the first dragon ever falls.");
         } else if (tier == tiers.next()) {
             lines.add("Chosen for the next fight");
@@ -82,7 +82,7 @@ public final class AltarMenu {
                 ? "You've already taken this tier's hoard this week."
                 : "You haven't taken this tier's hoard this week.");
 
-        Material material = forcedFerocious && tier != Tier.FEROCIOUS ? Material.GRAY_DYE : Material.DRAGON_EGG;
+        Material material = forcedFirstKill && tier != Tier.FIRST_KILL ? Material.GRAY_DYE : Material.DRAGON_EGG;
         ItemStack icon = new ItemStack(material);
         ItemMeta meta = icon.getItemMeta();
         meta.displayName(Component.text(tier.displayName(), NamedTextColor.GOLD));

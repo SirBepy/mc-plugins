@@ -68,13 +68,13 @@ class TierApplyListenerTest {
         listener.onSpawn(new CreatureSpawnEvent(dragon, CreatureSpawnEvent.SpawnReason.DEFAULT));
 
         assertTrue(isTagged(dragon), "the PDC flag must be set the moment this plugin decides to apply, not after the delay");
-        assertEquals(Tier.FEROCIOUS.health(), tiers.current().health(), "the server's first-ever fight is forced to Ferocious");
+        assertEquals(Tier.ASCENDED.health(), tiers.current().health(), "the server's first-ever fight is forced to Ascended");
 
         server.getScheduler().performTicks(DELAY_TICKS - 1);
         assertEquals(vanillaMax, dragon.getMaxHealth(), "should not have pushed yet just before the delay");
         server.getScheduler().performTicks(2);
 
-        assertEquals(Tier.FEROCIOUS.health(), dragon.getMaxHealth());
+        assertEquals(Tier.ASCENDED.health(), dragon.getMaxHealth());
     }
 
     @Test
@@ -111,7 +111,7 @@ class TierApplyListenerTest {
 
         assertTrue(isTagged(dragon));
         server.getScheduler().performTicks(DELAY_TICKS + 1);
-        assertEquals(Tier.FEROCIOUS.health(), dragon.getMaxHealth());
+        assertEquals(Tier.ASCENDED.health(), dragon.getMaxHealth());
     }
 
     @Test

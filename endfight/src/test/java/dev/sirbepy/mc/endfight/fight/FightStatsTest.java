@@ -101,7 +101,7 @@ class FightStatsTest {
     }
 
     @Test
-    void cultKillsAreTalliedPerTypeOnTheLivingDragon() {
+    void cultKillsAreTalliedPerTypeAndGroupOnTheLivingDragon() {
         EnderDragon dragon = dragon(200);
         PlayerMock alice = server.addPlayer("Alice");
         PlayerMock bob = server.addPlayer("Bob");
@@ -109,6 +109,8 @@ class FightStatsTest {
         kill(alice, "pillager");
         kill(alice, "pillager");
         kill(bob, "pillager");
+        kill(bob, "vindicator");
+        kill(bob, "ravager");
         kill(bob, "paratrooper");
         Pillager notCult = end.spawn(new Location(end, 5, 65, 5), Pillager.class);
         notCult.setKiller(alice);
@@ -118,22 +120,46 @@ class FightStatsTest {
         Map<String, Map<UUID, Integer>> kills = FightStats.kills(pdc);
         assertEquals(2, kills.get("pillager").get(alice.getUniqueId()));
         assertEquals(1, kills.get("pillager").get(bob.getUniqueId()));
-        assertEquals(1, kills.get("paratrooper").get(bob.getUniqueId()));
-        assertEquals(2, kills.size(), "the plain pillager counts for nothing");
-        assertEquals(alice.getUniqueId(), FightStats.topKillers(pdc).get("pillager"));
-        assertEquals(bob.getUniqueId(), FightStats.topKillers(pdc).get("paratrooper"));
+        assertEquals(4, kills.size(), "the plain pillager counts for nothing");
+        assertEquals(3, FightStats.groupKills(pdc).get(HonourGroup.CULTISTS).get(bob.getUniqueId()),
+                "a pillager, a vindicator and a ravager are all Cultists");
+        assertEquals(bob.getUniqueId(), FightStats.groupLeaders(pdc).get(HonourGroup.CULTISTS), "3 beats 2");
+        assertEquals(bob.getUniqueId(), FightStats.groupLeaders(pdc).get(HonourGroup.PARATROOPERS));
     }
 
+    // Honours spec: a tie goes to whoever reached the count first.
     @Test
-    void aTieForTopKillerGoesToWhoeverGotThereFirst() {
+    void aTiedGroupStaysWithWhoeverReachedTheCountFirst() {
         EnderDragon dragon = dragon(200);
         PlayerMock alice = server.addPlayer("Alice");
         PlayerMock bob = server.addPlayer("Bob");
 
         kill(bob, "phantom");
         kill(alice, "phantom");
+        kill(alice, "phantom");
+        kill(bob, "phantom");
 
-        assertEquals(bob.getUniqueId(), FightStats.topKillers(dragon.getPersistentDataContainer()).get("phantom"));
+        assertEquals(alice.getUniqueId(), FightStats.groupLeaders(dragon.getPersistentDataContainer()).get(HonourGroup.PHANTOMS),
+                "Alice reached 2 first; Bob only tied");
+    }
+
+    @Test
+    void honoursNeedTwoFightersAndThreeKills() {
+        UUID alice = UUID.randomUUID();
+        UUID bob = UUID.randomUUID();
+        Map<HonourGroup, Map<UUID, Integer>> kills = Map.of(
+                HonourGroup.CULTISTS, Map.of(alice, 3), HonourGroup.PIGLINS, Map.of(bob, 2));
+        Map<HonourGroup, UUID> leaders = Map.of(HonourGroup.CULTISTS, alice, HonourGroup.PIGLINS, bob);
+
+        FightHonours solo = FightHonours.decide(java.util.Set.of(alice), List.of(alice), Map.of(alice, 9.0), kills, leaders);
+        FightHonours duo = FightHonours.decide(java.util.Set.of(alice, bob), List.of(bob, alice), Map.of(bob, 9.0, alice, 3.0),
+                kills, leaders);
+
+        assertTrue(solo.isEmpty(), "one fighter: no honours");
+        assertEquals(bob, duo.bane());
+        assertEquals(Map.of(HonourGroup.CULTISTS, alice), duo.groups(), "Piglins needs 3 kills");
+        assertEquals(0.5, duo.rollBonus(bob), 1e-9);
+        assertEquals(0.25, duo.rollBonus(alice), 1e-9);
     }
 
     @Test

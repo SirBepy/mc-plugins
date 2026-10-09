@@ -90,6 +90,11 @@ wing/head hits and breath attacks near a cultist still hurt it like any other mo
   mobs alive at once, queued ones included (guards don't count); a wave's mobs come out over
   `cult.waves.spread-ticks` (50 ticks) instead of all in one tick; and nothing new spawns while
   the server's average tick time is over `cult.waves.max-mspt` (40 ms) - the queue just waits.
+- **Tower wardens** (Joe, 2026-10-09). Every pillar whose crystal still stands always has 2
+  phantoms circling 8 blocks over its top (Paper's phantom anchor), swooping at whoever climbs it.
+  A killed warden comes back on the next top-up, every 30 s, while its crystal stands; once the
+  crystal breaks nothing replaces them. They are cult mobs (type `phantom`) but neither guards nor
+  wave mobs, so they never sleep and never count against the wave cap. `cult.wardens`.
 - **Mob counter.** A boss bar under the dragon's counts the army still alive, guards included,
   with the title naming the biggest types ("Dragon's army: 42 left (18 Pillagers, 9 Piglins,
   ...)"). It is shown only to players who already see the dragon's own bar, so the client draws
@@ -182,13 +187,13 @@ differently. An op's `/kill` and a dragon dying outside the End spend nothing, e
 Guild's own filter.
 
 **Tier.** The tier the altar locked in when this dragon spawned (`TierService`, see Altar & tiers
-below), read when the dragon dies; while no dragon has ever died in this End it is Ferocious with
+below), read when the dragon dies; while no dragon has ever died in this End it is Ascended with
 the first-kill row. `TierService` records the kill one tick after the death, so every listener
 handling that death still sees it as the first.
 
 **XP.** Every participant gets `Player#giveExp` on every kill, by tier, from `rewards.tiers.<tier>`
 in `config.yml`: Fledgeling 500, Powerful 750, Cruel 1000, Immortal 1500, Ferocious 2000,
-Primordial 3000, Ascended 4000 - except the server's actual first-ever kill (Ferocious), which pays
+Primordial 3000, Ascended 4000 - except the server's actual first-ever kill (Ascended), which pays
 12000 (`rewards.first-kill.xp`). The weekly Dragon Hoard limit (below) never touches XP.
 
 Vanilla's own XP used to be read by cancelling the dragon's death-animation `ExperienceOrb` spawns
@@ -208,16 +213,36 @@ edge). A fighter who already has that tier's hoard this week gets XP only, with 
 so. The hoard is a `minecraft:black_shulker_box` with an enchantment glint, named "Dragon Hoard"
 (dark purple, not italic), lore naming the tier and the date, holding (in its own 27-slot
 inventory): diamonds, shulker shells, enchanted golden apples, netherite scrap (only Primordial and
-Ascended), and a chance at one bonus roll - all from `rewards.tiers.<tier>` in `config.yml`. A roll
-chance of 1.0 is a single guaranteed roll; Ascended's 1.5 guarantees the first and spends the
-remaining 0.5 on an independent second roll - if that second roll lands, the hoard gets no
-netherite scrap. The server's actual first-ever kill uses the Ferocious row's materials with a
-guaranteed roll (`rewards.first-kill.roll-chance: 1.0`) and counts as that week's Ferocious hoard.
+Ascended), and a chance at bonus rolls - all from `rewards.tiers.<tier>` in `config.yml`. Every
+whole 1.0 of roll chance is a guaranteed roll and the remainder one more independent chance
+(Fledgeling's 0.10 is a 10% chance at one roll, Ascended's 1.5 one roll plus 50% at a second),
+never more than 4 rolls; a hoard with 2+ rolls gets no netherite scrap. The server's actual
+first-ever kill is paid like the Ascended dragon it is (rewards follow the dragon summoned, Joe
+2026-10-09): the Ascended row with 12000 XP, counting as that week's Ascended hoard.
+
+**Fight honours** (10ca's spec, Joe decided 2026-10-09; `fight.FightHonours`). Announced in chat at
+the end of each kill, to every participant online and everyone in the End: **Dragon's Bane** for
+the most damage to the dragon, and one honour per mob group (`HonourGroup`: Cultists = pillagers,
+vindicators, evokers and the cult's ravagers; Piglins = piglins and brutes; Phantoms;
+Paratroopers) for the most kills of it. Only in a fight with 2+ participants; a group honour needs
+3+ kills; a tie goes to whoever reached the count first. An honour only raises its holder's
+armor-roll chance in this kill's hoard (Bane +0.5, each group honour +0.25, on top of the tier's
+chance), so it does nothing for a player who already took this tier's hoard this week. Damage and
+kills come from the fight tallies (see The cult).
+
+**Hit confirmation** (Joe, 2026-10-09). The hit that first makes a player a fighter this fight
+gets them a chat line and a level-up ding, once per fight: "Your Dragon Hoard is secured for this
+fight", or that they'll get the XP when they already took this tier's hoard this week. Only a hit
+that does damage counts (`DragonFighters` ignores 0-damage hits, so a snowball never makes a
+fighter; any arrow does).
 
 A roll grants, in order (`RollEngine`, tracked per player in `rewards.yml`): a **Dragonscale** armor
 piece the player doesn't own yet (plain netherite, no enchantments, `custom_model_data` string
-"dragonscale" and equippable asset `claudesmp:dragonscale` - the same look shipped on main in
-9d59217, keeping netherite's vanilla slot and equip sound); once all 4 pieces are owned, a **dragon
+"dragonscale" and, on the chestplate, leggings and boots, equippable asset `claudesmp:dragonscale` -
+the same look shipped on main in 9d59217; the helmet has no asset, so the client draws its 3D
+dragon-skull item model on the head (10ca, 50d1de2). Every piece sets its own slot and netherite's
+equip sound on the equippable, since Paper hands a fresh meta a HEAD-slot default (javap on 26.3
+`CraftMetaItem.getEquippable`)); once all 4 pieces are owned, a **dragon
 aura** they don't own yet (Dragon's Breath, Ender, Void Ember - an unlock, not an item, announced in
 chat, worn one at a time with `/dragonaura <name|off>`, default permission true, API:
 `DragonAuraService#toggle`, which the altar menu will call directly later); once all 3 auras are
@@ -252,7 +277,8 @@ effect on the fight after it - the tier locks in the moment a fresh dragon spawn
 (`TierApplyListener`/`TierService#lockForSpawn`), not when the altar is clicked.
 
 **First kill ever.** The server's actual first Ender Dragon kill (Saturday 2026-10-10) is forced to
-Ferocious (850 HP) regardless of what the altar says, and the menu shows every tier locked with an
+Ascended (`Tier.FIRST_KILL`, 1250 HP, Dragonkind's max: "the strongest boss fight there is", Joe
+2026-10-09) regardless of what the altar says, and the menu shows every tier locked with an
 explanation until then. "No dragon has ever died in this End" combines two signals, either one
 enough to clear it: `World#getEnderDragonBattle().hasBeenPreviouslyKilled()` (behind
 `EndDragonBattleHistory`, since MockBukkit throws for that call) and EndFight's own persisted flag in

@@ -55,7 +55,7 @@ public final class CultCommand {
         return Command.SINGLE_SUCCESS;
     }
 
-    /** This fight's tallies: damage per player (most first) and the top killer of each type. */
+    /** This fight's tallies: damage per player (most first) and each honour group's leader. */
     private int stats(CommandContext<CommandSourceStack> ctx) {
         for (EnderDragon dragon : endDragons()) {
             var pdc = dragon.getPersistentDataContainer();
@@ -63,13 +63,14 @@ public final class CultCommand {
             List<String> top = FightStats.topDamagers(pdc, Integer.MAX_VALUE).stream()
                     .map(id -> nameOf(id) + "=" + Math.round(damage.get(id)))
                     .collect(Collectors.toList());
-            List<String> killers = FightStats.topKillers(pdc).entrySet().stream()
-                    .map(e -> e.getKey() + ":" + nameOf(e.getValue()) + "="
-                            + FightStats.kills(pdc).get(e.getKey()).get(e.getValue()))
+            var groupKills = FightStats.groupKills(pdc);
+            List<String> leaders = FightStats.groupLeaders(pdc).entrySet().stream()
+                    .map(e -> e.getKey().displayName() + ":" + nameOf(e.getValue()) + "="
+                            + groupKills.get(e.getKey()).get(e.getValue()))
                     .collect(Collectors.toList());
             ctx.getSource().getSender().sendMessage(Component.text(
                     "Dragon " + dragon.getUniqueId().toString().substring(0, 8) + " damage: " + top
-                            + ", top killers: " + killers));
+                            + ", group leaders: " + leaders + ", kills by type: " + FightStats.kills(pdc)));
         }
         return Command.SINGLE_SUCCESS;
     }

@@ -44,15 +44,16 @@ public record TierRewardRow(int xp, int diamonds, int shells, int gapples, int s
         return table;
     }
 
-    /** {@code rewards.first-kill}: the server's actual first-ever dragon kill, the Ferocious row's
-     * materials (so a customised Ferocious row carries through) with its own XP (default 12000)
-     * and a guaranteed roll (default 1.0). */
-    public static TierRewardRow loadFirstKill(ConfigurationSection rewardsSection, TierRewardRow ferociousRow) {
+    /** {@code rewards.first-kill}: the server's actual first-ever dragon kill, paid like the tier
+     * it is fought at ({@link dev.sirbepy.mc.endfight.tier.Tier#FIRST_KILL}'s row, so a customised
+     * row carries through: rewards follow the dragon summoned, Joe 2026-10-09) with its own XP
+     * (default 12000); {@code roll-chance} overrides that row's chance only if set. */
+    public static TierRewardRow loadFirstKill(ConfigurationSection rewardsSection, TierRewardRow tierRow) {
         ConfigurationSection section = rewardsSection == null ? null : rewardsSection.getConfigurationSection("first-kill");
         int xp = section == null ? 12000 : section.getInt("xp", 12000);
-        double rollChance = section == null ? 1.0 : section.getDouble("roll-chance", 1.0);
-        return new TierRewardRow(xp, ferociousRow.diamonds(), ferociousRow.shells(), ferociousRow.gapples(),
-                ferociousRow.scrapMin(), ferociousRow.scrapMax(), rollChance);
+        double rollChance = section == null ? tierRow.rollChance() : section.getDouble("roll-chance", tierRow.rollChance());
+        return new TierRewardRow(xp, tierRow.diamonds(), tierRow.shells(), tierRow.gapples(),
+                tierRow.scrapMin(), tierRow.scrapMax(), rollChance);
     }
 
     private static TierRewardRow fromConfig(ConfigurationSection section, TierRewardRow fallback) {

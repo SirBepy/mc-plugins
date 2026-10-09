@@ -41,18 +41,25 @@ public final class RollEngine {
         return new Outcome(Kind.DUP_ARMOR, pieces[random.nextInt(pieces.length)], null, null);
     }
 
+    /** Most rolls one hoard can get, however much an honour raises the chance (honours spec). */
+    public static final int MAX_ROLLS = 4;
+
     /**
-     * How many rolls a hoard gets. {@code rollChance} of 1.0 or less is a single chance at one
-     * roll (e.g. Fledgeling's 0.10, Primordial's guaranteed 1.0); above 1.0 (Ascended's 1.5)
-     * guarantees the first roll and spends the remainder (0.5) as a second, independent chance.
+     * How many rolls a hoard gets: every whole 1.0 of {@code rollChance} is a guaranteed roll and
+     * the remainder is one more independent chance (Fledgeling's 0.10 is a 10% chance at one roll,
+     * Ascended's 1.5 one roll plus 50% at a second, 2.5 with honours two plus 50% at a third),
+     * never more than {@link #MAX_ROLLS}.
      */
     public static int rollCount(double rollChance, Random random) {
-        int rolls = 0;
-        double remaining = rollChance;
-        if (remaining >= 1.0) {
-            rolls = 1;
-            remaining -= 1.0;
+        if (rollChance <= 0) {
+            return 0;
         }
+        int guaranteed = (int) Math.floor(rollChance);
+        if (guaranteed >= MAX_ROLLS) {
+            return MAX_ROLLS;
+        }
+        double remaining = rollChance - guaranteed;
+        int rolls = guaranteed;
         if (remaining > 0 && random.nextDouble() < remaining) {
             rolls++;
         }

@@ -14,17 +14,19 @@ import java.util.UUID;
 
 /**
  * Per-player tallies for one dragon fight: how much damage each player dealt the dragon, and how
- * many cult mobs of each type each player killed. For the 50% wave's phantoms (sent after the top
- * damage dealers) and the extra rewards for the top dealer and the top killer of each mob type.
+ * many cult mobs of each type (and each {@link HonourGroup}) each player killed. For the 50% wave's
+ * phantoms (sent after the top damage dealers) and the fight honours.
  *
  * <p>Kept on the dragon's own PDC, the same restart-safe pattern as the fighter list and the wave
  * thresholds: a restart mid-fight keeps the tallies, and a new dragon starts with none. Stored as
- * {@code uuid=amount,...} and {@code type|uuid=count,...} strings.
+ * {@code uuid=amount,...}, {@code type|uuid=count,...} and {@code GROUP=uuid,...} strings.
  */
 public final class FightStats {
 
     static final NamespacedKey DAMAGE = new NamespacedKey("endfight", "fight-damage");
     static final NamespacedKey KILLS = new NamespacedKey("endfight", "fight-kills");
+    static final NamespacedKey GROUP_KILLS = new NamespacedKey("endfight", "fight-group-kills");
+    static final NamespacedKey GROUP_LEADERS = new NamespacedKey("endfight", "fight-group-leaders");
 
     private FightStats() {
     }
@@ -63,15 +65,68 @@ public final class FightStats {
     public static void addKill(PersistentDataContainer pdc, UUID player, String type) {
         Map<String, Map<UUID, Integer>> kills = kills(pdc);
         kills.computeIfAbsent(type, t -> new LinkedHashMap<>()).merge(player, 1, Integer::sum);
+        pdc.set(KILLS, PersistentDataType.STRING, joinNested(kills));
+
+        HonourGroup group = HonourGroup.of(type);
+        if (group == null) {
+            return;
+        }
+        Map<String, Map<UUID, Integer>> groupKills = nested(pdc.get(GROUP_KILLS, PersistentDataType.STRING));
+        Map<UUID, Integer> inGroup = groupKills.computeIfAbsent(group.name(), g -> new LinkedHashMap<>());
+        int count = inGroup.merge(player, 1, Integer::sum);
+        pdc.set(GROUP_KILLS, PersistentDataType.STRING, joinNested(groupKills));
+        // The leader only changes when someone passes them, so a tie stays with whoever reached
+        // that count first (the honours spec's tie rule).
+        Map<HonourGroup, UUID> leaders = groupLeaders(pdc);
+        UUID leader = leaders.get(group);
+        if (leader == null || count > inGroup.getOrDefault(leader, 0)) {
+            leaders.put(group, player);
+            List<String> parts = new ArrayList<>();
+            leaders.forEach((g, id) -> parts.add(g.name() + "=" + id));
+            pdc.set(GROUP_LEADERS, PersistentDataType.STRING, String.join(",", parts));
+        }
+    }
+
+    /** Kills per honour group, then per player. */
+    public static Map<HonourGroup, Map<UUID, Integer>> groupKills(PersistentDataContainer pdc) {
+        Map<HonourGroup, Map<UUID, Integer>> out = new TreeMap<>();
+        nested(pdc.get(GROUP_KILLS, PersistentDataType.STRING)).forEach((name, byPlayer) -> {
+            try {
+                out.put(HonourGroup.valueOf(name), byPlayer);
+            } catch (IllegalArgumentException ignored) {
+                // a group that no longer exists
+            }
+        });
+        return out;
+    }
+
+    /** Who leads each honour group: the most kills, a tie going to whoever got there first. */
+    public static Map<HonourGroup, UUID> groupLeaders(PersistentDataContainer pdc) {
+        Map<HonourGroup, UUID> out = new TreeMap<>();
+        for (String[] pair : pairs(pdc.get(GROUP_LEADERS, PersistentDataType.STRING))) {
+            try {
+                out.put(HonourGroup.valueOf(pair[0]), UUID.fromString(pair[1]));
+            } catch (IllegalArgumentException ignored) {
+                // a hand-edited value; skip it
+            }
+        }
+        return out;
+    }
+
+    private static String joinNested(Map<String, Map<UUID, Integer>> nested) {
         List<String> parts = new ArrayList<>();
-        kills.forEach((t, byPlayer) -> byPlayer.forEach((id, count) -> parts.add(t + "|" + id + "=" + count)));
-        pdc.set(KILLS, PersistentDataType.STRING, String.join(",", parts));
+        nested.forEach((t, byPlayer) -> byPlayer.forEach((id, count) -> parts.add(t + "|" + id + "=" + count)));
+        return String.join(",", parts);
     }
 
     /** Kills per mob type, then per player in the order they first killed one of that type. */
     public static Map<String, Map<UUID, Integer>> kills(PersistentDataContainer pdc) {
+        return nested(pdc.get(KILLS, PersistentDataType.STRING));
+    }
+
+    private static Map<String, Map<UUID, Integer>> nested(String raw) {
         Map<String, Map<UUID, Integer>> out = new TreeMap<>();
-        for (String[] pair : pairs(pdc.get(KILLS, PersistentDataType.STRING))) {
+        for (String[] pair : pairs(raw)) {
             int bar = pair[0].indexOf('|');
             if (bar <= 0) {
                 continue;
@@ -84,25 +139,6 @@ public final class FightStats {
                 // a hand-edited value; skip it
             }
         }
-        return out;
-    }
-
-    /** The player with the most kills of each type; a tie goes to whoever got there first. */
-    public static Map<String, UUID> topKillers(PersistentDataContainer pdc) {
-        Map<String, UUID> out = new TreeMap<>();
-        kills(pdc).forEach((type, byPlayer) -> {
-            UUID best = null;
-            int bestCount = 0;
-            for (Map.Entry<UUID, Integer> entry : byPlayer.entrySet()) {
-                if (entry.getValue() > bestCount) {
-                    best = entry.getKey();
-                    bestCount = entry.getValue();
-                }
-            }
-            if (best != null) {
-                out.put(type, best);
-            }
-        });
         return out;
     }
 

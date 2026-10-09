@@ -45,11 +45,12 @@ final class CultRange {
         return count;
     }
 
-    /** Live wave mobs only: guards have a post, and there is one per post however many that is. */
+    /** Live wave mobs only: guards have a post (one per post however many that is), and the
+     * tower wardens are a fixed number per crystal. */
     static int aliveWaveCount(World world) {
         int count = 0;
         for (LivingEntity entity : world.getEntitiesByClass(LivingEntity.class)) {
-            if (CultMarker.isCult(entity) && CultMarker.postIndex(entity) < 0) {
+            if (CultMarker.isCult(entity) && CultMarker.postIndex(entity) < 0 && !CrystalWardens.isWarden(entity)) {
                 count++;
             }
         }

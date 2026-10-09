@@ -35,7 +35,7 @@ public final class EndFightConfig {
         this.rewardsEnabled = config.getBoolean("rewards.enabled", true);
         ConfigurationSection rewardsSection = config.getConfigurationSection("rewards");
         this.tierTable = TierRewardRow.load(rewardsSection);
-        this.firstKillRow = TierRewardRow.loadFirstKill(rewardsSection, tierTable.get(Tier.FEROCIOUS));
+        this.firstKillRow = TierRewardRow.loadFirstKill(rewardsSection, tierTable.get(Tier.FIRST_KILL));
         this.defaultTier = parseTier(config.getString("tiers.default"));
         this.tierApplyDelayTicks = config.getLong("tiers.apply-delay-ticks", 60L);
         this.dkeForceInstalled = config.isSet("tiers.dke.force-installed")
@@ -84,8 +84,8 @@ public final class EndFightConfig {
         return tierTable.get(tier);
     }
 
-    /** {@code rewards.first-kill}'s row: the Ferocious row's materials with a guaranteed roll and
-     * 12000 XP by default. */
+    /** {@code rewards.first-kill}'s row: the first-kill tier's own row (Ascended) with 12000 XP by
+     * default. */
     public TierRewardRow firstKillRow() {
         return firstKillRow;
     }

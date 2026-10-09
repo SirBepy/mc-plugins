@@ -94,4 +94,14 @@ class RollEngineTest {
             }
         };
     }
+
+    // Honours spec: every whole 100% is a sure roll, the rest one more chance, never past 4.
+    @Test
+    void honoursCanStackRollsUpToFour() {
+        assertEquals(2, RollEngine.rollCount(2.5, fixedDouble(0.6)));
+        assertEquals(3, RollEngine.rollCount(2.5, fixedDouble(0.4)));
+        assertEquals(4, RollEngine.rollCount(3.75, fixedDouble(0.1)));
+        assertEquals(4, RollEngine.rollCount(5.0, fixedDouble(0.0)), "capped at 4");
+        assertEquals(0, RollEngine.rollCount(0, fixedDouble(0.0)));
+    }
 }

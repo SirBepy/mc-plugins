@@ -44,13 +44,37 @@ class DragonscaleArmorTest {
         }
     }
 
+    // Paper's default equippable for a fresh meta is HEAD (javap, 26.3), which once put every piece
+    // on the head.
     @Test
-    void everyPieceCarriesTheClaudesmpDragonscaleEquippableModel() {
-        ItemStack item = DragonscaleArmor.build(ArmorPiece.CHESTPLATE);
-        ItemMeta meta = item.getItemMeta();
+    void everyPieceEquipsToItsOwnSlotWithTheNetheriteSound() {
+        for (ArmorPiece piece : ArmorPiece.values()) {
+            var equippable = DragonscaleArmor.build(piece).getItemMeta().getEquippable();
 
-        assertTrue(meta.hasEquippable());
-        assertEquals(DragonscaleArmor.MODEL_KEY, meta.getEquippable().getModel());
+            assertEquals(piece.slot(), equippable.getSlot(), piece.name());
+            assertEquals(org.bukkit.Sound.ITEM_ARMOR_EQUIP_NETHERITE, equippable.getEquipSound(), piece.name());
+        }
+        assertEquals(org.bukkit.inventory.EquipmentSlot.CHEST, ArmorPiece.CHESTPLATE.slot());
+        assertEquals(org.bukkit.inventory.EquipmentSlot.FEET, ArmorPiece.BOOTS.slot());
+    }
+
+    @Test
+    void theBodyPiecesCarryTheClaudesmpDragonscaleEquippableModel() {
+        for (ArmorPiece piece : new ArmorPiece[] {ArmorPiece.CHESTPLATE, ArmorPiece.LEGGINGS, ArmorPiece.BOOTS}) {
+            ItemMeta meta = DragonscaleArmor.build(piece).getItemMeta();
+
+            assertTrue(meta.hasEquippable());
+            assertEquals(DragonscaleArmor.MODEL_KEY, meta.getEquippable().getModel(), piece.name());
+        }
+    }
+
+    // 10ca's 3D dragon-skull helm: with no asset id the client draws the item model on the head.
+    @Test
+    void theHelmetGoesOnTheHeadWithNoArmorLayer() {
+        ItemMeta meta = DragonscaleArmor.build(ArmorPiece.HELMET).getItemMeta();
+
+        assertEquals(null, meta.getEquippable().getModel());
+        assertEquals(org.bukkit.inventory.EquipmentSlot.HEAD, meta.getEquippable().getSlot());
     }
 
     @Test

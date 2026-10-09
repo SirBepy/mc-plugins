@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.endfight.reward;
 
 import dev.sirbepy.mc.endfight.tier.Tier;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
@@ -26,14 +27,29 @@ class TierRewardRowTest {
     }
 
     @Test
-    void firstKillDefaultsToTwelveThousandXpAndAGuaranteedRollOverTheFerociousMaterials() {
+    // Joe, 2026-10-09: the first dragon is Ascended and rewards follow the dragon summoned.
+    void firstKillIsTheAscendedRowWithTwelveThousandXp() {
         Map<Tier, TierRewardRow> table = TierRewardRow.load(null);
-        TierRewardRow firstKill = TierRewardRow.loadFirstKill(null, table.get(Tier.FEROCIOUS));
+        TierRewardRow ascended = table.get(Tier.ASCENDED);
+        TierRewardRow firstKill = TierRewardRow.loadFirstKill(null, table.get(Tier.FIRST_KILL));
 
+        assertEquals(Tier.ASCENDED, Tier.FIRST_KILL);
         assertEquals(12000, firstKill.xp());
-        assertEquals(1.0, firstKill.rollChance());
-        assertEquals(table.get(Tier.FEROCIOUS).diamonds(), firstKill.diamonds());
-        assertEquals(table.get(Tier.FEROCIOUS).shells(), firstKill.shells());
+        assertEquals(new TierRewardRow(12000, ascended.diamonds(), ascended.shells(), ascended.gapples(),
+                ascended.scrapMin(), ascended.scrapMax(), ascended.rollChance()), firstKill);
+        assertEquals(1.5, firstKill.rollChance());
+    }
+
+    @Test
+    void theShippedConfigKeepsTheAscendedRollChanceForTheFirstKill() {
+        YamlConfiguration config = YamlConfiguration.loadConfiguration(new java.io.InputStreamReader(
+                java.util.Objects.requireNonNull(getClass().getResourceAsStream("/config.yml")),
+                java.nio.charset.StandardCharsets.UTF_8));
+        ConfigurationSection rewards = config.getConfigurationSection("rewards");
+        TierRewardRow firstKill = TierRewardRow.loadFirstKill(rewards, TierRewardRow.load(rewards).get(Tier.FIRST_KILL));
+
+        assertEquals(1.5, firstKill.rollChance());
+        assertEquals(12000, firstKill.xp());
     }
 
     @Test

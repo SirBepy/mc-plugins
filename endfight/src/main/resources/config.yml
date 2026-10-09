@@ -78,15 +78,15 @@ rewards:
       scrap-max: 2
       roll-chance: 1.50
 
-  # The server's actual first-ever dragon kill: the Ferocious row's materials, a guaranteed roll,
-  # and 12000 XP instead of Ferocious's 2000.
+  # The server's actual first-ever dragon kill, always fought at Ascended (Joe, 2026-10-09): the
+  # Ascended row's materials and roll chance (rewards follow the dragon summoned), and 12000 XP
+  # instead of Ascended's 4000. Add `roll-chance:` here to override the row's chance.
   first-kill:
     xp: 12000
-    roll-chance: 1.0
 
 tiers:
   # The altar's pick before anyone has ever touched it, and what a fresh plugins/EndFight/tier.yml
-  # starts from. The server's actual first-ever dragon is still forced to Ferocious regardless of
+  # starts from. The server's actual first-ever dragon is still forced to Ascended regardless of
   # this (and of the altar) - see docs/endfight.md's Altar & tiers section.
   default: FLEDGELING
 
@@ -113,7 +113,12 @@ messages:
   aura-unlocked: "<light_purple>Dragon aura unlocked: <aura>! Wear it with /dragonaura <aura>."
   tier-announce: "<light_purple><player> set the next dragon to <tier>."
   tier-set: "<green>The next dragon will be <tier>."
-  tier-locked-first-kill: "<red>The server's first dragon is always Ferocious; the altar is locked until it falls."
+  tier-locked-first-kill: "<red>The server's first dragon is always Ascended; the altar is locked until it falls."
+  hit-hoard: "<light_purple>You hurt the dragon! Your Dragon Hoard is secured for this fight."
+  hit-xp-only: "<light_purple>You hurt the dragon! You'll get the XP (you already claimed this tier's hoard this week)."
+  honour-bane: "<gold><player> earns Dragon's Bane: the most damage to the dragon (<damage>)."
+  honour-group: "<gold><player> earns the <group> honour: the most <group> slain (<count>)."
+  honour-note: "<gray>Each honour raises its holder's armor-roll chance in this fight's Dragon Hoard."
 
 # The dragon's army: illager guards on every outpost/balcony/gatehouse/wall and piglins on the
 # Nether pillars, plus waves on an HP schedule as the dragon loses health (Joe, 2026-10-09). Every
@@ -221,6 +226,15 @@ cult:
         announce: "<gold>Nether paratroopers leap off the dragon!"
         entries:
           - { type: paratrooper, base: 4, per-n-players: 2, from: dragon }
+  # Phantoms guarding the towers (Joe, 2026-10-09): every pillar whose crystal still stands always
+  # has `per-crystal` phantoms circling `height` blocks over its top, swooping at whoever climbs
+  # it. A killed one comes back every `interval-ticks` (600 = 30 s) while the crystal stands;
+  # once it breaks, nothing replaces them.
+  wardens:
+    enabled: true
+    per-crystal: 2
+    interval-ticks: 600
+    height: 8
   # A boss bar under the dragon's counting the army still alive, guards included.
   counter:
     enabled: true

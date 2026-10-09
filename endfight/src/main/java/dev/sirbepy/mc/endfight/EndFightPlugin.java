@@ -14,6 +14,7 @@ import dev.sirbepy.mc.endfight.arena.EndWorldLoadListener;
 import dev.sirbepy.mc.endfight.arena.RespawnRebuildListener;
 import dev.sirbepy.mc.endfight.command.EndFightCommand;
 import dev.sirbepy.mc.endfight.cult.CultCommand;
+import dev.sirbepy.mc.endfight.cult.CrystalWardens;
 import dev.sirbepy.mc.endfight.cult.CultCounter;
 import dev.sirbepy.mc.endfight.cult.CultFriendlyFire;
 import dev.sirbepy.mc.endfight.cult.CultGuards;
@@ -65,6 +66,7 @@ public final class EndFightPlugin extends JavaPlugin {
     private CultGuards cultGuards;
     private WaveSpawner waveSpawner;
     private CultCounter cultCounter;
+    private CrystalWardens crystalWardens;
     private RespawnWatcher respawnWatcher;
 
     @Override
@@ -108,6 +110,9 @@ public final class EndFightPlugin extends JavaPlugin {
         waveSpawner.start();
         getServer().getPluginManager().registerEvents(waveSpawner, this);
         getServer().getPluginManager().registerEvents(new CultWaves(() -> config.get().cult(), waveSpawner), this);
+        crystalWardens = new CrystalWardens(this, registry, () -> config.get().cult(),
+                () -> watcherRef.get() != null && watcherRef.get().busy());
+        crystalWardens.start();
         cultCounter = new CultCounter(this, () -> config.get().cult());
         cultCounter.start();
         getServer().getPluginManager().registerEvents(cultCounter, this);
@@ -180,6 +185,9 @@ public final class EndFightPlugin extends JavaPlugin {
         }
         if (cultCounter != null) {
             cultCounter.stop();
+        }
+        if (crystalWardens != null) {
+            crystalWardens.stop();
         }
         if (respawnWatcher != null) {
             respawnWatcher.stop();

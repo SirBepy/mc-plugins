@@ -30,17 +30,17 @@ class TierServiceTest {
     }
 
     @Test
-    void firstKillForcesFerociousRegardlessOfTheAltarsChoice(@TempDir File dir) {
+    void firstKillForcesAscendedRegardlessOfTheAltarsChoice(@TempDir File dir) {
         TierService service = service(dir);
-        service.setNext(Tier.ASCENDED, null);
+        service.setNext(Tier.FLEDGELING, null);
 
         assertTrue(service.firstKillEver());
-        assertEquals(Tier.FEROCIOUS, service.current());
+        assertEquals(Tier.ASCENDED, service.current());
 
         Tier locked = service.lockForSpawn();
 
-        assertEquals(Tier.FEROCIOUS, locked);
-        assertEquals(Tier.FEROCIOUS, service.current());
+        assertEquals(Tier.ASCENDED, locked);
+        assertEquals(Tier.ASCENDED, service.current());
     }
 
     @Test

@@ -2,6 +2,8 @@ package dev.sirbepy.mc.endfight.reward;
 
 import dev.sirbepy.mc.core.dragon.DragonFighters;
 import dev.sirbepy.mc.endfight.EndFightConfig;
+import dev.sirbepy.mc.endfight.fight.FightHonours;
+import dev.sirbepy.mc.endfight.fight.FightStats;
 import dev.sirbepy.mc.endfight.tier.Tier;
 import dev.sirbepy.mc.endfight.tier.TierChoice;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -9,11 +11,16 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.entity.ComplexEntityPart;
 import org.bukkit.entity.EnderDragon;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -71,7 +78,8 @@ public final class RewardService {
 
     private final Map<UUID, Tracking> dying = new ConcurrentHashMap<>();
 
-    private record Tracking(Set<UUID> participants, Location deathLocation, Tier tier, boolean firstKillEver) {
+    private record Tracking(Set<UUID> participants, Location deathLocation, Tier tier, boolean firstKillEver,
+                            FightHonours honours) {
     }
 
     public RewardService(Plugin plugin, Supplier<EndFightConfig> config, PendingRewardsStore pending,
@@ -109,11 +117,14 @@ public final class RewardService {
             return;
         }
         boolean firstKillEver = tierChoice.firstKillEver();
-        Tier tier = firstKillEver ? Tier.FEROCIOUS : tierChoice.current();
+        Tier tier = firstKillEver ? Tier.FIRST_KILL : tierChoice.current();
         World world = dragon.getWorld();
         UUID worldId = world.getUID();
         Location deathLocation = dragon.getLocation();
-        dying.put(worldId, new Tracking(participants, deathLocation, tier, firstKillEver));
+        PersistentDataContainer pdc = dragon.getPersistentDataContainer();
+        FightHonours honours = FightHonours.decide(participants, FightStats.topDamagers(pdc, Integer.MAX_VALUE),
+                FightStats.damage(pdc), FightStats.groupKills(pdc), FightStats.groupLeaders(pdc));
+        dying.put(worldId, new Tracking(participants, deathLocation, tier, firstKillEver, honours));
         plugin.getLogger().info("The dragon died at " + deathLocation.getBlockX() + "," + deathLocation.getBlockY() + ","
                 + deathLocation.getBlockZ() + "; paying " + participants.size() + " fighter(s) at " + tier.displayName()
                 + (firstKillEver ? " (first kill ever)" : "") + " once its death animation ends.");
@@ -141,6 +152,70 @@ public final class RewardService {
         }, 1L, 1L);
     }
 
+    /** Chat at the end of each kill: who earned Dragon's Bane and each mob group's honour, told to
+     * every participant online and everyone in the End. */
+    private void announceHonours(Tracking tracking) {
+        FightHonours honours = tracking.honours();
+        if (honours.isEmpty()) {
+            return;
+        }
+        Set<Player> audience = new LinkedHashSet<>();
+        for (UUID id : tracking.participants()) {
+            Player online = Bukkit.getPlayer(id);
+            if (online != null) {
+                audience.add(online);
+            }
+        }
+        World world = tracking.deathLocation().getWorld();
+        if (world != null) {
+            audience.addAll(world.getPlayers());
+        }
+        for (Player player : audience) {
+            if (honours.bane() != null) {
+                config.get().messages().send(player, "honour-bane", Map.of(),
+                        Placeholder.unparsed("player", nameOf(honours.bane())),
+                        Placeholder.unparsed("damage", String.valueOf(Math.round(honours.baneDamage()))));
+            }
+            honours.groups().forEach((group, holder) -> config.get().messages().send(player, "honour-group", Map.of(),
+                    Placeholder.unparsed("player", nameOf(holder)),
+                    Placeholder.unparsed("group", group.displayName()),
+                    Placeholder.unparsed("count", String.valueOf(honours.groupCounts().get(group)))));
+            config.get().messages().send(player, "honour-note");
+        }
+    }
+
+    private static String nameOf(UUID id) {
+        String name = Bukkit.getOfflinePlayer(id).getName();
+        return name != null ? name : id.toString().substring(0, 8);
+    }
+
+    /**
+     * Fighter tracking plus the hit confirmation (Joe, 2026-10-09): the first hit that makes a
+     * player a fighter this fight gets them a chat line saying what they're in for and a ding, once
+     * per player per fight.
+     */
+    public void onDragonHurt(EntityDamageEvent event) {
+        EnderDragon dragon = dragonOf(event.getEntity());
+        Player player = dragon != null && event.getFinalDamage() > 0 ? fighters.responsible(event) : null;
+        boolean wasFighter = player != null && fighters.fighters(dragon).contains(player.getUniqueId());
+        fighters.onDamage(event);
+        if (player == null || wasFighter || !config.get().rewardsEnabled()
+                || dragon.getWorld().getEnvironment() != World.Environment.THE_END
+                || !fighters.fighters(dragon).contains(player.getUniqueId())) {
+            return;
+        }
+        boolean hoardTaken = WeekKeys.current(clock).equals(progress.load(player.getUniqueId()).weeklyHoards().get(currentTier()));
+        config.get().messages().send(player, hoardTaken ? "hit-xp-only" : "hit-hoard");
+        player.playSound(player, Sound.ENTITY_PLAYER_LEVELUP, 0.8f, 1.4f);
+    }
+
+    private static EnderDragon dragonOf(Entity entity) {
+        if (entity instanceof ComplexEntityPart part) {
+            entity = part.getParent();
+        }
+        return entity instanceof EnderDragon dragon ? dragon : null;
+    }
+
     private void sweepOrbs(World world, Location deathLocation) {
         for (ExperienceOrb orb : world.getEntitiesByClass(ExperienceOrb.class)) {
             if (OrbSweep.inRange(orb.getLocation(), deathLocation, ORB_SUPPRESSION_RADIUS)) {
@@ -164,8 +239,10 @@ public final class RewardService {
         String weekKey = WeekKeys.current(clock);
         String dateLabel = DATE_FORMAT.format(LocalDate.now(clock.withZone(WeekKeys.ZONE)));
 
+        announceHonours(tracking);
         for (UUID id : tracking.participants()) {
-            PendingReward reward = buildReward(id, tracking.tier(), row, weekKey, dateLabel, false);
+            PendingReward reward = buildReward(id, tracking.tier(), row, weekKey, dateLabel, false,
+                    tracking.honours().rollBonus(id));
             Player online = Bukkit.getPlayer(id);
             if (online != null) {
                 deliverNow(online, reward);
@@ -179,7 +256,7 @@ public final class RewardService {
      * hoard only, never the XP. Rolling happens here, at kill time, not on delivery, so a player
      * offline for a while still rolls against their progress as it stood at the kill. */
     private PendingReward buildReward(UUID id, Tier tier, TierRewardRow row, String weekKey, String dateLabel,
-                                       boolean ignoreWeeklyLimit) {
+                                       boolean ignoreWeeklyLimit, double rollBonus) {
         PlayerProgress current = progress.load(id);
         boolean hoardAllowed = ignoreWeeklyLimit || !weekKey.equals(current.weeklyHoards().get(tier));
         if (!hoardAllowed) {
@@ -191,7 +268,9 @@ public final class RewardService {
         Set<String> heads = new LinkedHashSet<>(current.heads());
         List<PendingReward.RollGrant> grants = new ArrayList<>();
 
-        int rolls = RollEngine.rollCount(row.rollChance(), random);
+        // An honour only ever raises the chance in a hoard actually given (honours spec): a player
+        // who already took this tier's hoard this week returned above with XP only.
+        int rolls = RollEngine.rollCount(row.rollChance() + rollBonus, random);
         for (int i = 0; i < rolls; i++) {
             RollEngine.Outcome outcome = RollEngine.roll(armor, auras, heads, random);
             switch (outcome.kind()) {
@@ -207,7 +286,7 @@ public final class RewardService {
 
         int scrap = row.scrapMax() <= 0 ? 0 : row.scrapMin() + random.nextInt(row.scrapMax() - row.scrapMin() + 1);
         if (grants.size() >= 2) {
-            // Ascended's second roll landing drops the netherite scrap (Joe's spec).
+            // Two or more rolls drop the netherite scrap (Joe's Ascended rule, kept for honours).
             scrap = 0;
         }
 
@@ -307,7 +386,7 @@ public final class RewardService {
     /** The tier the next fight (or the server's forced first-ever kill) would pay at, for
      * {@code /endfight rewards status}. */
     public Tier currentTier() {
-        return tierChoice.firstKillEver() ? Tier.FEROCIOUS : tierChoice.current();
+        return tierChoice.firstKillEver() ? Tier.FIRST_KILL : tierChoice.current();
     }
 
     /** {@code /endfight rewards test <player> [tier]}: one Dragon Hoard through the live delivery
@@ -316,7 +395,7 @@ public final class RewardService {
         TierRewardRow row = config.get().tierRow(tier);
         String weekKey = WeekKeys.current(clock);
         String dateLabel = DATE_FORMAT.format(LocalDate.now(clock.withZone(WeekKeys.ZONE)));
-        PendingReward reward = buildReward(player.getUniqueId(), tier, row, weekKey, dateLabel, true);
+        PendingReward reward = buildReward(player.getUniqueId(), tier, row, weekKey, dateLabel, true, 0);
         deliverNow(player, new PendingReward(0, reward.hoard()));
     }
 }

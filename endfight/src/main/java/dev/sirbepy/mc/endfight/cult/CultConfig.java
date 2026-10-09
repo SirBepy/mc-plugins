@@ -19,6 +19,7 @@ public final class CultConfig {
     private final Guards guards;
     private final Waves waves;
     private final Counter counter;
+    private final Wardens wardens;
     private final Messages messages;
 
     public CultConfig(ConfigurationSection cult) {
@@ -27,6 +28,7 @@ public final class CultConfig {
         this.guards = new Guards(cult != null ? cult.getConfigurationSection("guards") : null);
         this.waves = new Waves(cult != null ? cult.getConfigurationSection("waves") : null);
         this.counter = new Counter(cult != null ? cult.getConfigurationSection("counter") : null);
+        this.wardens = new Wardens(cult != null ? cult.getConfigurationSection("wardens") : null);
         this.messages = new Messages(cult != null ? cult.getConfigurationSection("messages") : null);
     }
 
@@ -48,6 +50,10 @@ public final class CultConfig {
 
     public Counter counter() {
         return counter;
+    }
+
+    public Wardens wardens() {
+        return wardens;
     }
 
     public Messages messages() {
@@ -290,6 +296,40 @@ public final class CultConfig {
         /** Empty if {@code waveIndex} has no configured wave (nothing to spawn). */
         public List<WaveMath.WaveEntry> composition(int waveIndex) {
             return waveIndex >= 0 && waveIndex < schedule.size() ? schedule.get(waveIndex).entries() : List.of();
+        }
+    }
+
+    /** The phantoms circling every tower whose crystal still stands. */
+    public static final class Wardens {
+
+        private final boolean enabled;
+        private final int perCrystal;
+        private final int intervalTicks;
+        private final int height;
+
+        private Wardens(ConfigurationSection section) {
+            this.enabled = section == null || section.getBoolean("enabled", true);
+            this.perCrystal = section != null ? section.getInt("per-crystal", 2) : 2;
+            this.intervalTicks = section != null ? section.getInt("interval-ticks", 600) : 600;
+            this.height = section != null ? section.getInt("height", 8) : 8;
+        }
+
+        public boolean enabled() {
+            return enabled;
+        }
+
+        public int perCrystal() {
+            return perCrystal;
+        }
+
+        /** How often a missing warden is replaced while its crystal stands. */
+        public int intervalTicks() {
+            return intervalTicks;
+        }
+
+        /** How far above the pillar's top they circle. */
+        public int height() {
+            return height;
         }
     }
 

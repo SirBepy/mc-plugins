@@ -14,6 +14,10 @@ public enum Tier {
     PRIMORDIAL("Primordial", 1000),
     ASCENDED("Ascended", 1250);
 
+    /** The server's first dragon ever is always this, whatever the altar says: the strongest boss
+     * fight there is (Joe, 2026-10-09, raised from Ferocious). */
+    public static final Tier FIRST_KILL = ASCENDED;
+
     private final String displayName;
     private final int health;
 

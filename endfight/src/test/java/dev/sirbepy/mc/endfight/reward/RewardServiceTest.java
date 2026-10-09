@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.endfight.reward;
 
 import dev.sirbepy.mc.endfight.EndFightConfig;
+import dev.sirbepy.mc.endfight.fight.FightStats;
 import dev.sirbepy.mc.endfight.tier.Tier;
 import dev.sirbepy.mc.endfight.tier.TierChoice;
 import org.bukkit.Location;
@@ -131,7 +132,7 @@ class RewardServiceTest {
     }
 
     @Test
-    void theFirstKillEverCountsAsThatWeeksFerociousHoard() {
+    void theFirstKillEverCountsAsThatWeeksAscendedHoard() {
         EnderDragon dragon = dragon();
         melee(alice, dragon);
         tierChoice.firstKillEver = true;
@@ -140,7 +141,7 @@ class RewardServiceTest {
         rewards.finalizeRewards(end.getUID());
 
         PlayerProgress after = progress.load(alice.getUniqueId());
-        assertEquals("2026-10-05", after.weeklyHoards().get(Tier.FEROCIOUS));
+        assertEquals("2026-10-05", after.weeklyHoards().get(Tier.ASCENDED));
     }
 
     @Test
@@ -335,6 +336,123 @@ class RewardServiceTest {
 
         PlayerProgress afterAura = progress.load(alice.getUniqueId());
         assertEquals(1, afterAura.auras().size(), "once all armor is owned, the next roll must be an aura");
+    }
+
+    /** The plugin's own config.yml, so the chat lines are the real ones. */
+    private static EndFightConfig shippedConfig() {
+        return new EndFightConfig(YamlConfiguration.loadConfiguration(new java.io.InputStreamReader(
+                java.util.Objects.requireNonNull(RewardServiceTest.class.getResourceAsStream("/config.yml")),
+                java.nio.charset.StandardCharsets.UTF_8)));
+    }
+
+    private RewardService controlledAscended(Random random) {
+        tierChoice.tier = Tier.ASCENDED;
+        EndFightConfig shipped = shippedConfig();
+        return new RewardService(plugin, () -> shipped,
+                new PendingRewardsStore(new File(plugin.getDataFolder(), "pending-honours.yml"), Logger.getLogger("test")),
+                progress, tierChoice, random, Clock.fixed(Instant.parse("2026-10-10T12:00:00Z"), ZoneOffset.UTC));
+    }
+
+    private static void cultKills(EnderDragon dragon, PlayerMock player, String type, int count) {
+        for (int i = 0; i < count; i++) {
+            FightStats.addKill(dragon.getPersistentDataContainer(), player.getUniqueId(), type);
+        }
+    }
+
+    // 10ca's honours spec (Joe, 2026-10-09): Bane +50%, each group honour +25%, on top of the
+    // tier's own chance. Ascended 150% + 75% = 225%: two sure rolls, a 25% third that misses here.
+    @Test
+    void honoursRaiseTheirHoldersRollsForThisKill() {
+        RewardService controlled = controlledAscended(fixedDoubleFixedInt(0.99, 0));
+        EnderDragon dragon = dragon();
+        controlled.fighters().addFighter(dragon.getPersistentDataContainer(), alice.getUniqueId());
+        controlled.fighters().addFighter(dragon.getPersistentDataContainer(), bob.getUniqueId());
+        FightStats.addDamage(dragon.getPersistentDataContainer(), alice.getUniqueId(), 600);
+        FightStats.addDamage(dragon.getPersistentDataContainer(), bob.getUniqueId(), 400);
+        cultKills(dragon, alice, "pillager", 3);
+        cultKills(dragon, bob, "piglin", 2);
+
+        controlled.onDragonDeath(dragon);
+        controlled.finalizeRewards(end.getUID());
+
+        assertEquals(2, progress.load(alice.getUniqueId()).armor().size(), "Bane + Cultists: 225%, two rolls");
+        assertEquals(1, progress.load(bob.getUniqueId()).armor().size(), "2 piglin kills is no honour: 150%, one roll");
+        ShulkerBox alicesBox = hoardBoxFrom(alice.getInventory().getStorageContents()[0]);
+        assertEquals(0, countOf(alicesBox, org.bukkit.Material.NETHERITE_SCRAP), "two rolls drop the scrap");
+    }
+
+    @Test
+    void honoursAreAnnouncedToEveryoneAtTheKill() {
+        RewardService controlled = controlledAscended(fixedDoubleFixedInt(0.99, 0));
+        EnderDragon dragon = dragon();
+        controlled.fighters().addFighter(dragon.getPersistentDataContainer(), alice.getUniqueId());
+        controlled.fighters().addFighter(dragon.getPersistentDataContainer(), bob.getUniqueId());
+        FightStats.addDamage(dragon.getPersistentDataContainer(), bob.getUniqueId(), 50);
+        cultKills(dragon, alice, "phantom", 4);
+
+        controlled.onDragonDeath(dragon);
+        controlled.finalizeRewards(end.getUID());
+
+        java.util.List<String> said = new java.util.ArrayList<>();
+        String line;
+        while ((line = alice.nextMessage()) != null) {
+            said.add(line);
+        }
+        assertTrue(said.stream().anyMatch(l -> l.contains("Bob earns Dragon's Bane")), "got " + said);
+        assertTrue(said.stream().anyMatch(l -> l.contains("Alice earns the Phantoms honour") && l.contains("(4)")), "got " + said);
+    }
+
+    @Test
+    void aSoloFightEarnsNoHonours() {
+        RewardService controlled = controlledAscended(fixedDoubleFixedInt(0.99, 0));
+        EnderDragon dragon = dragon();
+        controlled.fighters().addFighter(dragon.getPersistentDataContainer(), alice.getUniqueId());
+        FightStats.addDamage(dragon.getPersistentDataContainer(), alice.getUniqueId(), 1250);
+        cultKills(dragon, alice, "pillager", 10);
+
+        controlled.onDragonDeath(dragon);
+        controlled.finalizeRewards(end.getUID());
+
+        assertEquals(1, progress.load(alice.getUniqueId()).armor().size(), "Ascended's own 150% only");
+    }
+
+    // Joe, 2026-10-09: a player's first hit on the dragon tells them they're in.
+    @Test
+    @SuppressWarnings("removal")
+    void theFirstHitThatMakesAFighterConfirmsItOnce() {
+        EnderDragon dragon = dragon();
+        org.bukkit.event.entity.EntityDamageByEntityEvent hit = new org.bukkit.event.entity.EntityDamageByEntityEvent(
+                alice, dragon, org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.PLAYER_ATTACK)
+                        .withCausingEntity(alice).withDirectEntity(alice).build(), 5);
+
+        RewardService rewards = controlledAscended(new Random(1));
+        tierChoice.tier = Tier.FLEDGELING;
+        rewards.onDragonHurt(hit);
+        String first = alice.nextMessage();
+        rewards.onDragonHurt(hit);
+
+        assertTrue(first != null && first.contains("Your Dragon Hoard is secured"), "got " + first);
+        assertEquals(null, alice.nextMessage(), "only the first hit says so");
+        assertTrue(rewards.fighters().fighters(dragon).contains(alice.getUniqueId()));
+    }
+
+    @Test
+    @SuppressWarnings("removal")
+    void aFighterWhoTookThisTiersHoardIsToldItsXpOnly() {
+        progress.save(bob.getUniqueId(), new PlayerProgress(java.util.Set.of(), java.util.Set.of(), null, java.util.Set.of(),
+                java.util.Map.of(Tier.FLEDGELING, WeekKeys.current(Clock.fixed(Instant.parse("2026-10-10T12:00:00Z"), ZoneOffset.UTC)))));
+        EnderDragon dragon = dragon();
+        RewardService rewards = controlledAscended(new Random(1));
+        tierChoice.tier = Tier.FLEDGELING;
+
+        rewards.onDragonHurt(new org.bukkit.event.entity.EntityDamageByEntityEvent(
+                bob, dragon, org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.PLAYER_ATTACK)
+                        .withCausingEntity(bob).withDirectEntity(bob).build(), 5));
+
+        String said = bob.nextMessage();
+        assertTrue(said != null && said.contains("You'll get the XP"), "got " + said);
     }
 
     private static ShulkerBox hoardBoxFrom(ItemStack hoard) {

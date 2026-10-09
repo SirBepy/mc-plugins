@@ -27,7 +27,7 @@ public final class DragonDeathListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onHurt(EntityDamageEvent event) {
-        rewards.fighters().onDamage(event);
+        rewards.onDragonHurt(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
