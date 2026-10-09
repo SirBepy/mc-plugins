@@ -85,6 +85,13 @@ class SeaBodyTest {
         Villager swamp = world.spawn(new Location(world, 0, 60, 0), Villager.class,
                 v -> v.setVillagerType(Villager.Type.SWAMP));
         assertEquals(Villager.Type.PLAINS, swamp.getVillagerType());
+
+        Villager npc = world.spawn(new Location(world, 0, 60, 0), Villager.class, v -> {
+            v.setVillagerType(Villager.Type.SWAMP);
+            v.setAI(false);
+            v.setInvulnerable(true);
+        });
+        assertEquals(Villager.Type.SWAMP, npc.getVillagerType(), "a plugin NPC like the Guild's Archivist keeps its robes");
         // A merfolk keeping SWAMP is ConversionTest's job: adopting one touches the pathfinder, which
         // MockBukkit doesn't implement.
     }
