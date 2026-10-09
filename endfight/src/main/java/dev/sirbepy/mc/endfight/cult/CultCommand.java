@@ -48,6 +48,7 @@ public final class CultCommand {
                 .collect(Collectors.toList());
         ctx.getSource().getSender().sendMessage(Component.text(
                 "Cult alive: " + guards.aliveCount()
+                        + ", wave mobs: " + endWorlds().stream().mapToInt(CultRange::aliveWaveCount).sum()
                         + ", dragons tracked: " + crossedPerDragon.size()
                         + ", wave thresholds crossed: " + crossedPerDragon
                         + ", by type: " + counter.counts()
@@ -90,6 +91,10 @@ public final class CultCommand {
         int removed = guards.clearAll();
         ctx.getSource().getSender().sendMessage(Component.text("Removed " + removed + " cult mob(s)."));
         return Command.SINGLE_SUCCESS;
+    }
+
+    private static List<World> endWorlds() {
+        return Bukkit.getWorlds().stream().filter(world -> world.getEnvironment() == World.Environment.THE_END).toList();
     }
 
     private static List<EnderDragon> endDragons() {

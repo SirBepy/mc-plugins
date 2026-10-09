@@ -100,9 +100,11 @@ public final class DkeTierPusher {
     }
 
     /** DKE not installed: set the dragon's health directly, the same absolute-set/full-heal shape
-     * as DKE's own buff functions. */
+     * as DKE's own buff functions. Healed to the max it actually got: spigot.yml's
+     * {@code settings.attribute.maxHealth.max} caps it (1024 by default, under Ascended's 1250),
+     * and setHealth above the cap throws. */
     private void fallback(EnderDragon dragon, Tier tier) {
         dragon.setMaxHealth(tier.health());
-        dragon.setHealth(tier.health());
+        dragon.setHealth(Math.min(tier.health(), dragon.getMaxHealth()));
     }
 }

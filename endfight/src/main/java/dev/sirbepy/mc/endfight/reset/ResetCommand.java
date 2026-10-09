@@ -6,9 +6,15 @@ import com.mojang.brigadier.context.CommandContext;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.block.BlockFace;
+import org.bukkit.boss.DragonBattle;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.EnderCrystal;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -80,11 +86,27 @@ public final class ResetCommand {
             return Command.SINGLE_SUCCESS;
         }
         try {
-            // No-crystal testing hook: DragonBattle#initiateRespawn() runs vanilla's whole respawn
-            // sequence as if the 4 crystals had just been placed, so e2e can drive it without
-            // building a portal frame by hand.
-            end.get().getEnderDragonBattle().initiateRespawn();
-            sender.sendMessage(Component.text("Dragon respawn sequence started."));
+            // Testing hook: puts the 4 summoning crystals around the exit portal the way players
+            // do, then starts the sequence with them. Vanilla needs real crystals: the no-argument
+            // initiateRespawn() is its tryRespawn, a no-op without them (javap, 26.3
+            // CraftDragonBattle), and 26.2's sequence aborts on an empty crystal list (seen in e2e).
+            DragonBattle battle = end.get().getEnderDragonBattle();
+            Location portal = battle.getEndPortalLocation();
+            if (portal == null) {
+                sender.sendMessage(Component.text("Could not start the respawn sequence: no exit portal found."));
+                return Command.SINGLE_SUCCESS;
+            }
+            List<EnderCrystal> crystals = new ArrayList<>();
+            for (BlockFace face : List.of(BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST)) {
+                Location at = portal.clone().add(0.5 + face.getModX() * 2, 1, 0.5 + face.getModZ() * 2);
+                crystals.add(end.get().spawn(at, EnderCrystal.class, crystal -> crystal.setShowingBottom(false)));
+            }
+            boolean started = battle.initiateRespawn(crystals);
+            if (!started) {
+                crystals.forEach(EnderCrystal::remove);
+            }
+            sender.sendMessage(Component.text(started ? "Dragon respawn sequence started."
+                    : "Could not start the respawn sequence: no dragon killed yet, or one is already coming."));
         } catch (RuntimeException e) {
             sender.sendMessage(Component.text("Could not start the respawn sequence: " + e.getMessage()));
         }
@@ -99,7 +121,13 @@ public final class ResetCommand {
         String lastRestore = restorer.lastStats()
                 .map(s -> s.blocksChanged() + " blocks in " + s.millis() + "ms")
                 .orElse("never");
+        String battle = endWorld.get()
+                .map(world -> world.getEnderDragonBattle() == null ? "no battle"
+                        : world.getEnderDragonBattle().getRespawnPhase() + (world.getEnderDragonBattle().hasBeenPreviouslyKilled()
+                                ? ", previously killed" : ", never killed"))
+                .orElse("no End world");
         sender.sendMessage(Component.text("Reset watcher: " + watcher.phase()
+                + ", vanilla respawn: " + battle
                 + ", snapshot: " + snapshotInfo + ", last restore: " + lastRestore));
         return Command.SINGLE_SUCCESS;
     }

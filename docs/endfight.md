@@ -145,9 +145,13 @@ new dragon is standing there:
    auto-trigger once one exists.
 
 Commands (admin): `endfight snapshot` retakes it on demand; `endfight restore` runs the restore
-right now; `endfight respawn` starts a respawn sequence with no crystals needed (testing only -
-`DragonBattle#initiateRespawn()`); `endfight reset status` shows the watcher's phase, the
-snapshot's presence/size/age, and the last restore's stats.
+right now; `endfight respawn` (testing) puts the 4 summoning crystals around the exit portal the
+way players do and starts the sequence with them (`DragonBattle#initiateRespawn(crystals)`: the
+no-argument one is vanilla's tryRespawn and does nothing without real crystals, and 26.2 aborts an
+empty-crystal respawn); `endfight reset status` shows the watcher's phase, vanilla's own respawn
+phase, the snapshot's presence/size/age, and the last restore's stats. Verified end to end on a
+private 26.2 server (e2e/endfight.mjs): the respawn locked the fighter onto the platform, the new
+dragon spawned about 30 s later, and the restore put back 1386 blocks in 409 ms.
 
 ## Commands
 
@@ -168,8 +172,8 @@ All require `endfight.admin` (default: op).
 | `endfight cult clear` | Removes every live cult mob (testing/repair) |
 | `endfight snapshot` | Retakes the whole-island snapshot now |
 | `endfight restore` | Runs the whole-island restore now |
-| `endfight respawn` | Starts a dragon respawn sequence with no crystals needed (testing) |
-| `endfight reset status` | Watcher phase, snapshot presence/size/age, last restore stats |
+| `endfight respawn` | Places the 4 summoning crystals on the portal and starts a dragon respawn (testing) |
+| `endfight reset status` | Watcher phase, vanilla's respawn phase, snapshot presence/size/age, last restore stats |
 
 ## Rewards (phase 3)
 
@@ -330,6 +334,12 @@ restart never re-applies.
 `tiers.dke.force-installed` override if the real filename doesn't match the "dke"/"dragonkind"
 heuristic), EndFight sets the dragon's max health and health directly to `Tier#health()` instead.
 Either way, the dragon's actual max health is logged once applied.
+
+**The 1024 cap.** spigot.yml's `settings.attribute.maxHealth.max` caps every max health, 1024 by
+default, below Ascended's 1250: a fallback push threw ("Health value (1250.0) must be between 0 and
+1024.0", e2e server log) and Dragonkind's own buff would be clamped the same way. The repo's
+`server/config/spigot.yml` raises it to 2048, and the fallback now heals only up to the max the
+dragon actually got.
 
 Commands: `/endfight tier status` (next pick, current fight's tier, first-kill-ever state) and
 `/endfight tier set <tier>` (same as the altar, refused during the first-kill-ever lock).
