@@ -7,8 +7,21 @@
       {
         "when": "dragonscale",
         "model": {
-          "type": "minecraft:model",
-          "model": "claudesmp:item/dragonscale_helmet"
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": "head",
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/dragonscale_helmet_worn"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "claudesmp:item/dragonscale_helmet"
+          }
         }
       }
     ],

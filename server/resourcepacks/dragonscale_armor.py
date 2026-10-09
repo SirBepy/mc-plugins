@@ -335,10 +335,20 @@ def _rect(x0, y0, w, h, col):
 # Head top face (8,0,8,8): a ridged crest down the dome's centre, trimmed violet at the front edge.
 HUMANOID_ACCENTS = _rect(11, 0, 2, 8, CREST)
 HUMANOID_ACCENTS += [(11, 0, CREST_TRIM), (12, 0, CREST_TRIM)]
-# Right arm top face (44,16,4,4): a spiked pauldron, violet-rimmed at its leading edge.
-HUMANOID_ACCENTS += _rect(44, 16, 4, 4, GROOVE)
-HUMANOID_ACCENTS += [(45, 16, CREST_TRIM), (46, 16, CREST_TRIM)]
-HUMANOID_ACCENTS += [(44, 18, CORE_B), (47, 18, CORE_B)]
+# Right arm top face (44,16,4,4) plus the upper sleeve wraparound (40-56,20-23 east/front/west, also
+# opaque on vanilla's own netherite mask): a bigger, bolder spiked pauldron in the horns' own
+# bone-violet (RIM_B) -- Joe asked for shoulder horns/spikes 2026-10-09, but a flat armor layer can't
+# give real 3D spikes (HumanoidArmorLayer only draws flat quads on these faces, and a head-item model
+# would turn with the head, not the arm), so the top plate is solid bone-violet and three spike
+# points taper down the east(outer)/front/west sleeve faces instead, echoing the Dragon Skull helm's
+# own horns. Mirrored onto the left arm automatically (vanilla's own netherite model mirrors this one
+# region for both arms).
+HUMANOID_ACCENTS += _rect(44, 16, 4, 4, RIM_B)
+HUMANOID_ACCENTS += [(44, 16, EDGE_TRIM), (47, 16, EDGE_TRIM)]
+HUMANOID_ACCENTS += [(41, 20, RIM_B), (42, 20, RIM_B), (41, 21, RIM_B)]                          # outer spike
+HUMANOID_ACCENTS += [(45, 20, RIM_B), (46, 20, RIM_B), (45, 21, RIM_B), (46, 21, RIM_B), (45, 22, RIM_A)]  # centre, tallest
+HUMANOID_ACCENTS += [(49, 20, RIM_B), (50, 20, RIM_B), (50, 21, RIM_B)]                          # inner spike
+HUMANOID_ACCENTS += [(41, 20, EDGE_TRIM), (46, 20, EDGE_TRIM), (50, 20, EDGE_TRIM)]              # violet tips
 # Head front face (8,8,8,8): a brow glint, above the helmet's visor cutout.
 HUMANOID_ACCENTS += [(11, 8, EYE_RING), (12, 8, EYE_RING), (11, 9, EYE_CORE), (12, 9, EYE_CORE)]
 # Body front face (20,20,8,12): a chest-centre glint.

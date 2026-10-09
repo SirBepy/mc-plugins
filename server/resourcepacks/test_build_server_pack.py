@@ -246,16 +246,48 @@ class BuiltPackTest(unittest.TestCase):
         # Joe, 2026-10-09: the Ender Dragon kill reward is real netherite armor with no
         # enchantments, reskinned by custom_model_data=["dragonscale"]; every other netherite piece
         # (including any trimmed one) must still render exactly as vanilla's own item model does.
+        # The helmet's "dragonscale" case is a display_context select (see the test below) whose
+        # fallback is the same flat 2D icon the other three pieces point at directly.
         for piece in ("helmet", "chestplate", "leggings", "boots"):
             definition = self.json(f"assets/minecraft/items/netherite_{piece}.json")["model"]
             self.assertEqual(definition["property"], "minecraft:custom_model_data")
             case = next(c for c in definition["cases"] if c["when"] == "dragonscale")
-            model = self.json(asset(case["model"]["model"], "models", "json"))
+            icon_ref = case["model"]["fallback"]["model"] if piece == "helmet" else case["model"]["model"]
+            model = self.json(asset(icon_ref, "models", "json"))
             self.assertEqual(model["parent"], "minecraft:item/generated")
             self.assertIn(asset(model["textures"]["layer0"], "textures", "png"), self.entries, piece)
             png = Image.open(io.BytesIO(self.entries[asset(model["textures"]["layer0"], "textures", "png")]))
             self.assertEqual(png.size, (16, 16), piece)
             self.assertEqual(definition["fallback"], _vanilla_netherite_armor_trim_select(piece), piece)
+
+    def test_dragonscale_helmet_selects_the_3d_worn_model_only_in_the_head_display_context(self):
+        # The Dragon Skull helm (Joe picked it over the horned-helm draft, 2026-10-09) only makes
+        # sense worn on an actual head; every other display context (inventory, ground, GUI, hand)
+        # keeps the flat 2D icon. "minecraft:display_context" and "head" are the 26.3 client jar's
+        # own property id and ItemDisplayContext.HEAD serialized name (javap-verified 2026-10-09).
+        definition = self.json("assets/minecraft/items/netherite_helmet.json")["model"]
+        case = next(c for c in definition["cases"] if c["when"] == "dragonscale")
+        select = case["model"]
+        self.assertEqual(select["type"], "minecraft:select")
+        self.assertEqual(select["property"], "minecraft:display_context")
+        head_case = next(c for c in select["cases"] if c["when"] == "head")
+        self.assertEqual(
+            head_case["model"], {"type": "minecraft:model", "model": "claudesmp:item/dragonscale_helmet_worn"}
+        )
+        self.assertEqual(select["fallback"], {"type": "minecraft:model", "model": "claudesmp:item/dragonscale_helmet"})
+
+        worn = self.json("assets/claudesmp/models/item/dragonscale_helmet_worn.json")
+        self.assertGreater(len(worn["elements"]), 0)
+        # Identity: numerically equivalent to the engine's own NO_TRANSFORM default (see
+        # dragonscale_helmet_model.py's derivation), written explicitly so the fit math is on record.
+        self.assertEqual(worn["display"]["head"], {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [1, 1, 1]})
+        for el in worn["elements"]:
+            for v in el["from"] + el["to"]:
+                self.assertGreaterEqual(v, -16, el)
+                self.assertLessEqual(v, 32, el)
+        tex_path = asset(worn["textures"]["t"], "textures", "png")
+        self.assertIn(tex_path, self.entries)
+        Image.open(io.BytesIO(self.entries[tex_path])).load()  # decodes without error
 
     def test_dragonscale_textures_are_tinted_differently_from_plain_netherite(self):
         # Pixel check that the look actually reads as different from vanilla netherite: Dragonscale
