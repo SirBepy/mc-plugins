@@ -26,6 +26,18 @@ class StationConfigTest {
     }
 
     @Test
+    void shopRadarSignsDefaultToTheMarketShopAndTakeTheStationPrice() {
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("station.radar-signs.nether.price", 4500.0);
+
+        StationConfig config = StationConfig.from(yaml);
+
+        assertEquals(new StationConfig.RadarSign("world", 422, 116, -841, 1000), config.shopRadarSigns().get(BallSet.OVERWORLD));
+        assertEquals(new StationConfig.RadarSign("world", 422, 116, -839, 4500.0), config.shopRadarSigns().get(BallSet.NETHER));
+        assertEquals(new StationConfig.RadarSign("world", 422, 117, -840, 20000), config.shopRadarSigns().get(BallSet.END));
+    }
+
+    @Test
     void explicitKeysOverrideTheDefaults() {
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.set("station.radar-signs.overworld.world", "world_nether");

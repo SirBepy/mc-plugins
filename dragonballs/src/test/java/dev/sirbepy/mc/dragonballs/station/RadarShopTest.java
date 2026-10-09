@@ -164,6 +164,21 @@ class RadarShopTest {
     }
 
     @Test
+    void theMarketShopsNetherSignSellsANetherRadarAtTheStationPrice() {
+        FakeEconomy economy = new FakeEconomy(10000);
+        registerEconomy(economy);
+        Block shopSign = world.getBlockAt(422, 116, -839);
+        player.teleport(new Location(world, 422, 116, -839));
+
+        shop().onInteract(new org.bukkit.event.player.PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null,
+                shopSign, org.bukkit.block.BlockFace.NORTH, EquipmentSlot.HAND));
+
+        assertEquals(5000, economy.getBalance(player));
+        assertTrue(java.util.Arrays.stream(player.getInventory().getContents()).anyMatch(item -> item != null
+                && radarItems.isRadar(item) && radarItems.setOf(item) == BallSet.NETHER));
+    }
+
+    @Test
     void theEndSignRefusesWhileTheEndIsDisabledAndTakesNoMoney() {
         FakeEconomy economy = new FakeEconomy(50000);
         registerEconomy(economy);
