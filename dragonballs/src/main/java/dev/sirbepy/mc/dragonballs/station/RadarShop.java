@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.dragonballs.station;
 
+import dev.sirbepy.mc.core.econ.VaultEconomy;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.radar.RadarItems;
@@ -14,7 +15,6 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.ServicesManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.function.Supplier;
@@ -106,9 +106,7 @@ public final class RadarShop implements Listener {
     }
 
     private Economy economy() {
-        ServicesManager services = plugin.getServer().getServicesManager();
-        var registration = services.getRegistration(Economy.class);
-        return registration == null ? null : registration.getProvider();
+        return VaultEconomy.find(plugin.getServer());
     }
 
     private static String formatAmount(double value) {

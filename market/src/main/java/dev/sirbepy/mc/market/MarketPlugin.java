@@ -3,6 +3,7 @@ package dev.sirbepy.mc.market;
 import com.mojang.brigadier.Command;
 import io.papermc.paper.command.brigadier.Commands;
 import dev.sirbepy.mc.core.bedrock.BedrockForms;
+import dev.sirbepy.mc.core.econ.VaultEconomy;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.World;
@@ -121,12 +122,12 @@ public final class MarketPlugin extends JavaPlugin {
 
     /** Pays through whatever classic Vault Economy is registered (VaultUnlocked on the server), looked up on each sale. */
     private boolean pay(Player player, double amount) {
-        var registration = getServer().getServicesManager().getRegistration(Economy.class);
-        if (registration == null) {
+        Economy economy = VaultEconomy.find(getServer());
+        if (economy == null) {
             getLogger().warning("Head collector: no Vault Economy provider registered; nothing bought.");
             return false;
         }
-        return registration.getProvider().depositPlayer(player, amount).transactionSuccess();
+        return economy.depositPlayer(player, amount).transactionSuccess();
     }
 
     // stalls.yml and prices.yml ship inside the jar, so only config.yml can change without a restart.

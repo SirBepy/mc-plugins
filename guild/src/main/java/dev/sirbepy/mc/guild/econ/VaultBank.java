@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.guild.econ;
 
+import dev.sirbepy.mc.core.econ.VaultEconomy;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Server;
@@ -14,8 +15,7 @@ public final class VaultBank implements Bank {
     }
 
     private Economy economy() {
-        var registration = server.getServicesManager().getRegistration(Economy.class);
-        return registration == null ? null : registration.getProvider();
+        return VaultEconomy.find(server);
     }
 
     @Override
