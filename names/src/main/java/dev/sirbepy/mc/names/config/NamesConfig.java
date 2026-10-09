@@ -19,6 +19,9 @@ public final class NamesConfig {
     private volatile NickValidator nickValidator;
     private volatile LabelSettings labelSettings;
     private volatile boolean bedrockFormsEnabled;
+    private volatile boolean bedrockTagEnabled;
+    private volatile Component bedrockTag;
+    private volatile int bedrockTagPriority;
 
     public NamesConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -39,6 +42,9 @@ public final class NamesConfig {
                 config.getBoolean("label.use-default-background", false),
                 config.getBoolean("label.see-through", false));
         bedrockFormsEnabled = config.getBoolean("bedrock.forms", true);
+        bedrockTagEnabled = config.getBoolean("bedrock.tag.enabled", true);
+        bedrockTag = Messages.mini().deserialize(config.getString("bedrock.tag.format", "<gray>[BE]</gray> "));
+        bedrockTagPriority = config.getInt("bedrock.tag.priority", -10);
     }
 
     public Component renderChat(TagResolver... resolvers) {
@@ -63,5 +69,17 @@ public final class NamesConfig {
 
     public boolean bedrockFormsEnabled() {
         return bedrockFormsEnabled;
+    }
+
+    public boolean bedrockTagEnabled() {
+        return bedrockTagEnabled;
+    }
+
+    public Component bedrockTag() {
+        return bedrockTag;
+    }
+
+    public int bedrockTagPriority() {
+        return bedrockTagPriority;
     }
 }

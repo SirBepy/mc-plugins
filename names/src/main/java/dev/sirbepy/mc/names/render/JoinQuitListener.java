@@ -13,17 +13,21 @@ public final class JoinQuitListener implements Listener {
     private final NametagTeamManager teamManager;
     private final FloatingLabelManager labels;
     private final NameChangeService changeService;
+    private final BedrockTag bedrockTag;
 
-    public JoinQuitListener(NametagTeamManager teamManager, FloatingLabelManager labels, NameChangeService changeService) {
+    public JoinQuitListener(NametagTeamManager teamManager, FloatingLabelManager labels,
+                            NameChangeService changeService, BedrockTag bedrockTag) {
         this.teamManager = teamManager;
         this.labels = labels;
         this.changeService = changeService;
+        this.bedrockTag = bedrockTag;
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         teamManager.addPlayer(event.getPlayer());
         labels.initPlayer(event.getPlayer());
+        bedrockTag.update(event.getPlayer());
         changeService.apply(event.getPlayer());
     }
 

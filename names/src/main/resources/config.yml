@@ -13,6 +13,14 @@ bedrock:
   # Bedrock players (Floodgate) get a Cumulus input form for /nick instead of the anvil GUI,
   # which Bedrock's UI can't render. Ignored when Floodgate isn't installed.
   forms: true
+  # A prefix on Bedrock players' names in chat, the tab list and above their heads (not in
+  # Discord or other plugins' messages). Floodgate's "." stays in the name after it.
+  tag:
+    enabled: true
+    # MiniMessage. Gray, Joe's pick (2026-10-09).
+    format: "<gray>[BE]</gray> "
+    # Lower renders further left. Tag's IT marker is 0, so a Bedrock IT reads "[BE] ☣ Name".
+    priority: -10
 
 label:
   # How far above the mount point (the player's head, since the display rides the player) the

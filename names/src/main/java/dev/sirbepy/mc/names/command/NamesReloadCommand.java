@@ -2,6 +2,7 @@ package dev.sirbepy.mc.names.command;
 
 import dev.sirbepy.mc.core.Messages;
 import dev.sirbepy.mc.names.config.NamesConfig;
+import dev.sirbepy.mc.names.render.BedrockTag;
 import dev.sirbepy.mc.names.render.NameChangeService;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -14,10 +15,12 @@ public final class NamesReloadCommand implements BasicCommand {
 
     private final NamesConfig config;
     private final NameChangeService changeService;
+    private final BedrockTag bedrockTag;
 
-    public NamesReloadCommand(NamesConfig config, NameChangeService changeService) {
+    public NamesReloadCommand(NamesConfig config, NameChangeService changeService, BedrockTag bedrockTag) {
         this.config = config;
         this.changeService = changeService;
+        this.bedrockTag = bedrockTag;
     }
 
     @Override
@@ -32,6 +35,7 @@ public final class NamesReloadCommand implements BasicCommand {
         }
         config.reload();
         for (Player player : Bukkit.getOnlinePlayers()) {
+            bedrockTag.update(player);
             changeService.apply(player);
         }
         config.messages().send(source.getSender(), "reload-done");

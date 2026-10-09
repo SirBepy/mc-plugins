@@ -52,6 +52,7 @@ Owns everything about how a player's name looks. Replaces ColorfulNames, HexNick
 - `/color` opens a chest GUI: the 16 named colors, a curated set of hex colors, a few gradients, and Reset. Click applies instantly. Permission `names.color` (default: everyone). Gradients behind `names.color.gradient` (default: everyone).
 - `/nick` opens an anvil GUI to type a nickname (rename field). Also `/nick <name>`, `/nick reset`, and admin `/nick <player> <name|reset>`. Permission `names.nick` (default: op only; the owner grants it with LuckPerms). Rules (configurable): max 16 visible chars, letters/digits/underscore/space, cannot equal another known player's real name (anti-impersonation), MiniMessage tags stripped from player input.
   - **Bedrock:** `/nick` opens a Cumulus input form instead of the anvil GUI when the player is on Bedrock (Floodgate), behind `bedrock.forms` (default: on).
+- **Bedrock tag (Joe, 2026-10-09):** Bedrock players (Floodgate) get a gray `[BE] ` prefix (Names' own prefix, key `bedrock`, priority -10 so it sits left of Tag's marker: `[BE] ☣ .Steve`). Shows in chat, tab list and above head, not in displayName (Discord, HuskHomes). Floodgate's `.` username prefix stays visible. Config `bedrock.tag.enabled|format|priority`.
 - `/names reload`.
 - Data: `plugins/Names/players.yml`, UUID to `{color, nick}`. Atomic writes (write temp file, then move over the original).
 

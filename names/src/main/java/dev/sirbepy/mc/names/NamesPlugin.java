@@ -13,6 +13,7 @@ import dev.sirbepy.mc.names.gui.NickAnvilController;
 import dev.sirbepy.mc.names.label.FloatingLabelManager;
 import dev.sirbepy.mc.names.label.LabelTrackingListener;
 import dev.sirbepy.mc.names.label.NametagTeamManager;
+import dev.sirbepy.mc.names.render.BedrockTag;
 import dev.sirbepy.mc.names.render.ChatListener;
 import dev.sirbepy.mc.names.render.JoinQuitListener;
 import dev.sirbepy.mc.names.render.NameChangeService;
@@ -48,16 +49,17 @@ public final class NamesPlugin extends JavaPlugin {
 
         NickAnvilController anvilController = new NickAnvilController(config, nickApplier);
         BedrockForms bedrockForms = BedrockForms.create(this);
+        BedrockTag bedrockTag = new BedrockTag(config, bedrockForms, prefixRegistry);
 
         getServer().getPluginManager().registerEvents(new ChatListener(config, nameService), this);
-        getServer().getPluginManager().registerEvents(new JoinQuitListener(teamManager, labels, changeService), this);
+        getServer().getPluginManager().registerEvents(new JoinQuitListener(teamManager, labels, changeService, bedrockTag), this);
         getServer().getPluginManager().registerEvents(new LabelTrackingListener(labels, this), this);
         getServer().getPluginManager().registerEvents(new ColorGuiListener(config, changeService), this);
         getServer().getPluginManager().registerEvents(anvilController, this);
 
         ColorCommand colorCommand = new ColorCommand(config);
         NickCommand nickCommand = new NickCommand(config, nickApplier, anvilController, bedrockForms, nameStore);
-        NamesReloadCommand reloadCommand = new NamesReloadCommand(config, changeService);
+        NamesReloadCommand reloadCommand = new NamesReloadCommand(config, changeService, bedrockTag);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 CommandRegistrar.register(event.registrar(), colorCommand, nickCommand, reloadCommand));
 
@@ -65,6 +67,7 @@ public final class NamesPlugin extends JavaPlugin {
         for (Player player : Bukkit.getOnlinePlayers()) {
             teamManager.addPlayer(player);
             labels.initPlayer(player);
+            bedrockTag.update(player);
             changeService.apply(player);
         }
     }
