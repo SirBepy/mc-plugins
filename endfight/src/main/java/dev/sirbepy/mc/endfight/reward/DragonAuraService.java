@@ -78,7 +78,7 @@ public final class DragonAuraService {
             return;
         }
         Location at = player.getLocation().add(0, 0.1, 0);
-        player.getWorld().spawnParticle(aura.particle(), at, aura.count(), aura.spread(), 0.4, aura.spread());
+        AuraParticles.spawn(player.getWorld(), aura.particle(), at, aura.count(), aura.spread(), 0.4, aura.spread());
     }
 
     private static PlayerProgress withActiveAura(PlayerProgress current, DragonAura aura) {

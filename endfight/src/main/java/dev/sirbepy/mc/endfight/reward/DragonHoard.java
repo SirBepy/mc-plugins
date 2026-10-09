@@ -24,7 +24,8 @@ public final class DragonHoard {
     private DragonHoard() {
     }
 
-    public static ItemStack build(Tier tier, String dateLabel, List<ItemStack> contents) {
+    /** {@code contents} by slot (27, null for empty), already laid out by {@link HoardLayout}. */
+    public static ItemStack build(Tier tier, String dateLabel, ItemStack[] contents) {
         ItemStack stack = new ItemStack(Material.BLACK_SHULKER_BOX);
         BlockStateMeta meta = (BlockStateMeta) stack.getItemMeta();
         meta.displayName(MiniMessage.miniMessage().deserialize(NAME).decoration(TextDecoration.ITALIC, false));
@@ -32,9 +33,7 @@ public final class DragonHoard {
         meta.setEnchantmentGlintOverride(true);
 
         ShulkerBox box = (ShulkerBox) meta.getBlockState();
-        for (ItemStack item : contents) {
-            box.getInventory().addItem(item);
-        }
+        box.getInventory().setContents(contents);
         meta.setBlockState(box);
 
         stack.setItemMeta(meta);

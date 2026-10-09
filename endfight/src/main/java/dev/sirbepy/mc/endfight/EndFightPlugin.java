@@ -33,6 +33,8 @@ import dev.sirbepy.mc.endfight.reward.DragonAuraCommand;
 import dev.sirbepy.mc.endfight.reward.DragonAuraJoinListener;
 import dev.sirbepy.mc.endfight.reward.DragonAuraService;
 import dev.sirbepy.mc.endfight.reward.DragonDeathListener;
+import dev.sirbepy.mc.endfight.reward.DragonPresence;
+import dev.sirbepy.mc.endfight.reward.DragonPresenceStore;
 import dev.sirbepy.mc.endfight.reward.PendingRewardsStore;
 import dev.sirbepy.mc.endfight.reward.RewardJoinListener;
 import dev.sirbepy.mc.endfight.reward.RewardProgressStore;
@@ -152,18 +154,25 @@ public final class EndFightPlugin extends JavaPlugin {
                 new Random(), clock);
         getServer().getPluginManager().registerEvents(new DragonDeathListener(rewards), this);
         // Per-player damage and kills this fight: the 50% wave's phantoms and the extra rewards.
-        getServer().getPluginManager().registerEvents(new FightStatsListener(rewards.fighters()), this);
+        getServer().getPluginManager().registerEvents(new FightStatsListener(rewards.fighters(), registry::pillars), this);
         getServer().getPluginManager().registerEvents(new RewardJoinListener(this, rewards), this);
 
         DragonAuraService auras = new DragonAuraService(rewardProgress);
         getServer().getPluginManager().registerEvents(new DragonAuraJoinListener(auras), this);
-        getServer().getScheduler().runTaskTimer(this, () -> auras.tickAll(Bukkit.getOnlinePlayers()),
-                AURA_TICK_PERIOD, AURA_TICK_PERIOD);
+        // Dragon's Presence (Joe, 2026-10-09): the automatic full-set aura, independent of the won
+        // auras above - ticks alongside them, on its own opt-out store since it isn't unlocked.
+        DragonPresence presence = new DragonPresence(
+                new DragonPresenceStore(new File(getDataFolder(), "presence.yml"), getLogger()),
+                new Random(), DragonPresence.ParticleSink.BUKKIT);
+        getServer().getScheduler().runTaskTimer(this, () -> {
+            auras.tickAll(Bukkit.getOnlinePlayers());
+            presence.tickAll(Bukkit.getOnlinePlayers());
+        }, AURA_TICK_PERIOD, AURA_TICK_PERIOD);
 
         // The altar: tier menu, each tier's weekly hoard status for the player, and the aura menu.
         WeeklyHoardInfo weeklyHoards = (player, tier) -> WeekKeys.current(clock)
                 .equals(rewardProgress.load(player.getUniqueId()).weeklyHoards().get(tier));
-        AltarMenu altarMenu = new AltarMenu(tiers, config::get, weeklyHoards, new AltarAuraMenu(auras));
+        AltarMenu altarMenu = new AltarMenu(tiers, config::get, weeklyHoards, new AltarAuraMenu(auras, presence));
         getServer().getPluginManager().registerEvents(new AltarInteractListener(new AltarLocator(registry), altarMenu), this);
         getServer().getPluginManager().registerEvents(new MenuListener(), this);
 
@@ -171,7 +180,7 @@ public final class EndFightPlugin extends JavaPlugin {
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             EndFightCommand command = new EndFightCommand(service, config::get, this::reload, rewards, tiers);
             command.registerInto(event.registrar(), new CultCommand(cultGuards, cultCounter, waveSpawner), resetCommand);
-            new DragonAuraCommand(auras).registerInto(event.registrar());
+            new DragonAuraCommand(auras, presence).registerInto(event.registrar());
         });
     }
 

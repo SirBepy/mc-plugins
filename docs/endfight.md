@@ -213,12 +213,33 @@ edge). A fighter who already has that tier's hoard this week gets XP only, with 
 so. The hoard is a `minecraft:black_shulker_box` with an enchantment glint, named "Dragon Hoard"
 (dark purple, not italic), lore naming the tier and the date, holding (in its own 27-slot
 inventory): diamonds, shulker shells, enchanted golden apples, netherite scrap (only Primordial and
-Ascended), and a chance at bonus rolls - all from `rewards.tiers.<tier>` in `config.yml`. Every
+Ascended), bulk filler (iron, gold, emeralds, lapis and golden carrots: Fledgeling 12/12/3/16/12 up
+to Ascended 96/96/36/128/56, 10ca's spec), and a chance at bonus rolls - all from
+`rewards.tiers.<tier>` in `config.yml`. Every
 whole 1.0 of roll chance is a guaranteed roll and the remainder one more independent chance
 (Fledgeling's 0.10 is a 10% chance at one roll, Ascended's 1.5 one roll plus 50% at a second),
 never more than 4 rolls; a hoard with 2+ rolls gets no netherite scrap. The server's actual
 first-ever kill is paid like the Ascended dragon it is (rewards follow the dragon summoned, Joe
 2026-10-09): the Ascended row with 12000 XP, counting as that week's Ascended hoard.
+
+**Layout** (`HoardLayout`, the radial layout Joe approved from 10ca's renders). The centre slot
+holds the best thing in the box: the final-blow helm, else an armor roll, else the best valuable.
+With an odd number of specials (helm and roll items) the first takes the centre, the helm always
+does, and the rest go in pairs above and below it, then left and right. Everything else spreads
+outward in mirrored groups of slots by value (apples, scrap, diamonds, shells, emeralds, carrots,
+lapis, gold, iron), each count split evenly over its group, and leftover groups take extra filler
+stacks until every slot is used. Nothing is ever dropped: a single item takes part of a group, and
+a full box takes slots off the biggest filler.
+
+**Final blow** (10ca's spec). Whoever deals the dragon's lethal damage (the hit at least as big as
+its health left, blamed like any hit; the game's killer otherwise) gets a **Dragon Head Helm**:
+plain netherite, no enchantments, `custom_model_data` "dragon_head" (the vanilla dragon head
+model, 10ca 6535d64), no equippable asset so the client draws the model on the head. It sits in the
+hoard's centre slot, or is delivered alone (inventory, ender chest, feet) when they get XP only.
+
+**Crystals.** Every pillar end crystal a player breaks this fight (blamed like a hit on the dragon,
+once per crystal; the 4 summoning crystals on the portal never count) adds 5% to their armor-roll
+chance, solo fights included, like the honours only in a hoard actually given.
 
 **Fight honours** (10ca's spec, Joe decided 2026-10-09; `fight.FightHonours`). Announced in chat at
 the end of each kill, to every participant online and everyone in the End: **Dragon's Bane** for
@@ -249,6 +270,14 @@ chat, worn one at a time with `/dragonaura <name|off>`, default permission true,
 owned, a **trophy head** they don't own yet (5 dragon/End-themed player heads, wired through
 `core.item.Heads` the same way haru's own heads are - see `DragonTrophyHeads` for the texture
 sourcing and verification trail); once everything is owned, a duplicate random armor piece.
+
+**Dragon's Presence** (Joe, 2026-10-09; `DragonPresence`). A full-set aura, no roll needed: while a
+player wears the Dragonscale chestplate, leggings and boots plus a dragon helmet (the Dragonscale
+helm or the Dragon Head Helm), slow purple dragon-breath wisps drift around them with an occasional
+end rod or portal sparkle, drawn alongside any won aura. On by default; `/dragonaura presence` or
+the altar's Auras menu turns it off, remembered in `plugins/EndFight/presence.yml`. Hidden for
+spectators and invisible players. Aura particles go through `AuraParticles`, which hands
+`dragon_breath` its power float: Paper refuses that particle without it on 26.x.
 
 **Delivery.** Online: the hoard goes to the player's inventory, else their ender chest, else drops
 at their feet, and they're told which in chat along with the XP amount. Offline at the kill: the

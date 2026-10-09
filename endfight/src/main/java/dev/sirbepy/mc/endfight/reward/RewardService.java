@@ -29,6 +29,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +64,8 @@ public final class RewardService {
     /** Hard stop for the sweep and delivery even if the dragon somehow never leaves. */
     static final long ORB_WINDOW_TICKS = 1200L;
     static final double ORB_SUPPRESSION_RADIUS = 24.0;
+    /** Armor-roll chance per pillar crystal a player broke this fight (10ca's spec, Joe 2026-10-09). */
+    static final double CRYSTAL_BONUS = 0.05;
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ISO_LOCAL_DATE;
 
@@ -78,8 +81,10 @@ public final class RewardService {
 
     private final Map<UUID, Tracking> dying = new ConcurrentHashMap<>();
 
+    /** {@code crystals}: pillar crystals each player broke this fight; {@code finalBlow}: who
+     * dealt the lethal damage, or null. */
     private record Tracking(Set<UUID> participants, Location deathLocation, Tier tier, boolean firstKillEver,
-                            FightHonours honours) {
+                            FightHonours honours, Map<UUID, Integer> crystals, UUID finalBlow) {
     }
 
     public RewardService(Plugin plugin, Supplier<EndFightConfig> config, PendingRewardsStore pending,
@@ -124,7 +129,12 @@ public final class RewardService {
         PersistentDataContainer pdc = dragon.getPersistentDataContainer();
         FightHonours honours = FightHonours.decide(participants, FightStats.topDamagers(pdc, Integer.MAX_VALUE),
                 FightStats.damage(pdc), FightStats.groupKills(pdc), FightStats.groupLeaders(pdc));
-        dying.put(worldId, new Tracking(participants, deathLocation, tier, firstKillEver, honours));
+        UUID finalBlow = FightStats.finalBlow(pdc);
+        if (finalBlow == null && dragon.getKiller() != null) {
+            finalBlow = dragon.getKiller().getUniqueId();
+        }
+        dying.put(worldId, new Tracking(participants, deathLocation, tier, firstKillEver, honours,
+                FightStats.crystals(pdc), finalBlow));
         plugin.getLogger().info("The dragon died at " + deathLocation.getBlockX() + "," + deathLocation.getBlockY() + ","
                 + deathLocation.getBlockZ() + "; paying " + participants.size() + " fighter(s) at " + tier.displayName()
                 + (firstKillEver ? " (first kill ever)" : "") + " once its death animation ends.");
@@ -199,6 +209,11 @@ public final class RewardService {
         Player player = dragon != null && event.getFinalDamage() > 0 ? fighters.responsible(event) : null;
         boolean wasFighter = player != null && fighters.fighters(dragon).contains(player.getUniqueId());
         fighters.onDamage(event);
+        // The event fires before the hit lands, so a hit at least as big as the health left is the
+        // lethal one: its player gets the Dragon Head Helm.
+        if (player != null && event.getFinalDamage() >= dragon.getHealth() && dragon.getHealth() > 0) {
+            FightStats.setFinalBlow(dragon.getPersistentDataContainer(), player.getUniqueId());
+        }
         if (player == null || wasFighter || !config.get().rewardsEnabled()
                 || dragon.getWorld().getEnvironment() != World.Environment.THE_END
                 || !fighters.fighters(dragon).contains(player.getUniqueId())) {
@@ -241,8 +256,10 @@ public final class RewardService {
 
         announceHonours(tracking);
         for (UUID id : tracking.participants()) {
-            PendingReward reward = buildReward(id, tracking.tier(), row, weekKey, dateLabel, false,
-                    tracking.honours().rollBonus(id));
+            // Honours, plus 5% per pillar crystal this player broke (counts in a solo fight too).
+            double bonus = tracking.honours().rollBonus(id) + CRYSTAL_BONUS * tracking.crystals().getOrDefault(id, 0);
+            PendingReward rolled = buildReward(id, tracking.tier(), row, weekKey, dateLabel, false, bonus);
+            PendingReward reward = new PendingReward(rolled.xp(), rolled.hoard(), id.equals(tracking.finalBlow()));
             Player online = Bukkit.getPlayer(id);
             if (online != null) {
                 deliverNow(online, reward);
@@ -295,7 +312,8 @@ public final class RewardService {
         progress.save(id, new PlayerProgress(armor, auras, current.activeAura(), heads, weeklyHoards));
 
         return new PendingReward(row.xp(),
-                new PendingReward.HoardSpec(tier, dateLabel, row.diamonds(), row.shells(), row.gapples(), scrap, grants));
+                new PendingReward.HoardSpec(tier, dateLabel, row.diamonds(), row.shells(), row.gapples(), scrap, grants,
+                        row.filler()));
     }
 
     private static PendingReward.RollGrant toGrant(RollEngine.Outcome outcome) {
@@ -311,9 +329,13 @@ public final class RewardService {
         if (reward.hoard() == null) {
             config.get().messages().send(player, "reward-xp-only", Map.of(),
                     Placeholder.unparsed("xp", String.valueOf(reward.xp())));
+            if (reward.dragonHeadHelm()) {
+                String where = RewardDelivery.deliver(player, DragonHeadHelm.build());
+                config.get().messages().send(player, "final-blow-helm", Map.of(), Placeholder.unparsed("where", where));
+            }
             return;
         }
-        ItemStack hoardItem = buildHoardItem(reward.hoard());
+        ItemStack hoardItem = buildHoardItem(reward.hoard(), reward.dragonHeadHelm());
         String where = RewardDelivery.deliver(player, hoardItem);
         for (PendingReward.RollGrant grant : reward.hoard().rolls()) {
             if (grant.kind() == RollEngine.Kind.AURA) {
@@ -326,27 +348,20 @@ public final class RewardService {
                 Placeholder.unparsed("xp", String.valueOf(reward.xp())), Placeholder.unparsed("where", where));
     }
 
-    private ItemStack buildHoardItem(PendingReward.HoardSpec hoard) {
-        List<ItemStack> contents = new ArrayList<>();
-        if (hoard.diamonds() > 0) {
-            contents.add(new ItemStack(Material.DIAMOND, hoard.diamonds()));
-        }
-        if (hoard.shells() > 0) {
-            contents.add(new ItemStack(Material.SHULKER_SHELL, hoard.shells()));
-        }
-        if (hoard.gapples() > 0) {
-            contents.add(new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, hoard.gapples()));
-        }
-        if (hoard.scrap() > 0) {
-            contents.add(new ItemStack(Material.NETHERITE_SCRAP, hoard.scrap()));
+    /** The hoard's box laid out radially ({@link HoardLayout}): the final-blow helm first among the
+     * specials, so it takes the centre, then each roll's item. */
+    ItemStack buildHoardItem(PendingReward.HoardSpec hoard, boolean dragonHeadHelm) {
+        List<ItemStack> specials = new ArrayList<>();
+        if (dragonHeadHelm) {
+            specials.add(DragonHeadHelm.build());
         }
         for (PendingReward.RollGrant grant : hoard.rolls()) {
             switch (grant.kind()) {
-                case ARMOR, DUP_ARMOR -> contents.add(DragonscaleArmor.build(ArmorPiece.valueOf(grant.id())));
+                case ARMOR, DUP_ARMOR -> specials.add(DragonscaleArmor.build(ArmorPiece.valueOf(grant.id())));
                 case HEAD -> {
                     DragonTrophyHeads.Head head = DragonTrophyHeads.byId(grant.id());
                     if (head != null) {
-                        contents.add(head.item());
+                        specials.add(head.item());
                     }
                 }
                 case AURA -> {
@@ -354,8 +369,37 @@ public final class RewardService {
                 }
             }
         }
+        TierRewardRow.Filler filler = hoard.filler();
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        counts.put("gapple", hoard.gapples());
+        counts.put("scrap", hoard.scrap());
+        counts.put("diamond", hoard.diamonds());
+        counts.put("shell", hoard.shells());
+        counts.put("emerald", filler.emeralds());
+        counts.put("carrot", filler.carrots());
+        counts.put("lapis", filler.lapis());
+        counts.put("gold", filler.gold());
+        counts.put("iron", filler.iron());
+        HoardLayout.Slot[] slots = HoardLayout.layout(specials.size(), dragonHeadHelm, counts);
+        ItemStack[] contents = new ItemStack[HoardLayout.SIZE];
+        for (int i = 0; i < slots.length; i++) {
+            HoardLayout.Slot slot = slots[i];
+            if (slot == null) {
+                continue;
+            }
+            if (slot.key().startsWith("special:")) {
+                contents[i] = specials.get(Integer.parseInt(slot.key().substring("special:".length())));
+            } else {
+                contents[i] = new ItemStack(MATERIALS.get(slot.key()), slot.count());
+            }
+        }
         return DragonHoard.build(hoard.tier(), hoard.dateLabel(), contents);
     }
+
+    private static final Map<String, Material> MATERIALS = Map.of(
+            "gapple", Material.ENCHANTED_GOLDEN_APPLE, "scrap", Material.NETHERITE_SCRAP, "diamond", Material.DIAMOND,
+            "shell", Material.SHULKER_SHELL, "emerald", Material.EMERALD, "carrot", Material.GOLDEN_CARROT,
+            "lapis", Material.LAPIS_LAZULI, "gold", Material.GOLD_INGOT, "iron", Material.IRON_INGOT);
 
     /** {@code PlayerJoinEvent} handler body (delayed by the caller): runs the same delivery chain
      * for everything this player was owed while offline. */

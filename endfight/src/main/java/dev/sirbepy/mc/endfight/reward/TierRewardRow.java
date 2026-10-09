@@ -13,20 +13,31 @@ import java.util.Map;
  * (always in the hoard) plus its armor-roll chance - 0.10 to 1.0, except Ascended's 1.5, which
  * means one guaranteed roll plus a 50% chance at a second (see {@link RollEngine#rollCount}).
  * Every field is overridable per tier under {@code rewards.tiers.<tier-name>} in config.yml; the
- * values below are the approved defaults.
+ * values below are the approved defaults. {@code filler} is the hoard's bulk loot (10ca's spec, Joe
+ * decided 2026-10-09).
  */
 public record TierRewardRow(int xp, int diamonds, int shells, int gapples, int scrapMin, int scrapMax,
-                             double rollChance) {
+                             double rollChance, Filler filler) {
+
+    /** The hoard's bulk loot: iron and gold ingots, emeralds, lapis and golden carrots. */
+    public record Filler(int iron, int gold, int emeralds, int lapis, int carrots) {
+
+        public static final Filler NONE = new Filler(0, 0, 0, 0, 0);
+    }
+
+    public TierRewardRow(int xp, int diamonds, int shells, int gapples, int scrapMin, int scrapMax, double rollChance) {
+        this(xp, diamonds, shells, gapples, scrapMin, scrapMax, rollChance, Filler.NONE);
+    }
 
     private static Map<Tier, TierRewardRow> defaults() {
         Map<Tier, TierRewardRow> map = new EnumMap<>(Tier.class);
-        map.put(Tier.FLEDGELING, new TierRewardRow(500, 2, 2, 0, 0, 0, 0.10));
-        map.put(Tier.POWERFUL, new TierRewardRow(750, 3, 2, 1, 0, 0, 0.15));
-        map.put(Tier.CRUEL, new TierRewardRow(1000, 4, 4, 1, 0, 0, 0.25));
-        map.put(Tier.IMMORTAL, new TierRewardRow(1500, 6, 4, 2, 0, 0, 0.50));
-        map.put(Tier.FEROCIOUS, new TierRewardRow(2000, 8, 6, 2, 0, 0, 0.75));
-        map.put(Tier.PRIMORDIAL, new TierRewardRow(3000, 9, 6, 3, 1, 2, 1.00));
-        map.put(Tier.ASCENDED, new TierRewardRow(4000, 10, 6, 4, 1, 2, 1.50));
+        map.put(Tier.FLEDGELING, new TierRewardRow(500, 2, 2, 0, 0, 0, 0.10, new Filler(12, 12, 3, 16, 12)));
+        map.put(Tier.POWERFUL, new TierRewardRow(750, 3, 2, 1, 0, 0, 0.15, new Filler(18, 18, 6, 24, 20)));
+        map.put(Tier.CRUEL, new TierRewardRow(1000, 4, 4, 1, 0, 0, 0.25, new Filler(24, 24, 9, 32, 24)));
+        map.put(Tier.IMMORTAL, new TierRewardRow(1500, 6, 4, 2, 0, 0, 0.50, new Filler(36, 36, 12, 48, 36)));
+        map.put(Tier.FEROCIOUS, new TierRewardRow(2000, 8, 6, 2, 0, 0, 0.75, new Filler(48, 48, 18, 64, 48)));
+        map.put(Tier.PRIMORDIAL, new TierRewardRow(3000, 9, 6, 3, 1, 2, 1.00, new Filler(72, 72, 24, 96, 52)));
+        map.put(Tier.ASCENDED, new TierRewardRow(4000, 10, 6, 4, 1, 2, 1.50, new Filler(96, 96, 36, 128, 56)));
         return map;
     }
 
@@ -53,7 +64,7 @@ public record TierRewardRow(int xp, int diamonds, int shells, int gapples, int s
         int xp = section == null ? 12000 : section.getInt("xp", 12000);
         double rollChance = section == null ? tierRow.rollChance() : section.getDouble("roll-chance", tierRow.rollChance());
         return new TierRewardRow(xp, tierRow.diamonds(), tierRow.shells(), tierRow.gapples(),
-                tierRow.scrapMin(), tierRow.scrapMax(), rollChance);
+                tierRow.scrapMin(), tierRow.scrapMax(), rollChance, tierRow.filler());
     }
 
     private static TierRewardRow fromConfig(ConfigurationSection section, TierRewardRow fallback) {
@@ -67,6 +78,12 @@ public record TierRewardRow(int xp, int diamonds, int shells, int gapples, int s
                 section.getInt("gapples", fallback.gapples()),
                 section.getInt("scrap-min", fallback.scrapMin()),
                 section.getInt("scrap-max", fallback.scrapMax()),
-                section.getDouble("roll-chance", fallback.rollChance()));
+                section.getDouble("roll-chance", fallback.rollChance()),
+                new Filler(
+                        section.getInt("iron", fallback.filler().iron()),
+                        section.getInt("gold", fallback.filler().gold()),
+                        section.getInt("emeralds", fallback.filler().emeralds()),
+                        section.getInt("lapis", fallback.filler().lapis()),
+                        section.getInt("carrots", fallback.filler().carrots())));
     }
 }

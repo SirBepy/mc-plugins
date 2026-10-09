@@ -14,17 +14,21 @@ import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * {@code /dragonaura <name|off>}: switches the sender's worn dragon aura (unlocked via Dragon
- * Hoard rolls - see {@link RollEngine}), or turns it off. Default permission true (cosmetic, no
- * admin gate): anyone can toggle an aura they've actually unlocked. The altar menu a later phase
- * adds calls {@link DragonAuraService#toggle} directly instead of going through this command.
+ * {@code /dragonaura <name|off|presence>}: switches the sender's worn dragon aura (unlocked via
+ * Dragon Hoard rolls - see {@link RollEngine}), turns it off, or toggles the automatic full-set
+ * {@link DragonPresence} aura. Default permission true (cosmetic, no admin gate): anyone can
+ * toggle an aura they've actually unlocked, and Dragon's Presence is everyone's to toggle since
+ * it just depends on gear already worn. The altar menu calls {@link DragonAuraService#toggle} and
+ * {@link DragonPresence#toggle} directly instead of going through this command.
  */
 public final class DragonAuraCommand {
 
     private final DragonAuraService auras;
+    private final DragonPresence presence;
 
-    public DragonAuraCommand(DragonAuraService auras) {
+    public DragonAuraCommand(DragonAuraService auras, DragonPresence presence) {
         this.auras = auras;
+        this.presence = presence;
     }
 
     public void registerInto(Commands registrar) {
@@ -42,6 +46,11 @@ public final class DragonAuraCommand {
             return Command.SINGLE_SUCCESS;
         }
         String arg = StringArgumentType.getString(ctx, "name");
+        if ("presence".equalsIgnoreCase(arg)) {
+            boolean nowOn = presence.toggle(player);
+            player.sendMessage(Component.text("Dragon's Presence: " + (nowOn ? "on" : "off")));
+            return Command.SINGLE_SUCCESS;
+        }
         DragonAuraService.ToggleOutcome outcome = auras.toggle(player, arg);
         switch (outcome.result()) {
             case OFF -> player.sendMessage(Component.text("Dragon aura off."));
@@ -56,6 +65,9 @@ public final class DragonAuraCommand {
             String remaining = builder.getRemainingLowerCase();
             if ("off".startsWith(remaining)) {
                 builder.suggest("off");
+            }
+            if ("presence".startsWith(remaining)) {
+                builder.suggest("presence");
             }
             for (String name : auras.ownedAuraNames(player)) {
                 if (name.toLowerCase(Locale.ROOT).startsWith(remaining)) {

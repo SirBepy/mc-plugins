@@ -163,6 +163,25 @@ class FightStatsTest {
     }
 
     @Test
+    @SuppressWarnings("removal")
+    void aPillarCrystalBrokenByAPlayerCountsOnceAndAPortalCrystalNever() {
+        EnderDragon dragon = dragon(200);
+        PlayerMock alice = server.addPlayer("Alice");
+        dev.sirbepy.mc.endfight.arena.Pillar pillar = new dev.sirbepy.mc.endfight.arena.Pillar(42, 0, 3, 90, 64);
+        FightStatsListener withPillars = new FightStatsListener(
+                new DragonFighters(new NamespacedKey("endfight", "dragon-fighters"), System::currentTimeMillis), () -> List.of(pillar));
+        org.bukkit.entity.EnderCrystal onPillar = end.spawn(new Location(end, 42.5, 91, 0.5), org.bukkit.entity.EnderCrystal.class);
+        org.bukkit.entity.EnderCrystal onPortal = end.spawn(new Location(end, 3.5, 64, 0.5), org.bukkit.entity.EnderCrystal.class);
+
+        for (org.bukkit.entity.EnderCrystal crystal : List.of(onPillar, onPillar, onPortal)) {
+            withPillars.onCrystalHit(new EntityDamageByEntityEvent(alice, crystal, EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                    DamageSource.builder(DamageType.PLAYER_ATTACK).withCausingEntity(alice).withDirectEntity(alice).build(), 1));
+        }
+
+        assertEquals(Map.of(alice.getUniqueId(), 1), FightStats.crystals(dragon.getPersistentDataContainer()));
+    }
+
+    @Test
     void handEditedJunkIsSkipped() {
         EnderDragon dragon = dragon(200);
         dragon.getPersistentDataContainer().set(FightStats.DAMAGE, org.bukkit.persistence.PersistentDataType.STRING,

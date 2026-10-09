@@ -22,7 +22,7 @@ import java.util.List;
 public final class DragonscaleArmor {
 
     public static final NamespacedKey MODEL_KEY = new NamespacedKey("claudesmp", "dragonscale");
-    private static final String CUSTOM_MODEL_DATA = "dragonscale";
+    public static final String CUSTOM_MODEL_DATA = "dragonscale";
 
     private DragonscaleArmor() {
     }

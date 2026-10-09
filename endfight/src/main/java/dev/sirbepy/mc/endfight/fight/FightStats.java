@@ -27,6 +27,8 @@ public final class FightStats {
     static final NamespacedKey KILLS = new NamespacedKey("endfight", "fight-kills");
     static final NamespacedKey GROUP_KILLS = new NamespacedKey("endfight", "fight-group-kills");
     static final NamespacedKey GROUP_LEADERS = new NamespacedKey("endfight", "fight-group-leaders");
+    static final NamespacedKey CRYSTALS = new NamespacedKey("endfight", "fight-crystals");
+    static final NamespacedKey FINAL_BLOW = new NamespacedKey("endfight", "fight-final-blow");
 
     private FightStats() {
     }
@@ -111,6 +113,42 @@ public final class FightStats {
             }
         }
         return out;
+    }
+
+    /** One more pillar crystal broken by {@code player} this fight. */
+    public static void addCrystal(PersistentDataContainer pdc, UUID player) {
+        Map<UUID, Integer> crystals = crystals(pdc);
+        crystals.merge(player, 1, Integer::sum);
+        List<String> parts = new ArrayList<>();
+        crystals.forEach((id, n) -> parts.add(id + "=" + n));
+        pdc.set(CRYSTALS, PersistentDataType.STRING, String.join(",", parts));
+    }
+
+    /** Pillar crystals broken per player this fight. */
+    public static Map<UUID, Integer> crystals(PersistentDataContainer pdc) {
+        Map<UUID, Integer> out = new LinkedHashMap<>();
+        for (String[] pair : pairs(pdc.get(CRYSTALS, PersistentDataType.STRING))) {
+            try {
+                out.put(UUID.fromString(pair[0]), Integer.parseInt(pair[1]));
+            } catch (IllegalArgumentException ignored) {
+                // a hand-edited value; skip it
+            }
+        }
+        return out;
+    }
+
+    public static void setFinalBlow(PersistentDataContainer pdc, UUID player) {
+        pdc.set(FINAL_BLOW, PersistentDataType.STRING, player.toString());
+    }
+
+    /** Who dealt the lethal damage, or null. */
+    public static UUID finalBlow(PersistentDataContainer pdc) {
+        String raw = pdc.get(FINAL_BLOW, PersistentDataType.STRING);
+        try {
+            return raw != null ? UUID.fromString(raw) : null;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     private static String joinNested(Map<String, Map<UUID, Integer>> nested) {

@@ -455,6 +455,61 @@ class RewardServiceTest {
         assertTrue(said != null && said.contains("You'll get the XP"), "got " + said);
     }
 
+    // 10ca's spec: the final blow earns a Dragon Head Helm, in the hoard's centre slot.
+    @Test
+    @SuppressWarnings("removal")
+    void theFinalBlowPutsADragonHeadHelmInTheCentreOfTheHoard() {
+        RewardService controlled = controlledAscended(fixedDoubleFixedInt(0.99, 0));
+        EnderDragon dragon = dragon();
+        dragon.setHealth(3);
+        controlled.onDragonHurt(new org.bukkit.event.entity.EntityDamageByEntityEvent(
+                alice, dragon, org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.PLAYER_ATTACK)
+                        .withCausingEntity(alice).withDirectEntity(alice).build(), 8));
+
+        controlled.onDragonDeath(dragon);
+        controlled.finalizeRewards(end.getUID());
+
+        ShulkerBox box = hoardBoxFrom(alice.getInventory().getStorageContents()[0]);
+        ItemStack centre = box.getInventory().getItem(13);
+        assertTrue(DragonHeadHelm.is(centre), "centre slot holds " + centre);
+        assertEquals(96, countOf(box, org.bukkit.Material.IRON_INGOT), "Ascended's filler is in there too");
+        assertEquals(128, countOf(box, org.bukkit.Material.LAPIS_LAZULI));
+        assertEquals(1, progress.load(alice.getUniqueId()).armor().size(), "and the roll's piece");
+    }
+
+    @Test
+    void aFinalBlowWithoutAHoardStillGetsTheHelm() {
+        RewardService controlled = controlledAscended(fixedDoubleFixedInt(0.99, 0));
+        progress.save(alice.getUniqueId(), new PlayerProgress(java.util.Set.of(), java.util.Set.of(), null, java.util.Set.of(),
+                java.util.Map.of(Tier.ASCENDED, WeekKeys.current(Clock.fixed(Instant.parse("2026-10-10T12:00:00Z"), ZoneOffset.UTC)))));
+        EnderDragon dragon = dragon();
+        controlled.fighters().addFighter(dragon.getPersistentDataContainer(), alice.getUniqueId());
+        FightStats.setFinalBlow(dragon.getPersistentDataContainer(), alice.getUniqueId());
+
+        controlled.onDragonDeath(dragon);
+        controlled.finalizeRewards(end.getUID());
+
+        assertTrue(DragonHeadHelm.is(alice.getInventory().getStorageContents()[0]), "the helm alone");
+    }
+
+    // 10ca's spec: +5% armor-roll chance per pillar crystal broken, solo fights too.
+    @Test
+    void brokenCrystalsRaiseTheRollChance() {
+        tierChoice.tier = Tier.FLEDGELING;
+        RewardService controlled = new RewardService(plugin, () -> shippedConfig(),
+                new PendingRewardsStore(new File(plugin.getDataFolder(), "pending-crystals.yml"), Logger.getLogger("test")),
+                progress, tierChoice, fixedDoubleFixedInt(0.12, 0), Clock.fixed(Instant.parse("2026-10-10T12:00:00Z"), ZoneOffset.UTC));
+        EnderDragon dragon = dragon();
+        controlled.fighters().addFighter(dragon.getPersistentDataContainer(), alice.getUniqueId());
+        FightStats.addCrystal(dragon.getPersistentDataContainer(), alice.getUniqueId());
+
+        controlled.onDragonDeath(dragon);
+        controlled.finalizeRewards(end.getUID());
+
+        assertEquals(1, progress.load(alice.getUniqueId()).armor().size(), "10% + 5% = 15% beats a 0.12 draw");
+    }
+
     private static ShulkerBox hoardBoxFrom(ItemStack hoard) {
         assertEquals(org.bukkit.Material.BLACK_SHULKER_BOX, hoard.getType());
         return (ShulkerBox) ((BlockStateMeta) hoard.getItemMeta()).getBlockState();

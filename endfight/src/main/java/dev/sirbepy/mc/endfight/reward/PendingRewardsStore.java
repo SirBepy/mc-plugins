@@ -68,6 +68,9 @@ public final class PendingRewardsStore {
     private static Map<String, Object> toMap(PendingReward reward) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("xp", reward.xp());
+        if (reward.dragonHeadHelm()) {
+            map.put("dragon-head-helm", true);
+        }
         PendingReward.HoardSpec hoard = reward.hoard();
         if (hoard != null) {
             Map<String, Object> hoardMap = new LinkedHashMap<>();
@@ -82,6 +85,9 @@ public final class PendingRewardsStore {
                 rolls.add(Map.of("kind", grant.kind().name(), "id", grant.id()));
             }
             hoardMap.put("rolls", rolls);
+            TierRewardRow.Filler filler = hoard.filler();
+            hoardMap.put("filler", Map.of("iron", filler.iron(), "gold", filler.gold(), "emeralds", filler.emeralds(),
+                    "lapis", filler.lapis(), "carrots", filler.carrots()));
             map.put("hoard", hoardMap);
         }
         return map;
@@ -93,7 +99,7 @@ public final class PendingRewardsStore {
         if (entry.get("hoard") instanceof Map<?, ?> hoardMap) {
             hoard = hoardFromMap(hoardMap);
         }
-        return new PendingReward(xp, hoard);
+        return new PendingReward(xp, hoard, Boolean.TRUE.equals(entry.get("dragon-head-helm")));
     }
 
     private static PendingReward.HoardSpec hoardFromMap(Map<?, ?> hoardMap) {
@@ -117,8 +123,13 @@ public final class PendingRewardsStore {
                 }
             }
         }
+        TierRewardRow.Filler filler = TierRewardRow.Filler.NONE;
+        if (hoardMap.get("filler") instanceof Map<?, ?> f) {
+            filler = new TierRewardRow.Filler(intOf(f.get("iron")), intOf(f.get("gold")), intOf(f.get("emeralds")),
+                    intOf(f.get("lapis")), intOf(f.get("carrots")));
+        }
         return new PendingReward.HoardSpec(tier, dateLabel, intOf(hoardMap.get("diamonds")), intOf(hoardMap.get("shells")),
-                intOf(hoardMap.get("gapples")), intOf(hoardMap.get("scrap")), rolls);
+                intOf(hoardMap.get("gapples")), intOf(hoardMap.get("scrap")), rolls, filler);
     }
 
     private static int intOf(Object raw) {

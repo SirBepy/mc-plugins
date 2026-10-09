@@ -18,7 +18,8 @@ rewards:
   # Joe's reward spec (2026-10-09): XP (always given, never weekly-limited) and a Dragon Hoard's
   # raw materials (always in the hoard) plus its armor-roll chance - 1.0 means guaranteed; 1.5
   # (Ascended only) means guaranteed plus a 50% chance at a second roll. scrap-min/scrap-max are
-  # the netherite scrap range (0/0 = never any scrap). Every field below is the approved default;
+  # the netherite scrap range (0/0 = never any scrap). iron/gold/emeralds/lapis/carrots are the
+  # hoard's bulk filler (10ca's spec, Joe 2026-10-09). Every field below is the approved default;
   # only override what Joe explicitly changes.
   tiers:
     fledgeling:
@@ -29,6 +30,11 @@ rewards:
       scrap-min: 0
       scrap-max: 0
       roll-chance: 0.10
+      iron: 12
+      gold: 12
+      emeralds: 3
+      lapis: 16
+      carrots: 12
     powerful:
       xp: 750
       diamonds: 3
@@ -37,6 +43,11 @@ rewards:
       scrap-min: 0
       scrap-max: 0
       roll-chance: 0.15
+      iron: 18
+      gold: 18
+      emeralds: 6
+      lapis: 24
+      carrots: 20
     cruel:
       xp: 1000
       diamonds: 4
@@ -45,6 +56,11 @@ rewards:
       scrap-min: 0
       scrap-max: 0
       roll-chance: 0.25
+      iron: 24
+      gold: 24
+      emeralds: 9
+      lapis: 32
+      carrots: 24
     immortal:
       xp: 1500
       diamonds: 6
@@ -53,6 +69,11 @@ rewards:
       scrap-min: 0
       scrap-max: 0
       roll-chance: 0.50
+      iron: 36
+      gold: 36
+      emeralds: 12
+      lapis: 48
+      carrots: 36
     ferocious:
       xp: 2000
       diamonds: 8
@@ -61,6 +82,11 @@ rewards:
       scrap-min: 0
       scrap-max: 0
       roll-chance: 0.75
+      iron: 48
+      gold: 48
+      emeralds: 18
+      lapis: 64
+      carrots: 48
     primordial:
       xp: 3000
       diamonds: 9
@@ -69,6 +95,11 @@ rewards:
       scrap-min: 1
       scrap-max: 2
       roll-chance: 1.00
+      iron: 72
+      gold: 72
+      emeralds: 24
+      lapis: 96
+      carrots: 52
     ascended:
       xp: 4000
       diamonds: 10
@@ -77,6 +108,11 @@ rewards:
       scrap-min: 1
       scrap-max: 2
       roll-chance: 1.50
+      iron: 96
+      gold: 96
+      emeralds: 36
+      lapis: 128
+      carrots: 56
 
   # The server's actual first-ever dragon kill, always fought at Ascended (Joe, 2026-10-09): the
   # Ascended row's materials and roll chance (rewards follow the dragon summoned), and 12000 XP
@@ -119,6 +155,7 @@ messages:
   honour-bane: "<gold><player> earns Dragon's Bane: the most damage to the dragon (<damage>)."
   honour-group: "<gold><player> earns the <group> honour: the most <group> slain (<count>)."
   honour-note: "<gray>Each honour raises its holder's armor-roll chance in this fight's Dragon Hoard."
+  final-blow-helm: "<gold>The final blow! A Dragon Head Helm went to your <where>."
 
 # The dragon's army: illager guards on every outpost/balcony/gatehouse/wall and piglins on the
 # Nether pillars, plus waves on an HP schedule as the dragon loses health (Joe, 2026-10-09). Every
