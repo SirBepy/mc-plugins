@@ -52,7 +52,10 @@ try {
     assert(blocks > 5_000, `thousands of arena blocks placed (got ${blocks})`);
     const found = pillars();
     assert(found.length === 10, `state.yml lists 10 pillars (got ${found.length})`);
-    surfaceY = Math.round(found.reduce((sum, p) => sum + p.surfaceY, 0) / found.length);
+    // The fortress stands on the ground the first build read (state.yml's terrain).
+    const fortressY = readFileSync(STATE_YML, 'utf8').match(/fortressY:\s*(-?\d+)/)?.[1];
+    surfaceY = fortressY !== undefined ? Number(fortressY)
+      : Math.round(found.reduce((sum, p) => sum + p.surfaceY, 0) / found.length);
     wall = { x: 16, y: surfaceY + 2, z: 5 };
     await rcon.command(`${END} forceload add -64 -64 64 64`);
     // A freshly force-loaded chunk answers block queries at once but only ticks entities a moment
