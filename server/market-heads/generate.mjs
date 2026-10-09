@@ -11,11 +11,11 @@
 // $20 wither skeleton skull, a 2.5% drop. The chance is the unenchanted one: looting barely moves it.
 //
 // Usage: node server/market-heads/generate.mjs
-import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { extractZip } from '../lib/extract-zip.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const DATAPACKS = join(here, '..', 'datapacks');
@@ -110,11 +110,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   if (!zip) throw new Error(`no more-mob-heads-*.zip in ${DATAPACKS}`);
   const tmp = mkdtempSync(join(tmpdir(), 'mc-heads-'));
   try {
-    // Windows' own bsdtar reads zips; Git Bash's GNU tar (often first on PATH) does not.
-    const untar = process.platform === 'win32'
-      ? spawnSync(join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe'), ['-xf', join(DATAPACKS, zip), '-C', tmp])
-      : spawnSync('unzip', ['-q', join(DATAPACKS, zip), '-d', tmp]);
-    if (untar.status !== 0) throw new Error(`could not read ${zip}: ${untar.stderr}`);
+    extractZip(join(DATAPACKS, zip), tmp);
     // The pack's only overlay covers 26.3's data format, so its tables replace the base ones.
     const all = tables(join(tmp, 'data', 'more_mob_heads', 'loot_table', 'entities'));
     for (const overlay of readdirSync(tmp).filter((d) => d.startsWith('overlay_'))) {

@@ -9,11 +9,11 @@
 // The jar defaults to the Modrinth launcher's copy; recipes, item tags, the item list and the
 // enchantments (weight, max level, treasure and curse tags) are read from it. Pass --check to list
 // items that still have no price instead of writing the file.
-import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { extractZip } from '../lib/extract-zip.mjs';
 import { computePrices, resolveTags } from './pricing.mjs';
 import { CURSES, POTIONS, RAW, UNTRADEABLE, derive, enchantmentPrices } from './raw-prices.mjs';
 
@@ -33,11 +33,7 @@ const tmp = mkdtempSync(join(tmpdir(), 'mc-prices-'));
 try {
   const wanted = ['data/minecraft/recipe/*', 'data/minecraft/tags/item/*', 'assets/minecraft/items/*',
     'data/minecraft/enchantment/*', 'data/minecraft/tags/enchantment/*'];
-  // Windows' own bsdtar reads zips; Git Bash's GNU tar (often first on PATH) does not.
-  const untar = process.platform === 'win32'
-    ? spawnSync(join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe'), ['-xf', jar, '-C', tmp, ...wanted])
-    : spawnSync('unzip', ['-q', jar, ...wanted, '-d', tmp]);
-  if (untar.status !== 0) throw new Error(`could not read ${jar}: ${untar.stderr}`);
+  extractZip(jar, tmp, wanted);
   const json = (dir) => readdirSync(join(tmp, dir)).filter((f) => f.endsWith('.json'))
     .map((f) => [f.replace(/\.json$/, ''), JSON.parse(readFileSync(join(tmp, dir, f), 'utf8'))]);
 
