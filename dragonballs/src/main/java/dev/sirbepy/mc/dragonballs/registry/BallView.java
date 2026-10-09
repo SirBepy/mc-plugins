@@ -26,7 +26,8 @@ public record BallView(
 
     /** Last known (or current, for PLACED) location, or null if its world isn't loaded. */
     public Location lastKnownLocation() {
-        World world = Bukkit.getWorld(worldName);
+        // A ball with no position yet has no world name, and Paper's getWorld rejects null outright.
+        World world = worldName == null ? null : Bukkit.getWorld(worldName);
         return world == null ? null : new Location(world, x, y, z);
     }
 }
