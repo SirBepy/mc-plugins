@@ -27,6 +27,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -67,7 +68,7 @@ class HeldBallCheckTest {
         BallRegistry end = new BallRegistry(new File(tempDir.toFile(), "balls-end.yml"), plugin.getLogger(), items, BallSet.END);
         sets = new BallSets(overworld, nether, end, items, () -> config);
         check = new HeldBallCheck(sets, () -> config, flagged::add, plugin.getLogger());
-        pickup = new BallPickupListener(sets, () -> config, check);
+        pickup = new BallPickupListener(sets, () -> config, check, plugin.getLogger());
         check.trackSelfPickupsWith(pickup);
         player = server.addPlayer();
         player.setGameMode(GameMode.SURVIVAL);
@@ -177,7 +178,7 @@ class HeldBallCheckTest {
     void aPlayerPickingUpTheirOwnAdoptedBallIsNotAnnounced() {
         List<String> announced = new ArrayList<>();
         BallPickupListener announcingPickup = new BallPickupListener(sets, check,
-                (finder, set, star) -> announced.add(finder.getName() + " " + set + " " + star));
+                (finder, set, star) -> announced.add(finder.getName() + " " + set + " " + star), Logger.getAnonymousLogger());
         check.trackSelfPickupsWith(announcingPickup);
         overworld.markHeld(2, player, false);
         Item displaced = displaceIntoTheWorld(2);

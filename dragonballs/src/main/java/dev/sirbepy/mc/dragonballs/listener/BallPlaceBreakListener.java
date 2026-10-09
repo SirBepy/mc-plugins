@@ -25,6 +25,7 @@ import org.bukkit.inventory.PlayerInventory;
 
 import java.util.OptionalInt;
 import java.util.function.Supplier;
+import java.util.logging.Logger;
 
 /**
  * Placing a ball sets it floating in the block it would have filled; hitting it picks it back up
@@ -35,7 +36,8 @@ import java.util.function.Supplier;
  * like a ground pickup, unless the same player set it down in the last 30 s (adjusting a summon
  * cluster shouldn't spam chat). A ball can't be placed inside a Towny town at all (Joe, 2026-10-08:
  * "dragon balls can never be placed in a town"), so summons happen in the wilderness; it stays in
- * hand.
+ * hand. Only the ball's registered holder can place it: any other copy is a stale duplicate, deleted
+ * from the hand instead of moving the real ball to this block (see {@link BallPickupListener}).
  */
 public final class BallPlaceBreakListener implements Listener {
 
@@ -44,22 +46,24 @@ public final class BallPlaceBreakListener implements Listener {
     private final PickupGuard guard;
     private final ScatterTownyGuard towns;
     private final FoundAnnouncer announcer;
+    private final Logger logger;
     // Who last set a given ball down and when, for the self-placed announce suppression.
     private final RecentSelfAction recentlyPlaced = new RecentSelfAction();
 
     public BallPlaceBreakListener(BallSets sets, FloatingBalls balls, PickupGuard guard, ScatterTownyGuard towns,
-                                  Supplier<DragonBallsConfig> config) {
+                                  Supplier<DragonBallsConfig> config, Logger logger) {
         this(sets, balls, guard, towns,
-                (finder, set, star) -> BallPickupListener.announceFound(config.get(), finder, set, star));
+                (finder, set, star) -> BallPickupListener.announceFound(config.get(), finder, set, star), logger);
     }
 
     BallPlaceBreakListener(BallSets sets, FloatingBalls balls, PickupGuard guard, ScatterTownyGuard towns,
-                           FoundAnnouncer announcer) {
+                           FoundAnnouncer announcer, Logger logger) {
         this.sets = sets;
         this.balls = balls;
         this.guard = guard;
         this.towns = towns;
         this.announcer = announcer;
+        this.logger = logger;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -83,8 +87,15 @@ public final class BallPlaceBreakListener implements Listener {
         }
         BallSet set = sets.items().setOf(placed);
         boolean stone = sets.items().isStoneItem(placed);
+        BallRegistry registry = sets.registry(set);
         takeOne(event.getPlayer().getInventory(), event.getHand(), placed);
-        sets.registry(set).markPlaced(star.getAsInt(), block.getLocation(), stone);
+        if (!registry.isHeldBy(star.getAsInt(), event.getPlayer().getUniqueId())) {
+            logger.warning("Deleted a stale copy of the " + set + " " + star.getAsInt() + "-star that "
+                    + event.getPlayer().getName() + " tried to place; the registry has it "
+                    + BallPickupListener.describe(registry, star.getAsInt()));
+            return;
+        }
+        registry.markPlaced(star.getAsInt(), block.getLocation(), stone);
         recentlyPlaced.record(set, star.getAsInt(), event.getPlayer().getUniqueId());
     }
 

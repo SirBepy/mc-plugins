@@ -91,14 +91,15 @@ public final class DragonBallsPlugin extends JavaPlugin {
         var pm = getServer().getPluginManager();
         pm.registerEvents(floatingBalls, this);
         HeldBallCheck heldBallCheck = new HeldBallCheck(sets, config::get, getLogger());
-        BallPickupListener pickupListener = new BallPickupListener(sets, config::get, heldBallCheck);
+        BallPickupListener pickupListener = new BallPickupListener(sets, config::get, heldBallCheck, getLogger());
         heldBallCheck.trackSelfPickupsWith(pickupListener);
         pm.registerEvents(pickupListener, this);
         pm.registerEvents(new BallSlownessListener(slowness), this);
         pm.registerEvents(new BallContainerGuardListener(overworldRegistry), this);
         pm.registerEvents(new BallDeathListener(sets), this);
         ScatterTownyGuard towns = ScatterTownyGuard.load(this);
-        pm.registerEvents(new BallPlaceBreakListener(sets, floatingBalls, PickupGuard.load(this), towns, config::get), this);
+        pm.registerEvents(new BallPlaceBreakListener(sets, floatingBalls, PickupGuard.load(this), towns, config::get,
+                getLogger()), this);
         pm.registerEvents(new BallItemLifecycleListener(sets), this);
         pm.registerEvents(new BallJoinDupeListener(sets), this);
         pm.registerEvents(new BallDimensionGuardListener(sets, config::get, slowness), this);

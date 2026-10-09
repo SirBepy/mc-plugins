@@ -71,7 +71,7 @@ class BallPlaceBreakListenerTest {
         balls = new FloatingBalls(plugin, items, id -> false);
         sets.all().forEach(registry -> registry.setLook(balls));
         listener = new BallPlaceBreakListener(sets, balls, (who, where) -> mayPickUp, towns,
-                (finder, set, star) -> announced.add(finder.getName() + " " + set + " " + star));
+                (finder, set, star) -> announced.add(finder.getName() + " " + set + " " + star), plugin.getLogger());
         player = server.addPlayer();
         world.getChunkAt(0, 0).load();
     }
@@ -81,7 +81,14 @@ class BallPlaceBreakListenerTest {
         MockBukkit.unmock();
     }
 
+    /** Places a ball the registry has HELD by the player, as every real placement is. */
     private BlockPlaceEvent place(Block block, ItemStack inHand) {
+        items.starOf(inHand).ifPresent(star ->
+                sets.registry(items.setOf(inHand)).markHeld(star, player, items.isStoneItem(inHand)));
+        return placeAsIs(block, inHand);
+    }
+
+    private BlockPlaceEvent placeAsIs(Block block, ItemStack inHand) {
         player.getInventory().setItemInMainHand(inHand);
         return new BlockPlaceEvent(block, block.getState(), block.getRelative(0, -1, 0), inHand, player, true,
                 EquipmentSlot.HAND);
@@ -242,6 +249,23 @@ class BallPlaceBreakListenerTest {
         listener.onHit(new PrePlayerAttackEntityEvent(player, hitbox(BallSet.OVERWORLD, 3), true));
 
         assertTrue(announced.isEmpty(), "the ground pickup announces it later");
+    }
+
+    /** dvolic21, live 2026-10-09: a copy left in his inventory must not pull the real ball, placed
+     * far away, into his block. */
+    @Test
+    void aStaleCopyIsDeletedInsteadOfMovingThePlacedBall() {
+        BallRegistry overworld = sets.registry(BallSet.OVERWORLD);
+        overworld.markPlaced(6, new Location(world, 40, 70, 40), false);
+        Block block = world.getBlockAt(3, 65, 4);
+        BlockPlaceEvent event = placeAsIs(block, items.createItem(BallSet.OVERWORLD, 6));
+
+        listener.onPlace(event);
+
+        assertTrue(event.isCancelled(), "no head block");
+        assertTrue(player.getInventory().getItemInMainHand().isEmpty(), "the copy is deleted from the hand");
+        assertTrue(overworld.isPlacedAt(6, new Location(world, 40, 70, 40)), "the real ball stays where it was");
+        assertFalse(balls.isOccupied(block.getLocation()));
     }
 
     @Test
