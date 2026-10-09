@@ -5,7 +5,6 @@ import dev.sirbepy.mc.dragonballs.bedrock.BedrockDragons;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
-import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -37,9 +36,9 @@ import java.util.function.Predicate;
  * the server pack's item models and posed by {@link DragonPose}. Bedrock players, who can't see
  * item displays, see the same model through {@link BedrockDragonModel} while the Geyser hook is
  * active, and otherwise a harmless scaled Ender Dragon circling above the balls (Joe, 2026-10-08),
- * each hidden from the other edition. Also roars on a rate limit, drives the per-set particles
- * (Nether smoke column, End aura, Nuova's fire trail, the Nether Porunga's purple trail) for as
- * long as the dragon lives, and cleans up strays left by a crash.
+ * each hidden from the other edition. Also roars on a rate limit, hands the per-set particles
+ * (Nether smoke column, End aura, Nuova's fire trail, the Nether Porunga's purple trail) to a
+ * {@link DragonParticles} for as long as the dragon lives, and cleans up strays left by a crash.
  */
 final class DragonActor {
 
@@ -47,7 +46,6 @@ final class DragonActor {
     private static final double BOB_AMPLITUDE = 0.75;
     private static final double ANGLE_STEP_RADIANS = Math.toRadians(4.0); // per circle-task tick
     private static final long CIRCLE_PERIOD_TICKS = 2;
-    private static final long AURA_PERIOD_TICKS = 10; // 0.5s; keeps the column/aura at a lag-safe rate
     private static final long VISIBILITY_PERIOD_TICKS = 20;
     private static final long GROWL_COOLDOWN_MILLIS = 5_000;
     // Blocks per 16 rig units at dragon-scale 1: Shenron's 38 segments make him ~45 blocks long,
@@ -58,9 +56,6 @@ final class DragonActor {
     private static final double MIN_CLEARANCE = 1.5;
     // How far Porunga turns toward his summoner per update.
     private static final float PORUNGA_TURN_DEGREES = 4f;
-    // Spawned every circle tick on the body, so the particles' own lifetime draws the trail.
-    private static final int TRAIL_FLAMES = 4;
-    private static final Particle.DustOptions PURPLE_DUST = new Particle.DustOptions(Color.fromRGB(0x9B30FF), 1.5f);
     // Scoreboard teams that used to colour the Ender Dragon's glow; the model's displays carry their
     // own glow colour now, so these are only removed if a world still has them.
     private static final String[] LEGACY_GLOW_TEAMS = {"dragonballs_nuova", "dragonballs_porunga_purple"};
@@ -84,8 +79,8 @@ final class DragonActor {
     private double circleRadius;
     private double bobAmplitude;
     private DragonPlacement.Look look;
+    private DragonParticles particles;
     private BukkitTask circleTask;
-    private BukkitTask auraTask;
     private long circleAngleTicks;
     private long lastGrowlMillis;
     private boolean burning;
@@ -164,9 +159,12 @@ final class DragonActor {
         }
         refreshVisibility();
 
+        this.particles = new DragonParticles(plugin, circleCenter, circleHeight, look, modelSize,
+                () -> alive() ? bodySpot() : null);
+
         playGrowlForWorld(world);
         startCircleTask();
-        startAuraTask(world, config);
+        particles.startAuraTask(world, config);
     }
 
     /** How far to raise a pose so its lowest part stays {@link #MIN_CLEARANCE} above the balls. */
@@ -310,9 +308,9 @@ final class DragonActor {
             refreshVisibility();
         }
         if (burning) {
-            emitFireTrail();
+            particles.emitFireTrail();
         } else if (purpleTrail) {
-            emitPurpleTrail();
+            particles.emitPurpleTrail();
         }
     }
 
@@ -340,76 +338,6 @@ final class DragonActor {
         }
         double scale = look != null ? look.scale() : 1.0;
         return current.getLocation().add(0, DragonPlacement.BODY_HEIGHT_AT_SCALE_1 * scale * 0.4, 0);
-    }
-
-    /** Nuova's fire trail: flames and embers along his body, left behind as he moves. */
-    private void emitFireTrail() {
-        double spread = 0.8 * modelSize;
-        Location body = bodySpot();
-        World world = body.getWorld();
-        world.spawnParticle(Particle.FLAME, body, TRAIL_FLAMES, spread, spread * 0.5, spread, 0.01);
-        world.spawnParticle(Particle.SMALL_FLAME, body, TRAIL_FLAMES / 2, spread, spread * 0.5, spread, 0.01);
-        world.spawnParticle(Particle.LAVA, body, 1, spread, spread * 0.5, spread, 0);
-    }
-
-    /** A Nether Porunga's purple trail: dust and witch sparkles on his body, like Nuova's flames. */
-    private void emitPurpleTrail() {
-        double spread = 0.8 * modelSize;
-        Location body = bodySpot();
-        World world = body.getWorld();
-        world.spawnParticle(Particle.DUST, body, TRAIL_FLAMES, spread, spread * 0.5, spread, 0, PURPLE_DUST);
-        world.spawnParticle(Particle.WITCH, body, TRAIL_FLAMES / 2, spread, spread * 0.5, spread, 0.01);
-    }
-
-    private void startAuraTask(World world, EffectsConfig config) {
-        if (look == null || (!look.smokeColumn() && !look.purpleAura())) {
-            return;
-        }
-        auraTask = plugin.getServer().getScheduler()
-                .runTaskTimer(plugin, () -> auraTick(world, config), AURA_PERIOD_TICKS, AURA_PERIOD_TICKS);
-    }
-
-    private void auraTick(World world, EffectsConfig config) {
-        if (look == null) {
-            return;
-        }
-        if (look.smokeColumn()) {
-            emitNetherColumn(world, config);
-        } else if (look.purpleAura()) {
-            emitEndAura(world, config);
-        }
-    }
-
-    /** A column of smoke and embers rooted at the summon centre, spanning up to about the
-     * dragon's own height - fixed in place (unlike the aura below) since Joe asked for the whole
-     * session wrapped in it, not just the circling dragon. */
-    private void emitNetherColumn(World world, EffectsConfig config) {
-        if (circleCenter == null || look == null) {
-            return;
-        }
-        double bodyTop = DragonPlacement.BODY_HEIGHT_AT_SCALE_1 * look.scale();
-        double columnHeight = Math.max(1.0, circleHeight + bodyTop);
-        Location mid = circleCenter.clone().add(0, columnHeight / 2.0, 0);
-        int smoke = config.netherSmokeParticleCount();
-        world.spawnParticle(Particle.CAMPFIRE_SIGNAL_SMOKE, mid, smoke, 0.6, columnHeight / 2.0, 0.6, 0.02);
-        world.spawnParticle(Particle.LARGE_SMOKE, mid, Math.max(1, smoke / 2), 0.5, columnHeight / 2.0, 0.5, 0.01);
-        Location base = circleCenter.clone().add(0, 0.5, 0);
-        int embers = config.netherEmberParticleCount();
-        world.spawnParticle(Particle.LAVA, base, embers, 0.5, 0.3, 0.5, 0);
-        world.spawnParticle(Particle.FLAME, base, embers, 0.5, 0.5, 0.5, 0.02);
-    }
-
-    /** A purple swirl on the dragon's body, following it as it moves. */
-    private void emitEndAura(World world, EffectsConfig config) {
-        if (!alive()) {
-            return;
-        }
-        Location at = bodySpot();
-        int portal = config.endAuraParticleCount();
-        world.spawnParticle(Particle.PORTAL, at, portal, 1.2, 1.0, 1.2, 0.3);
-        world.spawnParticle(Particle.REVERSE_PORTAL, at, Math.max(1, portal / 3), 1.0, 0.8, 1.0, 0.1);
-        world.spawnParticle(Particle.END_ROD, at, 2, 0.8, 0.6, 0.8, 0.02);
-        world.spawnParticle(Particle.DRAGON_BREATH, at, 2, 0.8, 0.6, 0.8, 0.01);
     }
 
     /** The dragon said something: a rate-limited roar plus particles near its head. */
@@ -462,7 +390,11 @@ final class DragonActor {
         burning = false;
         purpleTrail = false;
         stopCircleTask();
-        stopAuraTask();
+        if (particles != null) {
+            particles.stopAuraTask();
+            particles = null;
+        }
+        look = null;
     }
 
     private void stopCircleTask() {
@@ -470,14 +402,6 @@ final class DragonActor {
             circleTask.cancel();
             circleTask = null;
         }
-    }
-
-    private void stopAuraTask() {
-        if (auraTask != null) {
-            auraTask.cancel();
-            auraTask = null;
-        }
-        look = null;
     }
 
     private void playGrowlForWorld(World world) {
