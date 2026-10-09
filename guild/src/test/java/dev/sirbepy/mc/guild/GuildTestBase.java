@@ -87,6 +87,15 @@ public abstract class GuildTestBase {
         return active;
     }
 
+    /** Drains the player's chat and returns the newest line as plain text, or null if nothing was said. */
+    protected String lastLine(PlayerMock player) {
+        String last = null;
+        for (var m = player.nextComponentMessage(); m != null; m = player.nextComponentMessage()) {
+            last = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(m);
+        }
+        return last;
+    }
+
     protected void give(Player player, Material material, int amount) {
         player.getInventory().addItem(new ItemStack(material, amount));
     }

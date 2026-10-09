@@ -49,14 +49,6 @@ class GuildMenusTest extends GuildTestBase {
         member.dailies().set(0, ActiveContract.fresh(logs, logs.rank()));
     }
 
-    private String lastLine(org.mockbukkit.mockbukkit.entity.PlayerMock player) {
-        String last = null;
-        for (var m = player.nextComponentMessage(); m != null; m = player.nextComponentMessage()) {
-            last = PlainTextComponentSerializer.plainText().serialize(m);
-        }
-        return last;
-    }
-
     private static String lore(ItemStack item) {
         StringBuilder out = new StringBuilder();
         item.getItemMeta().lore().forEach(line -> out.append(PlainTextComponentSerializer.plainText().serialize(line)).append('\n'));

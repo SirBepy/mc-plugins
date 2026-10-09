@@ -73,14 +73,6 @@ class StaffTest extends GuildTestBase {
         return PlainTextComponentSerializer.plainText().serialize(c);
     }
 
-    private String lastLine(org.mockbukkit.mockbukkit.entity.PlayerMock player) {
-        String last = null;
-        for (var m = player.nextComponentMessage(); m != null; m = player.nextComponentMessage()) {
-            last = plain(m);
-        }
-        return last;
-    }
-
     @Test
     void placingTheStaffPutsEachAtTheirSpot() {
         placeAll();
