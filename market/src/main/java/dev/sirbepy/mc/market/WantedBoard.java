@@ -10,6 +10,7 @@ import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -26,9 +27,11 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 
 import java.io.File;
@@ -40,13 +43,14 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.function.Supplier;
+import java.util.function.ToLongFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Player of the Day: each market period the board at {@code wanted-board} picks a target (half the
- * time an online player, otherwise anyone who has ever joined) and a log-normal price around $100,
- * then pays whoever brings in that player's head first (Joe, 2026-10-09). "Brings in" means ANY
+ * Player of the Day: each market period the board at {@code wanted-board} picks a target
+ * ({@code wanted.online-chance}, 80%, an online player, otherwise anyone who has ever joined), then
+ * pays whoever brings in that player's head first (Joe, 2026-10-09). "Brings in" means ANY
  * genuine head of that player, a fresh PvP drop, an old one kept from before, or a cartel trophy:
  * the player-head-drops datapack's {@code fill_player_head} loot function and the cartel's
  * {@code Trophies.trophy()} both write the real player's UUID into the head's profile (Joe: "ppl can
@@ -58,15 +62,24 @@ import java.util.logging.Logger;
  * fresh kill should beat a head somebody happened to be carrying already). The period right after a
  * claimed sale rests with no bounty, so the same kill can't be farmed for a second payout; a period
  * nobody claims picks again normally next time, no rest owed.
+ *
+ * <p>The bounty grows with the target's play time alive (Joe, 2026-10-09: "if you died recently,
+ * the bounty is lower"): {@code base + per-hour * hours}, times a random factor rolled once at
+ * posting (1 +- {@code spread}), capped at {@code cap}. Hours come from vanilla's
+ * {@code time_since_death} statistic, which only counts while online and already holds everyone's
+ * history. A fresh head pays the value of the life its kill ended, an old head the old-head share
+ * of today's live value. A target who was online since posting and didn't die before the board
+ * moves on is paid {@code survivor-share} of the value then.
  */
 public final class WantedBoard implements Listener {
 
     @FunctionalInterface
     public interface Payout {
-        boolean pay(Player player, double amount);
+        boolean pay(OfflinePlayer player, double amount);
     }
 
     private static final int LINE_LENGTH = 15;
+    private static final double TICKS_PER_HOUR = 20 * 60 * 60;
 
     private final Plugin plugin;
     private final MarketLayout layout;
@@ -76,19 +89,26 @@ public final class WantedBoard implements Listener {
     private final Supplier<Instant> clock;
     private final Supplier<List<Player>> onlinePlayers;
     private final Supplier<List<OfflinePlayer>> everJoined;
+    // A player's time_since_death statistic in ticks, online or not.
+    private final ToLongFunction<UUID> aliveTicks;
     private final Payout payout;
     // A successful sale's broadcast target. Not just plugin.getServer(): MockBukkit's ServerMock
     // has no Audience implementation (audiences() is unimplemented), so a test supplies its own.
     private final Audience broadcast;
     private final File stateFile;
     private final Logger logger;
+    // The time alive a head's kill ended, stamped beside its KillStamp at death: the statistic is
+    // reset right after PlayerDeathEvent, so the head is the only place it survives.
+    private final NamespacedKey aliveKey;
 
     private WantedState state;
+    // What the sign last showed, so the minute tick only redraws when the value moved.
+    private BigDecimal shownValue;
 
     public WantedBoard(Plugin plugin, MarketLayout layout, Supplier<MarketConfig> config, Supplier<String> period,
                         Random random, Supplier<Instant> clock, Supplier<List<Player>> onlinePlayers,
-                        Supplier<List<OfflinePlayer>> everJoined, Payout payout, Audience broadcast, File stateFile,
-                        Logger logger) {
+                        Supplier<List<OfflinePlayer>> everJoined, ToLongFunction<UUID> aliveTicks, Payout payout,
+                        Audience broadcast, File stateFile, Logger logger) {
         this.plugin = plugin;
         this.layout = layout;
         this.config = config;
@@ -97,10 +117,12 @@ public final class WantedBoard implements Listener {
         this.clock = clock;
         this.onlinePlayers = onlinePlayers;
         this.everJoined = everJoined;
+        this.aliveTicks = aliveTicks;
         this.payout = payout;
         this.broadcast = broadcast;
         this.stateFile = stateFile;
         this.logger = logger;
+        this.aliveKey = new NamespacedKey(plugin, "alive_ticks");
         load();
     }
 
@@ -122,30 +144,57 @@ public final class WantedBoard implements Listener {
     /**
      * Picks the next period's state. A period that just saw a claimed sale rests the one right
      * after it (no target, cleared head, a different sign) unless {@code forceNormal} says
-     * otherwise; any other period (unclaimed, or itself a rest) picks normally.
+     * otherwise; any other period (unclaimed, or itself a rest) picks normally. A natural period
+     * change first pays a surviving target; the admin rotate ({@code forceNormal}) never does.
      */
     private void advance(boolean forceNormal) {
         String day = period.get();
+        if (!forceNormal) {
+            paySurvivor();
+        }
         if (!forceNormal && state != null && state.claimed()) {
             state = WantedState.cooldown(day);
         } else {
             Target target = pick();
             state = target == null ? WantedState.none(day)
-                    : new WantedState(day, false, target.id(), target.name(), price(), clock.get(), null, null);
+                    : WantedState.posted(day, target.id(), target.name(), factor(random, config.get().wantedSpread()),
+                    clock.get(), isOnline(target.id()));
         }
+        shownValue = null;
         save();
+    }
+
+    /** Pays a target who played since posting and never died, nor got sold: survivor-share of the value now. */
+    private void paySurvivor() {
+        if (state == null || !state.hasTarget() || state.claimed() || state.died() || !state.played()) {
+            return;
+        }
+        BigDecimal reward = share(currentValue(), config.get().wantedSurvivorShare());
+        if (reward.signum() <= 0) {
+            return;
+        }
+        if (!payout.pay(plugin.getServer().getOfflinePlayer(state.targetId()), reward.doubleValue())) {
+            logger.warning("Wanted: could not pay " + state.targetName() + " the $" + reward + " survivor reward (no economy)");
+            return;
+        }
+        config.get().messages().send(broadcast, "wanted-survived", Placeholder.unparsed("name", state.targetName()),
+                Placeholder.unparsed("price", reward.toBigInteger().toString()));
+    }
+
+    private boolean isOnline(UUID id) {
+        return onlinePlayers.get().stream().anyMatch(p -> p.getUniqueId().equals(id));
     }
 
     private record Target(UUID id, String name) {
     }
 
     /**
-     * 50% an online player (only when someone is online to roll for), otherwise anyone who has ever
-     * joined; null when neither pool has anyone (a fresh server, or everyone banned).
+     * {@code online-chance} an online player (only when someone is online to roll for), otherwise
+     * anyone who has ever joined; null when neither pool has anyone (a fresh server, or everyone banned).
      */
     private Target pick() {
         List<Player> online = onlinePlayers.get().stream().filter(p -> !p.isBanned()).toList();
-        if (!online.isEmpty() && random.nextBoolean()) {
+        if (!online.isEmpty() && random.nextDouble() < config.get().wantedOnlineChance()) {
             Player chosen = online.get(random.nextInt(online.size()));
             return new Target(chosen.getUniqueId(), chosen.getName());
         }
@@ -158,21 +207,30 @@ public final class WantedBoard implements Listener {
         return new Target(chosen.getUniqueId(), chosen.getName());
     }
 
-    /** Log-normal around {@code wanted.median}, clamped to [{@code wanted.min}, {@code wanted.max}], whole dollars. */
-    private BigDecimal price() {
+    /** Uniform in [1 - spread, 1 + spread]. */
+    static double factor(Random random, double spread) {
+        return 1 + spread * (2 * random.nextDouble() - 1);
+    }
+
+    /** {@code (base + perHour * hours alive) * factor}, rounded to the dollar, never above {@code cap}. */
+    static BigDecimal value(long aliveTicks, double factor, double base, double perHour, long cap) {
+        double raw = (base + perHour * aliveTicks / TICKS_PER_HOUR) * factor;
+        return BigDecimal.valueOf(Math.min(cap, Math.round(raw)));
+    }
+
+    private BigDecimal valueAt(long aliveTicks) {
         MarketConfig cfg = config.get();
-        return price(random, cfg.wantedMedian(), cfg.wantedSigma(), cfg.wantedMin(), cfg.wantedMax());
+        return value(aliveTicks, state.factor(), cfg.wantedBase(), cfg.wantedPerHour(), cfg.wantedCap());
     }
 
-    static BigDecimal price(Random random, double median, double sigma, long min, long max) {
-        double value = median * Math.exp(sigma * random.nextGaussian());
-        long rounded = Math.round(value);
-        return BigDecimal.valueOf(Math.clamp(rounded, min, max));
+    /** The bounty right now, from the target's current time alive. */
+    private BigDecimal currentValue() {
+        return valueAt(aliveTicks.applyAsLong(state.targetId()));
     }
 
-    /** What an old (or never-stamped) head pays: {@code price} times the configured share, rounded to the dollar. */
-    private static BigDecimal oldPrice(BigDecimal price, double oldHeadShare) {
-        return BigDecimal.valueOf(Math.round(price.doubleValue() * oldHeadShare));
+    /** {@code value} times a share (old head, survivor), rounded to the dollar. */
+    private static BigDecimal share(BigDecimal value, double share) {
+        return BigDecimal.valueOf(Math.round(value.doubleValue() * share));
     }
 
     /** Writes the target's head and the WANTED sign, like SignWriter does for a stall's [Sell] signs. */
@@ -237,12 +295,42 @@ public final class WantedBoard implements Listener {
             front.line(2, Component.text("Claimed by"));
             front.line(3, Component.text(truncate(state.claimedByName())));
         } else {
-            BigDecimal old = oldPrice(state.price(), config.get().wantedOldHeadShare());
+            BigDecimal value = currentValue();
+            BigDecimal old = share(value, config.get().wantedOldHeadShare());
             front.line(1, Component.text(truncate(state.targetName())));
-            front.line(2, Component.text(truncate("Fresh: $" + state.price().toBigInteger())));
+            front.line(2, Component.text(truncate("Fresh: $" + value.toBigInteger())));
             front.line(3, Component.text(truncate("Old: $" + old.toBigInteger())));
+            shownValue = value;
         }
         sign.update(true, false);
+    }
+
+    /**
+     * Once a minute: redraws the sign when the live value has moved since it was last drawn. Skips
+     * an unloaded sign chunk rather than loading spawn just to repaint a number nobody is near.
+     */
+    public void tick() {
+        if (state == null || !state.hasTarget() || state.claimed()) {
+            return;
+        }
+        MarketLayout.WantedSpot spot = layout.wantedBoard();
+        World world = plugin.getServer().getWorld(config.get().world());
+        if (spot == null || spot.sign() == null || world == null
+                || !world.isChunkLoaded(spot.sign().x() >> 4, spot.sign().z() >> 4)) {
+            return;
+        }
+        if (shownValue == null || currentValue().compareTo(shownValue) != 0) {
+            writeSign(world, spot.sign());
+        }
+    }
+
+    /** A target who logs in after posting has played, which the survivor reward needs. */
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        if (state != null && state.hasTarget() && !state.played() && event.getPlayer().getUniqueId().equals(state.targetId())) {
+            state = state.withPlayed();
+            save();
+        }
     }
 
     private static String truncate(String text) {
@@ -277,11 +365,17 @@ public final class WantedBoard implements Listener {
      * one of this event's drops, not a separately spawned entity; no {@code ItemSpawnEvent} fallback
      * is needed. MONITOR priority: stamps whatever the final drop list looks like once every other
      * plugin that might edit it (graves, etc.) has had its say.
+     *
+     * <p>The head also gets the time alive this death ended, and a death of the current target is
+     * noted (no survivor reward, and a fresh head with no stamp of its own, a cartel trophy, pays
+     * that life's value). {@code ServerPlayer.die()} resets {@code time_since_death} only after
+     * {@code callPlayerDeathEvent} returns (javap, Paper 26.3), so here it still holds the full life.
      */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerDeath(PlayerDeathEvent event) {
         UUID deadId = event.getEntity().getUniqueId();
         Instant now = clock.get();
+        long streak = aliveTicks.applyAsLong(deadId);
         for (ItemStack drop : event.getDrops()) {
             if (drop.getType() != Material.PLAYER_HEAD || !(drop.getItemMeta() instanceof SkullMeta skull)) {
                 continue;
@@ -290,7 +384,14 @@ public final class WantedBoard implements Listener {
             if (profile == null || !deadId.equals(profile.getId()) || KillStamp.killedAt(drop).isPresent()) {
                 continue;
             }
-            KillStamp.stamp(drop, now);
+            drop.editMeta(meta -> {
+                KillStamp.stamp(meta, now);
+                meta.getPersistentDataContainer().set(aliveKey, PersistentDataType.LONG, streak);
+            });
+        }
+        if (state != null && state.hasTarget() && !state.claimed() && deadId.equals(state.targetId())) {
+            state = state.withDeath(streak);
+            save();
         }
     }
 
@@ -316,7 +417,7 @@ public final class WantedBoard implements Listener {
             return;
         }
         boolean fresh = isFresh(stack);
-        BigDecimal amount = fresh ? state.price() : oldPrice(state.price(), config.get().wantedOldHeadShare());
+        BigDecimal amount = fresh ? valueAt(freshAliveTicks(stack)) : share(currentValue(), config.get().wantedOldHeadShare());
         if (!payout.pay(player, amount.doubleValue())) {
             messages.send(player, "wanted-closed");
             return;
@@ -336,6 +437,15 @@ public final class WantedBoard implements Listener {
             return false;
         }
         return KillStamp.killedAt(stack).map(at -> !at.isBefore(state.postedAt())).orElse(false);
+    }
+
+    /** The life a fresh head's kill ended: its own stamp, else the target's latest death since posting, else now. */
+    private long freshAliveTicks(ItemStack stack) {
+        Long stamped = stack.getItemMeta().getPersistentDataContainer().get(aliveKey, PersistentDataType.LONG);
+        if (stamped != null) {
+            return stamped;
+        }
+        return state.died() ? state.diedStreakTicks() : aliveTicks.applyAsLong(state.targetId());
     }
 
     private static void takeOneHead(Player player, ItemStack stack) {
@@ -370,9 +480,10 @@ public final class WantedBoard implements Listener {
             return List.of(messages.render("today-wanted-claimed", Placeholder.unparsed("name", state.targetName()),
                     Placeholder.unparsed("seller", state.claimedByName())));
         }
-        BigDecimal old = oldPrice(state.price(), config.get().wantedOldHeadShare());
+        BigDecimal value = currentValue();
+        BigDecimal old = share(value, config.get().wantedOldHeadShare());
         return List.of(messages.render("today-wanted-open", Placeholder.unparsed("name", state.targetName()),
-                Placeholder.unparsed("price", state.price().toBigInteger().toString()),
+                Placeholder.unparsed("price", value.toBigInteger().toString()),
                 Placeholder.unparsed("old", old.toBigInteger().toString())));
     }
 
@@ -380,7 +491,7 @@ public final class WantedBoard implements Listener {
     public void broadcastRotated(Audience audience) {
         if (state != null && state.hasTarget()) {
             config.get().messages().send(audience, "wanted-rotated", Placeholder.unparsed("name", state.targetName()),
-                    Placeholder.unparsed("price", state.price().toBigInteger().toString()));
+                    Placeholder.unparsed("price", currentValue().toBigInteger().toString()));
         }
     }
 
@@ -411,11 +522,16 @@ public final class WantedBoard implements Listener {
         boolean cooldown = yaml.getBoolean("cooldown", false);
         UUID targetId = uuid(yaml.getString("target-id"));
         String targetName = yaml.getString("target-name");
-        BigDecimal price = targetId == null ? null : new BigDecimal(yaml.getString("price", "0"));
+        // A file from before the time-alive bounty has a fixed price and no factor: factor 1, and
+        // played true so its target isn't denied a survivor reward that board never tracked.
+        double factor = targetId == null ? 0 : yaml.getDouble("factor", 1.0);
         Instant postedAt = targetId == null ? null : instant(yaml.getString("posted-at"));
+        boolean played = yaml.getBoolean("played", true);
+        Long diedStreakTicks = yaml.isSet("died-streak-ticks") ? yaml.getLong("died-streak-ticks") : null;
         UUID claimedBy = uuid(yaml.getString("claimed-by"));
         String claimedByName = yaml.getString("claimed-by-name");
-        state = new WantedState(day, cooldown, targetId, targetName, price, postedAt, claimedBy, claimedByName);
+        state = new WantedState(day, cooldown, targetId, targetName, factor, postedAt, played, diedStreakTicks,
+                claimedBy, claimedByName);
     }
 
     private static UUID uuid(String value) {
@@ -442,8 +558,12 @@ public final class WantedBoard implements Listener {
             if (state.hasTarget()) {
                 yaml.set("target-id", state.targetId().toString());
                 yaml.set("target-name", state.targetName());
-                yaml.set("price", state.price().toPlainString());
+                yaml.set("factor", state.factor());
                 yaml.set("posted-at", state.postedAt().toString());
+                yaml.set("played", state.played());
+                if (state.died()) {
+                    yaml.set("died-streak-ticks", state.diedStreakTicks());
+                }
             }
             if (state.claimed()) {
                 yaml.set("claimed-by", state.claimedBy().toString());

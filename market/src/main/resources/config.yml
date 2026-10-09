@@ -26,15 +26,21 @@ price-spread: 0.2
 # price rolls by price-spread too.
 heads-per-day: 4
 
-# Player of the Day (the Wanted board): a log-normal price around median, clamped to [min, max],
-# rounded to the whole dollar. A head taken before the bounty was posted, or never stamped at all,
-# pays only old-head-share of that price (a fresh kill always pays in full).
+# Player of the Day (the Wanted board). The bounty grows with the target's play time since their
+# last death: base + per-hour for each hour, times a random factor rolled once per bounty
+# (1 - spread to 1 + spread), rounded to the dollar, never above cap. A fresh kill pays the value of
+# the life it ended; a head taken before the bounty was posted, or never stamped at all, pays
+# old-head-share of today's value. A target who plays and doesn't die before the next bounty gets
+# survivor-share of their value then. online-chance: how often the target is an online player
+# rather than anyone who has ever joined.
 wanted:
-  median: 100
-  sigma: 0.8
-  min: 10
-  max: 1000
+  base: 50
+  per-hour: 25
+  cap: 500
+  spread: 0.1
+  online-chance: 0.8
   old-head-share: 0.75
+  survivor-share: 0.5
 
 # The Homes shop sells huskhomes.max_homes.<n> above the default LuckPerms group's own .3 (Joe,
 # 2026-10-09: everyone starts with 3 homes; this shop sells up to max). Each tier needs its own
@@ -91,7 +97,8 @@ messages:
   wanted-closed: "<red>The board can't pay right now."
   wanted-sold-fresh: "<gold><seller></gold> brought in <gold><name></gold>'s head (fresh kill) for <green>$<price></green>!"
   wanted-sold-old: "<gold><seller></gold> brought in <gold><name></gold>'s head (old head) for <green>$<price></green>!"
-  wanted-rotated: "<red>WANTED: <name>'s head, $<price>, at the board in spawn."
+  wanted-rotated: "<red>WANTED: <name>'s head, $<price> and rising while they stay alive, at the board in spawn."
+  wanted-survived: "<gold><name></gold> survived the bounty and earned <green>$<price></green>!"
   today-wanted-none: " <dark_gray>-</dark_gray> <gray>No bounty today.</gray>"
   today-wanted-resting: " <dark_gray>-</dark_gray> <gray>The board is resting. A new bounty comes tomorrow.</gray>"
   today-wanted-open: " <dark_gray>-</dark_gray> <white><name></white>'s head <gold>Fresh $<price></gold> <gray>/</gray> <gold>Old $<old></gold>"

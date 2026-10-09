@@ -26,11 +26,13 @@ public final class MarketConfig {
     private final int maxItems;
     private final double priceSpread;
     private final int headsPerDay;
-    private final double wantedMedian;
-    private final double wantedSigma;
-    private final long wantedMin;
-    private final long wantedMax;
+    private final double wantedBase;
+    private final double wantedPerHour;
+    private final long wantedCap;
+    private final double wantedSpread;
+    private final double wantedOnlineChance;
     private final double wantedOldHeadShare;
+    private final double wantedSurvivorShare;
     private final Map<Integer, BigDecimal> homePrices;
     private final int maxHomes;
     private final BigDecimal cosmeticsPrice;
@@ -44,11 +46,15 @@ public final class MarketConfig {
         this.maxItems = Math.max(minItems, config.getInt("items-per-stall.max", 3));
         this.priceSpread = Math.clamp(config.getDouble("price-spread", 0.2), 0.0, 0.9);
         this.headsPerDay = Math.max(0, config.getInt("heads-per-day", 5));
-        this.wantedMedian = Math.max(0.01, config.getDouble("wanted.median", 100));
-        this.wantedSigma = Math.max(0.0, config.getDouble("wanted.sigma", 0.8));
-        this.wantedMin = Math.max(1, config.getLong("wanted.min", 10));
-        this.wantedMax = Math.max(wantedMin, config.getLong("wanted.max", 1000));
+        // New key names (cap, not max): live's config.yml still holds the old log-normal block's
+        // wanted.max: 1000, which would silently become the cap if the name were reused.
+        this.wantedBase = Math.max(0.0, config.getDouble("wanted.base", 50));
+        this.wantedPerHour = Math.max(0.0, config.getDouble("wanted.per-hour", 25));
+        this.wantedCap = Math.max(1, config.getLong("wanted.cap", 500));
+        this.wantedSpread = Math.clamp(config.getDouble("wanted.spread", 0.1), 0.0, 0.9);
+        this.wantedOnlineChance = Math.clamp(config.getDouble("wanted.online-chance", 0.8), 0.0, 1.0);
         this.wantedOldHeadShare = Math.clamp(config.getDouble("wanted.old-head-share", 0.75), 0.0, 1.0);
+        this.wantedSurvivorShare = Math.clamp(config.getDouble("wanted.survivor-share", 0.5), 0.0, 1.0);
         this.maxHomes = Math.max(BASE_HOMES, config.getInt("homes.max", 6));
         Map<Integer, BigDecimal> prices = new LinkedHashMap<>();
         for (int n = BASE_HOMES + 1; n <= maxHomes; n++) {
@@ -99,28 +105,41 @@ public final class MarketConfig {
         return headsPerDay;
     }
 
-    /** The Wanted board's price is log-normal: {@code median} dollars at the middle of the curve,
-     * {@code sigma} its spread, clamped to [{@code min}, {@code max}]. */
-    public double wantedMedian() {
-        return wantedMedian;
+    /** The Wanted bounty for a target who just died, before the random factor (Joe, 2026-10-09: $50). */
+    public double wantedBase() {
+        return wantedBase;
     }
 
-    public double wantedSigma() {
-        return wantedSigma;
+    /** What each hour of play time alive adds to the bounty ($25). */
+    public double wantedPerHour() {
+        return wantedPerHour;
     }
 
-    public long wantedMin() {
-        return wantedMin;
+    /** The most a bounty is ever worth, random factor included ($500). */
+    public long wantedCap() {
+        return wantedCap;
     }
 
-    public long wantedMax() {
-        return wantedMax;
+    /** The random factor rolled once per bounty lies in 1 +- spread (0.1). */
+    public double wantedSpread() {
+        return wantedSpread;
+    }
+
+    /** How often the target comes from the online players rather than everyone who ever joined (0.8). */
+    public double wantedOnlineChance() {
+        return wantedOnlineChance;
     }
 
     /** What a head taken before the bounty was posted (or with no kill stamp at all) pays, as a
      * fraction of the full price (Joe, 2026-10-09: 0.75, a fresh kill pays full). */
     public double wantedOldHeadShare() {
         return wantedOldHeadShare;
+    }
+
+    /** What a target who played and didn't die before the board moved on is paid, as a fraction of
+     * the bounty's value then (Joe, 2026-10-09: 0.5). */
+    public double wantedSurvivorShare() {
+        return wantedSurvivorShare;
     }
 
     public Messages messages() {

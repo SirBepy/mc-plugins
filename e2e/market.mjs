@@ -372,10 +372,10 @@ try {
   let wantedTargetName;
   const wantedBotFor = (name) => bots.find((b) => b.username === name);
 
-  // pick() is a coin flip between "an online player" and "everyone who's ever joined" (WantedBoard,
-  // 2026-10-09), and the latter pool only ever holds a player once MockBukkit/Bukkit has seen them
-  // disconnect at least once - neither bot has, this session, so that branch picks nobody ("No
-  // bounty") about half the time. Retry the rotate until it lands on one of our online bots.
+  // pick() takes an online player 80% of the time and otherwise "everyone who's ever joined"
+  // (WantedBoard, wanted.online-chance), and that pool only ever holds a player once Bukkit has seen
+  // them disconnect at least once - neither bot has, this session, so that branch picks nobody ("No
+  // bounty") or a stranger. Retry the rotate until it lands on one of our online bots.
   async function rotateWantedBoard() {
     for (let i = 0; i < 20; i++) {
       await waitFor(async () => /picked new buyers/.test(plain(await rcon.command('market rotate'))), 'market rotate (wanted)', 10_000);
@@ -452,7 +452,38 @@ try {
     await clickSignAt(sellerBot, WANTED_SIGN, 'west');
     await waitForLine(sellerBot, /fresh kill/, 5_000, since);
     const after = await balance(sellerBot.username);
-    assert(Math.abs(after - before - freshPrice) < 0.001, `paid the fresh, full price $${freshPrice} (before $${before}, after $${after})`);
+    // The bounty grows by about $1 every 2.4 minutes the target plays, so it may tick over between
+    // reading the sign and the sale.
+    assert(Math.abs(after - before - freshPrice) <= 1, `paid the fresh, full price $${freshPrice} (before $${before}, after $${after})`);
+  });
+
+  await step('a target who stays alive until the next bounty is paid half its value', async () => {
+    await rotateWantedBoard();
+    const targetBot = wantedBotFor(wantedTargetName);
+    const value = Number((await signLine(WANTED_SIGN, 2)).match(/\$(\d+)/)[1]);
+    const before = await balance(wantedTargetName);
+    const since = targetBot.lines.length;
+    await rcon.command('minecraft:time add 24000');
+    const line = await waitForLine(targetBot, /survived the bounty and earned \$\d+/, 20_000, since);
+    const earned = Number(line.match(/earned \$(\d+)/)[1]);
+    assert(Math.abs(earned - Math.round(value / 2)) <= 1, `earned half the $${value} bounty (got $${earned})`);
+    const after = await balance(wantedTargetName);
+    assert(Math.abs(after - before - earned) < 0.001, `the target was paid $${earned} (before $${before}, after $${after})`);
+  });
+
+  await step('a target who died since the bounty went up gets no survivor reward', async () => {
+    await rotateWantedBoard();
+    const targetBot = wantedBotFor(wantedTargetName);
+    await rcon.command(`minecraft:kill ${wantedTargetName}`);
+    await waitFor(() => targetBot.health > 0, `${wantedTargetName} respawned`, 10_000);
+    const before = await balance(wantedTargetName);
+    const since = targetBot.lines.length;
+    await rcon.command('minecraft:time add 24000');
+    await waitForLine(targetBot, /spawn market/i, 15_000, since);
+    // The survivor line would come in the same 10 s check as the rotation line; give it a beat.
+    await sleep(1_000);
+    assert(!targetBot.lines.slice(since).some((l) => /survived the bounty/.test(l)), 'no survivor broadcast');
+    assert(Math.abs((await balance(wantedTargetName)) - before) < 0.001, 'nothing paid to a target who died');
   });
 
   await step('the Homes shop sells the 4th home via its own sign and charges its price', async () => {

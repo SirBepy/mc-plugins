@@ -5,6 +5,8 @@ import io.papermc.paper.command.brigadier.Commands;
 import dev.sirbepy.mc.core.econ.VaultEconomy;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.milkbowl.vault.economy.Economy;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.Statistic;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.enchantments.Enchantment;
@@ -18,12 +20,15 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class MarketPlugin extends JavaPlugin {
 
     // Every 10 s: an in-game day is 20 minutes, so the signs change within moments of sunrise.
     private static final long CHECK_TICKS = 20L * 10;
+    // The Wanted sign's live value moves about $1 per 2.4 minutes of play, so a minute is plenty.
+    private static final long WANTED_SIGN_TICKS = 20L * 60;
 
     private final AtomicReference<MarketConfig> config = new AtomicReference<>();
     private Market market;
@@ -59,7 +64,7 @@ public final class MarketPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(headsStall, this);
         wantedBoard = new WantedBoard(this, layout, config::get, this::period, new SecureRandom(), Instant::now,
                 () -> List.copyOf(getServer().getOnlinePlayers()), () -> List.of(getServer().getOfflinePlayers()),
-                this::pay, getServer(), new File(getDataFolder(), "wanted.yml"), getLogger());
+                this::aliveTicks, this::pay, getServer(), new File(getDataFolder(), "wanted.yml"), getLogger());
         getServer().getPluginManager().registerEvents(wantedBoard, this);
         homeShop = new HomeShop(layout, config::get, this::charge, this::balance, this::pay,
                 new ConsoleHomeGrant(getServer()), new File(getDataFolder(), "homes.yml"), getLogger());
@@ -104,6 +109,7 @@ public final class MarketPlugin extends JavaPlugin {
                 headsStall.removeOldNpcs(world);
             }
         }, CHECK_TICKS, CHECK_TICKS);
+        getServer().getScheduler().runTaskTimer(this, wantedBoard::tick, WANTED_SIGN_TICKS, WANTED_SIGN_TICKS);
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             event.registrar().register(Commands.literal("suggested-price")
@@ -153,14 +159,25 @@ public final class MarketPlugin extends JavaPlugin {
         return Command.SINGLE_SUCCESS;
     }
 
-    /** Pays through whatever classic Vault Economy is registered (VaultUnlocked on the server), looked up on each sale. */
-    private boolean pay(Player player, double amount) {
+    /** Pays through whatever classic Vault Economy is registered (VaultUnlocked on the server), looked
+     * up on each sale. Offline too: the Wanted board's survivor reward can reach a target who logged off. */
+    private boolean pay(OfflinePlayer player, double amount) {
         Economy economy = VaultEconomy.find(getServer());
         if (economy == null) {
             getLogger().warning("Market: no Vault Economy provider registered; nothing bought.");
             return false;
         }
         return economy.depositPlayer(player, amount).transactionSuccess();
+    }
+
+    /** Play time since the player's last death, in ticks; an offline player's comes from their stats
+     * file. 0 when it can't be read, so a broken file means the floor price, never an error. */
+    private long aliveTicks(UUID id) {
+        try {
+            return getServer().getOfflinePlayer(id).getStatistic(Statistic.TIME_SINCE_DEATH);
+        } catch (RuntimeException e) {
+            return 0;
+        }
     }
 
     /** Charges the Homes/Cosmetics shops' price: false on no economy, a short balance, or a failed withdrawal. */
