@@ -29,11 +29,17 @@ public final class OrbSweep {
         return ticksSinceDeath >= 0 && ticksSinceDeath <= windowTicks;
     }
 
-    /** True when {@code orbLocation} is close enough to the dying dragon's own location to be
-     * swept: the same world, within {@code radius} blocks. */
+    /** True when {@code orbLocation} is close enough to the dying dragon to be swept: the same
+     * world, within {@code radius} blocks measured flat, at any height. The orbs spawn on the
+     * dragon, often 40 blocks up, and fall to the ground below it, so a sphere around the dragon
+     * missed them once they'd dropped (seen in an e2e kill). */
     public static boolean inRange(Location orbLocation, Location deathLocation, double radius) {
-        return orbLocation.getWorld().equals(deathLocation.getWorld())
-                && orbLocation.distanceSquared(deathLocation) <= radius * radius;
+        if (!orbLocation.getWorld().equals(deathLocation.getWorld())) {
+            return false;
+        }
+        double dx = orbLocation.getX() - deathLocation.getX();
+        double dz = orbLocation.getZ() - deathLocation.getZ();
+        return dx * dx + dz * dz <= radius * radius;
     }
 
     /** Every location in {@code orbLocations} that a sweep at {@code ticksSinceDeath} would

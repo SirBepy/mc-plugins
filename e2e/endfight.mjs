@@ -113,6 +113,132 @@ try {
     await waitFor(async () => isBlock(wall.x, wall.y, wall.z, 'minecraft:polished_blackstone_bricks'), 'wall rebuilt', 30_000);
     assert(/Built: true/.test(plain(await rcon.command('endfight status'))), 'status says built again');
   });
+
+  // The fight itself, on a dragon of the suite's own (summoned over the portal, so a rerun never
+  // depends on the End's natural dragon still being alive).
+  const fighter = bots[0];
+  const dragon = '@e[type=minecraft:ender_dragon,tag=ef_e2e,limit=1]';
+  const cultAlive = async () => Number(plain(await rcon.command('endfight cult status')).match(/Cult alive: (\d+)/)?.[1]);
+  const dragonNbt = async (path) => plain(await rcon.command(`${END} data get entity ${dragon} ${path}`));
+  const dragonHealth = async () => Number((await dragonNbt('Health')).match(/(-?[\d.]+)f?\s*$/)?.[1]);
+  async function hurtDragon(amount) {
+    await rcon.command(`${END} damage ${dragon} ${amount} minecraft:player_attack by ${GRIEFER}`);
+    // the dragon shrugs off hits for half a second after each one
+    await sleep(700);
+  }
+
+  const tierStatus = async () => plain(await rcon.command('endfight tier status'));
+  const firstKill = async () => /first kill ever: true/.test(await tierStatus());
+  const healthByTier = { Fledgeling: 250, Powerful: 350, Cruel: 500, Immortal: 750, Ferocious: 850, Primordial: 1000, Ascended: 1250 };
+
+  await step('the altar by the portal opens the tier menu and sets the next dragon', async () => {
+    await rcon.command(`${END} minecraft:tp ${GRIEFER} 0.5 ${surfaceY + 1} -6.5`);
+    await sleep(1_500);
+    const altar = fighter.blockAt(new Vec3(0, surfaceY + 1, -9));
+    assert(altar?.name === 'lodestone', `the altar's lodestone is there (got ${altar?.name})`);
+    const opened = new Promise((resolve) => fighter.once('windowOpen', resolve));
+    await fighter.activateBlock(altar);
+    const menu = await Promise.race([opened, sleep(5_000).then(() => null)]);
+    assert(menu, 'right-clicking the altar opens a menu');
+    assert(/Dragon Altar/.test(JSON.stringify(menu.title)), `the menu is the Dragon Altar (${JSON.stringify(menu.title)})`);
+    if (await firstKill()) {
+      // the server's first dragon is always Ferocious; the menu can't change it
+      await fighter.clickWindow(12, 0, 0);
+      await sleep(500);
+      assert(/Next: Ferocious|current fight: Ferocious/.test(await tierStatus()), 'first kill stays Ferocious');
+    } else {
+      await fighter.clickWindow(12, 0, 0); // Cruel
+      await waitFor(async () => /Next: Cruel/.test(await tierStatus()), 'the next dragon is Cruel', 5_000);
+    }
+    fighter.closeWindow(menu);
+  });
+
+  await step('guards take every post once a dragon is alive and a player is near', async () => {
+    await rcon.command(`${END} minecraft:kill @e[type=minecraft:ender_dragon]`);
+    await rcon.command('endfight cult clear');
+    await rcon.command(`${END} summon minecraft:ender_dragon 0 100 0 {DragonPhase:0,Tags:["ef_e2e"]}`);
+    await rcon.command(`${END} minecraft:tp ${GRIEFER} 0.5 ${surfaceY + 1} 0.5`);
+    const posts = Number(plain(await rcon.command('endfight status')).match(/guard posts: (\d+)/)?.[1]);
+    await waitFor(async () => (await cultAlive()) >= posts, `at least ${posts} cultists (one per post)`, 20_000);
+  });
+
+  await step("the new dragon gets its tier's health", async () => {
+    const tier = (await tierStatus()).match(/current fight: (\w+)/)?.[1];
+    const expected = healthByTier[tier];
+    assert(expected, `a known tier is locked for this fight (${await tierStatus()})`);
+    const maxHealth = async () => Number(plain(await rcon.command(`${END} attribute ${dragon} minecraft:max_health get`)).match(/([\d.]+)\s*$/)?.[1]);
+    await waitFor(async () => (await maxHealth()) === expected, `the dragon's max health is ${expected} (${tier})`, 10_000);
+  });
+
+  await step('the dragon cannot start landing while a pillar crystal survives, and can once they are gone', async () => {
+    // Fresh crystals on every pillar top, where vanilla puts them, so a rerun starts like a real fight.
+    // Back to circling first: with no crystals left from the last run the dragon may already be
+    // landing, and asking for the phase it is already in fires no phase change at all.
+    await rcon.command(`${END} data merge entity ${dragon} {DragonPhase:0}`);
+    await rcon.command(`${END} minecraft:kill @e[type=minecraft:end_crystal]`);
+    for (const p of pillars()) {
+      await rcon.command(`${END} summon minecraft:end_crystal ${p.cx}.5 ${p.topY + 1} ${p.cz}.5`);
+    }
+    await sleep(1_000);
+    const crystals = plain(await rcon.command(`${END} execute if entity @e[type=minecraft:end_crystal]`));
+    assert(/Count: 10\b/.test(crystals), `all 10 pillar crystals stand before the landing test (${crystals.trim()})`);
+    await rcon.command(`${END} data merge entity ${dragon} {DragonPhase:2}`);
+    await sleep(500);
+    assert(!/: [23]\s*$/.test(await dragonNbt('DragonPhase')), `the landing approach was refused (${await dragonNbt('DragonPhase')})`);
+    await rcon.command(`${END} minecraft:kill @e[type=minecraft:end_crystal]`);
+    await sleep(500);
+    await rcon.command(`${END} data merge entity ${dragon} {DragonPhase:2}`);
+    await sleep(500);
+    assert(/: [23]\s*$/.test(await dragonNbt('DragonPhase')), `with no crystals left it may land (${await dragonNbt('DragonPhase')})`);
+    await rcon.command(`${END} data merge entity ${dragon} {DragonPhase:0}`);
+  });
+
+  await step('dropping below 75% health sends a wave out of the gates', async () => {
+    const before = await cultAlive();
+    const max = await dragonHealth();
+    for (let i = 0; i < 40 && (await dragonHealth()) > max * 0.7; i++) {
+      await hurtDragon(15);
+    }
+    assert((await dragonHealth()) <= max * 0.75, `the dragon is below 75% (${await dragonHealth()} of ${max})`);
+    await waitFor(async () => (await cultAlive()) > before, `more cultists than the ${before} guards`, 10_000);
+    assert(/crossed: \[[^\]]*0/.test(plain(await rcon.command('endfight cult status'))), 'the 75% threshold is recorded');
+  });
+
+  await step('the cult dies with the dragon, and its fighter gets XP and the reward', async () => {
+    const levels = async () => Number(plain(await rcon.command(`minecraft:xp query ${GRIEFER} levels`)).match(/(\d+) experience levels?/)?.[1]);
+    // Leftover orbs would soak up the dragon's: vanilla merges new XP into an orb already lying there.
+    await rcon.command(`${END} minecraft:kill @e[type=minecraft:experience_orb]`);
+    await rcon.command(`minecraft:xp set ${GRIEFER} 0 levels`);
+    await rcon.command(`minecraft:xp set ${GRIEFER} 0 points`);
+    for (let i = 0; i < 60 && /passed/i.test(await rcon.command(`${END} execute if entity ${dragon}`)) && (await dragonHealth()) > 0; i++) {
+      await hurtDragon(40);
+    }
+    await waitFor(async () => (await cultAlive()) === 0, 'every cultist gone with the dragon', 30_000);
+    // The dying dragon flies to the portal, then its 10 s death animation drops the orbs. The sweep
+    // removes each one within a tick, so a check can rarely catch one mid-tick, but none may still be
+    // there half a second later.
+    let lingering = 0;
+    let seenLast = false;
+    const sightings = [];
+    for (let i = 0; i < 50; i++) {
+      const seen = /passed/i.test(await rcon.command(`${END} execute if entity @e[type=minecraft:experience_orb,x=0,y=80,z=0,distance=..48]`));
+      if (seen) {
+        const orb = '@e[type=minecraft:experience_orb,x=0,y=80,z=0,distance=..48,limit=1]';
+        sightings.push(`t=${i / 2}s ${plain(await rcon.command(`${END} data get entity ${orb} Pos`)).replace(/.*data: /, '')}`);
+        if (seenLast) {
+          lingering++;
+        }
+      }
+      seenLast = seen;
+      await sleep(500);
+    }
+    if (sightings.length) {
+      console.log(`orbs seen: ${sightings.join('; ')}`);
+    }
+    await waitFor(() => fighter.inventory.items().some((item) => item.name === 'black_shulker_box'), 'a Dragon Hoard arrives', 20_000);
+    await waitFor(async () => (await levels()) > 0, 'XP arrives', 10_000);
+    assert(lingering === 0, `no dragon XP orbs stay on the ground (${lingering} lingered)`);
+  });
 } finally {
   await quit(...bots);
   await rcon.command(`${END} forceload remove -64 -64 64 64`).catch(() => {});

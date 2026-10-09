@@ -51,6 +51,14 @@ class OrbSweepTest {
     }
 
     @Test
+    void anOrbThatFellFarBelowTheDragonIsStillInRange() {
+        Location death = new Location(end, 0, 100, 0);
+        Location orb = new Location(end, 5, 60, 3);
+
+        assertTrue(OrbSweep.inRange(orb, death, 24.0));
+    }
+
+    @Test
     void anOrbBeyondRadiusIsNotInRange() {
         Location death = new Location(end, 0, 80, 0);
         Location orb = new Location(end, 30, 80, 0);

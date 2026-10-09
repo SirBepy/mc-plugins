@@ -48,9 +48,13 @@ import java.util.logging.Logger;
  */
 public final class RewardService {
 
-    /** How long the orb sweep keeps running, and how long delivery waits, after a death - plenty
-     * of margin around vanilla's own ~7.75-10s death-animation orb batches. */
-    static final long ORB_WINDOW_TICKS = 240L;
+    /** The orb sweep runs until the dying dragon has left the world, then this much longer, and
+     * delivery waits for it. A dragon dying away from the portal flies there before its death
+     * animation drops the orbs, so they can come well after 12 s (14 s in an e2e kill 48 blocks
+     * out); a fixed 12 s window let them through. */
+    static final long SWEEP_AFTER_REMOVAL_TICKS = 40L;
+    /** Hard stop for the sweep and delivery even if the dragon somehow never leaves. */
+    static final long ORB_WINDOW_TICKS = 1200L;
     static final double ORB_SUPPRESSION_RADIUS = 24.0;
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ISO_LOCAL_DATE;
@@ -110,16 +114,31 @@ public final class RewardService {
         UUID worldId = world.getUID();
         Location deathLocation = dragon.getLocation();
         dying.put(worldId, new Tracking(participants, deathLocation, tier, firstKillEver));
+        plugin.getLogger().info("The dragon died at " + deathLocation.getBlockX() + "," + deathLocation.getBlockY() + ","
+                + deathLocation.getBlockZ() + "; paying " + participants.size() + " fighter(s) at " + tier.displayName()
+                + (firstKillEver ? " (first kill ever)" : "") + " once its death animation ends.");
 
         // Immediately, to clear any orb already lying nearby before the window's own sweeps start.
         sweepOrbs(world, deathLocation);
 
-        BukkitTask sweepTask = plugin.getServer().getScheduler()
-                .runTaskTimer(plugin, () -> sweepOrbs(world, deathLocation), 1L, 1L);
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            sweepTask.cancel();
-            finalizeRewards(worldId);
-        }, ORB_WINDOW_TICKS);
+        // The dying dragon stays in the world through its death animation, flying to the exit
+        // portal and dropping its orbs there, so follow it. It isn't "valid" while dying, but its
+        // location keeps updating, and after it's removed this is where it ended.
+        UUID dragonId = dragon.getUniqueId();
+        long[] ticks = {0};
+        long[] goneFor = {0};
+        BukkitTask[] sweepTask = new BukkitTask[1];
+        sweepTask[0] = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            sweepOrbs(world, dragon.getLocation());
+            ticks[0]++;
+            if (world.getEntity(dragonId) == null) {
+                goneFor[0]++;
+            }
+            if (goneFor[0] > SWEEP_AFTER_REMOVAL_TICKS || !OrbSweep.activeAt(ticks[0], ORB_WINDOW_TICKS)) {
+                sweepTask[0].cancel();
+                finalizeRewards(worldId);
+            }
+        }, 1L, 1L);
     }
 
     private void sweepOrbs(World world, Location deathLocation) {
