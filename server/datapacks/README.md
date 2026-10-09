@@ -164,3 +164,18 @@ three eye-level sign spots, from `market/src/main/resources/stalls.yml`, which t
 too. So a pool or price change needs the generator run and a new Market jar. The signs' first line
 is `<dark_blue>[Sell]`, Essentials' `signFormatSuccess`; command- and plugin-placed signs with it
 pay out on live (balances rose after players used them, 2026-10-05).
+
+## Wither's Wrath, ported 2026-10-09 for Minecraft 26.3
+
+A custom folder datapack: "Wither's Wrath" by ImHer0 (CC-BY-NC-4.0, Modrinth `witherswrath`,
+upstream v1.16), which only ships a 26.2 datapack build. Ported by hand to 26.3's data pack_format
+121 - the 9 fight-tracking advancement files use a trigger-condition shape 26.3 no longer accepts
+on boot. See `withers-wrath/PORTED.md` for the full file list, the license check, and the
+evidence for every change; no gameplay logic was touched, only advancement JSON key renames.
+
+It overhauls the vanilla Wither fight in place (no re-summon): 600 HP, an enchanted never-drop
+armor set, scripted charge/dash/homing-skull attack phases, a midpoint 30-blaze minion burst, and
+a trophy/nether-star reward sequence, all gated by its own in-chat config toggles. Joe picked it on
+2026-10-09 for a harder Wither fight, alongside anti-cheese rules in the tweaks plugin's
+WitherGuard. Its block-destruction toggle (`toggledestruction`) already defaults ON, matching the
+requirement to keep Wither block damage enabled - nothing was changed there.
