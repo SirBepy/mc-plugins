@@ -10,7 +10,8 @@ spiked pauldrons on the shoulders. The chestplate's wings layer is a membrane in
 dark-plum-to-near-black gradient, violet bone/finger lines, a scalloped darker trailing edge and a
 small claw at the shoulder joint.
 
-The six masks below (HUMANOID_MASK, LEGGINGS_MASK, ICON_MASKS) are the alpha silhouettes of the 26.3
+The masks below are the alpha silhouettes of vanilla textures; WINGS_MASK comes from the elytra (see its
+own comment). The other six (HUMANOID_MASK, LEGGINGS_MASK, ICON_MASKS) are the alpha silhouettes of the 26.3
 client jar's own assets/minecraft/textures/entity/equipment/{humanoid,humanoid_leggings}/netherite.png
 and assets/minecraft/textures/item/netherite_{helmet,chestplate,leggings,boots}.png (dumped
 2026-10-09 from the client jar at piston-data.mojang.com, e877b6a0...client.jar, the 26.3 version

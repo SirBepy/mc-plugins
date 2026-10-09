@@ -71,6 +71,8 @@ from pathlib import Path
 from PIL import Image
 
 import dragonscale_armor as da  # reuses the Dragonscale palette, not redefining it
+from dragon_models import FACE_DIMS
+from dragon_models import mirror as mirror_x  # same x=0 mirror; the head frame is centred on x=0 too
 
 ROOT = Path(__file__).resolve().parent
 PACK = ROOT / "claudesmp-items" / "assets" / "claudesmp"
@@ -120,24 +122,6 @@ def texture():
 
 def box(f, t, mat, rot=None):
     return {"from": list(f), "to": list(t), "mat": mat, "rot": rot}
-
-
-def mirror_x(elements):
-    """Mirrors across the head's own centre plane x=0 (left/right horn symmetry)."""
-    out = []
-    for e in elements:
-        f, t = e["from"], e["to"]
-        m = dict(e)
-        m["from"] = [-t[0], f[1], f[2]]
-        m["to"] = [-f[0], t[1], t[2]]
-        if e["rot"]:
-            o, (rx, ry, rz) = e["rot"]
-            m["rot"] = ((-o[0], o[1], o[2]), (rx, -ry, -rz))
-        out.append(m)
-    return out
-
-
-FACE_DIMS = {"north": (0, 1), "south": (0, 1), "east": (2, 1), "west": (2, 1), "up": (0, 2), "down": (0, 2)}
 
 
 def face_uv(mat):
