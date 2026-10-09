@@ -1,0 +1,10 @@
+{
+    "pack": {
+        "description": [
+            { "text": "MasterCutter fixes", "color": "gold" },
+            { "text": "\nDark and pale oak stonecutter recipes", "color": "gray" }
+        ],
+        "min_format": [121, 0],
+        "max_format": [121, 0]
+    }
+}

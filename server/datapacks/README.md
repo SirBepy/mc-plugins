@@ -113,6 +113,28 @@ post-24w `assets/<ns>/items/*.json` item model definition system that the `item_
 needs, unchanged since format 84. Not modified or re-hosted per the task brief; in-client rendering
 was not verified.
 
+## mastercutter-fixes/, generated 2026-10-09
+
+Fixes for third-party packs live in their own small folder pack that overrides the broken files
+under the same ids, never as edits to a downloaded zip (those stay byte-for-byte what the pinned
+URL serves). A pack later in the enabled list wins on a clash: a new folder pack is appended last
+on a world that already has the zip, and on a fresh world `file/mastercutter-fixes` sorts after
+`file/MasterCutter+...` (verified in server/local's level.dat, 2026-10-09).
+
+MasterCutter v1.8.0 (mc26.3), the newest release, ships all 74 `recipe/wood/dark_oak/` and all 74
+`recipe/wood/pale_oak/` recipes as copies of the cherry ones, so dark and pale oak couldn't be cut
+(ImMijo's report, 2026-10-09). Every other wood, and every advancement, is right. This pack holds
+the 148 corrected recipes, generated, never hand-edited: `python
+server/mastercutter-fixes/generate.py` reads the pinned zip (URL from `ServerArtifacts.kt`) and
+writes a fixed copy of each wood recipe that names another wood's items. `python -m unittest
+discover -s server/mastercutter-fixes` checks every wood recipe players get names only its own
+wood, matches its oak twin, and that the committed pack is the generator's output. When MasterCutter
+is bumped, rerun the generator; if it writes nothing, delete this pack.
+
+A datapack reload (`minecraft:reload`) would load it without a restart, but on Paper 26.3 that
+builds a fresh recipe manager and drops every plugin recipe (Merfolk's Kelp Bed), so on live it
+takes effect at the next restart.
+
 ## spawn-market/, generated 2026-10-05
 
 A custom folder datapack holding the spawn square build: a timber-and-tuff taiga market at world
