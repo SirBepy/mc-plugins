@@ -43,9 +43,14 @@ public final class ScatterService implements BallScatterer {
     public static final int NETHER_BEDROCK_ROOF_Y = 127;
     static final double DESTINATION_PREVIEW_Y = 64;
 
-    // The second search round when the set's own ring has no usable structure.
-    private static final double WIDEN_MIN = 0.5;
-    private static final double WIDEN_MAX = 1.5;
+    // The second search round when the set's own ring has no usable structure (Joe, 2026-10-09:
+    // "always prioritize putting it in a structure"). Widening costs nothing extra in main-thread
+    // chunk loads: locateNearestStructure's search in StructurePlacement passes findUnexplored=false,
+    // so it only ever reads already-generated structure data, never generates a chunk; a wider ring
+    // just covers more of what pregen-limit already guarantees is there. The round count itself stays
+    // fixed at two (own ring, then this one), so a scatter still can't hang looking for a structure.
+    private static final double WIDEN_MIN = 0.25;
+    private static final double WIDEN_MAX = 2.0;
 
     /** The annulus a set's ball must land in, in the set's own dimension. Package-private so
      * {@link ScatterFallback} and {@link StructurePlacement} can take one without ScatterService

@@ -18,8 +18,11 @@ import java.util.function.Supplier;
 
 /**
  * The plain placement a ball falls back to when {@link ScatterService#placeInStructure} finds no
- * listed structure for its set, even in the widened ring: the overworld/end scan the highest
- * surface for an accepted material, the nether scans a column for a safe floor/headroom spot.
+ * listed structure for its set, even in the widened ring: the overworld/end scan for an
+ * open-to-the-sky surface with an accepted material (shared with
+ * {@link dev.sirbepy.mc.dragonballs.placed.TownEviction} via {@link OpenSkySurface}: a leaf canopy
+ * or a trunk top is skipped, same as town eviction), the nether scans a column for a safe
+ * floor/headroom spot.
  */
 final class ScatterFallback {
 
@@ -67,26 +70,27 @@ final class ScatterFallback {
                 : material -> SurfaceClassifier.classify(material) == SurfaceKind.SOLID;
         return resolveGroundSurface(ring.world(), ring.centerX(), ring.centerZ(), ring.minRadius(), ring.maxRadius(),
                 ring.pregenLimit(), claims.spots, candidate[0], candidate[1], accept, 0)
-                .thenCompose(xz -> runOnMain(() -> placeAtSurfaceNow(star, ring.world(), (int) Math.floor(xz[0]),
-                        (int) Math.floor(xz[1]), stone, registry, "surface")));
+                .thenCompose(spot -> runOnMain(() -> placer.place(star, ring.world(), spot.getBlockX(),
+                        spot.getBlockY(), spot.getBlockZ(), stone, registry, "surface")));
     }
 
     /**
-     * Resolves (x, z) to a point whose highest block satisfies {@code accept}: loads its chunk, and
-     * if it doesn't, resamples a brand-new random point around the given center (up to
+     * Resolves (x, z) to a resting spot whose column is open to the sky (see {@link OpenSkySurface})
+     * with a floor material {@code accept} allows: loads the chunk, and if the column doesn't
+     * qualify, resamples a brand-new random point around the given center (up to
      * {@code scatter.max-liquid-resamples} tries) before falling back to a shore search outward from
      * the last candidate.
      */
-    private CompletableFuture<double[]> resolveGroundSurface(World world, double centerX, double centerZ,
+    private CompletableFuture<Location> resolveGroundSurface(World world, double centerX, double centerZ,
                                                                double minRadius, double maxRadius, int pregenLimit,
                                                                List<double[]> avoid, double x, double z,
                                                                Predicate<Material> accept, int attempts) {
         return ScatterService.loadChunkFor(world, x, z).thenCompose(chunk -> {
             int bx = (int) Math.floor(x);
             int bz = (int) Math.floor(z);
-            Material surface = highestSurfaceMaterial(world, bx, bz);
-            if (accept.test(surface) && isWilderness(world, bx, bz)) {
-                return CompletableFuture.completedFuture(new double[]{bx + 0.5, bz + 0.5});
+            Location spot = acceptedSurfaceSpot(world, bx, bz, accept);
+            if (spot != null && isWilderness(world, bx, bz)) {
+                return CompletableFuture.completedFuture(spot);
             }
             DragonBallsConfig cfg = config.get();
             if (attempts + 1 < cfg.maxLiquidResamples()) {
@@ -103,32 +107,45 @@ final class ScatterFallback {
     }
 
     /** Spirals out from a rejected candidate looking for the nearest accepted surface (a "shore"). */
-    private CompletableFuture<double[]> shoreSearch(World world, int bx, int bz, int ringIndex, Predicate<Material> accept) {
+    private CompletableFuture<Location> shoreSearch(World world, int bx, int bz, int ringIndex, Predicate<Material> accept) {
         List<int[]> offsets = ScatterPlanner.spiralOffsets(48);
         if (ringIndex >= offsets.size()) {
-            // Exhausted the search radius; accept the original point rather than looping forever.
-            return CompletableFuture.completedFuture(new double[]{bx + 0.5, bz + 0.5});
+            // Exhausted the search radius; place at the original point rather than looping forever
+            // (desperateSpot still rests the ball one block above the column's surface, even though
+            // this escape valve skips the canopy/material checks the rest of the search applies).
+            return CompletableFuture.completedFuture(desperateSpot(world, bx, bz));
         }
         int[] offset = offsets.get(ringIndex);
         int cx = bx + offset[0];
         int cz = bz + offset[1];
         return ScatterService.loadChunkFor(world, cx, cz).thenCompose(chunk -> {
-            Material surface = highestSurfaceMaterial(world, cx, cz);
-            if (accept.test(surface) && isWilderness(world, cx, cz)) {
-                return CompletableFuture.completedFuture(new double[]{cx + 0.5, cz + 0.5});
+            Location spot = acceptedSurfaceSpot(world, cx, cz, accept);
+            if (spot != null && isWilderness(world, cx, cz)) {
+                return CompletableFuture.completedFuture(spot);
             }
             return shoreSearch(world, bx, bz, ringIndex + 1, accept);
         });
     }
 
-    private Material highestSurfaceMaterial(World world, int x, int z) {
-        int highestY = world.getHighestBlockYAt(x, z, HeightMap.MOTION_BLOCKING_NO_LEAVES);
-        return world.getBlockAt(x, highestY - 1, z).getType();
+    /** The resting spot one block above column (x, z)'s open-to-the-sky floor (see
+     * {@link OpenSkySurface}), if that floor's material is one {@code accept} allows. Null if the
+     * column has a canopy over it, is out of height bounds, or its floor material doesn't qualify.
+     * Package-private so {@code ScatterFallbackTest} can check the placement math directly, without
+     * driving the whole async resample chain. */
+    static Location acceptedSurfaceSpot(World world, int x, int z, Predicate<Material> accept) {
+        OpenSkySurface.Spot spot = OpenSkySurface.find(world, x, z);
+        if (spot == null || !accept.test(spot.floorMaterial())) {
+            return null;
+        }
+        return new Location(world, x + 0.5, spot.floorY() + 1, z + 0.5);
     }
 
-    private void placeAtSurfaceNow(int star, World world, int bx, int bz, boolean stone, BallRegistry registry, String kind) {
+    /** The shore search's last resort: rest the ball one block above whatever the column's own
+     * NO_LEAVES height is, without the canopy or material check (this only runs once the search has
+     * genuinely run out of ring to look at, so placing anyway beats never placing at all). */
+    static Location desperateSpot(World world, int bx, int bz) {
         int y = world.getHighestBlockYAt(bx, bz, HeightMap.MOTION_BLOCKING_NO_LEAVES);
-        placer.place(star, world, bx, y, bz, stone, registry, kind);
+        return new Location(world, bx + 0.5, y + 1, bz + 0.5);
     }
 
     // ---- nether fallback: column scan for a safe floor/headroom spot, not a heightmap ----

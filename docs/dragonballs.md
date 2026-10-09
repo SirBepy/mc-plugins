@@ -39,15 +39,20 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
   instead. The End set
   sleeps (no balls, no radar sales) until the End opens; it scatters the first time the server
   starts with the End open.
-- Every ball sits inside a structure (Joe, 2026-10-08): in a room, on a roof or on a
-  street of a village, tower, manor, ruin, camp or dungeon (vanilla, Terralith, Structory, Structory:
-  Towers, Dungeons and Taverns; never an ocean structure or a mineshaft). Nether balls only land in
+- Every ball sits inside a structure (Joe, 2026-10-08 and 2026-10-09: "always prioritize putting it
+  in a structure", "underwater structures work too"): in a room, on a roof or on a street of a
+  village, tower, manor, ruin, camp, dungeon or sunken wreck (vanilla, Terralith, Structory,
+  Structory: Towers, Dungeons and Taverns; never a mineshaft). Overworld balls include vanilla's
+  underwater structures: ocean ruins, shipwrecks and the ocean monument, where a ball floats
+  submerged in the flooded rooms the same way it floats in air. Nether balls only land in
   structures that come with their own mobs (fortresses, bastions, Incendium's piglin villages,
   castle, sanctum, reactor, quartz kitchen and lab, Dungeons and Taverns' piglin camps, keeps and
   halls); End balls in end cities and Dungeons and Taverns' End castle and lighthouse. The lists are
-  `scatter.structures` in config.yml. Only if no listed structure fits a set's distance ring, even
-  widened, does a ball land on plain ground. Overworld balls scattered before this rule keep their
-  spots until that set's next scatter. No ball ever lands inside a Towny town. Walk up and hit it to pick it up.
+  `scatter.structures` in config.yml. The search widens once before giving up on a structure (a
+  bigger annulus, no extra chunk loads since the search never generates new chunks); only then does
+  a ball land on plain ground, on dry open-to-the-sky ground (never in a cave, under trees or on
+  water). Overworld balls scattered before this rule keep their spots until that set's next scatter.
+  No ball ever lands inside a Towny town. Walk up and hit it to pick it up.
 - A placed ball floats in its block, slowly spinning and bobbing, 3/4 of a block wide and lit even
   in a dark room (Joe, 2026-10-08). Java players see a round 3D ball from the server pack, which is
   required to join since then; Bedrock players see the ball as a head. Placing a ball sets it

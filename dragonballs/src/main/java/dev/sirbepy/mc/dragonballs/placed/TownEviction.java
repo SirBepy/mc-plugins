@@ -5,12 +5,12 @@ import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
 import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import dev.sirbepy.mc.dragonballs.registry.BallState;
 import dev.sirbepy.mc.dragonballs.registry.BallView;
+import dev.sirbepy.mc.dragonballs.scatter.OpenSkySurface;
 import dev.sirbepy.mc.dragonballs.scatter.ScatterService;
 import dev.sirbepy.mc.dragonballs.scatter.ScatterTownyGuard;
 import dev.sirbepy.mc.dragonballs.scatter.SurfaceClassifier;
 import dev.sirbepy.mc.dragonballs.scatter.SurfaceKind;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -154,20 +154,18 @@ public final class TownEviction implements Runnable {
     }
 
     /** On top of the column's highest block, if that's dry solid ground (not water, ice, the void or
-     * a tree) with nothing over it. */
+     * a tree) with nothing over it. The open-to-the-sky check itself is shared with the scatter's
+     * ground fallback; see {@link OpenSkySurface}. */
     private static Location surface(World world, int x, int z) {
-        // NO_LEAVES so a canopy isn't taken for ground; a column under leaves is skipped instead,
-        // since a ball there can't be seen from above and a trunk's top would count as ground.
-        int floorY = world.getHighestBlockYAt(x, z, HeightMap.MOTION_BLOCKING_NO_LEAVES);
-        if (floorY < world.getMinHeight() || floorY + 1 >= world.getMaxHeight()
-                || world.getHighestBlockYAt(x, z, HeightMap.MOTION_BLOCKING) != floorY) {
+        OpenSkySurface.Spot spot = OpenSkySurface.find(world, x, z);
+        if (spot == null) {
             return null;
         }
-        Material floor = world.getBlockAt(x, floorY, z).getType();
+        Material floor = spot.floorMaterial();
         if (!floor.isSolid() || SurfaceClassifier.classify(floor) != SurfaceKind.SOLID) {
             return null;
         }
-        return new Location(world, x, floorY + 1, z);
+        return new Location(world, x, spot.floorY() + 1, z);
     }
 
     /** The empty block nearest {@code y} below the bedrock roof that has an empty block over it and a

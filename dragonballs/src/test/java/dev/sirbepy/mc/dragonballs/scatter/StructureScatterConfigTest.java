@@ -72,4 +72,18 @@ class StructureScatterConfigTest {
         assertFalse(config.structures(BallSet.OVERWORLD).contains("mineshaft"));
         assertTrue(config.structures(BallSet.NETHER).stream().noneMatch(id -> id.startsWith("terralith:")));
     }
+
+    // Joe, 2026-10-09: "underwater structures work too" - ocean ruins, shipwrecks and the monument
+    // join the overworld list; the Nether/End stay "only mob-guarded structures", unchanged.
+    @Test
+    void theBundledOverworldListIncludesUnderwaterStructures() throws Exception {
+        StructureScatterConfig config = new StructureScatterConfig(bundled());
+
+        List<String> overworld = config.structures(BallSet.OVERWORLD);
+        assertTrue(overworld.contains("ocean_ruin_warm"));
+        assertTrue(overworld.contains("ocean_ruin_cold"));
+        assertTrue(overworld.contains("shipwreck"));
+        assertTrue(overworld.contains("shipwreck_beached"));
+        assertTrue(overworld.contains("monument"));
+    }
 }

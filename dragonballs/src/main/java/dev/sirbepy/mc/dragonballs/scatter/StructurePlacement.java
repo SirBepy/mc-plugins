@@ -267,14 +267,12 @@ final class StructurePlacement {
                 new StructureSpots.BlockProbe() {
                     @Override
                     public boolean isOpen(int x, int y, int z) {
-                        Material type = world.getType(x, y, z);
-                        return type == Material.AIR || type == Material.CAVE_AIR;
+                        return isOpenForBall(world.getType(x, y, z));
                     }
 
                     @Override
                     public boolean isFloor(int x, int y, int z) {
-                        Material type = world.getType(x, y, z);
-                        return type.isSolid() && !UNSAFE_FLOORS.contains(type);
+                        return isFloorForBall(world.getType(x, y, z));
                     }
                 });
         Collections.shuffle(spots, random);
@@ -293,5 +291,20 @@ final class StructurePlacement {
      * its own copy rather than calling back into this instance. */
     private boolean isWilderness(World world, int x, int z) {
         return townyGuard.isWilderness(new Location(world, x + 0.5, ScatterService.DESTINATION_PREVIEW_Y, z + 0.5));
+    }
+
+    /** A ball and the headroom above it may go in plain air, or in water (Joe, 2026-10-09:
+     * "underwater structures work too" - ocean ruins and shipwrecks are mostly flooded, with few or
+     * no air pockets, so the ball has to float submerged there like it already floats in air).
+     * Lava stays rejected: a nether structure's lava room is never a sane resting spot. Package-
+     * private and pure (no server) so {@code StructurePlacementTest} can check it directly. */
+    static boolean isOpenForBall(Material type) {
+        return type == Material.AIR || type == Material.CAVE_AIR || type == Material.WATER;
+    }
+
+    /** A solid, non-hazardous block a ball can rest on, whether the structure above it is dry or
+     * flooded. Package-private and pure so {@code StructurePlacementTest} can check it directly. */
+    static boolean isFloorForBall(Material type) {
+        return type.isSolid() && !UNSAFE_FLOORS.contains(type);
     }
 }

@@ -56,10 +56,13 @@ scatter:
   # The End's outer islands, searched 1000-3000 blocks from 0,0 regardless of difficulty tier.
   end-min-distance: 1000
   end-max-distance: 3000
-  # Every ball lands inside a generated structure (Joe, 2026-10-08): in a room, on a roof or on a
-  # street of one of the structures listed below for its set, found with locateNearestStructure around
-  # random points of the set's ring. If none fits the ring, the search repeats once with the ring
-  # widened (half the min radius, 1.5x the max); only then does a ball land on plain ground (logged).
+  # Every ball lands inside a generated structure (Joe, 2026-10-08; 2026-10-09: "always prioritize
+  # putting it in a structure"): in a room, on a roof or on a street of one of the structures listed below for its
+  # set, found with locateNearestStructure around random points of the set's ring. If none fits the
+  # ring, the search repeats once with the ring widened (a quarter of the min radius, 2x the max);
+  # only then does a ball land on plain ground (logged). locateNearestStructure never generates a new
+  # chunk here (its findUnexplored flag is off), so widening costs nothing extra in chunk loads: a
+  # wider ring just searches more of what's already generated inside pregen-limit.
   # A bare id is vanilla; datapack ids carry their namespace. Unknown ids are skipped.
   # World#locateNearestStructure's own search radius around each origin point, in chunks.
   structure-search-radius-chunks: 32
@@ -75,8 +78,14 @@ scatter:
   structure-piece-max-chunks: 16
   structures:
     # Surface buildings and dungeons: vanilla, Terralith, Structory, Structory: Towers, Dungeons and
-    # Taverns. No ocean or underwater structures, no mineshafts.
+    # Taverns, plus vanilla's underwater structures (Joe, 2026-10-09: "underwater structures work
+    # too") - ocean ruins, shipwrecks and the ocean monument. No mineshafts.
     overworld:
+      - ocean_ruin_warm
+      - ocean_ruin_cold
+      - shipwreck
+      - shipwreck_beached
+      - monument
       - village_plains
       - village_desert
       - village_savanna
