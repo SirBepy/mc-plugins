@@ -1,0 +1,10 @@
+name: Classes
+version: ${version}
+main: dev.sirbepy.mc.classes.ClassesPlugin
+api-version: "26.2"
+author: sirbepy
+
+permissions:
+  classes.admin:
+    description: Inspect and repair players' classes (set XP, lift the 7-day change lock, clear a class).
+    default: op

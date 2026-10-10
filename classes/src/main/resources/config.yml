@@ -1,0 +1,13 @@
+# GutGr1nder's RPG classes wish (Overworld Shenron, granted 2026-10-10 17:20 UTC). docs/classes.md
+# has the full terms and every class's numbers.
+
+# Class XP one player can earn per day (all classes together; only the active class earns). Levels
+# 1 -> 25 take 3960 XP, so a player at the cap every day reaches 25 in about two weeks.
+daily-xp-cap: 300
+
+# Whose day the cap resets on: midnight in this zone.
+zone: Europe/Zagreb
+
+# Real days between class changes. The first pick is free, and so is going back to the class you
+# last left with /class leave.
+change-days: 7
