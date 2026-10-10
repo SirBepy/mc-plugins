@@ -1,11 +1,11 @@
 package dev.sirbepy.mc.tweaks.netherwishes;
 
+import dev.sirbepy.mc.core.Messages;
 import dev.sirbepy.mc.tweaks.OwnerArgument;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.FoodProperties;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Tag;
@@ -55,12 +55,14 @@ public final class HeartyFood implements Listener {
 
     private final Plugin plugin;
     private final Supplier<UUID> owner;
+    private final Messages messages;
     /** Player and server tick of their click on a marked cake; the bite's food event follows in the same tick. */
     private final Map<UUID, Integer> cakeClicks = new HashMap<>();
 
-    public HeartyFood(Plugin plugin, Supplier<UUID> owner) {
+    public HeartyFood(Plugin plugin, Supplier<UUID> owner, Messages messages) {
         this.plugin = plugin;
         this.owner = owner;
+        this.messages = messages;
     }
 
     private boolean isOwner(Entity entity) {
@@ -83,8 +85,8 @@ public final class HeartyFood implements Listener {
         ItemStack marked = item.clone();
         marked.editMeta(meta -> {
             meta.getPersistentDataContainer().set(MADE_BY, PersistentDataType.STRING, id.toString());
-            meta.lore(List.of(Component.text("Made by " + (name != null ? name : "a wish") + ": twice as filling",
-                    NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false)));
+            meta.lore(List.of(messages.render("hearty-food-lore", Placeholder.unparsed("maker", name != null ? name : "a wish"))
+                    .decoration(TextDecoration.ITALIC, false)));
         });
         if (food != null) {
             marked.setData(DataComponentTypes.FOOD, FoodProperties.food()

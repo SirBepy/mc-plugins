@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.tweaks.netherwishes;
 
+import dev.sirbepy.mc.tweaks.TweaksTestMessages;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.FoodProperties;
 import org.bukkit.Material;
@@ -47,7 +48,7 @@ class HeartyFoodTest {
         coffie = server.addPlayer("CoffiebagSupreme");
         stranger = server.addPlayer("Someone");
         Plugin plugin = MockBukkit.createMockPlugin();
-        food = new HeartyFood(plugin, coffie::getUniqueId);
+        food = new HeartyFood(plugin, coffie::getUniqueId, TweaksTestMessages.jarDefaults());
         server.getPluginManager().registerEvents(food, plugin);
     }
 
@@ -90,8 +91,8 @@ class HeartyFoodTest {
         assertEquals(plain.saturation() * 2, foodOf(marked).saturation(), 1e-6);
         assertEquals(3, marked.getAmount());
         assertTrue(HeartyFood.isMarked(marked));
-        assertTrue(net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
-                .serialize(marked.lore().getFirst()).contains("CoffiebagSupreme"));
+        assertEquals("Made by CoffiebagSupreme: twice as filling", net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                .serialize(marked.lore().getFirst()), "the configured wording must read exactly as the old hardcoded lore did");
         assertFalse(HeartyFood.isMarked(bread));
     }
 

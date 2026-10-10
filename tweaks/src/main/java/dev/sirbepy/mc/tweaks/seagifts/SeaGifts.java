@@ -1,8 +1,8 @@
 package dev.sirbepy.mc.tweaks.seagifts;
 
 import dev.sirbepy.mc.core.Durations;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import dev.sirbepy.mc.core.Messages;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Server;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -33,12 +33,14 @@ public final class SeaGifts implements Listener {
     private final SeaGiftsStore store;
     private final Supplier<Set<UUID>> owners;
     private final LongSupplier clock;
+    private final Messages messages;
 
-    public SeaGifts(Server server, SeaGiftsStore store, Supplier<Set<UUID>> owners, LongSupplier clock) {
+    public SeaGifts(Server server, SeaGiftsStore store, Supplier<Set<UUID>> owners, LongSupplier clock, Messages messages) {
         this.server = server;
         this.store = store;
         this.owners = owners;
         this.clock = clock;
+        this.messages = messages;
     }
 
     public boolean isOwner(Entity entity) {
@@ -49,18 +51,18 @@ public final class SeaGifts implements Listener {
         if (!isOwner(player)) return;
         SeaGiftsStore.Flip flip = store.flip(player.getUniqueId(), gift, clock.getAsLong());
         if (flip.refused()) {
-            tell(player, gift.displayName() + " was switched less than an hour ago; you can switch it again in "
-                    + Durations.format(flip.remaining()) + ".");
+            messages.send(player, "seagifts-flip-refused", Placeholder.unparsed("gift", gift.displayName()),
+                    Placeholder.unparsed("remaining", Durations.format(flip.remaining())));
             return;
         }
         if (flip.on()) {
             player.addPotionEffect(gift.effect());
-            tell(player, gift.displayName() + " is yours again. You can switch it off in "
-                    + Durations.format(SeaGiftsStore.COOLDOWN) + ".");
+            messages.send(player, "seagifts-flip-on", Placeholder.unparsed("gift", gift.displayName()),
+                    Placeholder.unparsed("cooldown", Durations.format(SeaGiftsStore.COOLDOWN)));
         } else {
             player.removePotionEffect(gift.type());
-            tell(player, gift.displayName() + " is switched off. You can call it back in "
-                    + Durations.format(SeaGiftsStore.COOLDOWN) + ".");
+            messages.send(player, "seagifts-flip-off", Placeholder.unparsed("gift", gift.displayName()),
+                    Placeholder.unparsed("cooldown", Durations.format(SeaGiftsStore.COOLDOWN)));
         }
     }
 
@@ -69,9 +71,14 @@ public final class SeaGifts implements Listener {
         long now = clock.getAsLong();
         for (SeaGift gift : SeaGift.values()) {
             Duration wait = store.wait(player.getUniqueId(), gift, now);
-            tell(player, gift.displayName() + ": " + (store.isOn(player.getUniqueId(), gift) ? "on" : "off")
-                    + (wait.isZero() ? ", switch it with /seagifts " + gift.key()
-                    : ", can be switched again in " + Durations.format(wait)) + ".");
+            String state = store.isOn(player.getUniqueId(), gift) ? "on" : "off";
+            if (wait.isZero()) {
+                messages.send(player, "seagifts-status-ready", Placeholder.unparsed("gift", gift.displayName()),
+                        Placeholder.unparsed("state", state), Placeholder.unparsed("key", gift.key()));
+            } else {
+                messages.send(player, "seagifts-status-cooldown", Placeholder.unparsed("gift", gift.displayName()),
+                        Placeholder.unparsed("state", state), Placeholder.unparsed("wait", Durations.format(wait)));
+            }
         }
     }
 
@@ -102,8 +109,8 @@ public final class SeaGifts implements Listener {
         if (!isOwner(player)) return;
         List<SeaGift> taken = store.switchOffForDeath(player.getUniqueId());
         if (taken.isEmpty()) return;
-        tell(player, "The sea's gifts left you when you died. Call them back with "
-                + String.join(" and ", taken.stream().map(g -> "/seagifts " + g.key()).toList()) + ".");
+        messages.send(player, "seagifts-gifts-left", Placeholder.unparsed("commands",
+                String.join(" and ", taken.stream().map(g -> "/seagifts " + g.key()).toList())));
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -113,9 +120,5 @@ public final class SeaGifts implements Listener {
         SeaGift.ofType(event.getOldEffect().getType())
                 .filter(gift -> store.isOn(event.getEntity().getUniqueId(), gift))
                 .ifPresent(gift -> event.setCancelled(true));
-    }
-
-    private static void tell(Player player, String text) {
-        player.sendMessage(Component.text(text, NamedTextColor.AQUA));
     }
 }

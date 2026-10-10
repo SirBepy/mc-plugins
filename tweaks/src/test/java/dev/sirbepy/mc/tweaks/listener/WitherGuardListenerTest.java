@@ -1,6 +1,8 @@
 package dev.sirbepy.mc.tweaks.listener;
 
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
+import dev.sirbepy.mc.tweaks.TweaksTestMessages;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -47,7 +49,7 @@ class WitherGuardListenerTest {
         server = MockBukkit.mock();
         world = server.addSimpleWorld("world");
         Plugin plugin = MockBukkit.createMockPlugin("Tweaks");
-        listener = new WitherGuardListener(at -> towns.contains(at.toBlockLocation()));
+        listener = new WitherGuardListener(at -> towns.contains(at.toBlockLocation()), TweaksTestMessages.jarDefaults());
         server.getPluginManager().registerEvents(listener, plugin);
     }
 
@@ -113,7 +115,9 @@ class WitherGuardListenerTest {
         PlayerMock far = fighter(new Location(world, 100, 70, 10));
 
         assertTrue(summon(at).isCancelled());
-        assertTrue(near.nextComponentMessage() != null);
+        String text = PlainTextComponentSerializer.plainText().serialize(near.nextComponentMessage());
+        assertEquals("You can't summon the Wither inside a town. Take the fight to the wilderness.", text,
+                "the configured wording must read exactly as the old hardcoded line did");
         assertNull(far.nextComponentMessage());
     }
 

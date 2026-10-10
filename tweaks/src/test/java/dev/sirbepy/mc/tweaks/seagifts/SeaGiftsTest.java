@@ -1,5 +1,7 @@
 package dev.sirbepy.mc.tweaks.seagifts;
 
+import dev.sirbepy.mc.tweaks.TweaksTestMessages;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -50,7 +52,7 @@ class SeaGiftsTest {
         file = dir.resolve("sea-gifts.yml").toFile();
         store = new SeaGiftsStore(file, Logger.getLogger("test"));
         owners.add(owner.getUniqueId());
-        gifts = new SeaGifts(server, store, () -> owners, () -> now);
+        gifts = new SeaGifts(server, store, () -> owners, () -> now, TweaksTestMessages.jarDefaults());
         server.getPluginManager().registerEvents(gifts, MockBukkit.createMockPlugin());
     }
 
@@ -130,6 +132,14 @@ class SeaGiftsTest {
         second.setHealth(0);
         assertFalse(store.isOn(second.getUniqueId(), SeaGift.CONDUIT));
         assertTrue(store.isOn(id(), SeaGift.CONDUIT), "his death takes only his gifts");
+    }
+
+    @Test
+    void flippingOffReadsExactlyAsTheOldHardcodedLineDid() {
+        gifts.tick();
+        gifts.flip(owner, SeaGift.DOLPHIN);
+        String text = PlainTextComponentSerializer.plainText().serialize(owner.nextComponentMessage());
+        assertEquals("Dolphin's Grace is switched off. You can call it back in 1h.", text);
     }
 
     @Test

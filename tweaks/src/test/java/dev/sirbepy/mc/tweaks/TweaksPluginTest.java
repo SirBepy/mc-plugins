@@ -1,5 +1,7 @@
 package dev.sirbepy.mc.tweaks;
 
+import dev.sirbepy.mc.core.Messages;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
@@ -25,6 +27,23 @@ class TweaksPluginTest {
         var stream = getClass().getClassLoader().getResourceAsStream("config.yml");
         config.setDefaults(YamlConfiguration.loadConfiguration(new InputStreamReader(stream, StandardCharsets.UTF_8)));
         return config;
+    }
+
+    /**
+     * Live's plugins/Tweaks/config.yml predates the {@code messages:} section entirely: this proves
+     * {@code TweaksPlugin.onEnable}'s {@code copyDefaults(true)} step, exercised here the same way it
+     * builds its {@code Messages} from a config.yml with no override, renders the jar's text instead of
+     * "[missing message: ...]".
+     */
+    @Test
+    void aServerConfigWithNoMessagesSectionStillRendersTheJarsText() throws Exception {
+        YamlConfiguration config = serverConfig("motd:\n  enabled: true\n");
+        config.options().copyDefaults(true);
+        Messages messages = new Messages(config.getConfigurationSection("messages"));
+
+        String text = PlainTextComponentSerializer.plainText().serialize(messages.render("wither-refusal-town"));
+
+        assertEquals("You can't summon the Wither inside a town. Take the fight to the wilderness.", text);
     }
 
     @Test

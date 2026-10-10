@@ -4,10 +4,12 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import dev.sirbepy.mc.core.Messages;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import dev.sirbepy.mc.tweaks.OwnerArgument;
 import io.papermc.paper.command.brigadier.Commands;
-import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -26,10 +28,12 @@ public final class SeaGiftsCommand {
     private final SeaGifts gifts;
     /** {@code (player, owner)}: makes the player an owner or not; false when he already was / wasn't. */
     private final BiPredicate<UUID, Boolean> setOwner;
+    private final Messages messages;
 
-    public SeaGiftsCommand(SeaGifts gifts, BiPredicate<UUID, Boolean> setOwner) {
+    public SeaGiftsCommand(SeaGifts gifts, BiPredicate<UUID, Boolean> setOwner, Messages messages) {
         this.gifts = gifts;
         this.setOwner = setOwner;
+        this.messages = messages;
     }
 
     public void registerInto(Commands registrar) {
@@ -58,18 +62,19 @@ public final class SeaGiftsCommand {
 
     private int setOwner(CommandContext<CommandSourceStack> c, boolean add) {
         String arg = StringArgumentType.getString(c, "player");
-        UUID uuid = OwnerArgument.resolve(c.getSource().getSender(), arg);
+        UUID uuid = OwnerArgument.resolve(c.getSource().getSender(), arg, messages);
         if (uuid == null) return Command.SINGLE_SUCCESS;
-        String who = arg + " (" + uuid + ")";
+        TagResolver playerArg = Placeholder.unparsed("player", arg);
+        TagResolver uuidArg = Placeholder.unparsed("uuid", uuid.toString());
         if (!setOwner.test(uuid, add)) {
-            c.getSource().getSender().sendMessage(Component.text(
-                    "The sea's gifts " + (add ? "already answer" : "don't answer") + " to " + who + "."));
+            messages.send(c.getSource().getSender(), add ? "seagifts-owner-already-owner" : "seagifts-owner-already-not-owner",
+                    playerArg, uuidArg);
             return Command.SINGLE_SUCCESS;
         }
         // The command tree was sent at join with the old owner list's view of it.
         Bukkit.getOnlinePlayers().forEach(Player::updateCommands);
-        c.getSource().getSender().sendMessage(Component.text(
-                "The sea's gifts " + (add ? "now answer" : "no longer answer") + " to " + who + "."));
+        messages.send(c.getSource().getSender(), add ? "seagifts-owner-now-owner" : "seagifts-owner-no-longer-owner",
+                playerArg, uuidArg);
         return Command.SINGLE_SUCCESS;
     }
 }

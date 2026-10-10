@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.tweaks;
 
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.EntityType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,7 +10,11 @@ import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 import org.mockbukkit.mockbukkit.world.WorldMock;
 
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OwnerArgumentTest {
@@ -43,5 +48,26 @@ class OwnerArgumentTest {
         var zombie = world.spawnEntity(world.getSpawnLocation(), EntityType.ZOMBIE);
 
         assertFalse(OwnerArgument.isOwner(zombie, zombie.getUniqueId()));
+    }
+
+    @Test
+    void aUuidStringResolvesWithoutAnyLookup() {
+        PlayerMock sender = server.addPlayer();
+        UUID id = UUID.randomUUID();
+
+        assertEquals(id, OwnerArgument.resolve(sender, id.toString(), TweaksTestMessages.jarDefaults()));
+        assertNull(sender.nextComponentMessage());
+    }
+
+    @Test
+    void aNameThatNeverJoinedTellsTheSenderWithTheConfiguredWording() {
+        PlayerMock sender = server.addPlayer();
+
+        UUID resolved = OwnerArgument.resolve(sender, "NoSuchPlayer", TweaksTestMessages.jarDefaults());
+
+        assertNull(resolved);
+        String text = PlainTextComponentSerializer.plainText().serialize(sender.nextComponentMessage());
+        assertEquals("NoSuchPlayer has never joined this server.", text,
+                "the configured wording must read exactly as the old hardcoded line did");
     }
 }

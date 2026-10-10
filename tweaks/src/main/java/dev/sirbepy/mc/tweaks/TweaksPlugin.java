@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.tweaks;
 
+import dev.sirbepy.mc.core.Messages;
 import dev.sirbepy.mc.tweaks.listener.DailyMotdListener;
 import dev.sirbepy.mc.tweaks.listener.EarthbreakerListener;
 import dev.sirbepy.mc.tweaks.listener.MinecartSpeedListener;
@@ -42,6 +43,11 @@ public final class TweaksPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        // Live's config.yml predates the messages: section; copyDefaults(true) makes getConfigurationSection
+        // ("messages") see the jar's keys for any the server's file lacks. Nothing saves here, so the file
+        // only gains those keys if an owner command's saveConfig() later writes it.
+        getConfig().options().copyDefaults(true);
+        Messages messages = new Messages(getConfig().getConfigurationSection("messages"));
         getServer().getPluginManager().registerEvents(new MinecartSpeedListener(), this);
         MinecartSpeedListener.applyToLoaded(getServer().getWorlds());
         getServer().getPluginManager().registerEvents(new PollosGunListener(this), this);
@@ -76,7 +82,7 @@ public final class TweaksPlugin extends JavaPlugin {
             Predicate<Location> inTown = getServer().getPluginManager().isPluginEnabled("Towny")
                     ? location -> TownyTowns.inAnyTown(location)
                     : location -> false;
-            WitherGuardListener witherGuard = new WitherGuardListener(inTown);
+            WitherGuardListener witherGuard = new WitherGuardListener(inTown, messages);
             getServer().getPluginManager().registerEvents(witherGuard, this);
             witherGuard.trackLoaded(getServer().getWorlds());
             getServer().getScheduler().runTaskTimer(this, witherGuard::tick, 20L, 20L);
@@ -93,11 +99,11 @@ public final class TweaksPlugin extends JavaPlugin {
         if (getConfig().getBoolean("sea-gifts.enabled", true)) {
             SeaGifts seaGifts = new SeaGifts(getServer(),
                     new SeaGiftsStore(new File(getDataFolder(), "sea-gifts.yml"), getLogger()),
-                    () -> ownersAt(getConfig(), SEA_GIFTS_OWNERS, SEA_GIFTS_OWNER), System::currentTimeMillis);
+                    () -> ownersAt(getConfig(), SEA_GIFTS_OWNERS, SEA_GIFTS_OWNER), System::currentTimeMillis, messages);
             getServer().getPluginManager().registerEvents(seaGifts, this);
             getServer().getScheduler().runTaskTimer(this, seaGifts::tick, 20L, 20L);
             getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
-                    new SeaGiftsCommand(seaGifts, this::setSeaGiftsOwner).registerInto(event.registrar()));
+                    new SeaGiftsCommand(seaGifts, this::setSeaGiftsOwner, messages).registerInto(event.registrar()));
         }
         if (getConfig().getBoolean("nether-wishes.enabled", true)) {
             Supplier<UUID> coffie = () -> ownerAt("nether-wishes.owner");
@@ -105,9 +111,9 @@ public final class TweaksPlugin extends JavaPlugin {
             ZombieTruce truce = new ZombieTruce(getServer(), coffie, System::currentTimeMillis);
             getServer().getPluginManager().registerEvents(truce, this);
             getServer().getScheduler().runTaskTimer(this, truce::tick, 20L, 20L);
-            getServer().getPluginManager().registerEvents(new HeartyFood(this, coffie), this);
+            getServer().getPluginManager().registerEvents(new HeartyFood(this, coffie, messages), this);
             getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
-                    new NetherWishesCommand(owner -> setOwnerAt("nether-wishes.owner", owner)).registerInto(event.registrar()));
+                    new NetherWishesCommand(owner -> setOwnerAt("nether-wishes.owner", owner), messages).registerInto(event.registrar()));
         }
     }
 

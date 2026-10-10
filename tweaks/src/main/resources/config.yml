@@ -72,3 +72,24 @@ nether-wishes:
 # To drop everyone, put `towny-admin-off: []` in the server's file: a missing key reads this list.
 towny-admin-off:
   - a6f30e22-f8d5-4ae8-a69c-2f81662b1950
+
+# Every player-facing line, as MiniMessage. Live's config.yml predates this section; TweaksPlugin
+# merges these in at runtime (copyDefaults) so an old server file still renders them, never a
+# restart's "[missing message: ...]".
+messages:
+  wither-refusal-town: "<red>You can't summon the Wither inside a town. Take the fight to the wilderness.</red>"
+  wither-refusal-nether-roof: "<red>You can't summon the Wither above the Nether roof.</red>"
+  wither-refusal-unbreakable: "<red>You can't summon the Wither this close to bedrock or other blocks it can't break.</red>"
+  owner-not-joined: "<player> has never joined this server."
+  netherwishes-owner-set: "The Nether wishes now answer to <player> (<uuid>)."
+  seagifts-flip-refused: "<aqua><gift> was switched less than an hour ago; you can switch it again in <remaining>.</aqua>"
+  seagifts-flip-on: "<aqua><gift> is yours again. You can switch it off in <cooldown>.</aqua>"
+  seagifts-flip-off: "<aqua><gift> is switched off. You can call it back in <cooldown>.</aqua>"
+  seagifts-status-ready: "<aqua><gift>: <state>, switch it with /seagifts <key>.</aqua>"
+  seagifts-status-cooldown: "<aqua><gift>: <state>, can be switched again in <wait>.</aqua>"
+  seagifts-gifts-left: "<aqua>The sea's gifts left you when you died. Call them back with <commands>.</aqua>"
+  seagifts-owner-already-owner: "The sea's gifts already answer to <player> (<uuid>)."
+  seagifts-owner-already-not-owner: "The sea's gifts don't answer to <player> (<uuid>)."
+  seagifts-owner-now-owner: "The sea's gifts now answer to <player> (<uuid>)."
+  seagifts-owner-no-longer-owner: "The sea's gifts no longer answer to <player> (<uuid>)."
+  hearty-food-lore: "<gold>Made by <maker>: twice as filling</gold>"

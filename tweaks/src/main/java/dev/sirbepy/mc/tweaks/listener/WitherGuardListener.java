@@ -2,8 +2,8 @@ package dev.sirbepy.mc.tweaks.listener;
 
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
+import dev.sirbepy.mc.core.Messages;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -47,14 +47,14 @@ import java.util.function.Predicate;
 public final class WitherGuardListener implements Listener {
 
     public enum Refusal {
-        TOWN("You can't summon the Wither inside a town. Take the fight to the wilderness."),
-        NETHER_ROOF("You can't summon the Wither above the Nether roof."),
-        UNBREAKABLE("You can't summon the Wither this close to bedrock or other blocks it can't break.");
+        TOWN("wither-refusal-town"),
+        NETHER_ROOF("wither-refusal-nether-roof"),
+        UNBREAKABLE("wither-refusal-unbreakable");
 
-        final String message;
+        final String messageKey;
 
-        Refusal(String message) {
-            this.message = message;
+        Refusal(String messageKey) {
+            this.messageKey = messageKey;
         }
     }
 
@@ -75,11 +75,13 @@ public final class WitherGuardListener implements Listener {
     static final double WITHER_HEIGHT = 3.5;
 
     private final Predicate<Location> inTown;
+    private final Messages messages;
     // Loaded Withers and how many checks in a row each has gone without seeing a player.
     private final Map<Wither, Integer> unseen = new HashMap<>();
 
-    public WitherGuardListener(Predicate<Location> inTown) {
+    public WitherGuardListener(Predicate<Location> inTown, Messages messages) {
         this.inTown = inTown;
+        this.messages = messages;
     }
 
     public void trackLoaded(Iterable<World> worlds) {
@@ -107,7 +109,7 @@ public final class WitherGuardListener implements Listener {
         // A cancelled BUILD_WITHER spawn leaves the skulls and soul sand standing: Paper only clears the
         // pattern after addFreshEntity succeeds (WitherSkullBlock.checkSpawn, javap 26.3).
         event.setCancelled(true);
-        Component line = Component.text(refusal.message, NamedTextColor.RED);
+        Component line = messages.render(refusal.messageKey);
         for (Player player : at.getNearbyPlayers(NOTIFY_RANGE)) {
             player.sendMessage(line);
         }
