@@ -4,20 +4,12 @@ import com.destroystokyo.paper.profile.PlayerProfile;
 import dev.sirbepy.mc.core.item.KillStamp;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.Sign;
-import org.bukkit.block.Skull;
-import org.bukkit.block.data.Directional;
-import org.bukkit.block.sign.Side;
-import org.bukkit.block.sign.SignSide;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -217,74 +209,10 @@ public final class WantedBoard implements Listener {
 
     /** Writes the target's head and the WANTED sign, like SignWriter does for a stall's [Sell] signs. */
     public void apply(World world) {
-        MarketLayout.WantedSpot spot = layout.wantedBoard();
-        if (spot == null) {
-            return;
-        }
-        writeHead(world, spot.head());
-        writeSign(world, spot.sign());
-    }
-
-    private void writeHead(World world, Stall.Slot headSpot) {
-        if (headSpot == null) {
-            return;
-        }
-        Block block = world.getBlockAt(headSpot.x(), headSpot.y(), headSpot.z());
-        if (!state.hasTarget()) {
-            // Nothing to show today (nobody qualified, or the board is resting post-sale); same as
-            // SignWriter clearing an unused sell-stall slot.
-            block.setType(Material.AIR, false);
-            return;
-        }
-        if (block.getType() != Material.PLAYER_WALL_HEAD) {
-            block.setType(Material.PLAYER_WALL_HEAD, false);
-        }
-        // The facing must be set on the state's own block data before update(), same as
-        // writeSign/SignWriter: a facing set on the live Block first is overwritten by update()
-        // pushing the state's (still-default) block data back onto the block.
-        Skull skull = (Skull) block.getState();
-        Directional data = (Directional) skull.getBlockData();
-        data.setFacing(headSpot.facing());
-        skull.setBlockData(data);
-        // An offline target may not resolve a skin (no live session-server lookup), which is fine:
-        // the id+name alone is enough for matching a turned-in head, same as a cartel trophy's profile.
-        skull.setPlayerProfile(Bukkit.createProfile(state.targetId(), state.targetName()));
-        skull.update(true, false);
-    }
-
-    private void writeSign(World world, Stall.Slot signSpot) {
-        if (signSpot == null) {
-            return;
-        }
-        Material signBlock = layout.signBlock();
-        Block block = world.getBlockAt(signSpot.x(), signSpot.y(), signSpot.z());
-        if (block.getType() != signBlock) {
-            block.setType(signBlock, false);
-        }
-        Sign sign = (Sign) block.getState();
-        Directional data = (Directional) sign.getBlockData();
-        data.setFacing(signSpot.facing());
-        sign.setBlockData(data);
-
-        SignSide front = sign.getSide(Side.FRONT);
-        front.line(0, Component.text("WANTED", NamedTextColor.RED).decorate(TextDecoration.BOLD));
-        if (!state.hasTarget()) {
-            front.line(1, Component.text(state.cooldown() ? "Next bounty" : "No bounty"));
-            front.line(2, Component.text(state.cooldown() ? "tomorrow" : "today"));
-            front.line(3, Component.empty());
-        } else if (state.claimed()) {
-            front.line(1, Component.text(SignWriter.truncate(state.targetName())));
-            front.line(2, Component.text("Claimed by"));
-            front.line(3, Component.text(SignWriter.truncate(state.claimedByName())));
-        } else {
-            BigDecimal value = currentValue();
-            BigDecimal old = Market.share(value, config.get().wantedOldHeadShare());
-            front.line(1, Component.text(SignWriter.truncate(state.targetName())));
-            front.line(2, Component.text(SignWriter.truncate("Fresh: $" + value.toBigInteger())));
-            front.line(3, Component.text(SignWriter.truncate("Old: $" + old.toBigInteger())));
+        BigDecimal value = WantedSign.apply(world, layout, state, this::currentValue, config.get().wantedOldHeadShare());
+        if (value != null) {
             shownValue = value;
         }
-        sign.update(true, false);
     }
 
     /**
@@ -302,7 +230,11 @@ public final class WantedBoard implements Listener {
             return;
         }
         if (shownValue == null || currentValue().compareTo(shownValue) != 0) {
-            writeSign(world, spot.sign());
+            BigDecimal value = WantedSign.writeSign(world, layout.signBlock(), spot.sign(), state, this::currentValue,
+                    config.get().wantedOldHeadShare());
+            if (value != null) {
+                shownValue = value;
+            }
         }
     }
 
@@ -386,7 +318,8 @@ public final class WantedBoard implements Listener {
             return;
         }
         ItemStack stack = player.getInventory().getItemInMainHand();
-        if (stack.getType() != Material.PLAYER_HEAD || !(stack.getItemMeta() instanceof SkullMeta skull) || !matchesTarget(skull)) {
+        if (stack.getType() != Material.PLAYER_HEAD || !(stack.getItemMeta() instanceof SkullMeta skull)
+                || !WantedSale.matchesTarget(skull, state)) {
             messages.send(player, "wanted-wrong-head", name);
             return;
         }
@@ -394,58 +327,20 @@ public final class WantedBoard implements Listener {
             messages.send(player, "wanted-own-head");
             return;
         }
-        boolean fresh = isFresh(stack);
-        BigDecimal amount = fresh ? valueAt(freshAliveTicks(stack)) : Market.share(currentValue(), config.get().wantedOldHeadShare());
+        boolean fresh = WantedSale.isFresh(stack, state);
+        BigDecimal amount = fresh ? valueAt(WantedSale.freshAliveTicks(stack, state, aliveKey, aliveTicks))
+                : Market.share(currentValue(), config.get().wantedOldHeadShare());
         if (!payout.pay(player, amount.doubleValue())) {
             messages.send(player, "wanted-closed");
             return;
         }
-        takeOneHead(player, stack);
+        WantedSale.takeOneHead(player, stack);
         state = state.claim(player.getUniqueId(), player.getName());
         stateStore.save(state);
         applyIfWorldLoaded();
         config.get().messages().send(broadcast, fresh ? "wanted-sold-fresh" : "wanted-sold-old",
                 Placeholder.unparsed("seller", player.getName()), name,
                 Placeholder.unparsed("price", amount.toBigInteger().toString()));
-    }
-
-    /** A kill timestamped at or after the bounty's postedAt; a head with no stamp at all never qualifies. */
-    private boolean isFresh(ItemStack stack) {
-        if (state.postedAt() == null) {
-            return false;
-        }
-        return KillStamp.killedAt(stack).map(at -> !at.isBefore(state.postedAt())).orElse(false);
-    }
-
-    /** The life a fresh head's kill ended: its own stamp, else the target's latest death since posting, else now. */
-    private long freshAliveTicks(ItemStack stack) {
-        Long stamped = stack.getItemMeta().getPersistentDataContainer().get(aliveKey, PersistentDataType.LONG);
-        if (stamped != null) {
-            return stamped;
-        }
-        return state.died() ? state.diedStreakTicks() : aliveTicks.applyAsLong(state.targetId());
-    }
-
-    private static void takeOneHead(Player player, ItemStack stack) {
-        if (stack.getAmount() <= 1) {
-            player.getInventory().setItemInMainHand(null);
-            return;
-        }
-        ItemStack remaining = stack.clone();
-        remaining.setAmount(stack.getAmount() - 1);
-        player.getInventory().setItemInMainHand(remaining);
-    }
-
-    /** Matches the target by profile UUID; only a head with no id at all falls back to the name. */
-    private boolean matchesTarget(SkullMeta skull) {
-        PlayerProfile profile = skull.getPlayerProfile();
-        if (profile == null) {
-            return false;
-        }
-        if (profile.getId() != null) {
-            return profile.getId().equals(state.targetId());
-        }
-        return profile.getName() != null && profile.getName().equalsIgnoreCase(state.targetName());
     }
 
     /** /market's extra line: today's target and whether it has been claimed yet. */
