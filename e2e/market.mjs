@@ -155,6 +155,26 @@ function playerHeadNbt(name, killedAtMillis) {
   return `minecraft:profile={id:[I;${ids}],name:"${name}"}${stamp}`;
 }
 
+// Market watch (commit 2c185b4): /market watch <item> pings a watcher the moment that item lands on
+// a stall (or the Heads stall wants it), once per (player, item, market day). The catalogue it can
+// match is the same two namespaces MarketWatches.catalogue() draws from: every stall's `buys:` ids
+// (already parsed above into STALLS) and every heads.yml mob id (already parsed into HEADS).
+const WATCH_STATE_FILE = fileURLToPath(new URL('../testserver/run-e2e/plugins/Market/state.yml', import.meta.url));
+const WATCH_CATALOGUE = [...new Set([
+  ...[...STALLS.matchAll(/\{item: ([a-z_]+),/g)].map(([, id]) => id),
+  ...[...HEADS.matchAll(/^ {2}([a-z_]+):\s*$/gm)].map(([, id]) => id),
+])];
+/** Today's picks across every stall plus the Heads stall's wanted mobs, straight from state.yml -
+ * the same file Market's own save()/load() read and write, so this never has to guess at timing. */
+function itemsOnBoard() {
+  const text = readFileSync(WATCH_STATE_FILE, 'utf8');
+  const buying = text.split('\nbuying:')[1]?.split(/\n\S/)[0] ?? '';
+  const heads = text.split('\nheads:')[1]?.split(/\n\S/)[0] ?? '';
+  const buyingIds = [...buying.matchAll(/^ {4}([a-z_]+):/gm)].map(([, id]) => id);
+  const headIds = [...heads.matchAll(/^ {2}([a-z_]+):/gm)].map(([, id]) => id);
+  return new Set([...buyingIds, ...headIds]);
+}
+
 try {
   await rcon.command(`minecraft:forceload add ${SIGN.x - 8} ${SIGN.z - 8} ${SIGN.x + 8} ${SIGN.z + 8}`);
   await rcon.command(`minecraft:forceload add ${LECTERN.x} ${LECTERN.z}`);
@@ -556,6 +576,75 @@ try {
     const log = readFileSync(LOG_PATH, 'utf8');
     assert(new RegExp(`Cosmetic request #\\d+ from ${SELLER} \\([0-9a-fA-F-]+\\): diamond - a shiny purple glow`).test(log),
       'the exact log line Player Claude\'s listener tails is in the server log');
+  });
+
+  let watcher = await createBot('MarketWatcher');
+  bots.push(watcher);
+
+  const onBoardBeforeWatch = itemsOnBoard();
+  assert(onBoardBeforeWatch.size > 0, "state.yml lists at least one item on today's market (ran after earlier rotates above)");
+  const WATCH_ON = [...onBoardBeforeWatch][0];
+  const WATCH_OFF = WATCH_CATALOGUE.find((id) => !onBoardBeforeWatch.has(id));
+  assert(WATCH_OFF, "found a catalogue item not currently on today's market to watch");
+
+  await step('/market watch registers an item that is on today\'s market and one that is not', async () => {
+    let since = watcher.lines.length;
+    watcher.chat(`/market watch ${WATCH_ON}`);
+    await waitForLine(watcher, new RegExp(`Watching ${WATCH_ON}\\.`), 5_000, since);
+    since = watcher.lines.length;
+    watcher.chat(`/market watch ${WATCH_OFF}`);
+    await waitForLine(watcher, new RegExp(`Watching ${WATCH_OFF}\\.`), 5_000, since);
+  });
+
+  let pinged = [];
+  await step('market rotate pings the watcher exactly once per watched item it just put on a stall', async () => {
+    for (let i = 0; i < 30 && pinged.length === 0; i++) {
+      const since = watcher.lines.length;
+      await waitFor(async () => /picked new buyers/.test(plain(await rcon.command('market rotate'))), 'market rotate (watch)', 10_000);
+      await sleep(500); // notifyRotate's messages.send land in chat right after the command replies
+      const nowOn = itemsOnBoard();
+      const present = [WATCH_ON, WATCH_OFF].filter((id) => nowOn.has(id));
+      if (present.length === 0) continue;
+      const lines = watcher.lines.slice(since).filter((l) => /Market watch:/.test(l));
+      assert(lines.length === present.length,
+        `exactly one Market watch line per item this rotate just picked (picked ${present.join(', ')}, got ${JSON.stringify(lines)})`);
+      pinged = present;
+    }
+    assert(pinged.length > 0, 'no rotation in 30 tries put a watched item on the market');
+    console.log(`  watched item(s) pinged this rotate: ${pinged.join(', ')}`);
+  });
+
+  let watchKeep;
+  await step('/market watch lists both, /market unwatch drops one', async () => {
+    let since = watcher.lines.length;
+    watcher.chat('/market watch');
+    await waitForLine(watcher, new RegExp(`- ${WATCH_ON}$`), 5_000, since);
+    await waitForLine(watcher, new RegExp(`- ${WATCH_OFF}$`), 5_000, since);
+
+    // Drop whichever item was NOT just pinged, so the kept one is the one already marked notified
+    // today - that's what the next step's rejoin check needs to be a meaningful dedup test.
+    watchKeep = pinged[0];
+    const drop = watchKeep === WATCH_ON ? WATCH_OFF : WATCH_ON;
+    since = watcher.lines.length;
+    watcher.chat(`/market unwatch ${drop}`);
+    await waitForLine(watcher, new RegExp(`No longer watching ${drop}\\.`), 5_000, since);
+
+    since = watcher.lines.length;
+    watcher.chat('/market watch');
+    await waitForLine(watcher, new RegExp(`- ${watchKeep}$`), 5_000, since);
+    assert(!watcher.lines.slice(since).some((l) => l.includes(`- ${drop}`)), `${drop} is no longer listed`);
+  });
+
+  await step('rejoining never repeats a ping already sent for the same item on the same market day', async () => {
+    assert(pinged.includes(watchKeep), `${watchKeep} is one of this rotate's pings, so it's already marked notified today`);
+    await quit(watcher);
+    bots.splice(bots.indexOf(watcher), 1);
+    watcher = await createBot('MarketWatcher');
+    bots.push(watcher);
+    const since = watcher.lines.length;
+    await sleep(2_000);
+    assert(!watcher.lines.slice(since).some((l) => /Market watch:/.test(l)),
+      `rejoining pinged again for an item already notified today: ${JSON.stringify(watcher.lines.slice(since))}`);
   });
 
   console.log(`\nMarket e2e: ${results.length} passed`);
