@@ -184,17 +184,6 @@ class BuiltPackTest(unittest.TestCase):
         self.assertEqual((foot["from"][2], foot["to"][2]), (8, 24))
         self.assertEqual(head["faces"]["north"]["texture"], "#head_north")
 
-    def test_kelp_bed_placed_has_no_gap_between_its_legs(self):
-        # ItsLogiks asked for the space under the mattress (y 0..3) to be filled: every point
-        # under the bed is inside a leg or a base element, sampled every half pixel.
-        model = self.json("assets/claudesmp/models/item/kelp_bed_placed.json")
-        low = [e for e in model["elements"] if e["from"][1] == 0 and e["to"][1] >= 3]
-
-        def covered(x, z):
-            return any(e["from"][0] <= x <= e["to"][0] and e["from"][2] <= z <= e["to"][2] for e in low)
-
-        missing = [(x / 2, z / 2) for x in range(2, 31) for z in range(-14, 47) if not covered(x / 2, z / 2)]
-        self.assertEqual(missing, [])
 
 if __name__ == "__main__":
     unittest.main()

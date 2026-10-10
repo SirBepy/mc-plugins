@@ -355,9 +355,9 @@ never seen in a real 26.3 client (see the caveats below).
 
 - `claudesmp:kelp_bed` (flat item icon, `item/generated`) and `claudesmp:kelp_bed_placed` (the 3D
   placed bed, shown by an item display at `item_display_transform` `NONE`): vanilla's own bed model
-  (26.3's `template_bed_head` + `template_bed_foot` elements and UVs) with a dried kelp block filling
-  the gap between the legs, textured with vanilla's green bed recoloured to kelp (kelp-green blanket,
-  sea-foam sheet and pillow, dried-kelp frame) under `textures/item/kelp_bed/` (the items atlas only
+  (26.3's `template_bed_head` + `template_bed_foot` elements and UVs), textured with vanilla's green
+  bed turned to kelp (the blanket pixel for pixel the dried kelp block's side, sea-foam sheet and
+  pillow, the oak frame tinted kelp green) under `textures/item/kelp_bed/` (the items atlas only
   stitches `item/`). Geometry contract the merfolk plugin relies on exactly: 1 block wide (model x
   0..16), 2 blocks long on the Z axis (z -8..24, like a vanilla bed), the floor at y=0 up to y=9
   (vanilla bed mattress height); the head/pillow half is z -8..8, the foot half z 8..24. Since the display transform is

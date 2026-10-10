@@ -14,8 +14,8 @@ NONE). This script owns every pixel/JSON of that look:
      textures -- two small 3D fins per side of the head, worn in the villager's CustomHeadLayer and
      coloured to match each skin (the skins paint the face, gills and hair themselves).
   3. assets/claudesmp/items/kelp_bed.json (flat icon) and kelp_bed_placed.json (the 3D placed bed,
-     item_display_transform NONE: vanilla's bed model with its leg gap filled) + their textures. The
-     placed bed's textures are vanilla's green bed recoloured once into merfolk_skins/kelp_bed/
+     item_display_transform NONE: vanilla's bed model) + their textures. The placed bed's textures
+     are vanilla's green bed with a dried kelp blanket, made once into merfolk_skins/kelp_bed/
      (python merfolk_assets.py --bed-from <26.3 client jar>) and copied from there.
 
 ----------------------------------------------------------------------------------------------------
@@ -303,33 +303,34 @@ BED_TEX_DIR = PACK / "textures" / "item" / "kelp_bed"
 BED_SKINS = SKINS / "kelp_bed"
 
 # The placed bed is vanilla's own bed (26.3 draws beds from the block models template_bed_head and
-# template_bed_foot), recoloured: kelp-green blanket, sea-foam sheet and pillow, dried-kelp frame.
-# Each pair is (our texture, the vanilla 26.3 texture it is recoloured from).
+# template_bed_foot) turned to kelp: every blanket pixel swapped for the dried kelp block's pixel at
+# the same spot, the sheet and pillow pale sea-foam, the oak frame tinted kelp green. Each pair is
+# (our texture, the vanilla 26.3 texture it is made from).
 BED_TEXTURES = {
     "head_up": "green_bed_head_up", "head_east": "green_bed_head_east",
     "head_west": "green_bed_head_west", "head_north": "bed_head_north",
     "foot_up": "green_bed_foot_up", "foot_east": "green_bed_foot_east",
     "foot_west": "green_bed_foot_west", "foot_south": "green_bed_foot_south",
-    "down": "bed_down", "base": "dried_kelp_side",
+    "down": "bed_down",
 }
 
 
-def recolour_bed_pixel(rgba):
-    """Vanilla green bed -> Kelp Bed: the green blanket turns a bluer kelp green, the white sheet
-    and pillow pale sea-foam, the oak frame (and bed underside) dark dried kelp."""
-    r, g, b, a = rgba
-    if a == 0:
-        return rgba
-    h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
-    if s < 0.15 and v > 0.55:  # sheet and pillow
-        out = (v * 0.80, v * 0.97, v * 0.93)
-    elif 0.05 <= h <= 0.13:  # oak frame, legs, underside
-        out = colorsys.hsv_to_rgb(0.25, 0.42, v * 0.40)
-    elif 0.18 <= h <= 0.30 and s > 0.5:  # green blanket
-        out = colorsys.hsv_to_rgb(0.29, s * 0.85, min(1.0, v * 1.12))
-    else:
-        return rgba
-    return tuple(round(c * 255) for c in out) + (a,)
+def recolour_bed(img, dried_kelp):
+    """Vanilla green bed texture -> Kelp Bed: the green blanket becomes dried kelp block, the white
+    sheet and pillow pale sea-foam, the oak frame, legs and underside a greenish wood."""
+    px, kelp = img.load(), dried_kelp.load()
+    for y in range(img.height):
+        for x in range(img.width):
+            r, g, b, a = px[x, y]
+            if a == 0:
+                continue
+            h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+            if s < 0.15 and v > 0.55:  # sheet and pillow
+                px[x, y] = tuple(round(c * 255) for c in (v * 0.80, v * 0.97, v * 0.93)) + (a,)
+            elif 0.05 <= h <= 0.13:  # oak: same shading, hue turned to kelp green
+                px[x, y] = tuple(round(c * 255) for c in colorsys.hsv_to_rgb(0.20, s * 0.85, v * 0.80)) + (a,)
+            elif 0.18 <= h <= 0.30 and s > 0.5:  # blanket
+                px[x, y] = kelp[x, y]
 
 
 def recolour_vanilla_bed(client_jar):
@@ -337,14 +338,12 @@ def recolour_vanilla_bed(client_jar):
     (python merfolk_assets.py --bed-from <client.jar>); main() only copies the results."""
     BED_SKINS.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(client_jar) as jar:
+        def block(name):
+            return Image.open(io.BytesIO(jar.read(f"assets/minecraft/textures/block/{name}.png"))).convert("RGBA")
+
         for name, vanilla in BED_TEXTURES.items():
-            img = Image.open(io.BytesIO(jar.read(f"assets/minecraft/textures/block/{vanilla}.png"))).convert("RGBA")
-            # dried_kelp_side is kelp already; recolouring would turn its twine into a sea-foam line.
-            if name != "base":
-                px = img.load()
-                for y in range(img.height):
-                    for x in range(img.width):
-                        px[x, y] = recolour_bed_pixel(px[x, y])
+            img = block(vanilla)
+            recolour_bed(img, block("dried_kelp_side"))
             img.save(BED_SKINS / f"{name}.png")
             print(f"wrote {BED_SKINS / name}.png from {vanilla}")
 
@@ -359,8 +358,7 @@ def bed_face(uv, texture):
 # the world-block-local coordinates once the engine's own -0.5 recentring runs (ItemDisplayRenderer:
 # translate(-0.5,-0.5,-0.5) then the entity's own yaw/position), so no display block is written here.
 # The elements are template_bed_head (shifted z -8) and template_bed_foot (z +8, where red_bed.json
-# puts it), face UVs copied, cullface dropped (an item display has no neighbours to cull against),
-# plus one dried-kelp block filling the 3 px gap between the legs.
+# puts it), face UVs copied, cullface dropped (an item display has no neighbours to cull against).
 def kelp_bed_elements():
     head = [
         ((0, 3, -8), (16, 9, 8), {
@@ -390,26 +388,22 @@ def kelp_bed_elements():
             "south": ((13, 13, 16, 16), "foot_south"), "west": ((10, 13, 13, 16), "foot_south"),
             "east": ((0, 13, 3, 16), "foot_east")}),
     ]
-    # Inset 1 px from the bed's sides so the legs still read as legs at the corners; two halves so
-    # each long side maps the 16 px dried-kelp texture without stretching.
-    base = []
-    for z0, z1, end in ((-7, 8, "north"), (8, 23, "south")):
-        base.append(((1, 0, z0), (15, 3, z1), {
-            "down": ((1, 1, 15, 16), "down"), end: ((1, 0, 15, 3), "base"),
-            "west": ((0.5, 0, 15.5, 3), "base"), "east": ((0.5, 0, 15.5, 3), "base")}))
-    return head + foot + base
+    return head + foot
 
 
 def build_bed(elements):
     out = []
-    for i, (f, t, faces) in enumerate(elements):
+    for i, (f, t, faces, *rotation) in enumerate(elements):
         for v in list(f) + list(t):
             if v < -16 or v > 32:
                 raise SystemExit(f"kelp_bed_placed element {i} {f}..{t} leaves the -16..32 range")
-        out.append({"from": list(f), "to": list(t),
-                    "faces": {face: bed_face(uv, tex) for face, (uv, tex) in faces.items()}})
+        element = {"from": list(f), "to": list(t),
+                   "faces": {face: bed_face(uv, tex) for face, (uv, tex) in faces.items()}}
+        if rotation:
+            element["rotation"] = rotation[0]
+        out.append(element)
     textures = {name: f"claudesmp:item/kelp_bed/{name}" for name in BED_TEXTURES}
-    textures["particle"] = textures["base"]
+    textures["particle"] = textures["head_east"]
     return {"textures": textures, "elements": out}
 
 

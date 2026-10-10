@@ -9,8 +9,7 @@
     "foot_west": "claudesmp:item/kelp_bed/foot_west",
     "foot_south": "claudesmp:item/kelp_bed/foot_south",
     "down": "claudesmp:item/kelp_bed/down",
-    "base": "claudesmp:item/kelp_bed/base",
-    "particle": "claudesmp:item/kelp_bed/base"
+    "particle": "claudesmp:item/kelp_bed/head_east"
   },
   "elements": [
     {
@@ -364,106 +363,6 @@
             16
           ],
           "texture": "#foot_east"
-        }
-      }
-    },
-    {
-      "from": [
-        1,
-        0,
-        -7
-      ],
-      "to": [
-        15,
-        3,
-        8
-      ],
-      "faces": {
-        "down": {
-          "uv": [
-            1,
-            1,
-            15,
-            16
-          ],
-          "texture": "#down"
-        },
-        "north": {
-          "uv": [
-            1,
-            0,
-            15,
-            3
-          ],
-          "texture": "#base"
-        },
-        "west": {
-          "uv": [
-            0.5,
-            0,
-            15.5,
-            3
-          ],
-          "texture": "#base"
-        },
-        "east": {
-          "uv": [
-            0.5,
-            0,
-            15.5,
-            3
-          ],
-          "texture": "#base"
-        }
-      }
-    },
-    {
-      "from": [
-        1,
-        0,
-        8
-      ],
-      "to": [
-        15,
-        3,
-        23
-      ],
-      "faces": {
-        "down": {
-          "uv": [
-            1,
-            1,
-            15,
-            16
-          ],
-          "texture": "#down"
-        },
-        "south": {
-          "uv": [
-            1,
-            0,
-            15,
-            3
-          ],
-          "texture": "#base"
-        },
-        "west": {
-          "uv": [
-            0.5,
-            0,
-            15.5,
-            3
-          ],
-          "texture": "#base"
-        },
-        "east": {
-          "uv": [
-            0.5,
-            0,
-            15.5,
-            3
-          ],
-          "texture": "#base"
         }
       }
     }
