@@ -2,13 +2,28 @@
 // Pure parsing and state-file logic only; nothing here talks to the panel or needs secrets.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync, appendFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync, appendFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   appendEvents, daemonHealth, ensureStateDir, formatEvent, freshWishes, isClaudeDoorbell,
-  newInboxEntries, parseConsoleLine, takeNewEvents, wishFromConsole, wishFromLogLine,
+  newInboxEntries, parseConsoleLine, readJson, takeNewEvents, wishFromConsole, wishFromLogLine, writeJson,
 } from "./player-claude-events.mjs";
+
+test("state files are written whole through a rename, and a broken one still fails loudly", () => {
+  const dir = mkdtempSync(join(tmpdir(), "pc-json-"));
+  try {
+    const file = join(dir, "daemon.json");
+    writeJson(file, { pid: 1, heartbeatAt: "2026-10-10T19:09:00Z" });
+    assert.deepEqual(readJson(file), { pid: 1, heartbeatAt: "2026-10-10T19:09:00Z" });
+    assert.equal(existsSync(file + ".tmp"), false);
+    assert.equal(readJson(join(dir, "missing.json"), "fallback"), "fallback");
+    writeFileSync(file, '{"pid": 1, "heart');
+    assert.throws(() => readJson(file), SyntaxError);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 const UUID = "8c0c13b9-057a-4ac8-aacf-7b6c77f8742b";
 const inboxLine = (player, message) =>

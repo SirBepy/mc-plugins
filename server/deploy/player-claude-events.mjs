@@ -10,7 +10,7 @@
 //   hub-events.read    how many of those lines `wait` already printed
 //   players/<uuid>.md  one notes file per player, the player agents' memory between hub sessions
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const ANSI = /\x1b\[[0-9;?]*[A-Za-z]/g;
@@ -127,12 +127,24 @@ export function daemonHealth(daemonState, now) {
   return { ok: true, connected: daemonState.connected };
 }
 
+// A reader can catch a file mid-write: `wait` died on "Unexpected end of JSON input" reading
+// daemon.json during a heartbeat (2026-10-10 19:09 UTC). Writes go through a rename, and a reader
+// still retries briefly for a daemon that predates that.
 export function readJson(file, fallback = null) {
-  return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : fallback;
+  for (let attempt = 0; ; attempt++) {
+    if (!existsSync(file)) return fallback;
+    try {
+      return JSON.parse(readFileSync(file, "utf8"));
+    } catch (e) {
+      if (!(e instanceof SyntaxError) || attempt >= 4) throw e;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+    }
+  }
 }
 
 export function writeJson(file, value) {
-  writeFileSync(file, JSON.stringify(value));
+  writeFileSync(file + ".tmp", JSON.stringify(value));
+  renameSync(file + ".tmp", file);
 }
 
 export function ensureStateDir(stateDir) {
