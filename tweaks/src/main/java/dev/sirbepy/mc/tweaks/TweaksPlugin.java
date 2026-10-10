@@ -4,7 +4,9 @@ import dev.sirbepy.mc.core.Messages;
 import dev.sirbepy.mc.tweaks.changelog.ChangelogCommand;
 import dev.sirbepy.mc.tweaks.listener.DailyMotdListener;
 import dev.sirbepy.mc.tweaks.listener.EarthbreakerListener;
+import dev.sirbepy.mc.tweaks.listener.LoyaltyTridentListener;
 import dev.sirbepy.mc.tweaks.listener.MinecartSpeedListener;
+import dev.sirbepy.mc.tweaks.listener.PendingTridents;
 import dev.sirbepy.mc.tweaks.listener.PhantomBuffListener;
 import dev.sirbepy.mc.tweaks.listener.PollosGunListener;
 import dev.sirbepy.mc.tweaks.listener.ScytheMasterListener;
@@ -12,7 +14,6 @@ import dev.sirbepy.mc.tweaks.listener.SpawnGuardListener;
 import dev.sirbepy.mc.tweaks.listener.SpawnSafeListener;
 import dev.sirbepy.mc.tweaks.listener.TownyAdminBypass;
 import dev.sirbepy.mc.tweaks.listener.TownyAdminOffListener;
-import dev.sirbepy.mc.tweaks.listener.VoidTridentListener;
 import dev.sirbepy.mc.tweaks.listener.WitherGuardListener;
 import dev.sirbepy.mc.tweaks.netherwishes.AutoReplant;
 import dev.sirbepy.mc.tweaks.netherwishes.HeartyFood;
@@ -40,6 +41,8 @@ public final class TweaksPlugin extends JavaPlugin {
     private static final String SEA_GIFTS_OWNERS = "sea-gifts.owners";
     private static final String SEA_GIFTS_OWNER = "sea-gifts.owner";
     static final String TOWNY_ADMIN_OFF = "towny-admin-off";
+
+    private LoyaltyTridentListener tridents;
 
     @Override
     public void onEnable() {
@@ -75,8 +78,10 @@ public final class TweaksPlugin extends JavaPlugin {
             phantoms.trackLoaded(getServer().getWorlds());
             getServer().getScheduler().runTaskTimer(this, phantoms::tick, 1L, 1L);
         }
+        // The key predates the stray-trident return; kept so live's config.yml needs no edit.
         if (getConfig().getBoolean("void-tridents.enabled", true)) {
-            VoidTridentListener tridents = new VoidTridentListener(getServer());
+            tridents = new LoyaltyTridentListener(getServer(),
+                    new PendingTridents(new File(getDataFolder(), "loyalty-tridents.yml"), getLogger()));
             getServer().getPluginManager().registerEvents(tridents, this);
             getServer().getScheduler().runTaskTimer(this, tridents::tick, 1L, 1L);
         }
@@ -123,6 +128,12 @@ public final class TweaksPlugin extends JavaPlugin {
             getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                     new NetherWishesCommand(owner -> setOwnerAt("nether-wishes.owner", owner), messages).registerInto(event.registrar()));
         }
+    }
+
+    @Override
+    public void onDisable() {
+        // Paper disables plugins before it disconnects and saves players, so owners still online get theirs now.
+        if (tridents != null) tridents.returnAll();
     }
 
     private UUID ownerAt(String path) {

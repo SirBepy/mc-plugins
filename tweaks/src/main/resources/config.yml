@@ -24,9 +24,13 @@ motd:
 phantoms:
   enabled: true
 
-# Bedrock parity (Joe, 2026-10-09): a Loyalty trident thrown into the void flies back to its thrower
-# instead of being deleted; if the void still takes it, the item goes into the owner's inventory
-# (VoidTridentListener). Tridents without Loyalty stay vanilla. Off = vanilla after the next restart.
+# Loyalty tridents always come back (LoyaltyTridentListener). Bedrock parity (Joe, 2026-10-09): one
+# thrown into the void flies back to its thrower instead of being deleted; if the void still takes it,
+# the item goes into the owner's inventory. Strays (Joe, 2026-10-11): one that hasn't come back 3 s
+# after the throw and is out of ticking range, in another world from its owner, about to unload, or
+# owed to an offline or dead owner goes into the owner's inventory (on join or respawn for those two,
+# kept in plugins/Tweaks/loyalty-tridents.yml). Tridents without Loyalty stay vanilla. The key's name
+# predates the strays. Off = vanilla after the next restart.
 void-tridents:
   enabled: true
 

@@ -221,20 +221,30 @@ half its join bandwidth). The Overworld settings live in `server/config/config/p
 (debris, quartz and gold up to y 128), and the End's override turns it off. All three are Paper's own
 recommended lists. Applies from the next restart after the files are uploaded; there is no reload.
 
-## Loyalty tridents come back from the void (Joe, 2026-10-09)
+## Loyalty tridents always come back (Joe, 2026-10-09 and 2026-10-11)
 
-Bedrock parity, Tweaks plugin, `VoidTridentListener` (switch: `void-tridents.enabled` in Tweaks'
-`config.yml`). On Java (26.3, checked in the server jar and on a private e2e server) Loyalty only pulls
-a trident home after it hit something or landed, so one thrown into the void falls until Paper
-deletes it 64 blocks under the world's floor. Now:
+Tweaks plugin, `LoyaltyTridentListener` (switch: `void-tridents.enabled` in Tweaks' `config.yml`; the
+key predates the second half). On Java (26.3, checked in the server jar) Loyalty only pulls a trident
+home after it hit something or landed, only while the trident's chunk is entity-ticking, and only
+towards an owner in the trident's own world. Live's `simulation-distance` is 6, so a trident lodged
+~160 blocks from every player (Joe's Porunga's Trident in the End, 2026-10-10) never came back. Now:
 
-- A thrown Loyalty trident that drops below the world's min height (y 0 in the End) is stopped and
-  marked as having hit, and vanilla Loyalty flies it back to the thrower like any returning trident.
-- If the void still takes one (owner in another world, dead, or the trident was thrown before the
-  last restart), the exact item (name, enchantments, durability, every component) goes straight into
-  the owner's inventory, or at their feet if it is full. A dead owner gets it on respawn, an offline
-  one on joining, unless the server restarts first (kept in memory only).
-- Tridents without Loyalty, and creative throws (the inventory kept the trident), stay vanilla.
+- Void (Bedrock parity): a thrown Loyalty trident that drops below the world's min height (y 0 in
+  the End) is stopped and marked as having hit, and vanilla Loyalty flies it back to the thrower.
+- Strays: a Loyalty trident that hasn't come home 3 s after it entered the world (a throw, its chunk
+  loading, a dimension change) and is out of entity-ticking range, in another world from its owner,
+  or owned by an offline player is removed and its item handed over. So is any whose chunk unloads
+  (`EntitiesUnloadEvent`: Paper saves the entity chunk after that event and skips removed entities,
+  javap of `NewChunkHolder.unloadStage2` / `ChunkEntitySlices.save`, so no copy stays behind). A
+  trident vanilla can bring home itself is left to it. At shutdown every trident still out is handed
+  over (plugins disable before players are saved).
+- Handing over is always the exact item (name, enchantments, durability, every component), into the
+  inventory or at the owner's feet if it is full, with the entity removed first in the same tick.
+- Owner dead: vanilla would drop the trident as an item where it lies (`isAcceptibleReturnOwner`), so
+  the owner's tridents are taken back at death and handed over on respawn. Owner offline: handed over
+  on joining. Both wait in `plugins/Tweaks/loyalty-tridents.yml`, so a restart in between loses nothing.
+- A trident someone else picked up is theirs (vanilla). Tridents without Loyalty, creative throws (the
+  inventory kept the trident) and drowned tridents (no player owner) stay vanilla.
 - Bedrock players behave the same: it all happens on the server. e2e: `e2e/void-tridents.mjs`.
 
 ## The Wither fight (Joe, 2026-10-09)

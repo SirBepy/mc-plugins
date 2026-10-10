@@ -2,13 +2,18 @@ import {
   Rcon, assert, createBot, quit, sleep, waitFor,
 } from './lib.mjs';
 
-// Tweaks' VoidTridentListener (Bedrock parity): a Loyalty trident thrown into the void comes back.
+// Tweaks' LoyaltyTridentListener: Loyalty tridents always come back.
 // 1. A bot on a one-block pillar far out in the End throws a named, enchanted, damaged Loyalty
 //    trident; it drops below y 0 (the End's min height), flies back and lands in the bot's
 //    inventory with every component intact.
 // 2. A Loyalty trident whose owner is in another world can't fly home, so the void discards it and
 //    the exact item goes straight into the owner's inventory.
 // 3. A trident without Loyalty is lost to the void like vanilla.
+// 4. A Loyalty trident lodged in the End while its owner is in the Overworld goes into the owner's
+//    inventory once its 3 s grace is over (vanilla never returns across worlds).
+// 5. A Loyalty trident hovering in a chunk only a forceload keeps ticking is left to vanilla while it
+//    ticks, and handed over once the forceload goes (live's case: ~160 blocks from every player).
+// 6. One whose owner is offline is taken back and handed over when they join again.
 const RUN = String(Math.floor(Math.random() * 10_000)).padStart(4, '0');
 const BOT = `VtBot${RUN}`;
 // In the empty ring between the main island (and its dragon fight) and the outer islands, which
@@ -43,6 +48,28 @@ async function uuidArray(name) {
   return `[I;${match.slice(1).join(',')}]`;
 }
 
+// Out in the same empty ring as the pillar, 25 chunks from it: past every bot's view distance, so
+// only a forceload keeps it loaded and ticking.
+const FX = X;
+const FZ = Z + 400;
+
+// NoGravity and no motion keep it hovering without ever landing, so vanilla Loyalty never starts
+// and only the plugin can bring it back.
+async function summonHovering(owner) {
+  await rcon.command(`${END} summon minecraft:trident ${FX + 0.5} ${Y} ${FZ + 0.5} {Owner:${owner},pickup:1b,NoGravity:1b,`
+    + `item:{id:"minecraft:trident",count:1,components:${NBT_COMPONENTS}},Motion:[0d,0d,0d]}`);
+}
+
+async function hoveringExists() {
+  return /passed/i.test(await rcon.command(`${END} execute if entity @e[type=minecraft:trident,x=${FX},y=${Y},z=${FZ},distance=..8]`));
+}
+
+async function onPillar() {
+  await rcon.command(`${END} minecraft:tp ${BOT} ${X + 0.5} ${Y + 1} ${Z + 0.5}`);
+  await waitFor(() => bot.game.dimension?.includes('the_end')
+    && bot.entity.position.distanceTo({ x: X + 0.5, y: Y + 1, z: Z + 0.5 }) < 2, `${BOT} on the End pillar`);
+}
+
 async function summonFalling(owner, components) {
   await rcon.command(`${END} summon minecraft:trident ${X + 0.5} -10 ${Z + 0.5} {Owner:${owner},pickup:1b,`
     + `item:{id:"minecraft:trident",count:1,components:${components}},Motion:[0d,-1d,0d]}`);
@@ -58,9 +85,7 @@ try {
   await rcon.command(`minecraft:gamemode survival ${BOT}`);
   await rcon.command(`minecraft:effect give ${BOT} minecraft:resistance infinite 255 true`);
   await rcon.command(`minecraft:clear ${BOT}`);
-  await rcon.command(`${END} minecraft:tp ${BOT} ${X + 0.5} ${Y + 1} ${Z + 0.5}`);
-  await waitFor(() => bot.game.dimension?.includes('the_end')
-    && bot.entity.position.distanceTo({ x: X + 0.5, y: Y + 1, z: Z + 0.5 }) < 2, `${BOT} on the End pillar`);
+  await onPillar();
   await bot.waitForChunksToLoad().catch(() => {});
   await sleep(1000);
 
@@ -111,10 +136,48 @@ try {
   await sleep(1000);
   assert(!(await holdsAnyTrident()), 'a trident without Loyalty does not come back');
   console.log('PASS a trident without Loyalty is lost to the void like vanilla');
+
+  // 4. Lodged on the pillar in the End while the owner is in the Overworld.
+  await rcon.command(`minecraft:clear ${BOT}`);
+  const owner = await uuidArray(BOT);
+  await rcon.command(`${END} summon minecraft:trident ${X + 0.5} ${Y + 1.5} ${Z + 0.5} {Owner:${owner},pickup:1b,`
+    + `item:{id:"minecraft:trident",count:1,components:${NBT_COMPONENTS}}}`);
+  await sleep(1000);
+  assert(!(await holdsAnyTrident()), 'vanilla gets the first few seconds');
+  await waitFor(() => holds(COMPONENTS), 'the trident lodged in another world was handed over', 15_000);
+  assert((await tridentY()) === undefined, 'no trident left on the pillar');
+  console.log('PASS a Loyalty trident in another world from its owner goes into their inventory');
+
+  // 5. Hovering in a forceloaded chunk far out: left alone while it ticks, handed over once it can't.
+  await rcon.command(`minecraft:clear ${BOT}`);
+  await onPillar();
+  await rcon.command(`${END} forceload add ${FX} ${FZ}`);
+  await summonHovering(owner);
+  await waitFor(hoveringExists, 'the hovering trident spawned', 5_000);
+  await sleep(5000);
+  assert(await hoveringExists(), 'a ticking trident with its owner in the same world is left to vanilla');
+  assert(!(await holdsAnyTrident()), 'nothing handed over while it ticks');
+  await rcon.command(`${END} forceload remove ${FX} ${FZ}`);
+  await waitFor(() => holds(COMPONENTS), 'the trident was handed over once its chunk stopped ticking', 30_000);
+  console.log("PASS a Loyalty trident out of ticking range goes into its owner's inventory");
+
+  // 6. Owner offline: taken back now, handed over on the next join.
+  await rcon.command(`minecraft:clear ${BOT}`);
+  await rcon.command(`${END} forceload add ${FX} ${FZ}`);
+  await summonHovering(owner);
+  await waitFor(hoveringExists, 'the hovering trident spawned', 5_000);
+  await quit(bot);
+  await waitFor(async () => !(await hoveringExists()), "the offline owner's trident was taken back", 15_000);
+  bot = await createBot(BOT);
+  await waitFor(() => holds(COMPONENTS), 'the trident was handed over on join', 15_000);
+  console.log('PASS an offline owner gets their Loyalty trident when they join');
 } finally {
   await rcon.command(`${END} minecraft:kill @e[type=minecraft:trident,x=${X},y=${Y},z=${Z},distance=..300]`).catch(() => {});
   await quit(bot);
   await rcon.command(`${END} forceload remove ${X - 96} ${Z - 96} ${X + 96} ${Z + 96}`).catch(() => {});
+  await rcon.command(`${END} forceload add ${FX} ${FZ}`).catch(() => {});
+  await rcon.command(`${END} minecraft:kill @e[type=minecraft:trident,x=${FX},y=${Y},z=${FZ},distance=..8]`).catch(() => {});
+  await rcon.command(`${END} forceload remove ${FX} ${FZ}`).catch(() => {});
   rcon.close();
   await sleep(200);
 }
