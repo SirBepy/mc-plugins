@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.tag.listener;
 
+import dev.sirbepy.mc.core.SpawnArea;
 import dev.sirbepy.mc.tag.TagService;
 import dev.sirbepy.mc.tag.logic.Playability;
 import org.bukkit.entity.Entity;
@@ -14,7 +15,8 @@ import org.bukkit.event.entity.EntityDamageEvent;
 /**
  * Detects a valid tag. Runs at LOWEST with cancelled events included, so it sees every hit
  * before anything else (PvP toggles, region protection) can cancel it, and cancels the damage
- * itself on a valid tag so it works even with PvP off.
+ * itself on a valid tag so it works even with PvP off. Nobody is tagged in spawn, and nobody tags
+ * from it (Joe, 2026-10-10: spawn is a safe space, "also no tagging"); Tweaks then cancels the hit.
  */
 public final class TagDamageListener implements Listener {
 
@@ -34,6 +36,9 @@ public final class TagDamageListener implements Listener {
             return;
         }
         if (!Playability.playable(attacker) || !Playability.playable(victim)) {
+            return;
+        }
+        if (SpawnArea.contains(attacker.getLocation()) || SpawnArea.contains(victim.getLocation())) {
             return;
         }
         TagService.TagResult result = service.attemptTag(attacker, victim);

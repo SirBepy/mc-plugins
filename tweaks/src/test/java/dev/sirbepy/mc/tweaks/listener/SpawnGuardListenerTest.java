@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.tweaks.listener;
 
+import dev.sirbepy.mc.core.SpawnArea;
 import org.bukkit.ExplosionResult;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -61,19 +62,19 @@ class SpawnGuardListenerTest {
     }
 
     private Block inside() {
-        return world.getBlockAt(100 + SpawnGuardListener.RADIUS, 64, -200 - SpawnGuardListener.RADIUS);
+        return world.getBlockAt(100 + SpawnArea.RADIUS, 64, -200 - SpawnArea.RADIUS);
     }
 
     private Block outside() {
-        return world.getBlockAt(100 + SpawnGuardListener.RADIUS + 1, 64, -200);
+        return world.getBlockAt(100 + SpawnArea.RADIUS + 1, 64, -200);
     }
 
     @Test
-    void theZoneIsTheVanillaSquareAroundTheMainWorldSpawn() {
-        assertTrue(SpawnGuardListener.insideSpawn(new Location(world, 116, 64, -184)));
-        assertFalse(SpawnGuardListener.insideSpawn(new Location(world, 117, 64, -200)));
-        assertFalse(SpawnGuardListener.insideSpawn(new Location(world, 100, 64, -217)));
-        assertFalse(SpawnGuardListener.insideSpawn(new Location(nether, 100, 64, -200)), "only the overworld spawn");
+    void theZoneIsA48BlockSquareAroundTheMainWorldSpawn() {
+        assertTrue(SpawnArea.contains(new Location(world, 148, 64, -152)));
+        assertFalse(SpawnArea.contains(new Location(world, 149, 64, -200)));
+        assertFalse(SpawnArea.contains(new Location(world, 100, 64, -249)));
+        assertFalse(SpawnArea.contains(new Location(nether, 100, 64, -200)), "only the overworld spawn");
     }
 
     @Test
@@ -90,6 +91,20 @@ class SpawnGuardListenerTest {
         BlockBreakEvent asOp = new BlockBreakEvent(inside(), player);
         guard.onBreak(asOp);
         assertFalse(asOp.isCancelled());
+    }
+
+    @Test
+    void theSpawnBuildPermissionLetsANonOpBuildAndBreakInside() {
+        player.addAttachment(MockBukkit.createMockPlugin(), SpawnGuardListener.BUILD_PERMISSION, true);
+        BlockBreakEvent breaking = new BlockBreakEvent(inside(), player);
+        guard.onBreak(breaking);
+        assertFalse(breaking.isCancelled());
+
+        Block block = inside();
+        BlockPlaceEvent placing = new BlockPlaceEvent(block, block.getState(), block.getRelative(BlockFace.DOWN),
+                new ItemStack(Material.DIRT), player, true, EquipmentSlot.HAND);
+        guard.onPlace(placing);
+        assertFalse(placing.isCancelled());
     }
 
     @Test
@@ -160,16 +175,6 @@ class SpawnGuardListenerTest {
                 EntityDamageEvent.DamageCause.ENTITY_ATTACK, 1.0);
         guard.onArmorStandDamage(allowed);
         assertFalse(allowed.isCancelled());
-    }
-
-    @Test
-    void playersInsideCanStillBeHurt() {
-        PlayerMock victim = server.addPlayer();
-        victim.teleport(inside().getLocation());
-        EntityDamageByEntityEvent hit = new EntityDamageByEntityEvent(player, victim,
-                EntityDamageEvent.DamageCause.ENTITY_ATTACK, 1.0);
-        guard.onArmorStandDamage(hit);
-        assertFalse(hit.isCancelled(), "only armor stands are guarded; PvP is PvPManager's business");
     }
 
     @Test

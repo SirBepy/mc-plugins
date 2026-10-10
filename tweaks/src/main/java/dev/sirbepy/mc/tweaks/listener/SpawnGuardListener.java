@@ -1,8 +1,7 @@
 package dev.sirbepy.mc.tweaks.listener;
 
-import org.bukkit.Bukkit;
+import dev.sirbepy.mc.core.SpawnArea;
 import org.bukkit.Location;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
@@ -27,12 +26,13 @@ import java.util.List;
  * Paper 26.3 vanilla protection swallows every non-op right-click before any plugin event fires, so
  * the spawn radar sign and guide lecterns were dead for regular players. This guards only the
  * destructive side - breaking, placing, buckets, hanging entities, armor stands and explosions - and
- * leaves doors, signs, lecterns, buttons and chests usable. Ops are exempt, as they were in vanilla.
+ * leaves doors, signs, lecterns, buttons and chests usable, across the whole {@link SpawnArea}. Ops
+ * are exempt, as they were in vanilla, and so is anyone with {@value #BUILD_PERMISSION} (Joe,
+ * 2026-10-10: "make it so mijo is able to build/break in the spawn area"; nobody is op on live).
  */
 public final class SpawnGuardListener implements Listener {
 
-    /** The old {@code spawn-protection} value; same square (Chebyshev) shape vanilla uses. */
-    public static final int RADIUS = 16;
+    public static final String BUILD_PERMISSION = "tweaks.spawn.build";
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onBreak(BlockBreakEvent event) {
@@ -90,15 +90,15 @@ public final class SpawnGuardListener implements Listener {
     }
 
     private static void spareSpawnBlocks(List<Block> blocks) {
-        blocks.removeIf(block -> insideSpawn(block.getLocation()));
+        blocks.removeIf(block -> SpawnArea.contains(block.getLocation()));
     }
 
     private static boolean isGuarded(Player player, Location location) {
-        return player != null && !player.isOp() && insideSpawn(location);
+        return player != null && !player.isOp() && !player.hasPermission(BUILD_PERMISSION) && SpawnArea.contains(location);
     }
 
     /** The player who did it, directly or through an arrow/trident they shot; null for anything else. */
-    private static Player playerBehind(Entity entity) {
+    static Player playerBehind(Entity entity) {
         if (entity instanceof Player player) {
             return player;
         }
@@ -106,16 +106,5 @@ public final class SpawnGuardListener implements Listener {
             return shooter;
         }
         return null;
-    }
-
-    /** Within {@link #RADIUS} of the main world's spawn; vanilla only ever protected the overworld. */
-    static boolean insideSpawn(Location location) {
-        World world = location.getWorld();
-        if (world == null || !world.equals(Bukkit.getWorlds().get(0))) {
-            return false;
-        }
-        Location spawn = world.getSpawnLocation();
-        return Math.max(Math.abs(location.getBlockX() - spawn.getBlockX()),
-                Math.abs(location.getBlockZ() - spawn.getBlockZ())) <= RADIUS;
     }
 }

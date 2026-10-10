@@ -7,6 +7,7 @@ import dev.sirbepy.mc.tweaks.listener.PhantomBuffListener;
 import dev.sirbepy.mc.tweaks.listener.PollosGunListener;
 import dev.sirbepy.mc.tweaks.listener.ScytheMasterListener;
 import dev.sirbepy.mc.tweaks.listener.SpawnGuardListener;
+import dev.sirbepy.mc.tweaks.listener.SpawnSafeListener;
 import dev.sirbepy.mc.tweaks.listener.TownyAdminBypass;
 import dev.sirbepy.mc.tweaks.listener.TownyAdminOffListener;
 import dev.sirbepy.mc.tweaks.listener.VoidTridentListener;
@@ -45,6 +46,9 @@ public final class TweaksPlugin extends JavaPlugin {
         MinecartSpeedListener.applyToLoaded(getServer().getWorlds());
         getServer().getPluginManager().registerEvents(new PollosGunListener(this), this);
         getServer().getPluginManager().registerEvents(new SpawnGuardListener(), this);
+        SpawnSafeListener spawnSafe = new SpawnSafeListener();
+        getServer().getPluginManager().registerEvents(spawnSafe, this);
+        getServer().getScheduler().runTaskTimer(this, () -> spawnSafe.sweep(getServer().getWorlds().getFirst()), 20L, 20L);
         if (getConfig().getBoolean("motd.enabled", true)) {
             getServer().getPluginManager().registerEvents(new DailyMotdListener(
                     getConfig().getString("motd.first-line", "The Claude SMP"),

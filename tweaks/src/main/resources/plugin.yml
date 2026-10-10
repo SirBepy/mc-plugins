@@ -8,6 +8,9 @@ permissions:
   tweaks.seagifts.admin:
     description: Add or remove a sea gifts owner (/seagifts add|remove).
     default: op
+  tweaks.spawn.build:
+    description: Build, break and use buckets in the spawn area (ImMijo, via LuckPerms).
+    default: op
   tweaks.netherwishes.admin:
     description: Move CoffiebagSupreme's Nether wishes (/netherwishes owner) to another player.
     default: op
