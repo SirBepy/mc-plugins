@@ -1,0 +1,10 @@
+{
+    "pack": {
+        "description": [
+            { "text": "rmf-membrane-fix", "color": "gold" },
+            { "text": "\nKeeps plain Phantom Membranes from turning into Reg's More Foods Coffee Beans", "color": "gray" }
+        ],
+        "min_format": [121, 0],
+        "max_format": [121, 0]
+    }
+}

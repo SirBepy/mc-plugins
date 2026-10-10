@@ -169,6 +169,30 @@ override before shipping the new zip - a changed upstream damage/sound/particle 
 predicate/tag needs the override's `stonecutter_hit.mcfunction` updated to match, or the override
 silently reverts to the old behavior instead of the new upstream one.
 
+## rmf-membrane-fix/, written 2026-10-11
+
+Overrides Reg's More Foods' `data/rmf/function/bg/replace/herbs.mcfunction` (the file, not the zip -
+same rule as mastercutter-fixes). `rmf:tick` runs it for any player carrying a plain Phantom Membrane
+(vanilla `item_model`, no lore), and upstream swaps one for Coffee Beans each tick, a migration for
+items from older More Foods versions ("Replaced Item rmf:coffee_beans" on the action bar). More
+Foods' own phantom loot table drops a membrane with the `rmf:phantom_membrane` model, but End loot
+chests (Dungeons and Taverns' End castle, Structory Towers' end tower) and More Mob Heads' phantom
+loot table hand out plain ones, so Joe's End loot turned into Coffee Beans (2026-10-11). The override
+turns every plain membrane into More Foods' own (same id, model and name as its loot table, so they
+stack), keeping the count; Herbs (also a phantom membrane underneath) have their own model and lore
+and are never touched. Nothing on this server predates More Foods 1.5.2, so the migration upstream
+gave up has nothing to migrate.
+
+`file/rmf-membrane-fix` sorts after `file/reg-more-foods-v1.5.2+26.3`, and on a world that already
+has the zip it is appended last. `e2e/rmf-membrane.mjs` (server/local, Bedrock client through
+Geyser) gives 5 plain membranes and expects 5 More Foods membranes and no Coffee Beans, and Herbs
+left alone: 3 checks fail with `datapack disable "file/rmf-membrane-fix"`, 5/5 pass with it. The
+plain membrane's green Herbs icon is the client side of the same clash, fixed in
+`client/resourcepack/rmf-26.3-fix`.
+
+When Reg's More Foods is updated, re-diff its `bg/replace/herbs.mcfunction` and phantom loot table
+against this override.
+
 ## dragonkind-geyser-fix/, written 2026-10-10
 
 Overrides Dragonkind Evolved's `data/dke/enchantment/deterioration_curse.json` and `wingspan.json`

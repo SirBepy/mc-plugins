@@ -24,7 +24,9 @@ has an RMF `minecraft:custom_data` component at all (real vanilla items never do
 - has `custom_data` -> show the RMF food's own look
 - no `custom_data` -> show the real vanilla item's own look
 
-This fixes 14 carriers: `burn_pottery_sherd` (salt), `skull_banner_pattern` (seasoning),
+This fixes 15 carriers: `phantom_membrane` (herbs; the jar overrides the vanilla
+`minecraft:item/phantom_membrane` model itself with the herbs texture, so every plain membrane looked
+like Herbs), `burn_pottery_sherd` (salt), `skull_banner_pattern` (seasoning),
 `rabbit_foot` (milk barrel), `flower_banner_pattern` (water barrel),
 `bordure_indented_banner_pattern` (pasta), `field_masoned_banner_pattern` (rice),
 `guster_banner_pattern` (vegetable oil), `brewer_pottery_sherd` (cheese),

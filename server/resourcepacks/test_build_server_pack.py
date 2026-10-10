@@ -520,6 +520,15 @@ class BuiltPackTest(unittest.TestCase):
         compass = self.json("assets/minecraft/items/compass.json")["model"]
         self.assertEqual(compass["fallback"], VANILLA_COMPASS)
 
+    def test_a_plain_phantom_membrane_keeps_its_vanilla_texture(self):
+        # The More Foods mod jar replaces the minecraft:item/phantom_membrane model itself with the
+        # Herbs texture, so the item definition must route a plain membrane around that model id.
+        definition = self.json("assets/minecraft/items/phantom_membrane.json")["model"]
+        self.assertEqual(definition["component"], "minecraft:custom_data")
+        plain = definition["on_false"]["model"]
+        self.assertNotEqual(plain, "minecraft:item/phantom_membrane")
+        self.assertEqual(self.json(asset(plain, "models", "json"))["textures"]["layer0"], "minecraft:item/phantom_membrane")
+
     def test_every_dragon_ball_look_resolves_to_a_3d_model(self):
         definition = self.json("assets/minecraft/items/player_head.json")["model"]
         self.assertEqual(definition["property"], "minecraft:custom_model_data")
