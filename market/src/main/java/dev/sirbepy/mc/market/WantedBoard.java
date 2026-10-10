@@ -59,9 +59,11 @@ import java.util.logging.Logger;
  *
  * <p>A head taken after the bounty was posted ({@link KillStamp}) pays full; one taken earlier, or
  * never stamped at all, pays only {@link MarketConfig#wantedOldHeadShare()} (Joe, 2026-10-09: a
- * fresh kill should beat a head somebody happened to be carrying already). The period right after a
- * claimed sale rests with no bounty, so the same kill can't be farmed for a second payout; a period
- * nobody claims picks again normally next time, no rest owed.
+ * fresh kill should beat a head somebody happened to be carrying already). Every period with a
+ * bounty, claimed or not, is followed by one resting with none (Joe, 2026-10-10: "only a head every
+ * second minecraft day, always"). A period that would post with fewer than
+ * {@link MarketConfig#wantedMinOnline()} players online has no bounty (Joe, 2026-10-10: "if theres
+ * only 3 ppl on the server, we dont do bounties"), and isn't a bounty period, so the next one tries again.
  *
  * <p>The bounty grows with the target's play time alive (Joe, 2026-10-09: "if you died recently,
  * the bounty is lower"): {@code base + per-hour * hours}, times a random factor rolled once at
@@ -142,9 +144,9 @@ public final class WantedBoard implements Listener {
     }
 
     /**
-     * Picks the next period's state. A period that just saw a claimed sale rests the one right
+     * Picks the next period's state. A period that had a bounty, claimed or not, rests the one right
      * after it (no target, cleared head, a different sign) unless {@code forceNormal} says
-     * otherwise; any other period (unclaimed, or itself a rest) picks normally. A natural period
+     * otherwise; a period with none (a rest, or too few online) picks normally. A natural period
      * change first pays a surviving target; the admin rotate ({@code forceNormal}) never does.
      */
     private void advance(boolean forceNormal) {
@@ -152,7 +154,7 @@ public final class WantedBoard implements Listener {
         if (!forceNormal) {
             paySurvivor();
         }
-        if (!forceNormal && state != null && state.claimed()) {
+        if (!forceNormal && state != null && state.hasTarget()) {
             state = WantedState.cooldown(day);
         } else {
             Target target = pick();
@@ -190,9 +192,13 @@ public final class WantedBoard implements Listener {
 
     /**
      * {@code online-chance} an online player (only when someone is online to roll for), otherwise
-     * anyone who has ever joined; null when neither pool has anyone (a fresh server, or everyone banned).
+     * anyone who has ever joined; null when fewer than {@code min-online} are on, or neither pool has
+     * anyone (a fresh server, or everyone banned).
      */
     private Target pick() {
+        if (onlinePlayers.get().size() < config.get().wantedMinOnline()) {
+            return null;
+        }
         List<Player> online = onlinePlayers.get().stream().filter(p -> !p.isBanned()).toList();
         if (!online.isEmpty() && random.nextDouble() < config.get().wantedOnlineChance()) {
             Player chosen = online.get(random.nextInt(online.size()));

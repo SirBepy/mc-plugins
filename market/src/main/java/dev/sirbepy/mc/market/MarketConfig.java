@@ -33,6 +33,7 @@ public final class MarketConfig {
     private final double wantedOnlineChance;
     private final double wantedOldHeadShare;
     private final double wantedSurvivorShare;
+    private final int wantedMinOnline;
     private final Map<Integer, BigDecimal> homePrices;
     private final int maxHomes;
     private final BigDecimal cosmeticsPrice;
@@ -55,6 +56,7 @@ public final class MarketConfig {
         this.wantedOnlineChance = Math.clamp(config.getDouble("wanted.online-chance", 0.8), 0.0, 1.0);
         this.wantedOldHeadShare = Math.clamp(config.getDouble("wanted.old-head-share", 0.5), 0.0, 1.0);
         this.wantedSurvivorShare = Math.clamp(config.getDouble("wanted.survivor-share", 0.5), 0.0, 1.0);
+        this.wantedMinOnline = Math.max(0, config.getInt("wanted.min-online", 4));
         this.maxHomes = Math.max(BASE_HOMES, config.getInt("homes.max", 6));
         Map<Integer, BigDecimal> prices = new LinkedHashMap<>();
         for (int n = BASE_HOMES + 1; n <= maxHomes; n++) {
@@ -140,6 +142,12 @@ public final class MarketConfig {
      * the bounty's value then (Joe, 2026-10-09: 0.5). */
     public double wantedSurvivorShare() {
         return wantedSurvivorShare;
+    }
+
+    /** How many players must be online when a bounty would go up (Joe, 2026-10-10: no bounties with
+     * only 3 on); fewer and that day has none, and the next day tries again. */
+    public int wantedMinOnline() {
+        return wantedMinOnline;
     }
 
     public Messages messages() {

@@ -117,6 +117,8 @@ class WantedBoardTest {
         yaml.set("wanted.per-hour", perHour);
         yaml.set("wanted.cap", cap);
         yaml.set("wanted.spread", spread);
+        // Most tests run with one or two players online; the minimum has its own test.
+        yaml.set("wanted.min-online", 0);
         return new MarketConfig(yaml);
     }
 
@@ -607,7 +609,10 @@ class WantedBoardTest {
         online.clear();
         everJoined.add(other);
         period.set("day-2");
-        assertTrue(restarted.refresh(), "a new period picks again");
+        assertTrue(restarted.refresh());
+        assertTrue(restarted.state().cooldown(), "the day after a bounty rests");
+        period.set("day-3");
+        assertTrue(restarted.refresh(), "the day after the rest picks again");
         assertEquals(other.getUniqueId(), restarted.state().targetId());
     }
 
@@ -689,7 +694,7 @@ class WantedBoardTest {
     }
 
     @Test
-    void cooldownFollowsAClaimedPeriodButNotAnUnclaimedOne() {
+    void cooldownFollowsEveryBountyClaimedOrNot() {
         PlayerMock target = server.addPlayer("Target");
         online.add(target);
         WantedBoard board = board(ALWAYS_ONLINE, flat());
@@ -698,23 +703,60 @@ class WantedBoardTest {
 
         period.set("day-2");
         assertTrue(board.refresh());
-        assertFalse(board.state().cooldown(), "nobody claimed it, so the next period picks normally");
-        assertTrue(board.state().hasTarget());
+        assertTrue(board.state().cooldown(), "nobody claimed it, and the next period still rests");
+        assertFalse(board.state().hasTarget());
+
+        period.set("day-3");
+        assertTrue(board.refresh());
+        assertTrue(board.state().hasTarget(), "the period after the rest picks");
 
         PlayerMock seller = server.addPlayer("Seller");
         seller.getInventory().setItemInMainHand(headOf(target.getUniqueId(), target.getName(), board.state().postedAt()));
         board.sell(seller);
         assertTrue(board.state().claimed());
 
-        period.set("day-3");
+        period.set("day-4");
         assertTrue(board.refresh());
         assertTrue(board.state().cooldown(), "the period right after a claimed sale rests");
         assertFalse(board.state().hasTarget());
 
-        period.set("day-4");
+        period.set("day-5");
         assertTrue(board.refresh());
         assertFalse(board.state().cooldown(), "the period after the rest picks normally again");
         assertTrue(board.state().hasTarget());
+    }
+
+    @Test
+    void tooFewOnlineMeansNoBountyAndTheNextPeriodTriesAgain() {
+        // Joe's 2026-10-10 rule: 3 online is not enough, 4 is.
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(
+                Objects.requireNonNull(WantedBoardTest.class.getResourceAsStream("/config.yml")), StandardCharsets.UTF_8));
+        MarketConfig shipped = new MarketConfig(yaml);
+        assertEquals(4, shipped.wantedMinOnline());
+        for (String name : List.of("A", "B", "C")) {
+            online.add(server.addPlayer(name));
+        }
+        WantedBoard board = board(ALWAYS_ONLINE, shipped);
+        board.rotate();
+        assertFalse(board.state().hasTarget(), "3 online: no bounty");
+        assertFalse(board.state().cooldown(), "not a rest either");
+        board.apply(world);
+        assertEquals("No bounty", plainLine((Sign) world.getBlockAt(20, 70, 0).getState(), 1));
+
+        online.add(server.addPlayer("D"));
+        period.set("day-2");
+        assertTrue(board.refresh());
+        assertTrue(board.state().hasTarget(), "4 online the next period: the skipped day doesn't count as a bounty, so it picks");
+
+        // A bounty already up stays up when players leave; the next period rests as usual.
+        online.clear();
+        period.set("day-3");
+        board.refresh();
+        assertTrue(board.state().cooldown());
+        period.set("day-4");
+        board.refresh();
+        assertFalse(board.state().hasTarget(), "nobody online after the rest: no bounty");
+        assertFalse(board.state().cooldown());
     }
 
     @Test

@@ -32,7 +32,9 @@ heads-per-day: 4
 # the life it ended; a head taken before the bounty was posted, or never stamped at all, pays
 # old-head-share of today's value. A target who plays and doesn't die before the next bounty gets
 # survivor-share of their value then. online-chance: how often the target is an online player
-# rather than anyone who has ever joined.
+# rather than anyone who has ever joined. A day with a bounty, claimed or not, is always followed by
+# a day without one. min-online: a bounty only goes up with at least this many players online;
+# otherwise that day has none and the next day tries again.
 wanted:
   base: 50
   per-hour: 25
@@ -41,6 +43,7 @@ wanted:
   online-chance: 0.8
   old-head-share: 0.5
   survivor-share: 0.5
+  min-online: 4
 
 # The Homes shop sells huskhomes.max_homes.<n> above the default LuckPerms group's own .3 (Joe,
 # 2026-10-09: everyone starts with 3 homes; this shop sells up to max). Each tier needs its own
