@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { Vec3 } from 'vec3';
 import { Rcon, assert, createBot, quit, sleep, teleport, waitFor, waitForLine } from './lib.mjs';
@@ -37,6 +37,8 @@ const COSMETICS_SIGN = spots(shopLine('cosmetics'))[0];
 const HEADS = readFileSync(new URL('../market/src/main/resources/heads.yml', import.meta.url), 'utf8');
 // The e2e server's own log, to check /cosmetic's exact log line (Player Claude's listener tails this).
 const LOG_PATH = fileURLToPath(new URL('../testserver/run-e2e/logs/latest.log', import.meta.url));
+const MARKET_CONFIG = fileURLToPath(new URL('../testserver/run-e2e/plugins/Market/config.yml', import.meta.url));
+let originalMarketConfig;
 
 const rcon = await Rcon.connect();
 const bots = [];
@@ -372,6 +374,14 @@ try {
   let wantedTargetName;
   const wantedBotFor = (name) => bots.find((b) => b.username === name);
 
+  // wanted.min-online (4 on live) posts no bounty with fewer players online, and this suite has two
+  // bots; drop it to 1 for the run, restored in finally.
+  originalMarketConfig = readFileSync(MARKET_CONFIG, 'utf8');
+  assert(/^  min-online:/m.test(originalMarketConfig),
+    "the run dir's Market config.yml has wanted.min-online (delete a stale run-e2e Market config.yml and restart)");
+  writeFileSync(MARKET_CONFIG, originalMarketConfig.replace(/^(  min-online:).*$/m, '$1 1'));
+  await rcon.command('market reload');
+
   // pick() takes an online player 80% of the time and otherwise "everyone who's ever joined"
   // (WantedBoard, wanted.online-chance), and that pool only ever holds a player once Bukkit has seen
   // them disconnect at least once - neither bot has, this session, so that branch picks nobody ("No
@@ -553,6 +563,10 @@ try {
   console.error(`FAIL after ${results.length} passed: ${error.message}`);
   process.exitCode = 1;
 } finally {
+  if (originalMarketConfig !== undefined) {
+    writeFileSync(MARKET_CONFIG, originalMarketConfig);
+    await rcon.command('market reload').catch(() => {});
+  }
   await rcon.command(`deop ${SELLER}`).catch(() => {});
   await rcon.command(`minecraft:forceload remove ${SIGN.x - 8} ${SIGN.z - 8} ${SIGN.x + 8} ${SIGN.z + 8}`).catch(() => {});
   await rcon.command(`minecraft:forceload remove ${LECTERN.x} ${LECTERN.z}`).catch(() => {});
