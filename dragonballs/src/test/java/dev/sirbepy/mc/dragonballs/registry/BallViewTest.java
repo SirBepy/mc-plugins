@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.dragonballs.registry;
 
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,5 +56,21 @@ class BallViewTest {
         var location = at("world").lastKnownLocation();
         assertEquals("world", location.getWorld().getName());
         assertEquals(64, location.getY());
+    }
+
+    @Test
+    void aLocationIsDescribedAsWorldAndBlockCoordinates() {
+        assertEquals("world 1,64,-3", BallView.describe(new Location(server.getWorld("world"), 1.5, 64.9, -2.5)));
+    }
+
+    @Test
+    void aLocationWithNoWorldIsDescribedWithoutThrowing() {
+        assertEquals("? 1,64,-3", BallView.describe(new Location(null, 1.5, 64, -2.5)));
+    }
+
+    @Test
+    void aViewsRawFieldsAreDescribedTheSameWay() {
+        assertEquals("world 1,64,-3", BallView.describe("world", 1.5, 64.9, -2.5));
+        assertEquals("? 1,64,-3", BallView.describe(null, 1.5, 64, -2.5));
     }
 }

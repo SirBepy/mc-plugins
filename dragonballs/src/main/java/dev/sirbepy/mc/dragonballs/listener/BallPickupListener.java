@@ -4,6 +4,7 @@ import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
 import dev.sirbepy.mc.dragonballs.registry.BallSets;
+import dev.sirbepy.mc.dragonballs.registry.BallView;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -122,8 +123,7 @@ public final class BallPickupListener implements Listener {
     static String describe(BallRegistry registry, int star) {
         return registry.get(star).map(view -> view.state() + (view.holderName() != null
                 ? " by " + view.holderName()
-                : " at " + view.worldName() + " " + (int) Math.floor(view.x()) + "," + (int) Math.floor(view.y())
-                        + "," + (int) Math.floor(view.z()))).orElse("unknown");
+                : " at " + BallView.describe(view.worldName(), view.x(), view.y(), view.z()))).orElse("unknown");
     }
 
     /** Lets {@link HeldBallCheck} count a stray it silently adopts for its former holder as that

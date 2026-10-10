@@ -144,4 +144,18 @@ class BallContainerGuardListenerTest {
 
         assertTrue(event.isCancelled(), "a ball must never be insertable into a bundle");
     }
+
+    /** The other way round: a bundle on the cursor right-clicked onto a ball scoops the ball in. */
+    @Test
+    void scoopingABallIntoABundleOnTheCursorIsCancelled() {
+        PlayerInventoryViewMock view = new PlayerInventoryViewMock(player, player.getInventory());
+        view.setItem(9, ball);
+        view.setCursor(new ItemStack(Material.BUNDLE));
+        InventoryClickEvent event = new InventoryClickEvent(view, InventoryType.SlotType.CONTAINER, 9,
+                ClickType.RIGHT, InventoryAction.PICKUP_ALL_INTO_BUNDLE);
+
+        listener.onClick(event);
+
+        assertTrue(event.isCancelled(), "a bundle must never be able to pick a ball up");
+    }
 }

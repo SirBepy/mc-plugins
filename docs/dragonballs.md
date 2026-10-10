@@ -82,7 +82,10 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
   slots and pushes whatever was there onto the ground; `/clear`), the plugin checks every second:
   a ball lying loose is tracked again and stays yours to pick up, and a ball that's simply gone
   drops at your feet with a chat line (within 2 seconds; 10 in creative, where dragging items around
-  can briefly look the same).
+  can briefly look the same). The reverse holds too: a ball item in an online player's inventory
+  that the plugin doesn't have as held by them (a copy left behind when an admin rescattered the
+  balls, or any other stale copy) is deleted within a second, so it never slows you down or passes
+  for the real ball.
 - Picking up a ball is announced to the whole server, from the ground or by hitting a floating
   one, except taking back a ball you set down yourself in the last 30 seconds.
 - Each **radar** (sold at the Dragon Ball station at spawn) points at the nearest awake ball of its

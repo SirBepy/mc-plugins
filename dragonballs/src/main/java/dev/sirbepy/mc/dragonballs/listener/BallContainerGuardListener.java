@@ -63,6 +63,11 @@ public final class BallContainerGuardListener implements Listener {
             event.setCancelled(true);
             return;
         }
+        // The reverse: a bundle on the cursor right-clicked onto a ball scoops the ball into it.
+        if (cursor != null && cursor.getType() == Material.BUNDLE && registry.isBall(current)) {
+            event.setCancelled(true);
+            return;
+        }
         // Manually equipping a ball into the armor/helmet slot.
         if (event.getSlotType() == InventoryType.SlotType.ARMOR && registry.isBall(cursor)) {
             event.setCancelled(true);

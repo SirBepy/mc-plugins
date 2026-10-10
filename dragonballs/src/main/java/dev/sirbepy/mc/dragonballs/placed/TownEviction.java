@@ -79,7 +79,7 @@ public final class TownEviction implements Runnable {
         Location spot = nearestWilderness(at);
         if (spot == null) {
             logger.warning("No wilderness within " + MAX_RADIUS + " blocks of the " + registry.set().id() + " "
-                    + ball.star() + "-star in a town at " + describe(at) + "; it stays there for now");
+                    + ball.star() + "-star in a town at " + BallView.describe(at) + "; it stays there for now");
             return;
         }
         if (ball.state() == BallState.DROPPED) {
@@ -87,7 +87,7 @@ public final class TownEviction implements Runnable {
         }
         registry.markPlaced(ball.star(), spot, ball.stone());
         logger.info("Moved the " + registry.set().id() + " " + ball.star() + "-star out of a town: "
-                + describe(at) + " -> " + describe(spot));
+                + BallView.describe(at) + " -> " + BallView.describe(spot));
         String setWord = registry.set().displayWord().isEmpty() ? "" : registry.set().displayWord() + " ";
         for (Player player : at.getWorld().getPlayers()) {
             if (player.getLocation().distanceSquared(at) <= NOTIFY_RADIUS * NOTIFY_RADIUS) {
@@ -186,9 +186,5 @@ public final class TownEviction implements Runnable {
             }
         }
         return null;
-    }
-
-    private static String describe(Location at) {
-        return at.getWorld().getName() + " " + at.getBlockX() + "," + at.getBlockY() + "," + at.getBlockZ();
     }
 }

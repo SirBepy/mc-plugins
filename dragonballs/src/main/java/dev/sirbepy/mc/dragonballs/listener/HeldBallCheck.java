@@ -12,6 +12,8 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,6 +35,11 @@ import java.util.logging.Logger;
  * offline holder's ball drops where they logged out: the player loses nothing to someone else's
  * bug, and the drop is synchronous, so it can't race a scatter or a give the way an async
  * re-scatter would.
+ *
+ * <p>The reverse runs too: a ball item in an online player's inventory, offhand or cursor that its
+ * set's registry doesn't have HELD by that player is a stale copy (a rescatter moves a held ball
+ * without touching the item, the startup offline-holder drop mints a new one while the saved
+ * inventory keeps the old), and is deleted on the spot rather than left until their next join.
  */
 public final class HeldBallCheck implements Runnable {
 
@@ -101,6 +108,40 @@ public final class HeldBallCheck implements Runnable {
         }
         // A miss only counts toward a drop while the ball stays HELD in between.
         misses.keySet().retainAll(stillHeld);
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            removeStaleCopies(player);
+        }
+    }
+
+    /** Runs after the held check, so a ball it just dropped anew at the holder's feet makes any copy
+     * that turns up in their inventory later a stale one: the dropped entity is the real ball now. */
+    private void removeStaleCopies(Player player) {
+        PlayerInventory inventory = player.getInventory();
+        ItemStack[] contents = inventory.getContents();
+        for (int slot = 0; slot < contents.length; slot++) {
+            if (isStaleCopy(contents[slot], player)) {
+                inventory.setItem(slot, null);
+            }
+        }
+        if (isStaleCopy(player.getItemOnCursor(), player)) {
+            player.setItemOnCursor(null);
+        }
+    }
+
+    private boolean isStaleCopy(ItemStack item, Player player) {
+        Optional<BallRegistry> owner = sets.registryFor(item);
+        if (owner.isEmpty() || !sets.isEnabled(owner.get().set())) {
+            return false;
+        }
+        BallRegistry registry = owner.get();
+        int star = sets.items().starOf(item).getAsInt();
+        if (registry.isHeldBy(star, player.getUniqueId())) {
+            return false;
+        }
+        logger.warning(registry.set() + " " + star + "-star copy in " + player.getName()
+                + "'s inventory isn't the tracked ball (registry: " + BallPickupListener.describe(registry, star)
+                + "); removed it");
+        return true;
     }
 
     private void check(BallRegistry registry, BallView view, String key) {
@@ -120,7 +161,7 @@ public final class HeldBallCheck implements Runnable {
                 pickupListener.recordSelfDrop(registry.set(), view.star(), holder.getUniqueId());
             }
             logger.info(registry.set() + " " + view.star() + "-star left " + holder.getName()
-                    + "'s inventory without an event; tracking it as dropped at " + describe(stray.getLocation()));
+                    + "'s inventory without an event; tracking it as dropped at " + BallView.describe(stray.getLocation()));
             return;
         }
         int threshold = holder.getGameMode() == GameMode.CREATIVE ? CREATIVE_MISSES_BEFORE_DROP : MISSES_BEFORE_DROP;
@@ -137,7 +178,7 @@ public final class HeldBallCheck implements Runnable {
         registry.markDropped(view.star(), entity, view.stone());
         config.get().messages().send(holder, "ball-returned", Placeholder.unparsed("star", String.valueOf(view.star())));
         logger.warning(registry.set() + " " + view.star() + "-star vanished from " + holder.getName()
-                + "'s inventory without an event; dropped it at their feet, " + describe(at));
+                + "'s inventory without an event; dropped it at their feet, " + BallView.describe(at));
     }
 
     /** The holder's feet; a ball never leaves its home world, so outside it (never expected: the
@@ -167,9 +208,5 @@ public final class HeldBallCheck implements Runnable {
             }
         }
         return null;
-    }
-
-    private static String describe(Location at) {
-        return at.getWorld().getName() + " " + at.getBlockX() + "," + at.getBlockY() + "," + at.getBlockZ();
     }
 }

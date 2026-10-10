@@ -274,4 +274,58 @@ class HeldBallCheckTest {
         assertTrue(ballEntities().isEmpty(), "no second copy dropped");
         assertEquals(BallState.HELD, overworld.get(5).orElseThrow().state());
     }
+
+    /** What an admin rescatter does to a carried ball: the registry moves it to a new spot, the
+     * holder's item stays where it was. */
+    @Test
+    void aCopyLeftInTheInventoryByARescatterIsRemovedOnTheNextCheck() {
+        overworld.markHeld(6, player, false);
+        player.getInventory().setItem(4, overworld.createItem(6));
+        overworld.markPlaced(6, new Location(world, 300, 64, 300), false);
+
+        check.run();
+
+        assertFalse(items.carries(player, BallSet.OVERWORLD, 6), "the stale copy is gone");
+        assertEquals(BallState.PLACED, overworld.get(6).orElseThrow().state(), "the real ball stays where it was scattered");
+    }
+
+    @Test
+    void aStaleCopyOnTheCursorOrInTheOffhandIsRemovedToo() {
+        player.getInventory().setItemInOffHand(overworld.createItem(1));
+        player.setItemOnCursor(overworld.createItem(2));
+
+        check.run();
+
+        assertFalse(items.isBall(player.getInventory().getItemInOffHand()));
+        assertFalse(items.isBall(player.getItemOnCursor()));
+    }
+
+    @Test
+    void aCopyOfABallHeldBySomeoneElseIsRemoved() {
+        PlayerMock other = server.addPlayer();
+        overworld.markHeld(4, other, false);
+        other.getInventory().addItem(overworld.createItem(4));
+        player.getInventory().addItem(overworld.createItem(4));
+
+        check.run();
+
+        assertFalse(items.carries(player, BallSet.OVERWORLD, 4));
+        assertTrue(items.carries(other, BallSet.OVERWORLD, 4), "the holder keeps the real one");
+        assertTrue(overworld.isHeldBy(4, other.getUniqueId()));
+    }
+
+    @Test
+    void theHoldersOwnBallAndOrdinaryItemsAreNeverRemoved() {
+        overworld.markHeld(7, player, true);
+        player.getInventory().setItem(8, overworld.createItem(7));
+        player.getInventory().setItem(9, new ItemStack(Material.DIAMOND, 3));
+
+        for (int run = 0; run < 5; run++) {
+            check.run();
+        }
+
+        assertTrue(items.carries(player, BallSet.OVERWORLD, 7));
+        assertEquals(new ItemStack(Material.DIAMOND, 3), player.getInventory().getItem(9));
+        assertTrue(overworld.isHeldBy(7, player.getUniqueId()));
+    }
 }

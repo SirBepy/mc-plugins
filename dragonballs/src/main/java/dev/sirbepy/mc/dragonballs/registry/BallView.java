@@ -30,4 +30,16 @@ public record BallView(
         World world = worldName == null ? null : Bukkit.getWorld(worldName);
         return world == null ? null : new Location(world, x, y, z);
     }
+
+    /** "world x,y,z" in block coordinates, for log lines; "?" stands in for a missing world name. */
+    public static String describe(String worldName, double x, double y, double z) {
+        return (worldName == null ? "?" : worldName) + " " + (int) Math.floor(x) + "," + (int) Math.floor(y) + ","
+                + (int) Math.floor(z);
+    }
+
+    /** {@link #describe(String, double, double, double)} for a Location, whose world may be null or
+     * unloaded (Location#getWorld throws for an unloaded one, and a log line must never throw). */
+    public static String describe(Location at) {
+        return describe(at.isWorldLoaded() ? at.getWorld().getName() : null, at.getX(), at.getY(), at.getZ());
+    }
 }
