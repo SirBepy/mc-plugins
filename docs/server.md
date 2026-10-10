@@ -66,8 +66,9 @@ compatibility gap, not a config problem here. The fix shipped as GeyserMC/Geyser
 Java 26.3"); as of 2026-10-02 it is still open/unmerged, but GeyserMC publishes official preview
 builds of open PRs on its own download API under the `geyserpreview` project
 (`https://download.geysermc.org/v2/projects/geyserpreview/versions/pr.6712/builds`). `ServerArtifacts.kt`
-is pinned to that preview's build 3057 (resolved 2026-10-02) instead of a release build, so Geyser
-now enables on server/local. Swap the pin back to a normal `geyser` release build once 26.3 support
+is pinned to that preview's build 3090 (resolved 2026-10-10; the earlier 3057 stopped at Bedrock
+26.51, 3090 adds 26.52) instead of a release build, so Geyser enables on server/local. Build 3090
+fails to start at all while DragonBalls' `bedrock-dragon-models` is true, so keep that off. Swap the pin back to a normal `geyser` release build once 26.3 support
 ships there (check `https://download.geysermc.org/v2/projects/geyser/versions/latest/builds`
 periodically), and once it does, let Geyser generate its own `plugins/Geyser-Spigot/config.yml`
 (replacing the reconstructed one in `server/config/`, see that file's header).

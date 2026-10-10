@@ -68,14 +68,19 @@ object ServerArtifacts {
         // Build 1247 (the then-latest release) fails to enable on Paper 26.3 beta: its shaded cloud
         // command parser calls the removed CraftItemStack#asBukkitCopy/#asCraftMirror methods (see
         // docs/server.md "Known issue"). Pinned instead to GeyserMC's own official preview build of
-        // GeyserMC/Geyser#6712 ("Update to Java 26.3", open/unmerged as of 2026-10-02), published on
-        // GeyserMC's own download API under the "geyserpreview" project (pr.6712, build 3057,
-        // resolved 2026-10-02 from https://download.geysermc.org/v2/projects/geyserpreview/versions/pr.6712/builds/3057).
+        // GeyserMC/Geyser#6712 ("Update to Java 26.3", open/unmerged as of 2026-10-10), published on
+        // GeyserMC's own download API under the "geyserpreview" project (pr.6712, build 3090,
+        // resolved 2026-10-10 from https://download.geysermc.org/v2/projects/geyserpreview/versions/pr.6712/builds/3090).
+        // Build 3090 rather than the earlier 3057: 3057 accepts Bedrock 26.30-26.51 only, so players
+        // on Bedrock 26.52 couldn't join; 3090 adds 26.52. It rewrites the Geyser config to
+        // config-version 9 on first boot, and it fails to start at all while DragonBalls'
+        // bedrock-dragon-models is true ("Registry has not been loaded yet" from its entity define
+        // events), so that switch has to stay false on this build.
         // Swap this back to a normal "geyser" release build once 26.3 support ships there.
         PinnedJar(
-            url = "https://download.geysermc.org/v2/projects/geyserpreview/versions/pr.6712/builds/3057/downloads/spigot",
+            url = "https://download.geysermc.org/v2/projects/geyserpreview/versions/pr.6712/builds/3090/downloads/spigot",
             filename = "Geyser-Spigot.jar",
-            sha256 = "d7fcfb9a2ad46980efef2e6a5f6837921b945fe2bbec34efd8c8ca552963c3e1",
+            sha256 = "085eb80780a4248e8e348c71abef61a47c05dd4f4c8f390bc7c15f58c1bdac7c",
         ),
         // Pinned to 2.2.5 / build 141, resolved the same way and on the same date as Geyser above.
         PinnedJar(
