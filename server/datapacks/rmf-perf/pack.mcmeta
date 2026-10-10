@@ -1,0 +1,10 @@
+{
+    "pack": {
+        "description": [
+            { "text": "rmf-perf", "color": "gold" },
+            { "text": "\nPerformance override for Reg's More Foods' stonecutter damage", "color": "gray" }
+        ],
+        "min_format": [121, 0],
+        "max_format": [121, 0]
+    }
+}

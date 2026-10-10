@@ -135,6 +135,40 @@ A datapack reload (`minecraft:reload`) would load it without a restart, but on P
 builds a fresh recipe manager and drops every plugin recipe (Merfolk's Kelp Bed), so on live it
 takes effect at the next restart.
 
+## rmf-perf/, generated 2026-10-10
+
+Overrides Reg's More Foods' `data/rmf/function/bg/stonecutter_damage.mcfunction` (the file, not the
+zip - same rule as mastercutter-fixes). A live spark profile taken 2026-10-10 (vanilla `perf`, 5
+players) showed `rmf:tick` at ~30% of the whole server tick, ~26% of that from this one function's
+original 6 lines: each scans every non-player entity (or every non-creative player) and evaluates
+the `rmf:on_stonecutter` predicate - a block location check plus an inverted entity-type-tag check
+- once per entity, per line, even when the `rmf.stonecutterDamage` config option is off. The
+override checks that config score once up front, folds the entity-type-tag exclusion into the `@e`
+selector itself instead of a predicate, replaces the predicate's block check with a direct `if
+block`, and funnels both groups (non-player entities, non-creative/non-spectator players) through
+one shared `rmf:bg/stonecutter_hit` function instead of repeating the same check 3 times for
+damage/sound/particle. Same damage (4, `rmf:slicing`), sound and particle as upstream; same immune
+types (`#rmf:immune_to_stonecutter`); creative players still take no damage (spectators can't take
+damage regardless).
+
+Like mastercutter-fixes, `file/rmf-perf` sorts after `file/reg-more-foods-v1.5.2+26.3`
+alphabetically, so a fresh world loads the override after the zip's own function and it wins;
+verified on server/local 2026-10-10 via `datapack list enabled`.
+
+Verify with RCON on server/local or `:testserver:runServer`: `datapack list enabled` shows
+`file/rmf-perf` after the More Foods pack; a zombie or cow summoned on a stonecutter block takes 4
+`rmf:slicing` damage every tick (same as upstream, confirmed by toggling `datapack disable
+"file/rmf-perf"` and re-testing against the zip's own unmodified function); an armor stand or a
+creative player on a stonecutter takes none; nothing off the block takes damage. For the
+performance claim, summon ~2000 entities, run `perf start` (writes `debug/profiling/<ts>.zip`
+after 10 s), and compare the `function rmf:tick` line's percentage in `profiling.txt` with
+`file/rmf-perf` enabled vs. disabled.
+
+When Reg's More Foods is updated, re-diff its `bg/stonecutter_damage.mcfunction` against this
+override before shipping the new zip - a changed upstream damage/sound/particle value or a renamed
+predicate/tag needs the override's `stonecutter_hit.mcfunction` updated to match, or the override
+silently reverts to the old behavior instead of the new upstream one.
+
 ## spawn-market/, generated 2026-10-05
 
 A custom folder datapack holding the spawn square build: a timber-and-tuff taiga market at world
