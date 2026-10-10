@@ -18,6 +18,13 @@ test("never takes the remote block's port", () => {
   assert.equal(geyserBedrockPort(['remote:', '  port: 25565', 'bedrock:', '  port: 25572', ''].join('\n')), 25572);
 });
 
+// Geyser's config-version 9 (preview build 3090 on) writes a blank line between commented keys.
+test('reads the bedrock block port past blank lines inside the block', () => {
+  const v9 = ['bedrock:', '  # bind address', '  address: 0.0.0.0', '', '  # listen port', '  port: 25593', '', 'java:', '  auth-type: floodgate', ''];
+  assert.equal(geyserBedrockPort(v9.join('\n')), 25593);
+  assert.equal(geyserBedrockPort(v9.join('\r\n')), 25593);
+});
+
 test("falls back to Geyser's default without a bedrock block", () => {
   assert.equal(geyserBedrockPort('remote:\n  port: 25565\n'), 19132);
 });

@@ -256,8 +256,9 @@ export function randomOrigin() {
 
 /** The `bedrock:` block's `port:` in a Geyser config.yml's text, or 19132 (Geyser's default) when absent. */
 export function geyserBedrockPort(configText) {
-  // \r?: a config rewritten on Windows is CRLF, and JS's . never matches \r.
-  const match = configText.match(/^bedrock:[ \t]*\r?\n(?:[ \t]+.*\r?\n)*?[ \t]+port:[ \t]*(\d+)/m);
+  // \r?: a config rewritten on Windows is CRLF, and JS's . never matches \r. Blank lines stay
+  // inside the block: Geyser's config-version 9 puts one between every commented key.
+  const match = configText.match(/^bedrock:[ \t]*\r?\n(?:(?:[ \t]+.*)?\r?\n)*?[ \t]+port:[ \t]*(\d+)/m);
   return Number(match?.[1] ?? 19132);
 }
 
