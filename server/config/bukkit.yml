@@ -10,8 +10,9 @@
 # Website: https://papermc.io/
 
 settings:
-  # The End stays closed until the owner opens it; flip back to true and restart to open it.
-  allow-end: false
+  # The End world loads since the 2026-10-10 18:48 restart; EndFight's opening gate (not this flag)
+  # kept its portals shut until 20:30 for the first dragon fight.
+  allow-end: true
   warn-on-overload: true
   permissions-file: permissions.yml
   update-folder: update
