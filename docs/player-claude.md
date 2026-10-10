@@ -64,6 +64,10 @@ The hub keeps `agents.json` in the state dir: `{ "<uuid>": { "player", "agentId"
 Player agents talk and look things up. Anything that changes live or needs a decision comes back to the hub as `NEEDS HUB`:
 
 - Live restarts, uploads, config edits, console commands that change anything, and commits.
+- After every live restart, a `/changelog` entry: add the restart's player-safe lines (short, about
+  19 characters a book line) as the newest entry in live `/plugins/Tweaks/changelog.yml` (read fresh
+  on every `/changelog`, no restart needed), then mirror it in `tweaks/src/main/resources/changelog.yml`
+  and commit. Format and rules are in that file's header.
 - A request that needs Joe's decision: ask Joe with `ask_user_question` (Approve / Decline), then
   `SendMessage` the outcome to the agent so it tells the player.
 - ImMijo's moderator requests (restart, kick, ban), matched by his UUID
