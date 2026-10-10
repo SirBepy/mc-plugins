@@ -172,9 +172,34 @@ def to_item_space(elements):
     return out
 
 
-# --- shell (0.5px clearance over the 8x8x8 head, open face below the brow) + the dragon skull's own
-# features, all in the HumanoidModel head-pivot frame, ported verbatim from the approved
-# .for_bepy/dragonscale-3d/build_helms.py draft (Joe approved this exact shape 2026-10-09) ---------
+# --- shell (drawn with 0.5px clearance over the 8x8x8 head, open face below the brow) + the dragon
+# skull's own features, all in the HumanoidModel head-pivot frame, ported verbatim from the approved
+# .for_bepy/dragonscale-3d/build_helms.py draft (Joe approved this shape 2026-10-09); skull_helm()
+# then scales the whole thing by HAT_CLEARANCE_SCALE, see there ------------------------------------
+
+# The skin's hat layer is the head cube inflated by 0.5px, so a shell at 0.5px clearance lies exactly
+# on it: the two surfaces z-fight and the head shows through the helm (Joe on live, 2026-10-10: "the
+# other helmet is clipping through my head"). Scaling the whole helm about the head's centre by
+# 5/4.5 puts the shell's outside 1px off the head, where vanilla's own helmet layer sits (inflated by
+# 1px), 0.5px clear of the hat layer, and keeps the approved proportions.
+HEAD_CENTRE = (0, -4, 0)
+HAT_CLEARANCE_SCALE = 5 / 4.5
+# A detail drawn on a bigger element's face plane in another colour speckles with it in game
+# (z-fighting), so the brow band and the nostrils stand PROUD px out of what they sit on.
+PROUD = 0.25
+
+
+def scaled_about_head_centre(elements, s):
+    """Uniform scale about HEAD_CENTRE; rotation angles survive a uniform scale unchanged."""
+    def pt(p):
+        return tuple(c + s * (v - c) for v, c in zip(p, HEAD_CENTRE))
+
+    out = []
+    for e in elements:
+        rot = (pt(e["rot"][0]), e["rot"][1]) if e["rot"] else None
+        out.append(box(pt(e["from"]), pt(e["to"]), e["mat"], rot))
+    return out
+
 
 def hugging_shell():
     return [
@@ -183,7 +208,8 @@ def hugging_shell():
         box((-4.5, -6.5, 0.5), (4.5, 0.5, 4.5), "shell"),            # back plate, down past the jaw
         box((-4.5, -6.5, -4.5), (-3.5, 0.5, 4.5), "shell"),          # left cheek guard, full depth
         box((3.5, -6.5, -4.5), (4.5, 0.5, 4.5), "shell"),            # right cheek guard, full depth
-        box((-4.5, -7, -4.5), (4.5, -6.5, -2.5), "trim"),            # brow band over the open face
+        # brow band over the open face, proud of the dome and the snout top on every visible side
+        box((-4.5 - PROUD, -7 - PROUD, -4.5 - PROUD), (4.5 + PROUD, -6.5 + PROUD, -2.5), "trim"),
     ]
 
 
@@ -221,20 +247,20 @@ def skull_helm():
     shell = hugging_shell()
     snout = [
         box((-3, -7, -8.5), (3, -5, -4.5), "shell"),                 # upper jaw/snout, 4px forward, 6px wide
-        box((-0.9, -6.3, -8.5), (-0.3, -5.7, -7.9), "dark"),         # left nostril
-        box((0.3, -6.3, -8.5), (0.9, -5.7, -7.9), "dark"),           # right nostril
+        box((-0.9, -6.3, -8.5 - PROUD), (-0.3, -5.7, -7.9), "dark"),  # left nostril
+        box((0.3, -6.3, -8.5 - PROUD), (0.9, -5.7, -7.9), "dark"),    # right nostril
     ]
     teeth = [
         box((x, -5, -8.3), (x + 0.6, -4.5, -8.0), "teeth")
         for x in (-2.4, -1.4, -0.4, 0.6, 1.6)
     ]  # hang from the snout's lower edge at its FRONT tip
-    brow = [box((-4, -7.3, -4.5), (4, -7, -2.8), "trim")]
+    brow = [box((-4, -7.3, -4.5 - PROUD), (4, -7, -2.8), "trim")]
     spikes = [
         box((-0.6, -8 - 0.4 * (3 - i), 0.6 + i * 1.0), (0.6, -6.5 - 0.4 * (3 - i), 1.2 + i * 1.0), "spike")
         for i in range(4)
     ]  # a descending row down the back of the skull
     horns = horn_chain((-4.3, -6.7, -1), SHORT_HORN_SEGS) + horn_chain((-4.3, -6.7, -1), SHORT_HORN_SEGS, mirror=True)
-    return shell + snout + teeth + brow + spikes + horns
+    return scaled_about_head_centre(shell + snout + teeth + brow + spikes + horns, HAT_CLEARANCE_SCALE)
 
 
 def main():

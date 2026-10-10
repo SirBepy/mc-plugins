@@ -268,7 +268,10 @@ a full box takes slots off the biggest filler.
 **Final blow** (10ca's spec). Whoever deals the dragon's lethal damage (the hit at least as big as
 its health left, blamed like any hit; the game's killer otherwise) gets a **Dragon Head Helm**:
 plain netherite, no enchantments, `custom_model_data` "dragon_head" (the vanilla dragon head
-model, 10ca 6535d64), no equippable asset so the client draws the model on the head. It sits in the
+model, 10ca 6535d64), no equippable asset so the client draws the model on the head. Worn, it
+draws through the item path rather than vanilla's skull path, so the pack's head display context
+carries its own transformation that matches a worn vanilla dragon head (same size, snout forward;
+vanilla's item transformation came out backwards and too small there, Joe 2026-10-10). It sits in the
 hoard's centre slot, or is delivered alone (inventory, ender chest, feet) when they get XP only.
 
 **Crystals.** Every pillar end crystal a player breaks this fight (blamed like a hit on the dragon,
@@ -295,7 +298,8 @@ A roll grants, in order (`RollEngine`, tracked per player in `rewards.yml`): a *
 piece the player doesn't own yet (plain netherite, no enchantments, `custom_model_data` string
 "dragonscale" and, on the chestplate, leggings and boots, equippable asset `claudesmp:dragonscale` -
 the same look shipped on main in 9d59217; the helmet has no asset, so the client draws its 3D
-dragon-skull item model on the head (10ca, 50d1de2). Every piece sets its own slot and netherite's
+dragon-skull item model on the head (10ca, 50d1de2), its shell 1px off the head like vanilla's helmet
+layer so it clears the skin's hat layer). Every piece sets its own slot and netherite's
 equip sound on the equippable, since Paper hands a fresh meta a HEAD-slot default (javap on 26.3
 `CraftMetaItem.getEquippable`)); once all 4 pieces are owned, a **dragon
 aura** they don't own yet (Dragon's Breath, Ender, Void Ember - an unlock, not an item, announced in

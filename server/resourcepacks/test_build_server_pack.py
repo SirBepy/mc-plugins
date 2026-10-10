@@ -98,6 +98,39 @@ VANILLA_COMPASS = {
 }
 
 
+def _quat_matrix(q):
+    x, y, z, w = q
+    return [
+        [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+        [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+        [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
+    ]
+
+
+def _mat_vec(m, v):
+    return [sum(m[r][c] * v[c] for c in range(3)) for r in range(3)]
+
+
+def _special_transformation(t):
+    # An item definition's "transformation": translation . left_rotation . scale . right_rotation.
+    def apply(p):
+        p = _mat_vec(_quat_matrix(t["right_rotation"]), p)
+        p = [a * s for a, s in zip(p, t["scale"])]
+        p = _mat_vec(_quat_matrix(t["left_rotation"]), p)
+        return [a + b for a, b in zip(p, t["translation"])]
+    return apply
+
+
+def _worn_head_item(p, local=lambda p: p):
+    """Where the 26.3 client draws point p (blocks, item model space) of a worn head item with an
+    identity display.head, in the head bone's frame (blocks, y down, -z = face), javap-verified on the
+    client jar: ItemStackRenderState$LayerRenderState applies the special model's transformation
+    (`local`), then ItemTransform's -0.5 translate, then CustomHeadLayer.translateToHead's
+    T(0,-0.25,0) . Ry(180) . S(0.625,-0.625,-0.625)."""
+    x, y, z = [a - 0.5 for a in local(p)]
+    return [-0.625 * x, -0.25 - 0.625 * y, 0.625 * z]
+
+
 def asset(ref, kind, ext):
     namespace, path = ref.split(":", 1)
     return f"assets/{namespace}/{kind}/{path}.{ext}"
@@ -289,13 +322,67 @@ class BuiltPackTest(unittest.TestCase):
         self.assertIn(tex_path, self.entries)
         Image.open(io.BytesIO(self.entries[tex_path])).load()  # decodes without error
 
+    def test_dragonscale_helm_clears_the_skin_hat_layer(self):
+        # The hat layer is the 8px head cube inflated by 0.5px (planes x,z = +-4.5px, top y = -8.5px).
+        # A helm face lying on one of those planes z-fights with it and the head shows through (Joe
+        # on live, 2026-10-10), so no axis-aligned face may sit there, and the shell's outside sits
+        # 1px off the head like vanilla's helmet layer.
+        worn = self.json("assets/claudesmp/models/item/dragonscale_helmet_worn.json")
+        lo, hi = [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]
+        for el in worn["elements"]:
+            if "rotation" in el:
+                continue
+            corners = [_worn_head_item([v / 16 for v in c]) for c in (el["from"], el["to"])]
+            px = [[16 * a for a in c] for c in corners]
+            for axis, planes in ((0, (-4.5, 4.5)), (1, (-8.5,)), (2, (-4.5, 4.5))):
+                for c in px:
+                    for plane in planes:
+                        self.assertGreater(abs(c[axis] - plane), 0.01, (el["from"], el["to"]))
+            for axis in range(3):
+                lo[axis] = min(lo[axis], *(c[axis] for c in px))
+                hi[axis] = max(hi[axis], *(c[axis] for c in px))
+        self.assertLessEqual(lo[0], -5.0)
+        self.assertGreaterEqual(hi[0], 5.0)
+        self.assertLessEqual(lo[1], -9.0)
+        self.assertGreaterEqual(hi[2], 5.0)
+
+    def test_dragonscale_helm_has_no_coplanar_faces_of_different_colours(self):
+        # Two elements' faces on one plane, facing the same way, speckle in a real client, which
+        # shows when their colours differ (the violet brow band on the dark dome's front did).
+        names = {"north": (2, 0), "south": (2, 1), "west": (0, 0), "east": (0, 1), "down": (1, 0), "up": (1, 1)}
+        worn = self.json("assets/claudesmp/models/item/dragonscale_helmet_worn.json")
+        boxes = [el for el in worn["elements"] if "rotation" not in el]
+
+        def covered(point):  # a face whose outside lies in another box can't be seen
+            return any(all(b["from"][k] < point[k] < b["to"][k] for k in range(3)) for b in boxes)
+
+        for i, a in enumerate(boxes):
+            for b in boxes[i + 1:]:
+                for face, (axis, side) in names.items():
+                    if a["faces"][face]["uv"] == b["faces"][face]["uv"]:
+                        continue
+                    plane_a = (a["from"], a["to"])[side][axis]
+                    plane_b = (b["from"], b["to"])[side][axis]
+                    if abs(plane_a - plane_b) > 1e-6:
+                        continue
+                    lo = [max(a["from"][k], b["from"][k]) for k in range(3)]
+                    hi = [min(a["to"][k], b["to"][k]) for k in range(3)]
+                    if any(hi[k] - lo[k] <= 1e-6 for k in range(3) if k != axis):
+                        continue
+                    centre = [(lo[k] + hi[k]) / 2 for k in range(3)]
+                    centre[axis] = plane_a + (0.01 if side else -0.01)
+                    self.assertTrue(covered(centre), (face, a["from"], b["from"]))
+
     def test_final_blow_helm_draws_the_vanilla_dragon_head_model(self):
         # The final blow's reward (Joe, 2026-10-09) is a netherite helmet that looks exactly like a
-        # dragon head, in the inventory and worn. The case is a verbatim copy of the 26.3 client
-        # jar's own assets/minecraft/items/dragon_head.json model, so it tracks vanilla's look.
+        # dragon head, in the inventory and worn. Outside the head context the case is a verbatim
+        # copy of the 26.3 client jar's own assets/minecraft/items/dragon_head.json model, so it
+        # tracks vanilla's look.
         definition = self.json("assets/minecraft/items/netherite_helmet.json")["model"]
         case = next(c for c in definition["cases"] if c["when"] == "dragon_head")
-        self.assertEqual(case["model"], {
+        select = case["model"]
+        self.assertEqual(select["property"], "minecraft:display_context")
+        self.assertEqual(select["fallback"], {
             "type": "minecraft:special",
             "base": "minecraft:item/dragon_head",
             "model": {"type": "minecraft:head", "kind": "dragon"},
@@ -307,6 +394,27 @@ class BuiltPackTest(unittest.TestCase):
             },
         })
         self.assertEqual(definition["fallback"], _vanilla_netherite_armor_trim_select("helmet"))
+
+    def test_worn_final_blow_helm_sits_like_a_worn_vanilla_dragon_head(self):
+        # A worn vanilla dragon head goes CustomHeadLayer's skull branch: the skull model drawn in
+        # the head bone's frame scaled by 1.1875, no offset (Transforms.DEFAULT skullYOffset 0),
+        # snout to -z, where the player looks. The helmet goes the item branch instead; vanilla's
+        # item transformation there came out turned 180 degrees and 0.625/1.1875 the size (Joe on
+        # live, 2026-10-10: "the dragon head is backwards"), so the head context carries its own.
+        definition = self.json("assets/minecraft/items/netherite_helmet.json")["model"]
+        select = next(c for c in definition["cases"] if c["when"] == "dragon_head")["model"]
+        head = next(c for c in select["cases"] if c["when"] == "head")["model"]
+        self.assertEqual(
+            {k: head[k] for k in ("type", "base", "model")},
+            {"type": "minecraft:special", "base": "minecraft:item/dragon_head",
+             "model": {"type": "minecraft:head", "kind": "dragon"}},
+        )
+        local = _special_transformation(head["transformation"])
+        # The skull model's snout tip (-z), crown (-y), side (+x) and origin, in blocks.
+        for p in ([0, 0, 0], [0, 0, -1.5], [0, -1, 0], [0.5, 0, 0]):
+            got = _worn_head_item(p, local)
+            for a, b in zip(got, [1.1875 * v for v in p]):
+                self.assertAlmostEqual(a, b, places=5, msg=p)
 
     def test_dragonscale_textures_are_tinted_differently_from_plain_netherite(self):
         # Pixel check that the look actually reads as different from vanilla netherite: Dragonscale
