@@ -393,15 +393,12 @@ def kelp_bed_elements():
 
 def build_bed(elements):
     out = []
-    for i, (f, t, faces, *rotation) in enumerate(elements):
+    for i, (f, t, faces) in enumerate(elements):
         for v in list(f) + list(t):
             if v < -16 or v > 32:
                 raise SystemExit(f"kelp_bed_placed element {i} {f}..{t} leaves the -16..32 range")
-        element = {"from": list(f), "to": list(t),
-                   "faces": {face: bed_face(uv, tex) for face, (uv, tex) in faces.items()}}
-        if rotation:
-            element["rotation"] = rotation[0]
-        out.append(element)
+        out.append({"from": list(f), "to": list(t),
+                    "faces": {face: bed_face(uv, tex) for face, (uv, tex) in faces.items()}})
     textures = {name: f"claudesmp:item/kelp_bed/{name}" for name in BED_TEXTURES}
     textures["particle"] = textures["head_east"]
     return {"textures": textures, "elements": out}
