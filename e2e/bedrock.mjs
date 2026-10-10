@@ -2,7 +2,7 @@ import bedrock from 'bedrock-protocol';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Rcon } from './lib.mjs';
+import { Rcon, readGeyserBedrockPort } from './lib.mjs';
 
 // Headless Bedrock client against server/local's Geyser listener (19132). Local-test-only: Geyser's
 // Xbox Live login check is disabled ONLY in server/local's assembled config (see
@@ -41,9 +41,7 @@ for (const p of [
   fs.rmSync(p, { force: true });
 }
 
-// Geyser's own bedrock port, from the config the server booted with (25572 on the live layout).
-const geyserConfig = fs.readFileSync(path.join(localDir, 'plugins', 'Geyser-Spigot', 'config.yml'), 'utf8');
-const bedrockPort = Number(geyserConfig.match(/^bedrock:\s*\n(?:[ \t]+.*\n)*?[ \t]+port:\s*(\d+)/m)?.[1] ?? 19132);
+const bedrockPort = readGeyserBedrockPort(localDir);
 
 const client = bedrock.createClient({
   host: '127.0.0.1',

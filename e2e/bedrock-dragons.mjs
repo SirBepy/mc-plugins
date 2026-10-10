@@ -2,7 +2,7 @@ import bedrock from 'bedrock-protocol';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Rcon } from './lib.mjs';
+import { Rcon, readGeyserBedrockPort } from './lib.mjs';
 
 // Bedrock players see the Dragon Balls summon dragon as its 3D model: a headless Bedrock client on
 // server/local's Geyser (its configured bedrock port; login validation is off there only, see
@@ -98,10 +98,7 @@ const turned = new Set();
 const removed = new Set();
 let kickReason = null;
 
-// Geyser's own bedrock port, from the config the server booted with (25572 on the live layout).
-const geyserConfig = fs.readFileSync(path.join(localDir, 'plugins', 'Geyser-Spigot', 'config.yml'), 'utf8');
-// \r?: a config rewritten on Windows is CRLF, and JS's . never matches \r.
-const bedrockPort = Number(geyserConfig.match(/^bedrock:[ \t]*\r?\n(?:[ \t]+.*\r?\n)*?[ \t]+port:[ \t]*(\d+)/m)?.[1] ?? 19132);
+const bedrockPort = readGeyserBedrockPort(localDir);
 const client = bedrock.createClient({ host: '127.0.0.1', port: bedrockPort, username: USERNAME, offline: true });
 client.on('kick', (reason) => { kickReason = reason; });
 client.on('error', (err) => console.error('[bedrock client error]', err.message));

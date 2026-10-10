@@ -254,6 +254,18 @@ export function randomOrigin() {
   return { bx: 16 * Math.floor(Math.random() * 40 - 20), bz: 16 * Math.floor(Math.random() * 40 - 20) };
 }
 
+/** The `bedrock:` block's `port:` in a Geyser config.yml's text, or 19132 (Geyser's default) when absent. */
+export function geyserBedrockPort(configText) {
+  // \r?: a config rewritten on Windows is CRLF, and JS's . never matches \r.
+  const match = configText.match(/^bedrock:[ \t]*\r?\n(?:[ \t]+.*\r?\n)*?[ \t]+port:[ \t]*(\d+)/m);
+  return Number(match?.[1] ?? 19132);
+}
+
+/** Geyser's own bedrock port, from the config the server in localDir booted with (25572 on the live layout). */
+export function readGeyserBedrockPort(localDir) {
+  return geyserBedrockPort(fs.readFileSync(path.join(localDir, 'plugins', 'Geyser-Spigot', 'config.yml'), 'utf8'));
+}
+
 /** Forceloads around (bx, bz) and carves a 16x16 stone floor at y with 4 blocks of air above it. */
 export async function buildPlatform(rcon, bx, bz, y) {
   // /fill silently does nothing in unloaded chunks.
