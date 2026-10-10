@@ -318,4 +318,17 @@ class CosmeticRequestsTest {
         assertTrue(server.getConsoleSender().nextMessage().contains("muddier"));
         assertNull(server.getConsoleSender().nextMessage(), "the done request #1 is not listed");
     }
+
+    @Test
+    void aTokenForAFullInventoryDropsAtThePlayersFeet() {
+        PlayerMock player = server.addPlayer();
+        for (int slot = 0; slot < player.getInventory().getSize(); slot++) {
+            player.getInventory().setItem(slot, new ItemStack(Material.DIRT, 64));
+        }
+
+        token.giveTo(player);
+
+        assertEquals(1, player.getWorld().getEntitiesByClass(org.bukkit.entity.Item.class).stream()
+                .filter(item -> item.getItemStack().isSimilar(token.create())).count());
+    }
 }

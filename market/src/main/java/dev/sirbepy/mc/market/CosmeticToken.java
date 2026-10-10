@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.market;
 
+import dev.sirbepy.mc.core.Inventories;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -96,11 +97,8 @@ final class CosmeticToken {
         }
     }
 
-    /** Gives the player one token, dropping it at their feet like RadarShop does when the inventory is full. */
+    /** Gives the player one token, dropped at their feet when the inventory is full. */
     void giveTo(Player player) {
-        var leftover = player.getInventory().addItem(create());
-        if (!leftover.isEmpty()) {
-            player.getWorld().dropItem(player.getLocation(), leftover.values().iterator().next());
-        }
+        Inventories.giveOrDrop(player, create());
     }
 }
