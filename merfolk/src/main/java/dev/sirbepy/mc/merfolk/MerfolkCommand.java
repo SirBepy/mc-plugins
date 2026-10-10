@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import dev.sirbepy.mc.core.Inventories;
 import dev.sirbepy.mc.merfolk.bed.KelpBed;
 import dev.sirbepy.mc.merfolk.bed.KelpBeds;
 import dev.sirbepy.mc.merfolk.trade.RareLedger;
@@ -106,8 +107,7 @@ final class MerfolkCommand {
     private int give(CommandContext<CommandSourceStack> c, int count) {
         Player target = Bukkit.getPlayerExact(StringArgumentType.getString(c, "player"));
         if (target == null) return say(c, "That player isn't online.");
-        target.getInventory().addItem(KelpBeds.item(1).asQuantity(count)).values()
-                .forEach(left -> target.getWorld().dropItemNaturally(target.getLocation(), left));
+        Inventories.giveOrDrop(target, KelpBeds.item(1).asQuantity(count));
         return say(c, "Gave " + count + " Kelp Bed(s) to " + target.getName() + ".");
     }
 

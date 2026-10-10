@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.tweaks.listener;
 
 import com.destroystokyo.paper.event.player.PlayerPostRespawnEvent;
+import dev.sirbepy.mc.core.Inventories;
 import org.bukkit.GameMode;
 import org.bukkit.Server;
 import org.bukkit.Sound;
@@ -124,9 +125,7 @@ public final class VoidTridentListener implements Listener {
     }
 
     private static void give(Player player, ItemStack item) {
-        for (ItemStack left : player.getInventory().addItem(item).values()) {
-            player.getWorld().dropItem(player.getLocation(), left);
-        }
+        Inventories.giveOrDrop(player, item);
         player.playSound(player, Sound.ITEM_TRIDENT_RETURN, SoundCategory.PLAYERS, 1f, 1f);
     }
 }

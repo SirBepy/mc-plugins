@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.haru.shop;
 
+import dev.sirbepy.mc.core.Inventories;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -41,7 +42,7 @@ public final class Payment {
             removeUpTo(inventory, Material.EMERALD_BLOCK, blocks);
             int change = blocks * 9 - remaining;
             if (change > 0) {
-                Rewards.give(player, new ItemStack(Material.EMERALD, change));
+                Inventories.giveOrDrop(player, new ItemStack(Material.EMERALD, change));
             }
         }
         return true;

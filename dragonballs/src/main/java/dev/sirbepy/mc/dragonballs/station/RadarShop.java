@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.dragonballs.station;
 
+import dev.sirbepy.mc.core.Inventories;
 import dev.sirbepy.mc.core.econ.VaultEconomy;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
@@ -14,7 +15,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.function.Supplier;
@@ -86,11 +86,7 @@ public final class RadarShop implements Listener {
         }
 
         economy.withdrawPlayer(player, price);
-        ItemStack radar = radarItems.create(set);
-        var leftover = player.getInventory().addItem(radar);
-        if (!leftover.isEmpty()) {
-            player.getWorld().dropItem(player.getLocation(), leftover.values().iterator().next());
-        }
+        Inventories.giveOrDrop(player, radarItems.create(set));
         player.sendMessage(MINI.deserialize("<gold>You bought a " + radarName + "!"));
     }
 

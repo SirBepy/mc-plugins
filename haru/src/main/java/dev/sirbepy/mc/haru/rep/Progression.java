@@ -1,10 +1,10 @@
 package dev.sirbepy.mc.haru.rep;
 
+import dev.sirbepy.mc.core.Inventories;
 import dev.sirbepy.mc.haru.data.OwnerState;
 import dev.sirbepy.mc.haru.dialogue.Dialogue;
 import dev.sirbepy.mc.haru.dialogue.Speech;
 import dev.sirbepy.mc.haru.item.Heads;
-import dev.sirbepy.mc.haru.shop.Rewards;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
 import org.bukkit.entity.Player;
@@ -54,7 +54,7 @@ public final class Progression {
     /** Hands out any hidden milestone the owner has just reached; each happens once. */
     public void checkMilestones(Player player, OwnerState state) {
         if (state.tier().isMax() && state.unlocks().add(MILESTONE_TROPHY)) {
-            Rewards.give(player, Milestones.finalPetal(player.getName()));
+            Inventories.giveOrDrop(player, Milestones.finalPetal(player.getName()));
             state.addPetals(50);
             Speech.say(player, "One more thing. This is the last petal of my old tree. I kept it for three hundred "
                     + "years, waiting to know who to give it to. Now I know.");
@@ -62,7 +62,7 @@ public final class Progression {
         }
         boolean collectionDone = Heads.COLLECTION.stream().allMatch(c -> state.has("head:" + c.id()));
         if (collectionDone && state.unlocks().add(MILESTONE_COLLECTION)) {
-            Rewards.give(player, Milestones.portrait());
+            Inventories.giveOrDrop(player, Milestones.portrait());
             state.addPetals(100);
             state.unlocks().add(AURA_PETAL_STORM);
             Speech.say(player, "You found every one of my old treasures. The sanctuary is whole again. Take my portrait, "
@@ -71,7 +71,7 @@ public final class Progression {
             addReputation(player, state, 40);
         }
         if (state.questsCompleted() >= JOURNAL_QUESTS && state.unlocks().add(MILESTONE_JOURNAL)) {
-            Rewards.give(player, Milestones.journal(player.getName()));
+            Inventories.giveOrDrop(player, Milestones.journal(player.getName()));
             state.addPetals(30);
             Speech.say(player, "Fifty requests. I wrote some things down for you. Read it when the rain comes.");
             celebrate.accept(player);

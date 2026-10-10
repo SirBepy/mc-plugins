@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.haru.shop;
 
+import dev.sirbepy.mc.core.Inventories;
 import dev.sirbepy.mc.core.ItemNames;
 import dev.sirbepy.mc.haru.data.OwnerState;
 import dev.sirbepy.mc.haru.effect.Blessings;
@@ -38,7 +39,7 @@ public final class Rewards {
             case Reward.Item item -> {
                 ItemStack stack = item.item().get();
                 given.add(describe(stack));
-                give(player, bind ? bound.bind(stack, player.getUniqueId(), player.getName()) : stack);
+                Inventories.giveOrDrop(player, bind ? bound.bind(stack, player.getUniqueId(), player.getName()) : stack);
             }
             case Reward.Charm charm -> {
                 long now = nowMillis.getAsLong();
@@ -57,12 +58,6 @@ public final class Rewards {
             }
             case Reward.Bundle bundle -> bundle.parts().forEach(part -> grant(player, state, part, bind, given));
         }
-    }
-
-    /** Into the inventory, or at the player's feet if it's full. */
-    public static void give(Player player, ItemStack item) {
-        var leftover = player.getInventory().addItem(item);
-        leftover.values().forEach(rest -> player.getWorld().dropItem(player.getLocation(), rest));
     }
 
     public static String describe(ItemStack item) {

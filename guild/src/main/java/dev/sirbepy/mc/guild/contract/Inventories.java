@@ -55,8 +55,7 @@ public final class Inventories {
 
     public static void give(Player player, List<ItemStack> items) {
         for (ItemStack item : items) {
-            player.getInventory().addItem(item.clone()).values()
-                    .forEach(left -> player.getWorld().dropItem(player.getLocation(), left));
+            dev.sirbepy.mc.core.Inventories.giveOrDrop(player, item.clone());
         }
     }
 

@@ -1,9 +1,9 @@
 package dev.sirbepy.mc.haru.item;
 
+import dev.sirbepy.mc.core.Inventories;
 import dev.sirbepy.mc.haru.HaruContext;
 import dev.sirbepy.mc.haru.data.OwnerState;
 import dev.sirbepy.mc.haru.dialogue.Speech;
-import dev.sirbepy.mc.haru.shop.Rewards;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -80,7 +80,7 @@ public final class BoundListener implements Listener {
             return false;
         }
         for (ItemStack item : state.lostAndFound()) {
-            Rewards.give(owner, item);
+            Inventories.giveOrDrop(owner, item);
         }
         state.lostAndFound().clear();
         ctx.store().save();

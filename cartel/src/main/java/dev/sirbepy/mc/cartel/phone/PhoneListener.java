@@ -2,7 +2,7 @@ package dev.sirbepy.mc.cartel.phone;
 
 import dev.sirbepy.mc.cartel.CartelConfig;
 import dev.sirbepy.mc.cartel.CartelStore;
-import dev.sirbepy.mc.cartel.Inventories;
+import dev.sirbepy.mc.core.Inventories;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
