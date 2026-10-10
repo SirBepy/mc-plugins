@@ -134,6 +134,31 @@ class MarketTest {
         assertFalse(message.isBlank(), "/market reload confirms with messages.reload-success");
     }
 
+    // A config.yml that predates /market watch (live's, before the next restart's copyDefaults+
+    // saveConfig merge runs) never goes through that JavaPlugin lifecycle in a plain
+    // `new MarketConfig(yaml)` - this proves MarketConfig's own jar-default fallback covers it
+    // without relying on that restart dance, and without touching core's Messages at all.
+    @Test
+    void aConfigMissingAWatchMessageKeyStillRendersTheJarsDefaultTextInsteadOfMissingMessage() {
+        MarketConfig bare = new MarketConfig(new YamlConfiguration());
+        String rendered = bare.messages().renderPlain("watch-added",
+                net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("item", "birch_log"));
+        assertFalse(rendered.contains("missing message"), rendered);
+        assertTrue(rendered.contains("birch_log"), rendered);
+
+        // An empty config also keeps every other already-shipped key working the same way.
+        assertFalse(bare.messages().renderPlain("reload-success").contains("missing message"));
+    }
+
+    @Test
+    void aConfigsOwnWatchMessageOverridesTheJarDefaultRatherThanBeingIgnored() {
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("messages.watch-added", "<green>CUSTOM <item>");
+        MarketConfig custom = new MarketConfig(yaml);
+        assertEquals("CUSTOM birch_log", custom.messages().renderPlain("watch-added",
+                net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("item", "birch_log")));
+    }
+
     @Test
     void pricesRollWithinTwentyPercentOfBaseToTheCent() {
         boolean cheaper = false;

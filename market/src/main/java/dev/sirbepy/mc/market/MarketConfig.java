@@ -1,9 +1,15 @@
 package dev.sirbepy.mc.market;
 
 import dev.sirbepy.mc.core.Messages;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -64,7 +70,44 @@ public final class MarketConfig {
         }
         this.homePrices = Map.copyOf(prices);
         this.cosmeticsPrice = BigDecimal.valueOf(config.getLong("cosmetics.price", 2500));
-        this.messages = new Messages(config.getConfigurationSection("messages"));
+        this.messages = new Messages(messagesWithJarFallback(config));
+    }
+
+    /**
+     * The {@code messages} section, with any key missing from it filled in from the jar's own
+     * bundled {@code config.yml}. Live's {@code plugins/Market/config.yml} only gets a key a newer
+     * jar introduced once {@code MarketPlugin.onEnable()}'s {@code copyDefaults}/{@code saveConfig}
+     * dance runs it through a restart; a plain {@code new MarketConfig(yaml)} in a test, or a
+     * config.yml that genuinely predates a key, never goes through that JavaPlugin lifecycle at all.
+     * Doing the fallback here instead makes it provable by a unit test and keeps {@code Messages}
+     * itself (core/) untouched - its own missing-key fallback is still the visible
+     * {@code [missing message: ...]} marker, now only reached if a key is absent from BOTH files.
+     */
+    private static ConfigurationSection messagesWithJarFallback(FileConfiguration config) {
+        YamlConfiguration merged = new YamlConfiguration();
+        try (InputStream stream = MarketConfig.class.getResourceAsStream("/config.yml")) {
+            if (stream != null) {
+                ConfigurationSection jarDefaults = YamlConfiguration
+                        .loadConfiguration(new InputStreamReader(stream, StandardCharsets.UTF_8))
+                        .getConfigurationSection("messages");
+                copyStrings(jarDefaults, merged);
+            }
+        } catch (IOException e) {
+            // A jar resource stream only throws on close(); nothing written above is lost either way.
+        }
+        copyStrings(config.getConfigurationSection("messages"), merged);
+        return merged;
+    }
+
+    private static void copyStrings(ConfigurationSection from, ConfigurationSection into) {
+        if (from == null) {
+            return;
+        }
+        for (String key : from.getKeys(true)) {
+            if (from.isString(key)) {
+                into.set(key, from.getString(key));
+            }
+        }
     }
 
     // Only reached for a tier missing its own config.yml entry: today's shipped tiers (4/5/6) always

@@ -136,3 +136,17 @@ messages:
   cosmetic-done-admin: "<green>Marked #<id> done."
   cosmetic-refund-notice: "<green>Your cosmetic #<id> was refunded - a new token is in your inventory."
   cosmetic-refund-admin: "<green>Refunded #<id>."
+  # /market watch <item> / unwatch <item> (Joe, 2026-10-10): get told when something shows up at the
+  # spawn market. <item> is the item/mob id as typed; <stall> and <price> on the notify lines are the
+  # stall (or the Heads stall) and today's price/amount, exactly as its sign shows them.
+  watch-added: "<green>Watching <white><item></white>. You'll hear about it when it's on the market."
+  watch-already: "<gray>You're already watching <white><item></white>."
+  watch-cap: "<red>You can only watch 10 items at once. /market unwatch one first."
+  watch-unknown: "<red>Unknown item: <white><item></white>. Tab-complete to see what the market buys."
+  watch-removed: "<green>No longer watching <white><item></white>."
+  watch-not-watching: "<gray>You're not watching <white><item></white>."
+  watch-list-empty: "<gray>You're not watching anything. /market watch <item> to start."
+  watch-list-header: "<gold>You're watching:"
+  watch-list-line: " <dark_gray>-</dark_gray> <white><item></white>"
+  watch-rotated: "<gold>Market watch:</gold> <white><item></white> is on sale today at the <white><stall></white> stall (<price>)."
+  watch-join: "<gold>Market watch:</gold> <white><item></white> is still on today's market at the <white><stall></white> stall (<price>)."

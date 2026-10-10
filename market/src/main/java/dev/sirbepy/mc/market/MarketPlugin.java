@@ -37,6 +37,7 @@ public final class MarketPlugin extends JavaPlugin {
     private HomeShop homeShop;
     private CosmeticShop cosmeticShop;
     private CosmeticRequests cosmeticRequests;
+    private MarketWatches watches;
 
     @Override
     public void onEnable() {
@@ -60,6 +61,8 @@ public final class MarketPlugin extends JavaPlugin {
         }
         market = new Market(layout, heads, config::get, this::period, new SecureRandom(),
                 new File(getDataFolder(), "state.yml"), getLogger());
+        watches = new MarketWatches(market, layout, heads, config::get, new File(getDataFolder(), "watches.yml"), getLogger());
+        getServer().getPluginManager().registerEvents(watches, this);
         headsStall = new HeadsStall(this, market, config::get, this::pay);
         getServer().getPluginManager().registerEvents(headsStall, this);
         wantedBoard = new WantedBoard(this, layout, config::get, this::period, new SecureRandom(), Instant::now,
@@ -75,6 +78,7 @@ public final class MarketPlugin extends JavaPlugin {
         cosmeticRequests = new CosmeticRequests(this, config::get, cosmeticToken, new File(getDataFolder(), "cosmetics.yml"), getLogger());
         getServer().getPluginManager().registerEvents(cosmeticRequests, this);
         CosmeticCommand cosmeticCommand = new CosmeticCommand(cosmeticRequests);
+        MarketWatchCommand watchCommand = new MarketWatchCommand(watches, config::get);
         PriceCommand price;
         try (InputStream stream = Objects.requireNonNull(getResource("prices.yml"), "prices.yml missing from the jar")) {
             price = new PriceCommand(PriceBook.load(stream), config::get, ItemStack::effectiveName, Enchantment::displayName);
@@ -83,8 +87,11 @@ public final class MarketPlugin extends JavaPlugin {
         }
 
         // Signs are rewritten on every start too, in case the spawn-market datapack rebuilt the stalls.
-        market.refresh();
+        boolean rotatedOnStart = market.refresh();
         applyIfWorldLoaded();
+        if (rotatedOnStart) {
+            watches.notifyRotate(List.copyOf(getServer().getOnlinePlayers()));
+        }
         wantedBoard.refresh();
         wantedBoard.applyIfWorldLoaded();
         World enableWorld = getServer().getWorld(config.get().world());
@@ -97,6 +104,7 @@ public final class MarketPlugin extends JavaPlugin {
             if (rotated) {
                 applyIfWorldLoaded();
                 config.get().messages().send(getServer(), "rotated");
+                watches.notifyRotate(List.copyOf(getServer().getOnlinePlayers()));
             }
             if (wantedBoard.refresh()) {
                 wantedBoard.applyIfWorldLoaded();
@@ -131,6 +139,8 @@ public final class MarketPlugin extends JavaPlugin {
                                     ((Player) ctx.getSource().getExecutor()).openBook(PriceList.book(market.layout(), market.heads(), config.get()));
                                     return Command.SINGLE_SUCCESS;
                                 }))
+                        .then(watchCommand.watchNode())
+                        .then(watchCommand.unwatchNode())
                         .then(Commands.literal("rotate")
                                 .requires(src -> src.getSender().hasPermission("market.admin"))
                                 .executes(ctx -> {
@@ -138,6 +148,7 @@ public final class MarketPlugin extends JavaPlugin {
                                     applyIfWorldLoaded();
                                     wantedBoard.rotate();
                                     wantedBoard.applyIfWorldLoaded();
+                                    watches.notifyRotate(List.copyOf(getServer().getOnlinePlayers()));
                                     config.get().messages().send(ctx.getSource().getSender(), "rotate-success");
                                     return Command.SINGLE_SUCCESS;
                                 }))
