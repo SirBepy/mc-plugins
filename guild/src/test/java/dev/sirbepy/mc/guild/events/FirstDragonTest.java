@@ -193,6 +193,37 @@ class FirstDragonTest extends GuildTestBase {
     }
 
     @Test
+    void anAdminAddedMemberGetsTheTitleAndAPartySeatButNoPay() {
+        join(alice);
+        Member b = join(bob);
+        double bobCoins = bank.balance(bob);
+        long treasury = store.treasury().balance();
+        firstDragon.dragonKilled(List.of(alice.getUniqueId()));
+
+        assertEquals(FirstDragon.AddResult.ADDED, FirstDragon.addToParty(guild, b));
+
+        assertTrue(b.titles().contains(FirstDragon.TITLE));
+        assertEquals(List.of("Alice", "Bob"), List.copyOf(FirstDragon.party(newStore()).values()), "saved, after the killers");
+        assertEquals(bobCoins, bank.balance(bob), "no coins");
+        assertEquals(0, b.reputation(), "no reputation");
+        assertEquals(treasury + Math.round(FirstDragon.COINS * config.get().commissionRate()), store.treasury().balance(),
+                "only Alice's commission was minted");
+        assertEquals(FirstDragon.AddResult.ALREADY_IN_PARTY, FirstDragon.addToParty(guild, b));
+        assertEquals(List.of("Alice", "Bob"), List.copyOf(FirstDragon.party(store).values()));
+    }
+
+    @Test
+    void thereIsNoPartyToJoinBeforeTheGuildRecordsAKill() {
+        Member a = join(alice);
+
+        assertEquals(FirstDragon.AddResult.NO_PARTY, FirstDragon.addToParty(guild, a));
+        firstDragon.endLoaded("world_the_end", true);
+        assertEquals(FirstDragon.AddResult.NO_PARTY, FirstDragon.addToParty(guild, a));
+
+        assertFalse(a.titles().contains(FirstDragon.TITLE));
+    }
+
+    @Test
     void namesReadAsAList() {
         assertEquals("A", FirstDragon.list(List.of("A")));
         assertEquals("A and B", FirstDragon.list(List.of("A", "B")));

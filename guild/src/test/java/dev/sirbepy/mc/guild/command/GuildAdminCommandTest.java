@@ -70,6 +70,17 @@ class GuildAdminCommandTest extends GuildTestBase {
     }
 
     @Test
+    void firstDragonAddSaysNoPayWasGiven() throws Exception {
+        join(alice);
+        store.events().set("first-dragon.done", true);
+
+        dispatcher.execute("guildadmin firstdragon add Alice", console);
+
+        String reply = consoleSender.nextMessage();
+        assertTrue(reply.startsWith("Alice is now in the First Dragon party") && reply.contains("No coins or reputation"), reply);
+    }
+
+    @Test
     void staffListShowsNotPlacedByDefault() throws Exception {
         dispatcher.execute("guildadmin staff list", console);
         assertTrue(consoleSender.nextMessage().contains("receptionist (Lyra Fennwick, Guild Receptionist): not placed"));

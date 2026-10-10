@@ -235,6 +235,31 @@ public final class FirstDragon {
                 + (unpaid.isEmpty() ? "" : "; coins still owed to " + String.join(", ", unpaid));
     }
 
+    public enum AddResult { ADDED, ALREADY_IN_PARTY, NO_PARTY }
+
+    /**
+     * Repair for a member who fought but never hurt the dragon, so the kill skipped them (Joe ruled on
+     * 2026-10-10 that everyone who entered the End counts): the Dragonslayer title and a place in the
+     * recorded party, but no coins or reputation, which an admin pays by hand. NO_PARTY while no Guild
+     * kill is recorded (armed, or spent by an earlier kill), since there is no party to join.
+     */
+    public static AddResult addToParty(Guild guild, Member member) {
+        GuildStore store = guild.store();
+        if (!done(store) || earlier(store)) {
+            return AddResult.NO_PARTY;
+        }
+        // Granting again is a no-op, so a repeat still leaves the title in place.
+        guild.achievements().grant(Bukkit.getPlayer(member.id()), member, TITLE);
+        if (party(store).containsKey(member.id())) {
+            store.save();
+            return AddResult.ALREADY_IN_PARTY;
+        }
+        store.events().set(ROOT + ".party." + member.id(), member.name());
+        member.addStat("first-dragon", 1);
+        store.save();
+        return AddResult.ADDED;
+    }
+
     /** Testing and repair: forgets the first dragon, so the next one in the End runs the event again. */
     public static void reset(GuildStore store) {
         store.events().set(ROOT, null);

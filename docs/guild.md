@@ -232,6 +232,8 @@ in `/guild`, or a right-click on Silas the treasurer) has:
   `firstdragon` (First Dragon status: armed, or the party and when; also names anyone whose coins are
   still owed) and `firstdragon reset` (testing and repair only: forgets the record so the next dragon
   killed in the End runs the event again; what was already paid stays paid),
+  `firstdragon add <player>` (repair: puts a member who was in the fight but never hurt the dragon into
+  the recorded party and grants the Dragonslayer title; no coins or reputation, pay those by hand),
   `probe <world> <x> <y> <z>` (the biome and structures exploration contracts see there), `staff ...` and
   `hall guard ...` (above), `reload`.
 

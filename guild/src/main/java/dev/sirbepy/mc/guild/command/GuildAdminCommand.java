@@ -69,7 +69,8 @@ public final class GuildAdminCommand {
                 .then(Commands.literal("grandquest")
                         .then(Commands.literal("reroll").executes(this::rerollGrand)))
                 .then(Commands.literal("firstdragon").executes(this::firstDragon)
-                        .then(Commands.literal("reset").executes(this::resetFirstDragon)))
+                        .then(Commands.literal("reset").executes(this::resetFirstDragon))
+                        .then(Commands.literal("add").then(player().executes(this::addFirstDragon))))
                 .then(Commands.literal("treasury")
                         .then(Commands.argument("amount", IntegerArgumentType.integer()).executes(this::treasury)))
                 .then(Commands.literal("probe")
@@ -246,6 +247,20 @@ public final class GuildAdminCommand {
         FirstDragon.reset(guild.store());
         send(c, "First Dragon record cleared: the next dragon to die in the End pays its Guild fighters again."
                 + " Coins, reputation and titles already given stay given.");
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int addFirstDragon(CommandContext<CommandSourceStack> c) {
+        Member m = target(c);
+        if (m == null) {
+            return Command.SINGLE_SUCCESS;
+        }
+        switch (FirstDragon.addToParty(guild, m)) {
+            case ADDED -> send(c, m.name() + " is now in the First Dragon party with the Dragonslayer title. No coins or"
+                    + " reputation were given: the dragon's payout is not repeated, pay it separately if owed.");
+            case ALREADY_IN_PARTY -> send(c, m.name() + " was already in the First Dragon party; nothing changed.");
+            case NO_PARTY -> send(c, "No First Dragon party is recorded to add " + m.name() + " to.");
+        }
         return Command.SINGLE_SUCCESS;
     }
 
