@@ -18,7 +18,6 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
 import java.math.BigDecimal;
-import java.util.Locale;
 import java.util.function.Supplier;
 
 /**
@@ -39,8 +38,6 @@ public final class CosmeticShop implements Listener {
         /** The player's balance, or null when no economy is registered. */
         Double balance(Player player);
     }
-
-    private static final int LINE_LENGTH = 15;
 
     private final MarketLayout layout;
     private final Supplier<MarketConfig> config;
@@ -75,7 +72,7 @@ public final class CosmeticShop implements Listener {
         SignSide front = sign.getSide(Side.FRONT);
         front.line(0, Component.text("Cosmetic").decorate(TextDecoration.BOLD));
         front.line(1, Component.text("Token"));
-        front.line(2, Component.text(truncate(money(config.get().cosmeticsPrice()))));
+        front.line(2, Component.text(SignWriter.truncate(PriceList.wholeDollars(config.get().cosmeticsPrice()))));
         front.line(3, Component.text("Right-click"));
         front.setColor(shop.color());
         front.setGlowingText(true);
@@ -106,8 +103,8 @@ public final class CosmeticShop implements Listener {
             if (bal == null) {
                 messages.send(player, "cosmetics-closed");
             } else {
-                messages.send(player, "cosmetics-poor", Placeholder.unparsed("price", money(price)),
-                        Placeholder.unparsed("balance", money(BigDecimal.valueOf(bal))));
+                messages.send(player, "cosmetics-poor", Placeholder.unparsed("price", PriceList.wholeDollars(price)),
+                        Placeholder.unparsed("balance", PriceList.wholeDollars(BigDecimal.valueOf(bal))));
             }
             return;
         }
@@ -115,11 +112,4 @@ public final class CosmeticShop implements Listener {
         messages.send(player, "cosmetics-sold");
     }
 
-    private static String truncate(String text) {
-        return text.length() <= LINE_LENGTH ? text : text.substring(0, LINE_LENGTH);
-    }
-
-    private static String money(BigDecimal amount) {
-        return "$" + String.format(Locale.US, "%,d", amount.toBigInteger());
-    }
 }

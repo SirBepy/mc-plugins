@@ -145,4 +145,10 @@ final class PriceList {
     static String money(BigDecimal price) {
         return "$" + price.setScale(2, RoundingMode.HALF_UP).toPlainString();
     }
+
+    /** A whole-dollar amount with thousands separators, e.g. {@code $1,500}: HomeShop and
+     * CosmeticShop's sign/chat prices, which are always whole dollars, unlike {@link #money}'s cents. */
+    static String wholeDollars(BigDecimal amount) {
+        return "$" + String.format(Locale.US, "%,d", amount.toBigInteger());
+    }
 }

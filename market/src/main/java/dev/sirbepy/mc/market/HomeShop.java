@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -72,7 +71,6 @@ public final class HomeShop implements Listener {
         boolean grant(UUID playerId, int next);
     }
 
-    private static final int LINE_LENGTH = 15;
     // Checked cheaply down from here for the player's own highest granted node: nobody needs more
     // than an admin's blanket .100, and this scan covers that too.
     private static final int PERMISSION_SCAN_MAX = 100;
@@ -131,8 +129,8 @@ public final class HomeShop implements Listener {
 
         BigDecimal price = cfg.homePrice(n);
         SignSide front = sign.getSide(Side.FRONT);
-        front.line(0, Component.text(truncate(nth(n) + " home")).decorate(TextDecoration.BOLD));
-        front.line(1, Component.text(truncate(price == null ? "-" : money(price))));
+        front.line(0, Component.text(SignWriter.truncate(nth(n) + " home")).decorate(TextDecoration.BOLD));
+        front.line(1, Component.text(SignWriter.truncate(price == null ? "-" : PriceList.wholeDollars(price))));
         front.line(2, Component.text("Right-click"));
         front.line(3, Component.text("to buy"));
         front.setColor(shop.color());
@@ -187,8 +185,8 @@ public final class HomeShop implements Listener {
             if (bal == null) {
                 messages.send(player, "homes-closed");
             } else {
-                messages.send(player, "homes-poor", Placeholder.unparsed("price", money(price)),
-                        Placeholder.unparsed("balance", money(BigDecimal.valueOf(bal))));
+                messages.send(player, "homes-poor", Placeholder.unparsed("price", PriceList.wholeDollars(price)),
+                        Placeholder.unparsed("balance", PriceList.wholeDollars(BigDecimal.valueOf(bal))));
             }
             return;
         }
@@ -230,14 +228,6 @@ public final class HomeShop implements Listener {
             sold.put(playerId, n);
         }
         save();
-    }
-
-    private static String truncate(String text) {
-        return text.length() <= LINE_LENGTH ? text : text.substring(0, LINE_LENGTH);
-    }
-
-    private static String money(BigDecimal amount) {
-        return "$" + String.format(Locale.US, "%,d", amount.toBigInteger());
     }
 
     private void load() {

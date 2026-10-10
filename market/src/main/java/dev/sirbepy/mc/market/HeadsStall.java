@@ -53,8 +53,6 @@ public final class HeadsStall implements Listener {
     // The heads the stalls' [Sell] signs buy, so this stall can point there instead.
     private static final Set<Material> SIGN_HEADS = Set.of(Material.ZOMBIE_HEAD, Material.SKELETON_SKULL,
             Material.CREEPER_HEAD, Material.PIGLIN_HEAD, Material.WITHER_SKELETON_SKULL, Material.DRAGON_HEAD);
-    // A sign line fits about 15 characters before it starts overflowing the texture.
-    private static final int LINE_LENGTH = 15;
 
     private final Market market;
     private final Supplier<MarketConfig> config;
@@ -97,9 +95,9 @@ public final class HeadsStall implements Listener {
             MobHeads.Mob mob = wanted.get(i);
             SignSide front = sign.getSide(Side.FRONT);
             // Line 1 must not be Essentials' dark blue "[Sell]"/"[Buy]", or it would grab this sign too.
-            front.line(0, Component.text(truncate(mob.name())).decorate(TextDecoration.BOLD));
+            front.line(0, Component.text(SignWriter.truncate(mob.name())).decorate(TextDecoration.BOLD));
             front.line(1, Component.text("head"));
-            front.line(2, Component.text(truncate(priceText(mob))));
+            front.line(2, Component.text(SignWriter.truncate(priceText(mob))));
             front.line(3, Component.text("Right-click"));
             front.setColor(stall.color());
             front.setGlowingText(true);
@@ -112,10 +110,6 @@ public final class HeadsStall implements Listener {
         BigDecimal min = prices.stream().min(BigDecimal::compareTo).orElseThrow();
         BigDecimal max = prices.stream().max(BigDecimal::compareTo).orElseThrow();
         return PriceList.range(min, max);
-    }
-
-    private static String truncate(String text) {
-        return text.length() <= LINE_LENGTH ? text : text.substring(0, LINE_LENGTH);
     }
 
     @EventHandler

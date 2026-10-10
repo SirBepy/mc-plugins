@@ -31,6 +31,9 @@ import java.util.logging.Logger;
 public final class Market {
 
     private static final BigDecimal MIN_PRICE = new BigDecimal("0.01");
+    // Only Market.value below needs hours-alive-from-ticks, so it stays private here rather than a
+    // third copy of 20 * 60 * 60.
+    private static final double TICKS_PER_HOUR = 20 * 60 * 60;
 
     private final MarketLayout layout;
     private final MobHeads heads;
@@ -99,7 +102,25 @@ public final class Market {
 
     /** A uniform factor in [1 - spread, 1 + spread]. */
     private double factor(double spread) {
+        return factor(random, spread);
+    }
+
+    /** Uniform in [1 - spread, 1 + spread]: this stall roll and the Wanted board's bounty factor
+     * are the same rule, so it lives here once instead of twice. */
+    static double factor(Random random, double spread) {
         return 1 + spread * (2 * random.nextDouble() - 1);
+    }
+
+    /** {@code (base + perHour * hours alive) * factor}, rounded to the dollar, never above
+     * {@code cap}. The Wanted board's bounty value curve. */
+    static BigDecimal value(long aliveTicks, double factor, double base, double perHour, long cap) {
+        double raw = (base + perHour * aliveTicks / TICKS_PER_HOUR) * factor;
+        return BigDecimal.valueOf(Math.min(cap, Math.round(raw)));
+    }
+
+    /** {@code value} times a share (old head, survivor), rounded to the dollar. */
+    static BigDecimal share(BigDecimal value, double share) {
+        return BigDecimal.valueOf(Math.round(value.doubleValue() * share));
     }
 
     /** The offer at its base price times a {@link #factor}, to the cent, never below $0.01. */

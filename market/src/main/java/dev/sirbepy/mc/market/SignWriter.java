@@ -15,7 +15,14 @@ import java.util.List;
 /** Writes Essentials [Sell] signs: {@code [Sell]} / amount / item / total price. */
 final class SignWriter {
 
+    // A sign line fits about 15 characters before it starts overflowing the texture.
+    static final int LINE_LENGTH = 15;
+
     private SignWriter() {
+    }
+
+    static String truncate(String text) {
+        return text.length() <= LINE_LENGTH ? text : text.substring(0, LINE_LENGTH);
     }
 
     static void write(World world, Material signBlock, Stall stall, List<Offer> offers) {

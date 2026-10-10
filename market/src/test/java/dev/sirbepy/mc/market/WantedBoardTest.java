@@ -37,7 +37,6 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
@@ -252,23 +251,13 @@ class WantedBoardTest {
     }
 
     @Test
-    void valueIsBasePlusPerHourAliveTimesTheFactorCappedAndRounded() {
-        assertEquals(BigDecimal.valueOf(50), WantedBoard.value(0, 1, 50, 25, 500), "just died: the base");
-        assertEquals(BigDecimal.valueOf(100), WantedBoard.value(2 * HOUR, 1, 50, 25, 500), "2 h alive: $50 + 2 x $25");
-        assertEquals(BigDecimal.valueOf(63), WantedBoard.value(HOUR / 2, 1, 50, 25, 500), "half an hour: $62.50 rounds up");
-        assertEquals(BigDecimal.valueOf(45), WantedBoard.value(0, 0.9, 50, 25, 500), "the factor scales the whole value");
-        assertEquals(BigDecimal.valueOf(500), WantedBoard.value(18 * HOUR, 1.1, 50, 25, 500), "$550 caps at $500");
-        assertEquals(BigDecimal.valueOf(500), WantedBoard.value(100 * HOUR, 1, 50, 25, 500), "never past the cap");
-    }
-
-    @Test
     void factorStaysWithinTheSpread() {
-        assertEquals(0.9, WantedBoard.factor(rolling(0), 0.1), 1e-9);
-        assertEquals(1.0, WantedBoard.factor(rolling(0.5), 0.1), 1e-9);
-        assertEquals(1.1, WantedBoard.factor(rolling(1), 0.1), 1e-9);
+        assertEquals(0.9, Market.factor(rolling(0), 0.1), 1e-9);
+        assertEquals(1.0, Market.factor(rolling(0.5), 0.1), 1e-9);
+        assertEquals(1.1, Market.factor(rolling(1), 0.1), 1e-9);
         Random random = new Random(42);
         for (int i = 0; i < 1000; i++) {
-            double f = WantedBoard.factor(random, 0.1);
+            double f = Market.factor(random, 0.1);
             assertTrue(f >= 0.9 && f <= 1.1, "factor " + f);
         }
     }
@@ -434,24 +423,6 @@ class WantedBoardTest {
         period.set("day-2");
         joined.refresh();
         assertEquals(List.of(50.0), paid, "joined once since posting: half of $100");
-    }
-
-    @Test
-    void aStateFileFromTheFixedPriceBoardLoadsWithFactorOne() throws Exception {
-        PlayerMock target = server.addPlayer("Target");
-        File stateFile = new File(dir, "wanted.yml");
-        Files.writeString(stateFile.toPath(), """
-                period: day-1
-                cooldown: false
-                target-id: %s
-                target-name: Target
-                price: '87'
-                posted-at: '2026-10-09T00:00:00Z'
-                """.formatted(target.getUniqueId()));
-        WantedBoard board = board(ALWAYS_ONLINE, growing(), stateFile);
-        assertEquals(1.0, board.state().factor(), 1e-9);
-        assertTrue(board.state().played(), "the old board never tracked it, so it doesn't cost the target a reward");
-        assertFalse(board.state().died());
     }
 
     @Test

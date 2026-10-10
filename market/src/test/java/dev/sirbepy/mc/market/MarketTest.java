@@ -42,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MarketTest {
 
     private static final Logger LOG = Logger.getLogger("market-test");
+    private static final long HOUR = 20L * 60 * 60;
 
     @TempDir
     File dir;
@@ -305,6 +306,18 @@ class MarketTest {
         Market market = new Market(small, heads, () -> config, period::get, new Random(1), new File(dir, "state.yml"), LOG);
         market.refresh();
         assertEquals(2, market.wantedMobs().size(), "capped to the 2 signs, not the configured " + config.headsPerDay());
+    }
+
+    // Moved from WantedBoardTest: Market.value is the Wanted board's bounty curve, shared here
+    // next to Market.factor rather than duplicated on WantedBoard.
+    @Test
+    void valueIsBasePlusPerHourAliveTimesTheFactorCappedAndRounded() {
+        assertEquals(BigDecimal.valueOf(50), Market.value(0, 1, 50, 25, 500), "just died: the base");
+        assertEquals(BigDecimal.valueOf(100), Market.value(2 * HOUR, 1, 50, 25, 500), "2 h alive: $50 + 2 x $25");
+        assertEquals(BigDecimal.valueOf(63), Market.value(HOUR / 2, 1, 50, 25, 500), "half an hour: $62.50 rounds up");
+        assertEquals(BigDecimal.valueOf(45), Market.value(0, 0.9, 50, 25, 500), "the factor scales the whole value");
+        assertEquals(BigDecimal.valueOf(500), Market.value(18 * HOUR, 1.1, 50, 25, 500), "$550 caps at $500");
+        assertEquals(BigDecimal.valueOf(500), Market.value(100 * HOUR, 1, 50, 25, 500), "never past the cap");
     }
 
     @Test

@@ -1,7 +1,6 @@
 package dev.sirbepy.mc.market;
 
 import com.destroystokyo.paper.profile.PlayerProfile;
-import dev.sirbepy.mc.core.YamlFiles;
 import dev.sirbepy.mc.core.item.KillStamp;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -19,7 +18,6 @@ import org.bukkit.block.Skull;
 import org.bukkit.block.data.Directional;
 import org.bukkit.block.sign.Side;
 import org.bukkit.block.sign.SignSide;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -35,16 +33,13 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 
 import java.io.File;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -80,9 +75,6 @@ public final class WantedBoard implements Listener {
         boolean pay(OfflinePlayer player, double amount);
     }
 
-    private static final int LINE_LENGTH = 15;
-    private static final double TICKS_PER_HOUR = 20 * 60 * 60;
-
     private final Plugin plugin;
     private final MarketLayout layout;
     private final Supplier<MarketConfig> config;
@@ -97,7 +89,7 @@ public final class WantedBoard implements Listener {
     // A successful sale's broadcast target. Not just plugin.getServer(): MockBukkit's ServerMock
     // has no Audience implementation (audiences() is unimplemented), so a test supplies its own.
     private final Audience broadcast;
-    private final File stateFile;
+    private final WantedStateStore stateStore;
     private final Logger logger;
     // The time alive a head's kill ended, stamped beside its KillStamp at death: the statistic is
     // reset right after PlayerDeathEvent, so the head is the only place it survives.
@@ -122,10 +114,10 @@ public final class WantedBoard implements Listener {
         this.aliveTicks = aliveTicks;
         this.payout = payout;
         this.broadcast = broadcast;
-        this.stateFile = stateFile;
+        this.stateStore = new WantedStateStore(stateFile, logger);
         this.logger = logger;
         this.aliveKey = new NamespacedKey(plugin, "alive_ticks");
-        load();
+        this.state = stateStore.load();
     }
 
     /** Picks a new target if the period has changed since the last pick. Returns whether it did. */
@@ -159,11 +151,11 @@ public final class WantedBoard implements Listener {
         } else {
             Target target = pick();
             state = target == null ? WantedState.none(day)
-                    : WantedState.posted(day, target.id(), target.name(), factor(random, config.get().wantedSpread()),
+                    : WantedState.posted(day, target.id(), target.name(), Market.factor(random, config.get().wantedSpread()),
                     clock.get(), isOnline(target.id()));
         }
         shownValue = null;
-        save();
+        stateStore.save(state);
     }
 
     /** Pays a target who played since posting and never died, nor got sold: survivor-share of the value now. */
@@ -171,7 +163,7 @@ public final class WantedBoard implements Listener {
         if (state == null || !state.hasTarget() || state.claimed() || state.died() || !state.played()) {
             return;
         }
-        BigDecimal reward = share(currentValue(), config.get().wantedSurvivorShare());
+        BigDecimal reward = Market.share(currentValue(), config.get().wantedSurvivorShare());
         if (reward.signum() <= 0) {
             return;
         }
@@ -213,30 +205,14 @@ public final class WantedBoard implements Listener {
         return new Target(chosen.getUniqueId(), chosen.getName());
     }
 
-    /** Uniform in [1 - spread, 1 + spread]. */
-    static double factor(Random random, double spread) {
-        return 1 + spread * (2 * random.nextDouble() - 1);
-    }
-
-    /** {@code (base + perHour * hours alive) * factor}, rounded to the dollar, never above {@code cap}. */
-    static BigDecimal value(long aliveTicks, double factor, double base, double perHour, long cap) {
-        double raw = (base + perHour * aliveTicks / TICKS_PER_HOUR) * factor;
-        return BigDecimal.valueOf(Math.min(cap, Math.round(raw)));
-    }
-
     private BigDecimal valueAt(long aliveTicks) {
         MarketConfig cfg = config.get();
-        return value(aliveTicks, state.factor(), cfg.wantedBase(), cfg.wantedPerHour(), cfg.wantedCap());
+        return Market.value(aliveTicks, state.factor(), cfg.wantedBase(), cfg.wantedPerHour(), cfg.wantedCap());
     }
 
     /** The bounty right now, from the target's current time alive. */
     private BigDecimal currentValue() {
         return valueAt(aliveTicks.applyAsLong(state.targetId()));
-    }
-
-    /** {@code value} times a share (old head, survivor), rounded to the dollar. */
-    private static BigDecimal share(BigDecimal value, double share) {
-        return BigDecimal.valueOf(Math.round(value.doubleValue() * share));
     }
 
     /** Writes the target's head and the WANTED sign, like SignWriter does for a stall's [Sell] signs. */
@@ -297,15 +273,15 @@ public final class WantedBoard implements Listener {
             front.line(2, Component.text(state.cooldown() ? "tomorrow" : "today"));
             front.line(3, Component.empty());
         } else if (state.claimed()) {
-            front.line(1, Component.text(truncate(state.targetName())));
+            front.line(1, Component.text(SignWriter.truncate(state.targetName())));
             front.line(2, Component.text("Claimed by"));
-            front.line(3, Component.text(truncate(state.claimedByName())));
+            front.line(3, Component.text(SignWriter.truncate(state.claimedByName())));
         } else {
             BigDecimal value = currentValue();
-            BigDecimal old = share(value, config.get().wantedOldHeadShare());
-            front.line(1, Component.text(truncate(state.targetName())));
-            front.line(2, Component.text(truncate("Fresh: $" + value.toBigInteger())));
-            front.line(3, Component.text(truncate("Old: $" + old.toBigInteger())));
+            BigDecimal old = Market.share(value, config.get().wantedOldHeadShare());
+            front.line(1, Component.text(SignWriter.truncate(state.targetName())));
+            front.line(2, Component.text(SignWriter.truncate("Fresh: $" + value.toBigInteger())));
+            front.line(3, Component.text(SignWriter.truncate("Old: $" + old.toBigInteger())));
             shownValue = value;
         }
         sign.update(true, false);
@@ -335,12 +311,8 @@ public final class WantedBoard implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         if (state != null && state.hasTarget() && !state.played() && event.getPlayer().getUniqueId().equals(state.targetId())) {
             state = state.withPlayed();
-            save();
+            stateStore.save(state);
         }
-    }
-
-    private static String truncate(String text) {
-        return text.length() <= LINE_LENGTH ? text : text.substring(0, LINE_LENGTH);
     }
 
     @EventHandler
@@ -397,7 +369,7 @@ public final class WantedBoard implements Listener {
         }
         if (state != null && state.hasTarget() && !state.claimed() && deadId.equals(state.targetId())) {
             state = state.withDeath(streak);
-            save();
+            stateStore.save(state);
         }
     }
 
@@ -423,14 +395,14 @@ public final class WantedBoard implements Listener {
             return;
         }
         boolean fresh = isFresh(stack);
-        BigDecimal amount = fresh ? valueAt(freshAliveTicks(stack)) : share(currentValue(), config.get().wantedOldHeadShare());
+        BigDecimal amount = fresh ? valueAt(freshAliveTicks(stack)) : Market.share(currentValue(), config.get().wantedOldHeadShare());
         if (!payout.pay(player, amount.doubleValue())) {
             messages.send(player, "wanted-closed");
             return;
         }
         takeOneHead(player, stack);
         state = state.claim(player.getUniqueId(), player.getName());
-        save();
+        stateStore.save(state);
         applyIfWorldLoaded();
         config.get().messages().send(broadcast, fresh ? "wanted-sold-fresh" : "wanted-sold-old",
                 Placeholder.unparsed("seller", player.getName()), name,
@@ -487,7 +459,7 @@ public final class WantedBoard implements Listener {
                     Placeholder.unparsed("seller", state.claimedByName())));
         }
         BigDecimal value = currentValue();
-        BigDecimal old = share(value, config.get().wantedOldHeadShare());
+        BigDecimal old = Market.share(value, config.get().wantedOldHeadShare());
         return List.of(messages.render("today-wanted-open", Placeholder.unparsed("name", state.targetName()),
                 Placeholder.unparsed("price", value.toBigInteger().toString()),
                 Placeholder.unparsed("old", old.toBigInteger().toString())));
@@ -511,75 +483,5 @@ public final class WantedBoard implements Listener {
     /** The current period's state, for tests. */
     WantedState state() {
         return state;
-    }
-
-    private void load() {
-        YamlConfiguration yaml;
-        try {
-            yaml = YamlFiles.load(stateFile);
-        } catch (IOException e) {
-            logger.log(Level.WARNING, "Could not read " + stateFile + ", picking a new Wanted target", e);
-            return;
-        }
-        String day = yaml.getString("period");
-        if (day == null) {
-            return;
-        }
-        boolean cooldown = yaml.getBoolean("cooldown", false);
-        UUID targetId = uuid(yaml.getString("target-id"));
-        String targetName = yaml.getString("target-name");
-        // A file from before the time-alive bounty has a fixed price and no factor: factor 1, and
-        // played true so its target isn't denied a survivor reward that board never tracked.
-        double factor = targetId == null ? 0 : yaml.getDouble("factor", 1.0);
-        Instant postedAt = targetId == null ? null : instant(yaml.getString("posted-at"));
-        boolean played = yaml.getBoolean("played", true);
-        Long diedStreakTicks = yaml.isSet("died-streak-ticks") ? yaml.getLong("died-streak-ticks") : null;
-        UUID claimedBy = uuid(yaml.getString("claimed-by"));
-        String claimedByName = yaml.getString("claimed-by-name");
-        state = new WantedState(day, cooldown, targetId, targetName, factor, postedAt, played, diedStreakTicks,
-                claimedBy, claimedByName);
-    }
-
-    private static UUID uuid(String value) {
-        try {
-            return value == null ? null : UUID.fromString(value);
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-    }
-
-    private static Instant instant(String value) {
-        try {
-            return value == null ? null : Instant.parse(value);
-        } catch (DateTimeParseException e) {
-            return null;
-        }
-    }
-
-    private void save() {
-        YamlConfiguration yaml = new YamlConfiguration();
-        if (state != null) {
-            yaml.set("period", state.period());
-            yaml.set("cooldown", state.cooldown());
-            if (state.hasTarget()) {
-                yaml.set("target-id", state.targetId().toString());
-                yaml.set("target-name", state.targetName());
-                yaml.set("factor", state.factor());
-                yaml.set("posted-at", state.postedAt().toString());
-                yaml.set("played", state.played());
-                if (state.died()) {
-                    yaml.set("died-streak-ticks", state.diedStreakTicks());
-                }
-            }
-            if (state.claimed()) {
-                yaml.set("claimed-by", state.claimedBy().toString());
-                yaml.set("claimed-by-name", state.claimedByName());
-            }
-        }
-        try {
-            YamlFiles.saveAtomically(yaml, stateFile);
-        } catch (IOException e) {
-            logger.log(Level.WARNING, "Could not save " + stateFile + "; a restart would pick again", e);
-        }
     }
 }
