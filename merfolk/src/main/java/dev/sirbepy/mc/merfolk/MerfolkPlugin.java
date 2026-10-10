@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import java.util.logging.Level;
 
@@ -83,7 +84,7 @@ public final class MerfolkPlugin extends JavaPlugin {
         scheduler.runTaskTimer(this, beds::tick, 1L, 40L);
         scheduler.runTaskTimer(this, breeding::eat, 10L, 10L);
         scheduler.runTaskTimer(this, breeding::tick, 40L, 40L);
-        SeaSteering steering = new SeaSteering(beds, body::loaded);
+        SeaSteering steering = new SeaSteering(beds, body::loaded, SeaSteering.blocks(), body::setAfloat, new Random());
         scheduler.runTaskTimer(this, steering::tick, 5L, SeaSteering.PERIOD_TICKS);
         scheduler.runTaskTimer(this, steering::findJobs, 60L, SeaSteering.JOB_PERIOD_TICKS);
         scheduler.runTaskTimer(this, expire, 20L, 1200L);

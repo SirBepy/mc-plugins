@@ -9,7 +9,8 @@ import {
 // pack's merfolk bodies), never lose air, and sink to the sea floor where an ordinary villager floats; an
 // ordinary swamp or jungle villager is moved to plains robes; a Kelp Bed goes
 // into two water blocks on the floor and stays water, and hitting it gives the item back; two merfolk fed
-// fish with a free Kelp Bed make a merfolk baby; at night a merfolk walks home to its bed; an unemployed
+// fish with a free Kelp Bed make a merfolk baby; at night a merfolk walks home to its bed, around a wall
+// out of the water through its gap and over a sunken one, and by day an idle merfolk wanders; an unemployed
 // merfolk near an underwater barrel / cartography table becomes a Fisher / Treasurer with the wish's
 // trades; buying the trident starts its 12 h kingdom-wide wait; and /merfolk kingdom revert turns a
 // Treasurer back into an ordinary cartographer. Everything happens in a glass pool built each run.
@@ -193,21 +194,64 @@ try {
     assert((await number(one('mf_pa'), 'Age')) > 0, 'the father is on the breeding cooldown');
   });
 
-  await step('at night a merfolk goes back to its Kelp Bed', async () => {
+  /** The first homed merfolk: its bed's middle and a selector for it. */
+  async function resident() {
     const home = (await rcon.command('merfolk beds')).split('\n').find((l) => / home of /.test(l));
     const [, bx, , bz] = /(-?\d+),(-?\d+),(-?\d+)/.exec(home).map(Number);
-    const uuid = /home of (\S+)/.exec(home)[1];
-    const away = { x: BX + 3.5, z: BZ + 3.5 };
+    const selector = `@e[type=villager,limit=1,nbt={UUID:${uuidArray(/home of (\S+)/.exec(home)[1])}}]`;
+    const distance = async () => Math.hypot((await number(selector, 'Pos[0]')) - (bx + 0.5), (await number(selector, 'Pos[2]')) - (bz + 1));
+    return { bx, bz, selector, distance };
+  }
+  /** Waits for the resident to swim home, never letting it reach the surface on the way. */
+  async function swimsHome(home, what, timeout) {
+    const start = await home.distance();
+    let highest = 0;
+    await waitFor(async () => {
+      highest = Math.max(highest, await number(home.selector, 'Pos[1]'));
+      assert(highest < PY + 4, `${what}: kept under the surface (y ${highest})`);
+      return (await home.distance()) < 2.5;
+    }, `${what} (started ${start.toFixed(1)} away)`, timeout);
+    return highest;
+  }
+
+  await step('at night a merfolk goes back to its Kelp Bed', async () => {
+    const home = await resident();
     await rcon.command('minecraft:time set 13000');
-    const distance = async () => {
-      const x = await number(`@e[type=villager,limit=1,nbt={UUID:${uuidArray(uuid)}}]`, 'Pos[0]');
-      const z = await number(`@e[type=villager,limit=1,nbt={UUID:${uuidArray(uuid)}}]`, 'Pos[2]');
-      return Math.hypot(x - (bx + 0.5), z - (bz + 1));
-    };
-    await rcon.command(`minecraft:tp @e[type=villager,limit=1,nbt={UUID:${uuidArray(uuid)}}] ${away.x} ${PY + 1} ${away.z}`);
-    const start = await distance();
-    await waitFor(async () => (await distance()) < 2.5, `the resident swam home (started ${start.toFixed(1)} away)`, 40_000);
+    await rcon.command(`minecraft:tp ${home.selector} ${BX + 3.5} ${PY + 1} ${BZ + 3.5}`);
+    await swimsHome(home, 'the resident swam home', 40_000);
     await rcon.command('minecraft:time set 1000');
+  });
+
+  await step('a merfolk walks around a wall out of the water to get home, and swims over a sunken one', async () => {
+    const home = await resident();
+    // A wall across z = BZ between the far side and every bed (z BZ-4..BZ-3), up out of the water, with a
+    // 2-block gap at the end away from this bed so the straight line home runs into the wall.
+    const gapWest = home.bx >= BX;
+    const [w1, w2] = gapWest ? [BX - 3, BX + 5] : [BX - 5, BX + 3];
+    await rcon.command(`minecraft:fill ${w1} ${PY + 1} ${BZ} ${w2} ${PY + 6} ${BZ} minecraft:stone`);
+    await rcon.command('minecraft:time set 13000');
+    await rcon.command(`minecraft:tp ${home.selector} ${home.bx + 0.5} ${PY + 1} ${BZ + 3.5}`);
+    await swimsHome(home, 'went round through the gap', 60_000);
+
+    // Now a wall 2 blocks tall the whole way across (too tall for the 1-block climb), water 2 above it.
+    await rcon.command(`minecraft:fill ${BX - 5} ${PY + 1} ${BZ} ${BX + 5} ${PY + 6} ${BZ} minecraft:water`);
+    await rcon.command(`minecraft:fill ${BX - 5} ${PY + 5} ${BZ} ${BX + 5} ${PY + 6} ${BZ} minecraft:air`);
+    await rcon.command(`minecraft:fill ${BX - 5} ${PY + 1} ${BZ} ${BX + 5} ${PY + 2} ${BZ} minecraft:stone`);
+    await rcon.command(`minecraft:tp ${home.selector} ${home.bx + 0.5} ${PY + 1} ${BZ + 3.5}`);
+    await swimsHome(home, 'swam over the sunken wall', 60_000);
+    await rcon.command(`minecraft:fill ${BX - 5} ${PY + 1} ${BZ} ${BX + 5} ${PY + 2} ${BZ} minecraft:water`);
+    await rcon.command('minecraft:time set 1000');
+  });
+
+  await step('by day an idle merfolk wanders the sea floor', async () => {
+    // No job site in the pool yet and its bed only matters at night, so the resident has nowhere to be.
+    const home = await resident();
+    const x0 = await number(home.selector, 'Pos[0]');
+    const z0 = await number(home.selector, 'Pos[2]');
+    await waitFor(async () => {
+      assert((await number(home.selector, 'Pos[1]')) < PY + 4, 'wandering under the surface');
+      return Math.hypot((await number(home.selector, 'Pos[0]')) - x0, (await number(home.selector, 'Pos[2]')) - z0) > 2.5;
+    }, 'the idle merfolk moved off', 40_000);
   });
 
   await step('an unemployed merfolk at an underwater barrel / cartography table becomes a Fisher / Treasurer', async () => {

@@ -16,7 +16,9 @@ import org.mockbukkit.mockbukkit.entity.EntityMock;
 import org.mockbukkit.mockbukkit.world.WorldMock;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,6 +35,7 @@ class SeaSteeringTest {
     private KelpBeds beds;
     private Villager merfolk;
     private SeaSteering steering;
+    private final List<Boolean> afloat = new ArrayList<>();
 
     @BeforeEach
     void setUp() {
@@ -42,7 +45,27 @@ class SeaSteeringTest {
         merfolk = world.spawn(new Location(world, 0.5, 60, 0.5), Villager.class);
         Merfolk.make(merfolk);
         ((EntityMock) merfolk).setInWater(true);
-        steering = new SeaSteering(beds, () -> List.of(merfolk));
+        steering = new SeaSteering(beds, () -> List.of(merfolk),
+                w -> new BlockTerrain(w, block -> !block.getType().isSolid()), (v, swimming) -> afloat.add(swimming), new Random(7));
+    }
+
+    /** A 21x21 pool, floor at y 59, water y 60-63, with the chunks around it loaded. */
+    private void pool() {
+        for (int x = -10; x <= 10; x++) {
+            for (int z = -10; z <= 10; z++) {
+                world.getBlockAt(x, 59, z).setType(Material.STONE);
+                for (int y = 60; y <= 63; y++) world.getBlockAt(x, y, z).setType(Material.WATER);
+            }
+        }
+        for (int cx = -1; cx <= 0; cx++) {
+            for (int cz = -1; cz <= 0; cz++) world.loadChunk(cx, cz);
+        }
+    }
+
+    private void wall(int x, int z1, int z2, int y1, int y2) {
+        for (int z = z1; z <= z2; z++) {
+            for (int y = y1; y <= y2; y++) world.getBlockAt(x, y, z).setType(Material.STONE);
+        }
     }
 
     @AfterEach
@@ -115,5 +138,45 @@ class SeaSteeringTest {
         ((EntityMock) merfolk).setInWater(false);
         steering.tick();
         assertEquals(0, merfolk.getVelocity().length(), 1e-9);
+    }
+
+    @Test
+    void aWallInTheWayIsWalkedAroundInsteadOfPushedInto() {
+        pool();
+        // Out of the water and the whole way across except a gap at z 8..10.
+        wall(3, -10, 7, 60, 64);
+        beds.claim(beds.add(world.getBlockAt(8, 60, 0), BlockFace.SOUTH), merfolk.getUniqueId());
+        world.setTime(14000);
+
+        steering.tick();
+
+        assertTrue(merfolk.getVelocity().getZ() > 0.05, "heading for the gap at z 8+: " + merfolk.getVelocity());
+        assertTrue(afloat.stream().noneMatch(a -> a), "walking the floor, not swimming");
+    }
+
+    @Test
+    void aSunkenWallAcrossTheWholeWayIsSwumOver() {
+        pool();
+        wall(2, -10, 10, 60, 61);
+        merfolk.teleport(new Location(world, 1.5, 60, 0.5));
+        beds.claim(beds.add(world.getBlockAt(8, 60, 0), BlockFace.SOUTH), merfolk.getUniqueId());
+        world.setTime(14000);
+
+        steering.tick();
+
+        assertTrue(merfolk.getVelocity().getY() > 0.05, "pushed up to get over it: " + merfolk.getVelocity());
+        assertEquals(List.of(true), afloat.subList(afloat.size() - 1, afloat.size()), "afloat while it swims up");
+    }
+
+    @Test
+    void anIdleMerfolkWandersAroundTheSeaFloor() {
+        pool();
+        world.setTime(10000);
+        double fastest = 0;
+        for (int tick = 0; tick < SeaSteering.WANDER_MAX / SeaSteering.PERIOD_TICKS + 2; tick++) {
+            steering.tick();
+            fastest = Math.max(fastest, Math.hypot(merfolk.getVelocity().getX(), merfolk.getVelocity().getZ()));
+        }
+        assertTrue(fastest > 0.1, "it set off somewhere: " + fastest);
     }
 }

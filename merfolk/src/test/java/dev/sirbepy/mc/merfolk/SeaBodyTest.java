@@ -121,4 +121,16 @@ class SeaBodyTest {
         assertTrue(Merfolk.is(cured));
         assertEquals(Merfolk.Variant.of(cured.getUniqueId()).type, cured.getVillagerType());
     }
+
+    @Test
+    void inWaterAMerfolkIsHeavyLighterWhileSwimmingOffTheFloorAndOnLandNeither() {
+        // MockBukkit's villagers have no gravity attribute, so this checks the amounts weigh() applies.
+        assertEquals(SeaBody.SINK_GRAVITY, SeaBody.extraGravity(true, false));
+        assertEquals(SeaBody.HOVER_GRAVITY, SeaBody.extraGravity(true, true));
+        assertEquals(0, SeaBody.extraGravity(false, true));
+        assertEquals(0, SeaBody.extraGravity(false, false));
+        // Between floating up (0.08 total) and pinned (1.0): a slow sink, just past neutral (0.512).
+        double total = 0.08 + SeaBody.HOVER_GRAVITY;
+        assertTrue(total > 0.512 && total < 0.7, "hover total " + total);
+    }
 }

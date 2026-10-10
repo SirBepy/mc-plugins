@@ -24,9 +24,11 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -46,8 +48,16 @@ public final class SeaBody implements Listener {
      * about 3 blocks/s and stay pinned on the floor (LivingEntity.travelInWater, 26.3 javap).
      */
     static final double SINK_GRAVITY = 0.92;
+    /**
+     * Gravity 0.08 -> 0.6 while {@link SeaSteering} swims a merfolk off the floor: the same formula
+     * settles at v = (0.032 - 0.6/16) / 0.2 = -0.0275 blocks/tick, a slow sink its pushes easily beat
+     * either way, where 0.512 would be exactly neutral and the plain 0.08 floats it up at 0.135.
+     */
+    static final double HOVER_GRAVITY = 0.52;
 
     private final Map<UUID, Villager> loaded = new LinkedHashMap<>();
+    /** Merfolk {@link SeaSteering} is swimming off the floor right now. */
+    private final Set<UUID> afloat = new HashSet<>();
     private final KelpBeds beds;
     /** Called for each merfolk as it loads or is made, to sort out its trades. */
     private final Consumer<Villager> onAdopt;
@@ -60,6 +70,7 @@ public final class SeaBody implements Listener {
     /** Every loaded merfolk (pruned of ones that died or unloaded since the last tick). */
     public Collection<Villager> loaded() {
         loaded.values().removeIf(v -> !v.isValid());
+        afloat.retainAll(loaded.keySet());
         return List.copyOf(loaded.values());
     }
 
@@ -108,18 +119,28 @@ public final class SeaBody implements Listener {
      * worse: those merfolk bobbed at the surface for good (e2e probe, 2026-10-09).
      */
     public void tick() {
-        for (Villager villager : loaded()) {
-            AttributeInstance gravity = villager.getAttribute(Attribute.GRAVITY);
-            if (gravity == null) continue;
-            boolean sink = villager.isInWater();
-            boolean sinking = gravity.getModifier(SINK) != null;
-            if (sink && !sinking) {
-                // Transient: never saved, so a restart can't leave a merfolk stuck heavy on land.
-                gravity.addTransientModifier(new AttributeModifier(SINK, SINK_GRAVITY, AttributeModifier.Operation.ADD_NUMBER));
-            } else if (!sink && sinking) {
-                gravity.removeModifier(SINK);
-            }
-        }
+        for (Villager villager : loaded()) weigh(villager);
+    }
+
+    /** Swimming off the floor (true) or back to sinking (false); applied at once. */
+    public void setAfloat(Villager villager, boolean swimming) {
+        if (swimming ? afloat.add(villager.getUniqueId()) : afloat.remove(villager.getUniqueId())) weigh(villager);
+    }
+
+    /** The gravity added on top of vanilla's 0.08: none on land. */
+    static double extraGravity(boolean inWater, boolean afloat) {
+        return !inWater ? 0 : afloat ? HOVER_GRAVITY : SINK_GRAVITY;
+    }
+
+    private void weigh(Villager villager) {
+        AttributeInstance gravity = villager.getAttribute(Attribute.GRAVITY);
+        if (gravity == null) return;
+        double want = extraGravity(villager.isInWater(), afloat.contains(villager.getUniqueId()));
+        AttributeModifier current = gravity.getModifier(SINK);
+        if ((current == null ? 0 : current.getAmount()) == want) return;
+        if (current != null) gravity.removeModifier(SINK);
+        // Transient: never saved, so a restart can't leave a merfolk stuck heavy on land.
+        if (want != 0) gravity.addTransientModifier(new AttributeModifier(SINK, want, AttributeModifier.Operation.ADD_NUMBER));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
