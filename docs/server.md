@@ -283,6 +283,9 @@ by the tag alone, never the name, and it works for whoever holds it.
   swing, for up to 25 blocks.
 - **Sneaking** mines one block at full speed.
 - e2e: `e2e/earthbreaker.mjs` (dig speed, the 5x5 with ore drops and wear, sneaking, a real Towny town).
+- **Look**: dvolic21's Cosmetic token (request #1) gave it `cosmetic_1`, a 3D drill with animated
+  lightning in the join pack (`server/resourcepacks/claudesmp-items/README.md`, "Cosmetic token
+  looks"). Pack-only: no particles or plugin code.
 
 ## Phantoms (CoffiebagSupreme's Shenron wish, 2026-10-07)
 
