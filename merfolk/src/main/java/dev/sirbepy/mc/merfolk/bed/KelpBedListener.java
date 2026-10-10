@@ -1,12 +1,16 @@
 package dev.sirbepy.mc.merfolk.bed;
 
+import com.destroystokyo.paper.event.player.PlayerSetSpawnEvent;
 import dev.sirbepy.mc.merfolk.TownCheck;
 import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Levelled;
@@ -18,14 +22,18 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SpongeAbsorbEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * Placing, picking up and protecting Kelp Beds. A bed goes on the sea floor into two water source
- * blocks in a row (foot where the player clicks, head the way they face) and keeps that water: no
- * block can be placed into it, buckets and sponges leave it alone.
+ * Placing, using, picking up and protecting Kelp Beds. A bed goes on the sea floor into two water
+ * source blocks in a row (foot where the player clicks, head the way they face) and keeps that water:
+ * no block can be placed into it, buckets and sponges leave it alone. Right-clicking one makes it the
+ * player's respawn point, kept by the plugin because vanilla won't respawn anyone in water.
  */
 public final class KelpBedListener implements Listener {
 
@@ -64,9 +72,9 @@ public final class KelpBedListener implements Listener {
     }
 
     private String problem(Player player, Block foot, Block head) {
-        if (!isWaterSource(foot) || !isWaterSource(head)) return "A Kelp Bed needs two water blocks in a row to lie in.";
-        if (!foot.getRelative(BlockFace.DOWN).getType().isSolid() || !head.getRelative(BlockFace.DOWN).getType().isSolid()) {
-            return "A Kelp Bed must lie on the sea floor.";
+        if (!isWaterSource(foot) || !isWaterSource(head)
+                || !foot.getRelative(BlockFace.DOWN).getType().isSolid() || !head.getRelative(BlockFace.DOWN).getType().isSolid()) {
+            return "Place it on the sea floor.";
         }
         if (beds.at(foot) != null || beds.at(head) != null) return "Another Kelp Bed is already there.";
         if (!towns.mayBuild(player, foot.getLocation()) || !towns.mayBuild(player, head.getLocation())) {
@@ -110,6 +118,51 @@ public final class KelpBedListener implements Listener {
         var centre = bed.centre(player.getWorld()).add(0, 0.3, 0);
         if (player.getGameMode() != GameMode.CREATIVE) player.getWorld().dropItemNaturally(centre, KelpBeds.item(1));
         player.getWorld().playSound(centre, Sound.BLOCK_WET_GRASS_BREAK, 1f, 0.8f);
+    }
+
+    /** Right-clicking either half sets the respawn point there, like a vanilla bed (no sleeping). */
+    // Not ignoreCancelled, same as onHit: an Interaction has nothing to interact with by default.
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onUse(PlayerInteractEntityEvent event) {
+        String id = KelpBeds.partOf(event.getRightClicked());
+        if (id == null) return;
+        event.setCancelled(true);
+        KelpBed bed = beds.byId(id);
+        if (bed == null || event.getHand() != EquipmentSlot.HAND) return;
+        Player player = event.getPlayer();
+        if (towns.inOtherTown(player, event.getRightClicked().getLocation())) {
+            player.sendActionBar(Component.text("You can't respawn in another town.", NamedTextColor.RED));
+            return;
+        }
+        if (!beds.setSpawn(player.getUniqueId(), bed)) return;
+        // Otherwise vanilla would still resolve the old bed or anchor at death (spending an anchor
+        // charge) before onRespawn moves the player. onSpawnChange ignores plugin-caused changes.
+        player.setRespawnLocation(null);
+        player.sendMessage(Component.translatable("block.minecraft.set_spawn"));
+    }
+
+    /** Dying, or leaving the End through its portal, lands the player on their Kelp Bed. */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onRespawn(PlayerRespawnEvent event) {
+        if (event.getRespawnReason() == PlayerRespawnEvent.RespawnReason.PLUGIN) return;
+        Location at = respawnAt(beds.spawnOf(event.getPlayer().getUniqueId()));
+        if (at != null) event.setRespawnLocation(at);
+    }
+
+    /** Where a player respawns on {@code bed}: its middle, on the sea floor. Null if its world is gone. */
+    static Location respawnAt(KelpBed bed) {
+        if (bed == null) return null;
+        World world = Bukkit.getWorld(bed.world());
+        return world == null ? null : bed.centre(world);
+    }
+
+    /** A vanilla bed, an anchor or /spawnpoint replaces the Kelp Bed, so the newest choice wins. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSpawnChange(PlayerSetSpawnEvent event) {
+        switch (event.getCause()) {
+            case BED, RESPAWN_ANCHOR, COMMAND -> beds.clearSpawn(event.getPlayer().getUniqueId());
+            default -> { }
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)

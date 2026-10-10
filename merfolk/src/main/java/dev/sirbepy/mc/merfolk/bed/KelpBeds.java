@@ -34,10 +34,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Every placed Kelp Bed, saved in beds.yml. The bed blocks stay plain water (that's what keeps it
- * "waterlogged"); the bed itself is a non-persistent item display the server pack draws as a woven
- * kelp mattress, plus one Interaction hitbox per block to hit it with. Those entities are respawned
- * from this registry whenever their chunk is loaded, so a bed can never be left half-broken.
+ * Every placed Kelp Bed, saved in beds.yml with the players whose respawn point is one of them. The
+ * bed blocks stay plain water (that's what keeps it "waterlogged"); the bed itself is a
+ * non-persistent item display the server pack draws as a kelp-coloured vanilla bed, plus one
+ * Interaction hitbox per block to hit or right-click. Those entities are respawned from this registry
+ * whenever their chunk is loaded, so a bed can never be left half-broken.
  */
 public final class KelpBeds {
 
@@ -66,6 +67,8 @@ public final class KelpBeds {
     private final Map<String, KelpBed> beds = new LinkedHashMap<>();
     private final Map<String, KelpBed> byCell = new HashMap<>();
     private final Map<String, Parts> spawned = new HashMap<>();
+    /** Player -> id of the Kelp Bed they respawn at. Vanilla refuses a respawn point in water. */
+    private final Map<UUID, String> spawns = new HashMap<>();
 
     public KelpBeds(File file, Logger log) {
         this.file = file;
@@ -76,9 +79,9 @@ public final class KelpBeds {
         ItemStack item = new ItemStack(Material.PAPER, amount);
         ItemMeta meta = item.getItemMeta();
         meta.customName(Component.text("Kelp Bed", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
-        meta.lore(List.of(Component.text("Place it underwater; merfolk sleep and", NamedTextColor.GRAY)
+        meta.lore(List.of(Component.text("Place it on the sea floor. Right-click it", NamedTextColor.GRAY)
                         .decoration(TextDecoration.ITALIC, false),
-                Component.text("raise families on it. One bed, one merfolk.", NamedTextColor.GRAY)
+                Component.text("to respawn there; merfolk sleep on it too.", NamedTextColor.GRAY)
                         .decoration(TextDecoration.ITALIC, false)));
         meta.setItemModel(ICON_MODEL);
         meta.setMaxStackSize(1);
@@ -125,6 +128,7 @@ public final class KelpBeds {
     public void remove(KelpBed bed) {
         beds.remove(bed.id());
         for (String cell : bed.cells()) byCell.remove(cell);
+        spawns.values().removeIf(bed.id()::equals);
         Parts parts = spawned.remove(bed.id());
         if (parts != null) parts.remove();
         save();
@@ -164,6 +168,23 @@ public final class KelpBeds {
         if (home == null) return;
         home.resident(null);
         save();
+    }
+
+    /** Makes {@code bed} the player's respawn point; false if it already was. */
+    public boolean setSpawn(UUID player, KelpBed bed) {
+        if (bed.id().equals(spawns.put(player, bed.id()))) return false;
+        save();
+        return true;
+    }
+
+    /** The Kelp Bed the player respawns at, or null (none set, or the bed was picked up). */
+    public KelpBed spawnOf(UUID player) {
+        String id = spawns.get(player);
+        return id == null ? null : beds.get(id);
+    }
+
+    public void clearSpawn(UUID player) {
+        if (spawns.remove(player) != null) save();
     }
 
     /** Respawns the look of every bed whose chunk is loaded and whose entities are missing. */
@@ -233,6 +254,10 @@ public final class KelpBeds {
     public void load() {
         try {
             YamlConfiguration yaml = YamlFiles.load(file);
+            ConfigurationSection players = yaml.getConfigurationSection("spawns");
+            if (players != null) {
+                for (String player : players.getKeys(false)) spawns.put(UUID.fromString(player), players.getString(player));
+            }
             ConfigurationSection section = yaml.getConfigurationSection("beds");
             if (section == null) return;
             for (String id : section.getKeys(false)) {
@@ -264,6 +289,7 @@ public final class KelpBeds {
             yaml.set(path + "facing", bed.facing().name());
             yaml.set(path + "resident", bed.resident() == null ? null : bed.resident().toString());
         }
+        spawns.forEach((player, bed) -> yaml.set("spawns." + player, bed));
         try {
             YamlFiles.saveAtomically(yaml, file);
         } catch (IOException e) {

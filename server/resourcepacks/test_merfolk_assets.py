@@ -147,36 +147,54 @@ class BuiltPackTest(unittest.TestCase):
         png = self.png(asset(model["textures"]["layer0"], "textures", "png"))
         self.assertEqual(png.size, (16, 16))
 
-    def test_kelp_bed_placed_resolves_to_its_model_and_texture(self):
+    def test_kelp_bed_placed_resolves_to_its_model_and_textures(self):
         definition = self.json("assets/claudesmp/items/kelp_bed_placed.json")["model"]
         model = self.json(asset(definition["model"], "models", "json"))
-        self.assertIn(asset(model["textures"]["t"], "textures", "png"), self.entries)
+        for ref in model["textures"].values():
+            self.assertIn(asset(ref, "textures", "png"), self.entries)
+            # 26.3's items atlas only stitches item/, so a block/ texture would render missing.
+            self.assertTrue(ref.startswith("claudesmp:item/"), ref)
+        for el in model["elements"]:
+            for face in el["faces"].values():
+                self.assertIn(face["texture"][1:], model["textures"])
         self.assertNotIn("display", model, "transform NONE needs no display block")
 
     def test_kelp_bed_placed_matches_the_plugins_geometry_contract(self):
         # The merfolk plugin spawns the item display at item_display_transform NONE and assumes:
-        # 1 block wide (x 0..16), 2 blocks long on Z (-8..24, head end z<0, foot end z>16), floor
-        # at y=0, mattress height roughly a vanilla bed's 9px.
+        # 1 block wide (x 0..16), 2 blocks long on Z (-8..24, head end z<8, foot end z>8), floor
+        # at y=0, mattress height a vanilla bed's 9px.
         model = self.json("assets/claudesmp/models/item/kelp_bed_placed.json")
         xs = [v for e in model["elements"] for v in (e["from"][0], e["to"][0])]
         ys = [v for e in model["elements"] for v in (e["from"][1], e["to"][1])]
         zs = [v for e in model["elements"] for v in (e["from"][2], e["to"][2])]
         self.assertEqual((min(xs), max(xs)), (0, 16))
-        self.assertEqual(min(ys), 0)
-        self.assertLessEqual(max(ys), 9)
+        self.assertEqual((min(ys), max(ys)), (0, 9))
         self.assertEqual((min(zs), max(zs)), (-8, 24))
         for el in model["elements"]:
             for v in el["from"] + el["to"]:
                 self.assertGreaterEqual(v, -16, el)
                 self.assertLessEqual(v, 32, el)
 
-    def test_kelp_bed_placed_head_end_is_the_negative_z_half(self):
-        # "Head end (pillow) is the z -8..0 half (-Z side)": the pillow element must sit there.
+    def test_kelp_bed_placed_pillow_half_is_the_negative_z_end(self):
+        # The head half (pillow texture on top, headboard on the north face) is z -8..8.
         model = self.json("assets/claudesmp/models/item/kelp_bed_placed.json")
-        pillow = next(e for e in model["elements"] if e["from"][1] > 0)  # raised above the mat slab
-        self.assertLessEqual(pillow["to"][2], 0)
-        self.assertGreaterEqual(pillow["from"][2], -8)
+        head = next(e for e in model["elements"] if e["faces"].get("up", {}).get("texture") == "#head_up")
+        foot = next(e for e in model["elements"] if e["faces"].get("up", {}).get("texture") == "#foot_up")
+        self.assertEqual((head["from"][2], head["to"][2]), (-8, 8))
+        self.assertEqual((foot["from"][2], foot["to"][2]), (8, 24))
+        self.assertEqual(head["faces"]["north"]["texture"], "#head_north")
 
+    def test_kelp_bed_placed_has_no_gap_between_its_legs(self):
+        # ItsLogiks asked for the space under the mattress (y 0..3) to be filled: every point
+        # under the bed is inside a leg or a base element, sampled every half pixel.
+        model = self.json("assets/claudesmp/models/item/kelp_bed_placed.json")
+        low = [e for e in model["elements"] if e["from"][1] == 0 and e["to"][1] >= 3]
+
+        def covered(x, z):
+            return any(e["from"][0] <= x <= e["to"][0] and e["from"][2] <= z <= e["to"][2] for e in low)
+
+        missing = [(x / 2, z / 2) for x in range(2, 31) for z in range(-14, 47) if not covered(x / 2, z / 2)]
+        self.assertEqual(missing, [])
 
 if __name__ == "__main__":
     unittest.main()

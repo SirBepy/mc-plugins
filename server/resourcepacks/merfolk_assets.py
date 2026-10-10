@@ -14,7 +14,9 @@ NONE). This script owns every pixel/JSON of that look:
      textures -- two small 3D fins per side of the head, worn in the villager's CustomHeadLayer and
      coloured to match each skin (the skins paint the face, gills and hair themselves).
   3. assets/claudesmp/items/kelp_bed.json (flat icon) and kelp_bed_placed.json (the 3D placed bed,
-     item_display_transform NONE) + their textures.
+     item_display_transform NONE: vanilla's bed model with its leg gap filled) + their textures. The
+     placed bed's textures are vanilla's green bed recoloured once into merfolk_skins/kelp_bed/
+     (python merfolk_assets.py --bed-from <26.3 client jar>) and copied from there.
 
 ----------------------------------------------------------------------------------------------------
 PART 1 MATH -- villager box-UV (javap'd 2026-10-09 against C:\\tmp\\client-26.3.jar):
@@ -93,8 +95,13 @@ z=0 and sweep backwards, so they can never cover the eyes, which sit on the FRON
 Run from anywhere: python server/resourcepacks/merfolk_assets.py
 """
 
+import colorsys
+import io
 import json
 import math
+import shutil
+import sys
+import zipfile
 from pathlib import Path
 
 import numpy as np
@@ -291,80 +298,119 @@ BED_ICON_TEX_PATH = PACK / "textures" / "item" / "kelp_bed.png"
 BED_ICON_ITEM_PATH = PACK / "items" / "kelp_bed.json"
 
 BED_MODEL_PATH = PACK / "models" / "item" / "kelp_bed_placed.json"
-BED_TEX_PATH = PACK / "textures" / "item" / "kelp_bed_placed.png"
-BED_TEX_REF = "claudesmp:item/kelp_bed_placed"
 BED_ITEM_PATH = PACK / "items" / "kelp_bed_placed.json"
+BED_TEX_DIR = PACK / "textures" / "item" / "kelp_bed"
+BED_SKINS = SKINS / "kelp_bed"
 
-BED_TEX_SIZE = 32
-BED_REGIONS = {
-    "mat": (0, 0, 16, 16),
-    "mat_dark": (16, 0, 24, 8),
-    "pillow": (0, 16, 16, 24),
-    "fringe": (16, 16, 24, 24),
-    "fringe_dark": (24, 16, 32, 24),
+# The placed bed is vanilla's own bed (26.3 draws beds from the block models template_bed_head and
+# template_bed_foot), recoloured: kelp-green blanket, sea-foam sheet and pillow, dried-kelp frame.
+# Each pair is (our texture, the vanilla 26.3 texture it is recoloured from).
+BED_TEXTURES = {
+    "head_up": "green_bed_head_up", "head_east": "green_bed_head_east",
+    "head_west": "green_bed_head_west", "head_north": "bed_head_north",
+    "foot_up": "green_bed_foot_up", "foot_east": "green_bed_foot_east",
+    "foot_west": "green_bed_foot_west", "foot_south": "green_bed_foot_south",
+    "down": "bed_down", "base": "dried_kelp_side",
 }
 
 
-def bed_texture():
-    img = Image.new("RGBA", (BED_TEX_SIZE, BED_TEX_SIZE), (0, 0, 0, 0))
-    px = img.load()
-
-    def fill(region, color):
-        x0, y0, x1, y1 = region
-        for y in range(y0, y1):
-            for x in range(x0, x1):
-                px[x, y] = color + (255,)
-
-    fill(BED_REGIONS["mat"], (72, 62, 34))
-    fill(BED_REGIONS["mat_dark"], (46, 40, 22))
-    fill(BED_REGIONS["pillow"], (86, 122, 64))
-    fill(BED_REGIONS["fringe"], (70, 138, 66))
-    fill(BED_REGIONS["fringe_dark"], (40, 88, 42))
-    return img
-
-
-def bed_face_uv(mat):
-    x0, y0, x1, y1 = BED_REGIONS[mat]
-    s = BED_TEX_SIZE / 16
-    return [x0 / s, y0 / s, x1 / s, y1 / s]
+def recolour_bed_pixel(rgba):
+    """Vanilla green bed -> Kelp Bed: the green blanket turns a bluer kelp green, the white sheet
+    and pillow pale sea-foam, the oak frame (and bed underside) dark dried kelp."""
+    r, g, b, a = rgba
+    if a == 0:
+        return rgba
+    h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+    if s < 0.15 and v > 0.55:  # sheet and pillow
+        out = (v * 0.80, v * 0.97, v * 0.93)
+    elif 0.05 <= h <= 0.13:  # oak frame, legs, underside
+        out = colorsys.hsv_to_rgb(0.25, 0.42, v * 0.40)
+    elif 0.18 <= h <= 0.30 and s > 0.5:  # green blanket
+        out = colorsys.hsv_to_rgb(0.29, s * 0.85, min(1.0, v * 1.12))
+    else:
+        return rgba
+    return tuple(round(c * 255) for c in out) + (a,)
 
 
-def bbox(f, t, mat):
-    return {"from": list(f), "to": list(t), "mat": mat}
+def recolour_vanilla_bed(client_jar):
+    """Writes merfolk_skins/kelp_bed/*.png from a vanilla 26.3 client jar. Run once by hand
+    (python merfolk_assets.py --bed-from <client.jar>); main() only copies the results."""
+    BED_SKINS.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(client_jar) as jar:
+        for name, vanilla in BED_TEXTURES.items():
+            img = Image.open(io.BytesIO(jar.read(f"assets/minecraft/textures/block/{vanilla}.png"))).convert("RGBA")
+            # dried_kelp_side is kelp already; recolouring would turn its twine into a sea-foam line.
+            if name != "base":
+                px = img.load()
+                for y in range(img.height):
+                    for x in range(img.width):
+                        px[x, y] = recolour_bed_pixel(px[x, y])
+            img.save(BED_SKINS / f"{name}.png")
+            print(f"wrote {BED_SKINS / name}.png from {vanilla}")
+
+
+def bed_face(uv, texture):
+    return {"uv": list(uv), "texture": f"#{texture}"}
 
 
 # Geometry contract (the merfolk plugin relies on this exactly): x 0..16 (1 block wide), z -8..24
-# (2 blocks long, head end at the -Z half z -8..0, foot end z 16..24), y starts at 0 (the floor) up
-# to about 9 (vanilla bed mattress height). item_display_transform NONE means these coordinates ARE
+# (2 blocks long, head end at the -Z half z -8..8, foot end z 8..24), y starts at 0 (the floor) up
+# to 9 (vanilla bed mattress height). item_display_transform NONE means these coordinates ARE
 # the world-block-local coordinates once the engine's own -0.5 recentring runs (ItemDisplayRenderer:
 # translate(-0.5,-0.5,-0.5) then the entity's own yaw/position), so no display block is written here.
+# The elements are template_bed_head (shifted z -8) and template_bed_foot (z +8, where red_bed.json
+# puts it), face UVs copied, cullface dropped (an item display has no neighbours to cull against),
+# plus one dried-kelp block filling the 3 px gap between the legs.
 def kelp_bed_elements():
-    els = [
-        bbox((0, 0, -8), (16, 6, 24), "mat"),
-        bbox((2, 6, -8), (14, 9, -1), "pillow"),
-        bbox((1, 6, 21), (15, 7, 24), "mat_dark"),
+    head = [
+        ((0, 3, -8), (16, 9, 8), {
+            "down": ((0, 0, 16, 16), "down"), "up": ((0, 0, 16, 16), "head_up"),
+            "north": ((0, 7, 16, 13), "head_north"), "west": ((0, 7, 16, 13), "head_west"),
+            "east": ((0, 7, 16, 13), "head_east")}),
+        ((0, 0, -8), (3, 3, -5), {
+            "down": ((6, 13, 9, 16), "head_west"), "north": ((13, 13, 16, 16), "head_north"),
+            "south": ((3, 13, 6, 16), "head_west"), "west": ((0, 13, 3, 16), "head_west"),
+            "east": ((10, 13, 13, 16), "head_north")}),
+        ((13, 0, -8), (16, 3, -5), {
+            "down": ((7, 13, 10, 16), "head_east"), "north": ((0, 13, 3, 16), "head_north"),
+            "south": ((10, 13, 13, 16), "head_east"), "west": ((3, 13, 6, 16), "head_north"),
+            "east": ((13, 13, 16, 16), "head_east")}),
     ]
-    for i, z in enumerate((-6, -2, 2, 6, 10, 14, 18, 22)):
-        top = 5 if i % 2 else 6
-        mat = "fringe" if i % 2 else "fringe_dark"
-        # Fringe stays inside x 0..16 (the geometry contract's own bound) instead of overhanging
-        # the sides, so the plugin's bounding-box assumption holds for every element, not just the
-        # main slab.
-        els.append(bbox((0, 0, z - 1.5), (1, top, z + 1.5), mat))
-        els.append(bbox((15, 0, z - 1.5), (16, top, z + 1.5), mat))
-    return els
+    foot = [
+        ((0, 3, 8), (16, 9, 24), {
+            "down": ((0, 0, 16, 16), "down"), "up": ((0, 0, 16, 16), "foot_up"),
+            "south": ((0, 7, 16, 13), "foot_south"), "west": ((0, 7, 16, 13), "foot_west"),
+            "east": ((0, 7, 16, 13), "foot_east")}),
+        ((0, 0, 21), (3, 3, 24), {
+            "down": ((7, 13, 10, 16), "foot_west"), "north": ((10, 13, 13, 16), "foot_west"),
+            "south": ((0, 13, 3, 16), "foot_south"), "west": ((13, 13, 16, 16), "foot_west"),
+            "east": ((3, 13, 6, 16), "foot_south")}),
+        ((13, 0, 21), (16, 3, 24), {
+            "down": ((6, 13, 9, 16), "foot_east"), "north": ((3, 13, 6, 16), "foot_east"),
+            "south": ((13, 13, 16, 16), "foot_south"), "west": ((10, 13, 13, 16), "foot_south"),
+            "east": ((0, 13, 3, 16), "foot_east")}),
+    ]
+    # Inset 1 px from the bed's sides so the legs still read as legs at the corners; two halves so
+    # each long side maps the 16 px dried-kelp texture without stretching.
+    base = []
+    for z0, z1, end in ((-7, 8, "north"), (8, 23, "south")):
+        base.append(((1, 0, z0), (15, 3, z1), {
+            "down": ((1, 1, 15, 16), "down"), end: ((1, 0, 15, 3), "base"),
+            "west": ((0.5, 0, 15.5, 3), "base"), "east": ((0.5, 0, 15.5, 3), "base")}))
+    return head + foot + base
 
 
-def build_bed(elements, tex_ref, face_uv):
+def build_bed(elements):
     out = []
-    for i, e in enumerate(elements):
-        f, t = e["from"], e["to"]
+    for i, (f, t, faces) in enumerate(elements):
         for v in list(f) + list(t):
             if v < -16 or v > 32:
                 raise SystemExit(f"kelp_bed_placed element {i} {f}..{t} leaves the -16..32 range")
-        faces = {face: {"uv": face_uv(e["mat"]), "texture": "#t"} for face in FACE_DIMS}
-        out.append({"from": f, "to": t, "faces": faces})
-    return {"textures": {"t": tex_ref, "particle": tex_ref}, "elements": out}
+        out.append({"from": list(f), "to": list(t),
+                    "faces": {face: bed_face(uv, tex) for face, (uv, tex) in faces.items()}})
+    textures = {name: f"claudesmp:item/kelp_bed/{name}" for name in BED_TEXTURES}
+    textures["particle"] = textures["base"]
+    return {"textures": textures, "elements": out}
 
 
 def bed_icon_texture():
@@ -391,7 +437,7 @@ def bed_icon_texture():
 
 def main():
     for d in (TYPE_DIR / "type", TYPE_DIR / "baby", PACK / "models" / "item", PACK / "textures" / "item",
-              PACK / "items", BED_MODEL_PATH.parent, BED_TEX_PATH.parent, BED_ITEM_PATH.parent):
+              PACK / "items", BED_MODEL_PATH.parent, BED_ITEM_PATH.parent):
         d.mkdir(parents=True, exist_ok=True)
 
     full_model_ref = None
@@ -420,12 +466,15 @@ def main():
     BED_ICON_ITEM_PATH.write_text(json.dumps(item_definition("claudesmp:item/kelp_bed"), indent=2) + "\n")
     print(f"wrote {BED_ICON_MODEL_PATH}")
 
-    bed_texture().save(BED_TEX_PATH)
-    BED_MODEL_PATH.write_text(json.dumps(
-        build_bed(kelp_bed_elements(), BED_TEX_REF, bed_face_uv), indent=2) + "\n")
+    BED_TEX_DIR.mkdir(parents=True, exist_ok=True)
+    for name in BED_TEXTURES:
+        shutil.copyfile(BED_SKINS / f"{name}.png", BED_TEX_DIR / f"{name}.png")
+    BED_MODEL_PATH.write_text(json.dumps(build_bed(kelp_bed_elements()), indent=2) + "\n")
     BED_ITEM_PATH.write_text(json.dumps(item_definition("claudesmp:item/kelp_bed_placed"), indent=2) + "\n")
     print(f"wrote {BED_MODEL_PATH}")
 
 
 if __name__ == "__main__":
+    if sys.argv[1:2] == ["--bed-from"]:
+        recolour_vanilla_bed(sys.argv[2])
     main()

@@ -1,6 +1,8 @@
 package dev.sirbepy.mc.merfolk.bed;
 
+import com.destroystokyo.paper.event.player.PlayerSetSpawnEvent;
 import dev.sirbepy.mc.merfolk.TownCheck;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -9,7 +11,9 @@ import org.bukkit.entity.Interaction;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerBucketFillEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
@@ -148,6 +152,106 @@ class KelpBedsTest {
         assertNotNull(again);
         assertEquals(resident, again.resident());
         assertEquals(BlockFace.SOUTH, again.facing());
+    }
+
+    private Location respawn(PlayerRespawnEvent.RespawnReason reason) {
+        Location worldSpawn = new Location(world, 100.5, 70, 100.5);
+        PlayerRespawnEvent event = new PlayerRespawnEvent(player, worldSpawn, false, false, false, reason);
+        server.getPluginManager().callEvent(event);
+        return event.getRespawnLocation();
+    }
+
+    private void rightClickBed() {
+        Interaction hitbox = world.getEntitiesByClass(Interaction.class).iterator().next();
+        server.getPluginManager().callEvent(new PlayerInteractEntityEvent(player, hitbox, EquipmentSlot.HAND));
+    }
+
+    @Test
+    void rightClickingABedMakesThePlayerRespawnOnIt() {
+        seaFloor();
+        rightClickFloor(0);
+        KelpBed bed = beds.at(world.getBlockAt(0, 60, 0));
+        player.setRespawnLocation(new Location(world, 50, 64, 50), true);
+
+        rightClickBed();
+
+        assertEquals(bed, beds.spawnOf(player.getUniqueId()));
+        assertEquals(Component.translatable("block.minecraft.set_spawn"), player.nextComponentMessage());
+        assertNull(player.getRespawnLocation(), "the old vanilla respawn point is dropped");
+        assertEquals(new Location(world, 0.5, 60, 1.0), respawn(PlayerRespawnEvent.RespawnReason.DEATH));
+        assertEquals(new Location(world, 0.5, 60, 1.0), respawn(PlayerRespawnEvent.RespawnReason.END_PORTAL));
+
+        rightClickBed();
+        assertNull(player.nextComponentMessage(), "the same bed again says nothing, like vanilla");
+    }
+
+    @Test
+    void aVanillaBedOrAnchorLaterTakesOver() {
+        seaFloor();
+        rightClickFloor(0);
+        rightClickBed();
+
+        server.getPluginManager().callEvent(new PlayerSetSpawnEvent(player, PlayerSetSpawnEvent.Cause.BED,
+                new Location(world, 20, 64, 20), false, true, null));
+
+        assertNull(beds.spawnOf(player.getUniqueId()));
+        assertEquals(new Location(world, 100.5, 70, 100.5), respawn(PlayerRespawnEvent.RespawnReason.DEATH));
+    }
+
+    @Test
+    void aPickedUpBedIsNoRespawnPoint() {
+        seaFloor();
+        rightClickFloor(0);
+        rightClickBed();
+
+        beds.remove(beds.at(world.getBlockAt(0, 60, 0)));
+
+        assertEquals(new Location(world, 100.5, 70, 100.5), respawn(PlayerRespawnEvent.RespawnReason.DEATH));
+    }
+
+    @Test
+    void notInAnotherTown() {
+        MockBukkit.unmock();
+        server = MockBukkit.mock();
+        world = server.addSimpleWorld("world");
+        beds = new KelpBeds(new File(dir, "other.yml"), Logger.getAnonymousLogger());
+        TownCheck foreign = new TownCheck() {
+            @Override
+            public boolean inOtherTown(org.bukkit.entity.Player p, Location l) {
+                return true;
+            }
+
+            @Override
+            public boolean mayBuild(org.bukkit.entity.Player p, Location l) {
+                return true;
+            }
+
+            @Override
+            public boolean mayDestroy(org.bukkit.entity.Player p, Location l) {
+                return true;
+            }
+        };
+        server.getPluginManager().registerEvents(new KelpBedListener(beds, foreign), MockBukkit.createMockPlugin());
+        player = server.addPlayer();
+        player.teleport(new Location(world, 0.5, 61, -3, 0, 0));
+        seaFloor();
+        rightClickFloor(0);
+
+        rightClickBed();
+
+        assertNull(beds.spawnOf(player.getUniqueId()));
+    }
+
+    @Test
+    void respawnPointsSurviveARestart() {
+        seaFloor();
+        rightClickFloor(0);
+        rightClickBed();
+
+        KelpBeds reloaded = new KelpBeds(new File(dir, "beds.yml"), Logger.getAnonymousLogger());
+        reloaded.load();
+
+        assertEquals(reloaded.at(world.getBlockAt(0, 60, 0)), reloaded.spawnOf(player.getUniqueId()));
     }
 
     @Test

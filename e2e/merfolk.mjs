@@ -8,7 +8,8 @@ import {
 // variant's type and fins (Kelp: swamp + merfolk_head, Coral: jungle + merfolk_head_coral, the server
 // pack's merfolk bodies), never lose air, and sink to the sea floor where an ordinary villager floats; an
 // ordinary swamp or jungle villager is moved to plains robes; a Kelp Bed goes
-// into two water blocks on the floor and stays water, and hitting it gives the item back; two merfolk fed
+// into two water blocks on the floor and stays water, and hitting it gives the item back; right-clicking a
+// Kelp Bed makes it your respawn point, so dying lands you on it in the water; two merfolk fed
 // fish with a free Kelp Bed make a merfolk baby; at night a merfolk walks home to its bed, around a wall
 // out of the water through its gap and over a sunken one, and by day an idle merfolk wanders; an unemployed
 // merfolk near an underwater barrel / cartography table becomes a Fisher / Treasurer with the wish's
@@ -166,6 +167,28 @@ try {
     await owner.activateBlock(owner.blockAt(new Vec3(x, PY, z)), new Vec3(0, 1, 0));
     await waitFor(async () => (await rcon.command('merfolk beds')).includes(`${x},${PY + 1},${z}`), `bed at ${x},${z}`, 5_000);
   }
+
+  await step('right-clicking a Kelp Bed sets the respawn point, and dying lands you on it in the water', async () => {
+    await placeBed(BX + 3, BZ + 2);
+    // placeBed faces the bed south, so its middle is the line between its two blocks.
+    const centre = new Vec3(BX + 3.5, PY + 1, BZ + 3);
+    const hitbox = () => Object.values(owner.entities).find((e) => e.name === 'interaction'
+      && e.position.distanceTo(new Vec3(BX + 3.5, PY + 1, BZ + 2.5)) < 0.8);
+    await waitFor(() => hitbox(), 'owner sees the bed', 5_000);
+    const since = owner.lines.length;
+    await owner.activateEntity(hitbox());
+    await waitForLine(owner, /Respawn point set/, 5_000, since);
+    await teleport(rcon, owner, BX + 7, PY + 1, BZ + 7);
+    await rcon.command(`minecraft:kill ${OWNER}`);
+    await waitFor(() => owner.health > 0, 'owner respawned', 10_000);
+    await waitFor(() => owner.entity.position.distanceTo(centre) < 1.5,
+      `respawned on the bed (at ${owner.entity.position})`, 5_000);
+    // Picked up again, or the merfolk below would claim it as one of their beds. A respawned client
+    // starts with no entities, so wait for the hitbox to be sent again.
+    await waitFor(() => hitbox(), 'owner sees the bed after respawning', 5_000);
+    await owner.attack(hitbox());
+    await waitFor(async () => !(await rcon.command('merfolk beds')).includes(`${BX + 3},${PY + 1},${BZ + 2}`), 'bed picked up', 5_000);
+  });
 
   await step('two merfolk fed fish with a free Kelp Bed make a merfolk baby', async () => {
     // The earlier steps' merfolk would claim beds too; only the pair and their baby should.
