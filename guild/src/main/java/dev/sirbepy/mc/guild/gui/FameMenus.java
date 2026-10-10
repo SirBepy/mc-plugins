@@ -34,6 +34,7 @@ final class FameMenus {
     static final int BOUNTY_SLOT = 11;
     static final int GRAND_SLOT = 13;
     static final int ACTIVITY_SLOT = 15;
+    static final int SHOW_SLOT = 49;
 
     private final Guild guild;
 
@@ -218,6 +219,15 @@ final class FameMenus {
 
     // ---- titles ----
 
+    private static ItemStack showToggle(Member member) {
+        if (member.showTitle()) {
+            return Icons.glint(Icons.icon(Material.NAME_TAG, "Title beside your name: on", NamedTextColor.GREEN,
+                    "Your worn title shows beside your name", "in chat and the tab list.", "", "Click to hide it"));
+        }
+        return Icons.icon(Material.GRAY_DYE, "Title beside your name: off", NamedTextColor.GRAY,
+                "Show your worn title beside your name", "in chat and the tab list.", "", "Click to show it");
+    }
+
     Menu titles(Player player, Member member, BiConsumer<Menu, GuildMenus.Screen> go) {
         Menu menu = new Menu(6, Component.text("Your Titles", Chat.BRONZE));
         menu.set(4, Icons.icon(Material.NAME_TAG, "Titles", Chat.BRONZE,
@@ -235,12 +245,18 @@ final class FameMenus {
                     wearing ? NamedTextColor.GOLD : Chat.PARCHMENT, "Earned for " + title.earnedFor() + ".",
                     wearing ? "!Wearing it" : "Click to wear it");
             menu.set(slot++, wearing ? Icons.glint(icon) : icon, (shown, click) -> {
-                member.setActiveTitle(id);
-                guild.store().save();
+                guild.wearTitle(member, id);
                 Chat.send(player, "You now go by \"" + title.name() + "\".");
                 go.accept(shown, GuildMenus.Screen.TITLES);
             });
         }
+        menu.set(SHOW_SLOT, showToggle(member), (shown, click) -> {
+            guild.showTitle(member, !member.showTitle());
+            Chat.send(player, member.showTitle()
+                    ? "Your title now shows beside your name in chat and the tab list."
+                    : "Your title no longer shows beside your name.");
+            go.accept(shown, GuildMenus.Screen.TITLES);
+        });
         menu.set(45, Icons.icon(Material.OAK_DOOR, "Back to the board", Chat.PARCHMENT),
                 (shown, click) -> go.accept(shown, GuildMenus.Screen.MAIN));
         menu.frame(Material.BROWN_STAINED_GLASS_PANE);

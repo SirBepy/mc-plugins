@@ -3,7 +3,7 @@ version: ${version}
 main: dev.sirbepy.mc.guild.GuildPlugin
 api-version: "26.2"
 author: sirbepy
-softdepend: [Vault, VaultUnlocked, Essentials, floodgate]
+softdepend: [Vault, VaultUnlocked, Essentials, floodgate, Names]
 
 permissions:
   guild.admin:

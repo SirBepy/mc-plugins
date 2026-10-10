@@ -289,6 +289,28 @@ try {
     await waitForLine(hero, new RegExp(`Guildmaster ${GM}: The Guild is open for business`), 5_000, since);
   });
 
+  await step('a member opts in to their title beside their name in tab and chat, and the titles menu hides it', async () => {
+    const tab = () => gm.players[HERO]?.displayName?.toString() ?? '';
+    const TAGGED = new RegExp(String.raw`\[[A-Za-z' -]+\] ${HERO}`);
+    assert(!TAGGED.test(tab()), `no tag before opting in (tab: ${tab()})`);
+    let since = hero.lines.length;
+    hero.chat('/guild titles show');
+    await waitForLine(hero, /now shows beside your name/, 5_000, since);
+    await waitFor(() => TAGGED.test(tab()), `gm's tab list shows HERO's title (tab: ${tab()})`);
+    since = gm.lines.length;
+    hero.chat('titles on');
+    await waitForLine(gm, new RegExp(String.raw`\[[A-Za-z' -]+\] ${HERO}: titles on`), 5_000, since);
+    const opened = nextWindow(hero);
+    hero.chat('/guild titles');
+    menu = await opened;
+    assert(/Your Titles/.test(titleOf(menu)), `titles menu (got ${titleOf(menu)})`);
+    since = hero.lines.length;
+    await hero.clickWindow(49, 0, 0);
+    await waitForLine(hero, /no longer shows beside your name/, 5_000, since);
+    hero.closeWindow(menu);
+    await waitFor(() => !TAGGED.test(tab()) && tab().includes(HERO), `tag gone from the tab list (tab: ${tab()})`);
+  });
+
   await step('the board shows the server bounty and Grand Quest, and the Hall of Fame opens', async () => {
     let opened = nextWindow(hero);
     hero.chat('/guild');

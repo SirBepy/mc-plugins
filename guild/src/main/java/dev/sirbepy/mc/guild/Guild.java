@@ -16,6 +16,7 @@ import dev.sirbepy.mc.guild.data.Member;
 import dev.sirbepy.mc.guild.econ.Bank;
 import dev.sirbepy.mc.guild.events.ServerEvents;
 import dev.sirbepy.mc.guild.fame.Achievements;
+import dev.sirbepy.mc.guild.fame.TitleTags;
 import dev.sirbepy.mc.guild.rank.Rank;
 import dev.sirbepy.mc.guild.time.GuildClock;
 import net.kyori.adventure.text.Component;
@@ -70,6 +71,7 @@ public final class Guild {
     private final Random random;
     private final Board board;
     private final Achievements achievements;
+    private final TitleTags titleTags = new TitleTags();
     private final ServerEvents events;
     private final GuildmasterOffice office;
 
@@ -80,7 +82,7 @@ public final class Guild {
         this.bank = bank;
         this.random = random;
         this.board = new Board(random);
-        this.achievements = new Achievements(store);
+        this.achievements = new Achievements(store, titleTags);
         this.events = new ServerEvents(this, random);
         this.office = new GuildmasterOffice(this);
     }
@@ -95,6 +97,24 @@ public final class Guild {
 
     public Achievements achievements() {
         return achievements;
+    }
+
+    public TitleTags titleTags() {
+        return titleTags;
+    }
+
+    /** Wears an earned title; the name tag follows if the member shows it. */
+    public void wearTitle(Member member, String titleId) {
+        member.setActiveTitle(titleId);
+        store.save();
+        titleTags.update(member);
+    }
+
+    /** Turns the member's title tag beside their name on or off. */
+    public void showTitle(Member member, boolean show) {
+        member.setShowTitle(show);
+        store.save();
+        titleTags.update(member);
     }
 
     public GuildConfig config() {
@@ -142,6 +162,7 @@ public final class Guild {
         achievements.grant(player, member, "rank-E");
         if (isGuildmaster(player)) {
             achievements.grant(player, member, "founder");
+            achievements.grant(player, member, "guildmaster");
         }
         store.save();
         return RegisterResult.REGISTERED;

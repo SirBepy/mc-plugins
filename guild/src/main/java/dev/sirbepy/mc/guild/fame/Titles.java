@@ -21,6 +21,7 @@ public final class Titles {
             add("rank-" + rank.name(), rank.title(), "reaching " + rank.name() + "-Rank");
         }
         add("founder", "Founder of the Guild", "founding the Adventurer's Guild with seven Dragon Balls");
+        add("guildmaster", "Guildmaster", "leading the Adventurer's Guild as its Guildmaster");
         add("first-contract", "The First of Many", "claiming the very first contract the Guild ever paid");
         add("night-owl", "Night Owl", "claiming a contract between three and five in the morning");
         add("pathfinder", "Pathfinder", "setting foot in 25 different kinds of structure as a member");

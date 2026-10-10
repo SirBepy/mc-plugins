@@ -223,6 +223,7 @@ final class GuildStoreYaml {
         s.set("stats", new LinkedHashMap<>(m.stats()));
         s.set("titles", new ArrayList<>(m.titles()));
         s.set("active-title", m.activeTitle());
+        s.set("show-title", m.showTitle());
         s.set("last-claim-day", m.lastClaimDay());
         s.set("streak", m.streak());
         s.set("weekly-drawn", m.weeklyDrawnAt());
@@ -268,6 +269,7 @@ final class GuildStoreYaml {
         }
         m.titles().addAll(s.getStringList("titles"));
         m.setActiveTitle(s.getString("active-title"));
+        m.setShowTitle(s.getBoolean("show-title"));
         m.setLastClaimDay(s.getString("last-claim-day"));
         m.setStreak(s.getInt("streak"));
         m.setWeeklyDrawnAt(s.getLong("weekly-drawn"));

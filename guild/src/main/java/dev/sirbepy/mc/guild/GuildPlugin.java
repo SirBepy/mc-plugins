@@ -18,6 +18,7 @@ import dev.sirbepy.mc.guild.listener.DragonSlayers;
 import dev.sirbepy.mc.guild.listener.ExploreTracker;
 import dev.sirbepy.mc.guild.listener.FarmGuard;
 import dev.sirbepy.mc.guild.listener.ProgressListener;
+import dev.sirbepy.mc.guild.listener.TitleListener;
 import dev.sirbepy.mc.guild.time.ZoneClock;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -60,6 +61,13 @@ public final class GuildPlugin extends JavaPlugin {
         getServer().getWorlds().forEach(dragons::checkEarlierKill);
         pm.registerEvents(new StaffListener(staff, guild, menus, new Dialogue(guild, new Random())), this);
         pm.registerEvents(staff.viewers(), this);
+        pm.registerEvents(new TitleListener(guild), this);
+        if (pm.isPluginEnabled("Names")) {
+            guild.titleTags().attach(NamesTitleSink.load(getServer()));
+            guild.titleTags().updateAll(store.members());
+        } else {
+            getLogger().info("Names isn't enabled; Guild title tags won't show beside names.");
+        }
 
         var scheduler = getServer().getScheduler();
         scheduler.runTaskTimer(this, () -> explore.tick(getServer().getOnlinePlayers()), 40L, 40L);

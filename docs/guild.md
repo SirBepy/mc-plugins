@@ -221,6 +221,8 @@ in `/guild`, or a right-click on Silas the treasurer) has:
 - `/guild` (everyone): the Guild menu (register, board, profile, commissions, office). Anywhere but the
   hall's desk it is for looking only: see "Taking and turning in work" below.
 - `/guild profile [player]`, `/guild board`, `/guild announce`, `/guild commission ...`, `/guild cancel <id>`, `/guild feature <id>`.
+- `/guild titles` (the title picker), `/guild titles show|hide`: whether the worn title shows as a tag
+  beside the member's name (see "Title tags" below). Off until the member turns it on.
 - `/guildadmin` (ops, console, RCON): `status`, `member <player>`, `rep <player> <n>`, `contracts <player> <n>`,
   `newday <player>`, `newweek <player>`, `setrank <player> <rank>` and `resettrial <player>` (repairs only),
   `complete <player> <0|1|2|weekly|trial>` (testing), `treasury <n>`, `resetannounce`, `guildmaster <player>`,
@@ -266,6 +268,7 @@ what the adventurer has earned. Each new one shows a title card and a line to it
 | --- | --- |
 | E-Rank ... S-Rank Adventurer | reaching the rank (first A and first S announced to the server) |
 | Founder of the Guild | the Guildmaster, on registering |
+| Guildmaster | the Guildmaster, on registering (or on his next join, for one who registered before it existed) |
 | The First of Many | the very first contract the Guild ever paid (announced) |
 | Night Owl | a claim between 03:00 and 05:00 Europe/Zagreb |
 | Pathfinder | 25 different structure kinds stood in while a member (tracked passively, contract or not) |
@@ -287,6 +290,21 @@ what the adventurer has earned. Each new one shows a title card and a line to it
 | Heir of Legends | Legend: The Last S-Rank (S weekly: an Ancient City, a Warden, 4 echo shards, an Incendium Sanctum) |
 | Derby Champion | winning one of the Guildmaster's activities |
 | Dragonslayer | hurting the first Ender Dragon the server ever killed, as a member (First Dragon below) |
+
+### Title tags (since 2026-10-10)
+
+ImMijo asked for Guild titles beside members' names ("mine would be Guildmaster of course"); Joe
+approved it as opt-in. A member who turns it on (`/guild titles show`, or the name-tag button at the
+bottom of `/guild titles`) wears their worn title as a tag before their name in chat, the tab list
+and the floating nametag: `[S-Rank]` in the rank's colour for a rank title, `[Night Owl]` in gold for
+any other. Members who leave it off, and non-members, look exactly as before. Only the title the
+member wears and has earned ever shows, so nobody's other titles are revealed; wearing a different
+title or earning one that is auto-worn updates the tag at once. The choice is saved as `show-title`
+in guild.yml.
+
+The tag is a Names prefix (`NamesTitleSink`, key `guild-title`, priority 10, so `[BE] ☣ [S-Rank] Name`),
+the same mechanism as the [BE] tag and Tag's IT marker, re-applied for every member on enable and on
+join. Without the Names plugin the Guild runs as before and logs that tags won't show.
 
 ## Server-wide events (`events/ServerEvents.java`, `events/EventPools.java`)
 
@@ -417,7 +435,8 @@ Caps, ranks and rewards are unchanged.
 - Unit tests (`./gradlew :guild:test`): ranks and promotion, board drawing, every contract kind's
   progress, caps and clipping, commission math, Treasury and withdrawal limits, commissions, trials,
   persistence round-trip, menus, every farm rule and the Grand Quest share cap and reroll, the First
-  Dragon payout and who counts as a fighter.
+  Dragon payout and who counts as a fighter, title tags (opt-in, updates, persistence, unearned titles
+  never shown, the Guildmaster backfill) and the titles menu's show/hide button.
 - `e2e/first-dragon.mjs` (private server): a sword hit, a bed blast and a `/damage ... by` each make a
   fighter, a member who only stands there and a non-member who hits get nothing, an offline fighter is
   paid and told on join, an op's `/kill` and a second dragon pay nobody. Checked once by hand on the
@@ -426,5 +445,6 @@ Caps, ranks and rewards are unchanged.
   kill and spends the event.
 - `e2e/guild.mjs` (private server): registering and claiming a finished daily from `/guild` away from the
   hall are refused and cost or pay nothing; the same done after right-clicking Lyra pays; a commission
-  is turned in beside her.
+  is turned in beside her; `/guild titles show` puts the worn title before the name in another
+  player's tab list and chat, and the titles menu's button takes it off again.
 - Not testable by Claude: how menus look in a real 26.3 client.

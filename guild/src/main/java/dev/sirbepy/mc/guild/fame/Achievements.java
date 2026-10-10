@@ -27,9 +27,11 @@ public final class Achievements {
     static final int WANDERER = 40;
 
     private final GuildStore store;
+    private final TitleTags tags;
 
-    public Achievements(GuildStore store) {
+    public Achievements(GuildStore store, TitleTags tags) {
         this.store = store;
+        this.tags = tags;
     }
 
     /** Grants a title once; true if it was new. {@code player} may be null (offline). */
@@ -40,6 +42,7 @@ public final class Achievements {
         }
         if (member.activeTitle() == null || member.activeTitle().startsWith("rank-")) {
             member.setActiveTitle(titleId);
+            tags.update(member);
         }
         store.markDirty();
         if (player != null && !titleId.startsWith("rank-")) {

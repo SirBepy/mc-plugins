@@ -39,6 +39,7 @@ public final class Member {
     private final Map<String, Integer> stats = new HashMap<>();
     private final Set<String> titles = new LinkedHashSet<>();
     private String activeTitle;
+    private boolean showTitle;
     private String lastClaimDay;
     private int streak;
     private long weeklyDrawnAt;
@@ -213,6 +214,15 @@ public final class Member {
 
     public void setActiveTitle(String activeTitle) {
         this.activeTitle = activeTitle;
+    }
+
+    /** Whether the worn title shows beside the name in chat and the tab list; opt-in, off by default. */
+    public boolean showTitle() {
+        return showTitle;
+    }
+
+    public void setShowTitle(boolean showTitle) {
+        this.showTitle = showTitle;
     }
 
     public String lastClaimDay() {

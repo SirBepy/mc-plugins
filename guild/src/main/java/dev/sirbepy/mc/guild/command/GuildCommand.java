@@ -12,6 +12,7 @@ import dev.sirbepy.mc.guild.contract.Objective;
 import dev.sirbepy.mc.guild.data.Commission;
 import dev.sirbepy.mc.guild.data.Member;
 import dev.sirbepy.mc.guild.events.ServerEvents;
+import dev.sirbepy.mc.guild.fame.Titles;
 import dev.sirbepy.mc.guild.gui.GuildMenus;
 import dev.sirbepy.mc.guild.gui.Text;
 import dev.sirbepy.mc.guild.rank.Rank;
@@ -50,7 +51,9 @@ public final class GuildCommand {
                 .then(Commands.literal("board").executes(c -> open(c, GuildMenus.Screen.MAIN)))
                 .then(Commands.literal("office").executes(c -> open(c, GuildMenus.Screen.OFFICE)))
                 .then(Commands.literal("commissions").executes(c -> open(c, GuildMenus.Screen.COMMISSIONS)))
-                .then(Commands.literal("titles").executes(c -> open(c, GuildMenus.Screen.TITLES)))
+                .then(Commands.literal("titles").executes(c -> open(c, GuildMenus.Screen.TITLES))
+                        .then(Commands.literal("show").executes(c -> showTitle(c, true)))
+                        .then(Commands.literal("hide").executes(c -> showTitle(c, false))))
                 .then(Commands.literal("halloffame").executes(c -> {
                     Player player = player(c);
                     if (player != null) {
@@ -98,6 +101,27 @@ public final class GuildCommand {
             } else {
                 menus.open(player, screen);
             }
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int showTitle(CommandContext<CommandSourceStack> c, boolean show) {
+        Player player = player(c);
+        if (player == null) {
+            return Command.SINGLE_SUCCESS;
+        }
+        Member member = guild.member(player);
+        if (member == null) {
+            Chat.send(player, "You aren't a member yet. Register with Lyra at the Guild Hall: /warp guild");
+            return Command.SINGLE_SUCCESS;
+        }
+        guild.showTitle(member, show);
+        if (!show) {
+            Chat.send(player, "Your title no longer shows beside your name.");
+        } else if (member.activeTitle() == null) {
+            Chat.send(player, "Your title will show beside your name once you wear one: /guild titles");
+        } else {
+            Chat.send(player, "\"" + Titles.name(member.activeTitle()) + "\" now shows beside your name in chat and the tab list.");
         }
         return Command.SINGLE_SUCCESS;
     }
