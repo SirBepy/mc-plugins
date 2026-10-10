@@ -28,7 +28,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { basename, dirname, join } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PANEL = "https://kineticpanel.net";
+export const PANEL = "https://kineticpanel.net";
 
 function readSecret(key) {
   const path = join(__dirname, "..", "secrets.properties");
@@ -43,7 +43,7 @@ function readSecret(key) {
 
 const apiKey = readSecret("kinetic.api.key");
 
-async function api(path, { method = "GET", body } = {}) {
+export async function api(path, { method = "GET", body } = {}) {
   const res = await fetch(`${PANEL}/api/client${path}`, {
     method,
     headers: {
@@ -61,7 +61,7 @@ async function api(path, { method = "GET", body } = {}) {
 }
 
 // Not secret, but keep output terse: this is resolved once per invocation, never cached to disk.
-async function serverIdentifier() {
+export async function serverIdentifier() {
   const list = await api("");
   const server = list.data?.[0];
   if (!server) throw new Error("no server found under this account");
@@ -236,7 +236,7 @@ export async function cmdConsole(command) {
 
 // /files/contents returns the raw file as the response body (not JSON), so this bypasses
 // the api() helper's JSON.parse.
-async function filesContents(id, file) {
+export async function filesContents(id, file) {
   const res = await fetch(`${PANEL}/api/client/servers/${id}/files/contents?file=${encodeURIComponent(file)}`, {
     headers: { Authorization: `Bearer ${apiKey}`, Accept: "text/plain" },
   });
