@@ -159,6 +159,26 @@ backpacks has very large NBT. Behavior is unchanged; only how the same condition
 Guarded by `e2e/server-check.mjs` (no tick-trigger advancement with an nbt predicate, no
 `nbt=` item selector in this tick function, thrown-upgrade still works).
 
+## Repair: page 1 saved with a later page's layout (2026-10-10)
+
+ImMijo's netherite backpack on live (40 slots, 2 pages) had page 2's layout saved over page 1:
+both stored pages held a "go back" arrow at slot 18 and 12 locked panes, and neither had a "next
+page" arrow (read on live with `data get`). Opening it always resets to page 1, so it showed what
+looked like page 2, Back flipped between the two copies, and the real page 1 was unreachable. How
+the bad save happened is not known yet: on a private server every clean path (fresh and upgraded
+netherite, Next/Back, deposit/withdraw, close on page 2 and reopen, backpack leaving the hand with
+the GUI open) saved correctly.
+
+- `bp/container/update/main.mcfunction`: after loading page 1 (page score 0), a "go back" arrow
+  in the menu runs `bp/container/update/repair_first_page`, which removes the arrow and the locked
+  panes (page 1 of a multi-page backpack has none) and puts "next page" back at 26 if that slot is
+  free. The next save (a click, closing the GUI, opening it again) writes the fixed page back, so
+  an affected backpack heals the first time it is opened. Items on that page are kept.
+
+Guarded by `e2e/backpack-pages.mjs` (Bedrock client on server/local): it saves page 2's display
+over page 1 the same way, checks the stored data matches live's, and expects a proper page 1 on
+the next open.
+
 ## Verified
 
 - `:server:assembleLocalServer` copies this folder into `world/datapacks/eclipse-backpacks`
