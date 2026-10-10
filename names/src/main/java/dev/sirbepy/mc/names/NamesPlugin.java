@@ -4,6 +4,7 @@ import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.names.api.NamesApi;
 import dev.sirbepy.mc.names.command.ColorCommand;
 import dev.sirbepy.mc.names.command.CommandRegistrar;
+import dev.sirbepy.mc.names.command.NamesPrefixCommand;
 import dev.sirbepy.mc.names.command.NamesReloadCommand;
 import dev.sirbepy.mc.names.command.NickCommand;
 import dev.sirbepy.mc.names.config.NamesConfig;
@@ -15,6 +16,7 @@ import dev.sirbepy.mc.names.label.LabelTrackingListener;
 import dev.sirbepy.mc.names.label.NametagTeamManager;
 import dev.sirbepy.mc.names.render.BedrockTag;
 import dev.sirbepy.mc.names.render.ChatListener;
+import dev.sirbepy.mc.names.render.CustomPrefix;
 import dev.sirbepy.mc.names.render.JoinQuitListener;
 import dev.sirbepy.mc.names.render.NameChangeService;
 import dev.sirbepy.mc.names.render.NameService;
@@ -37,6 +39,8 @@ public final class NamesPlugin extends JavaPlugin {
         nameStore.load();
 
         PrefixRegistry prefixRegistry = new PrefixRegistry();
+        CustomPrefix customPrefix = new CustomPrefix(nameStore, prefixRegistry);
+        customPrefix.loadAll();
         NameService nameService = new NameService(nameStore, config, prefixRegistry);
         NametagTeamManager teamManager = new NametagTeamManager();
         teamManager.setup();
@@ -59,7 +63,8 @@ public final class NamesPlugin extends JavaPlugin {
 
         ColorCommand colorCommand = new ColorCommand(config);
         NickCommand nickCommand = new NickCommand(config, nickApplier, anvilController, bedrockForms, nameStore);
-        NamesReloadCommand reloadCommand = new NamesReloadCommand(config, changeService, bedrockTag);
+        NamesPrefixCommand prefixCommand = new NamesPrefixCommand(config, customPrefix, changeService::apply);
+        NamesReloadCommand reloadCommand = new NamesReloadCommand(config, changeService, bedrockTag, prefixCommand);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 CommandRegistrar.register(event.registrar(), colorCommand, nickCommand, reloadCommand));
 

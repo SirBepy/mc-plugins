@@ -10,21 +10,31 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-/** {@code /names reload}: re-reads config.yml and re-renders every online player. */
+/**
+ * {@code /names reload}: re-reads config.yml and re-renders every online player.
+ * {@code /names prefix ...} is handed to {@link NamesPrefixCommand}.
+ */
 public final class NamesReloadCommand implements BasicCommand {
 
     private final NamesConfig config;
     private final NameChangeService changeService;
     private final BedrockTag bedrockTag;
+    private final NamesPrefixCommand prefixCommand;
 
-    public NamesReloadCommand(NamesConfig config, NameChangeService changeService, BedrockTag bedrockTag) {
+    public NamesReloadCommand(NamesConfig config, NameChangeService changeService, BedrockTag bedrockTag,
+                              NamesPrefixCommand prefixCommand) {
         this.config = config;
         this.changeService = changeService;
         this.bedrockTag = bedrockTag;
+        this.prefixCommand = prefixCommand;
     }
 
     @Override
     public void execute(CommandSourceStack source, String[] args) {
+        if (args.length >= 1 && args[0].equalsIgnoreCase("prefix")) {
+            prefixCommand.execute(source.getSender(), args);
+            return;
+        }
         if (args.length != 1 || !args[0].equalsIgnoreCase("reload")) {
             sendUsage(source.getSender(), config.messages());
             return;

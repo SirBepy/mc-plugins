@@ -53,8 +53,9 @@ Owns everything about how a player's name looks. Replaces ColorfulNames, HexNick
 - `/nick` opens an anvil GUI to type a nickname (rename field). Also `/nick <name>`, `/nick reset`, and admin `/nick <player> <name|reset>`. Permission `names.nick` (default: op only; the owner grants it with LuckPerms). Rules (configurable): max 16 visible chars, letters/digits/underscore/space, cannot equal another known player's real name (anti-impersonation), MiniMessage tags stripped from player input.
   - **Bedrock:** `/nick` opens a Cumulus input form instead of the anvil GUI when the player is on Bedrock (Floodgate), behind `bedrock.forms` (default: on).
 - **Bedrock tag (Joe, 2026-10-09):** Bedrock players (Floodgate) get a gray `[BE] ` prefix (Names' own prefix, key `bedrock`, priority -10 so it sits left of Tag's marker: `[BE] ☣ .Steve`). Shows in chat, tab list and above head, not in displayName (Discord, HuskHomes). Floodgate's `.` username prefix stays visible. Config `bedrock.tag.enabled|format|priority`.
+- **Custom prefix (Joe, 2026-10-10):** ops and the console give a player a persistent prefix with `/names prefix set <player> <MiniMessage text>` and remove it with `/names prefix clear <player>` (permission `names.admin`; offline players work if they have joined before). Names' own prefix, key `custom`, priority 5, so it sits between Tag's marker and the Guild title: `[BE] ☣ [Royal Supplier] [Dragonslayer] Name`. First use: ItsLogiks' gold `[Royal Supplier]`, for supplying the first Ender Dragon fight.
 - `/names reload`.
-- Data: `plugins/Names/players.yml`, UUID to `{color, nick}`. Atomic writes (write temp file, then move over the original).
+- Data: `plugins/Names/players.yml`, UUID to `{color, nick, prefix}`. Atomic writes (write temp file, then move over the original).
 
 ### Rendering (everywhere the name shows)
 

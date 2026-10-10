@@ -19,5 +19,5 @@ permissions:
     description: Lets a player set or reset another player's nickname.
     default: op
   names.admin:
-    description: Lets a player run /names reload.
+    description: Lets a player run /names reload and /names prefix.
     default: op

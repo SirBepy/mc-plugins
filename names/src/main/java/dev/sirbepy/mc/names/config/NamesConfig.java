@@ -31,6 +31,8 @@ public final class NamesConfig {
     public void reload() {
         plugin.reloadConfig();
         FileConfiguration config = plugin.getConfig();
+        // A server's config.yml predates newer messages; the jar's defaults fill the gaps.
+        config.options().copyDefaults(true);
         chatFormat = config.getString("chat.format", "<prefixes><name><gray>: </gray><message>");
         messages = new Messages(config.getConfigurationSection("messages"));
         palette = ColorPalette.parse(config.getConfigurationSection("palette"));

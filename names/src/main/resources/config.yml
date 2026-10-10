@@ -99,3 +99,7 @@ messages:
   nick-player-not-found: "<red>No player named <target> was found.</red>"
   reload-done: "<green>Names reloaded.</green>"
   reload-usage: "Usage: /names reload"
+  prefix-usage: "<red>Usage: /names prefix set <player> <MiniMessage text>, or /names prefix clear <player>.</red>"
+  prefix-set: "<green>Set <white><target></white>'s prefix to</green> <prefix>"
+  prefix-cleared: "<green>Cleared <white><target></white>'s prefix.</green>"
+  prefix-blank: "<red>That prefix shows no text.</red>"

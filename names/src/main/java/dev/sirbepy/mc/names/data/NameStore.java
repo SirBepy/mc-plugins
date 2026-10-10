@@ -13,13 +13,14 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
-/** UUID to {@code {color, nick}}, persisted in {@code players.yml} via atomic writes. */
+/** UUID to {@code {color, nick, prefix}}, persisted in {@code players.yml} via atomic writes. */
 public final class NameStore {
 
     private final Plugin plugin;
     private final File file;
     private final Map<UUID, String> colors = new ConcurrentHashMap<>();
     private final Map<UUID, String> nicks = new ConcurrentHashMap<>();
+    private final Map<UUID, String> prefixes = new ConcurrentHashMap<>();
 
     public NameStore(Plugin plugin) {
         this.plugin = plugin;
@@ -29,6 +30,7 @@ public final class NameStore {
     public void load() {
         colors.clear();
         nicks.clear();
+        prefixes.clear();
         YamlConfiguration yaml;
         try {
             yaml = YamlFiles.load(file);
@@ -59,6 +61,10 @@ public final class NameStore {
             if (nick != null) {
                 nicks.put(uuid, nick);
             }
+            String prefix = entry.getString("prefix");
+            if (prefix != null) {
+                prefixes.put(uuid, prefix);
+            }
         }
     }
 
@@ -69,6 +75,9 @@ public final class NameStore {
         }
         for (UUID uuid : nicks.keySet()) {
             yaml.set("players." + uuid + ".nick", nicks.get(uuid));
+        }
+        for (UUID uuid : prefixes.keySet()) {
+            yaml.set("players." + uuid + ".prefix", prefixes.get(uuid));
         }
         try {
             YamlFiles.saveAtomically(yaml, file);
@@ -102,6 +111,21 @@ public final class NameStore {
 
     public void clearNick(UUID player) {
         nicks.remove(player);
+        save();
+    }
+
+    /** Every saved custom prefix, as the MiniMessage text an op set. */
+    public Map<UUID, String> prefixes() {
+        return Map.copyOf(prefixes);
+    }
+
+    public void setPrefix(UUID player, String miniMessage) {
+        prefixes.put(player, miniMessage);
+        save();
+    }
+
+    public void clearPrefix(UUID player) {
+        prefixes.remove(player);
         save();
     }
 }
