@@ -23,6 +23,10 @@ final class DragonParticles {
     // Spawned every circle tick on the body, so the particles' own lifetime draws the trail.
     private static final int TRAIL_FLAMES = 4;
     private static final Particle.DustOptions PURPLE_DUST = new Particle.DustOptions(Color.fromRGB(0x9B30FF), 1.5f);
+    // On 26.x dragon_breath carries a power float (Particle.DRAGON_BREATH's data type is Float) and
+    // Paper throws "missing required data" without it, which would kill the End aura task. 1.0 is
+    // vanilla's own power.
+    static final float BREATH_POWER = 1.0f;
 
     private final JavaPlugin plugin;
     private final Location summonCenter;
@@ -112,7 +116,7 @@ final class DragonParticles {
         world.spawnParticle(Particle.PORTAL, at, portal, 1.2, 1.0, 1.2, 0.3);
         world.spawnParticle(Particle.REVERSE_PORTAL, at, Math.max(1, portal / 3), 1.0, 0.8, 1.0, 0.1);
         world.spawnParticle(Particle.END_ROD, at, 2, 0.8, 0.6, 0.8, 0.02);
-        world.spawnParticle(Particle.DRAGON_BREATH, at, 2, 0.8, 0.6, 0.8, 0.01);
+        world.spawnParticle(Particle.DRAGON_BREATH, at, 2, 0.8, 0.6, 0.8, 0.01, BREATH_POWER);
     }
 
     void stopAuraTask() {
