@@ -187,6 +187,10 @@ HAT_CLEARANCE_SCALE = 5 / 4.5
 # A detail drawn on a bigger element's face plane in another colour speckles with it in game
 # (z-fighting), so the brow band and the nostrils stand PROUD px out of what they sit on.
 PROUD = 0.25
+# The brow band's lower edge, in the pre-scale frame, chosen so that once scaled it sits PROUD below
+# the hat layer's second texel row (rows are 9/8 px tall from its top at -8.5): a crown painted on
+# the hat layer's top two rows stays hidden behind the helm (ItsLogiks on live, 2026-10-10).
+BROW_BOTTOM = HEAD_CENTRE[1] + (-8.5 + 2 * 9 / 8 + PROUD - HEAD_CENTRE[1]) / HAT_CLEARANCE_SCALE
 
 
 def scaled_about_head_centre(elements, s):
@@ -209,7 +213,7 @@ def hugging_shell():
         box((-4.5, -6.5, -4.5), (-3.5, 0.5, 4.5), "shell"),          # left cheek guard, full depth
         box((3.5, -6.5, -4.5), (4.5, 0.5, 4.5), "shell"),            # right cheek guard, full depth
         # brow band over the open face, proud of the dome and the snout top on every visible side
-        box((-4.5 - PROUD, -7 - PROUD, -4.5 - PROUD), (4.5 + PROUD, -6.5 + PROUD, -2.5), "trim"),
+        box((-4.5 - PROUD, -7 - PROUD, -4.5 - PROUD), (4.5 + PROUD, BROW_BOTTOM, -2.5), "trim"),
     ]
 
 

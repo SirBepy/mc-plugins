@@ -346,6 +346,34 @@ class BuiltPackTest(unittest.TestCase):
         self.assertLessEqual(lo[1], -9.0)
         self.assertGreaterEqual(hi[2], 5.0)
 
+    def test_dragonscale_helm_hides_a_crown_on_the_hat_layer(self):
+        # ItsLogiks's skin (live, 2026-10-10) paints a crown on the top two texel rows of the hat
+        # layer's four sides (rows are 9/8 px tall from its top at y = -8.5). Every point of that
+        # band must have a helm element in front of it, seen straight on.
+        worn = self.json("assets/claudesmp/models/item/dragonscale_helmet_worn.json")
+        boxes = []
+        for el in worn["elements"]:
+            if "rotation" in el:
+                continue
+            a, b = (_worn_head_item([v / 16 for v in c]) for c in (el["from"], el["to"]))
+            boxes.append(([16 * min(p, q) for p, q in zip(a, b)], [16 * max(p, q) for p, q in zip(a, b)]))
+        crown_bottom = -8.5 + 2 * 9 / 8
+        steps = [i / 8 for i in range(9)]
+        for normal_axis, sign in ((2, -1), (2, 1), (0, -1), (0, 1)):  # front, back, sides
+            across = 0 if normal_axis == 2 else 2
+            for s in steps:
+                for t in steps:
+                    point = [0.0, 0.0, 0.0]
+                    point[normal_axis] = 4.5 * sign
+                    point[across] = -4.5 + 9 * s
+                    point[1] = -8.5 + (crown_bottom + 8.5) * t
+                    hidden = any(
+                        lo[across] <= point[across] <= hi[across] and lo[1] <= point[1] <= hi[1]
+                        and (hi[normal_axis] > 4.5 if sign > 0 else lo[normal_axis] < -4.5)
+                        for lo, hi in boxes
+                    )
+                    self.assertTrue(hidden, point)
+
     def test_dragonscale_helm_has_no_coplanar_faces_of_different_colours(self):
         # Two elements' faces on one plane, facing the same way, speckle in a real client, which
         # shows when their colours differ (the violet brow band on the dark dome's front did).
