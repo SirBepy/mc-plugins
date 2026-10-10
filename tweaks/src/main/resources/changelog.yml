@@ -1,0 +1,71 @@
+# /changelog: what changed at each live restart. One entry per restart; the book shows the newest
+# date first (entries on the same date in this file's order, so put the latest first) and gives each
+# entry its own page, carrying a long one onto the next. Lines are MiniMessage and should stay short:
+# a book page is about 19 characters wide. Escape a literal tag-looking word as \<item>.
+#
+# The live server's plugins/Tweaks/changelog.yml is the copy players see, read fresh on every
+# /changelog, so add each restart's entry there (kinetic.mjs) and mirror it here in the same session.
+entries:
+  - date: 2026-10-10
+    title: The End opens
+    lines:
+      - The End is open for the first dragon fight
+      - '/market watch \<item> tells you when the market buys it'
+      - /changelog shows this book
+      - Merfolk find their way underwater and wander
+      - Merfolk faces redrawn
+      - Bedrock players on the newest version can join
+      - Less lag
+  - date: 2026-10-10
+    title: Safe spawn
+    lines:
+      - "Spawn is a safe zone: no PvP, no hostile mobs, no tagging within 48 blocks"
+  - date: 2026-10-10
+    title: Bounties and homes
+    lines:
+      - "Homes shop: one sign per extra home ($500, $1,500, $4,000)"
+      - "Wanted bounty grows: $50 + $25 per hour alive, up to $500"
+      - Survive to the next bounty and get half of yours
+      - A new bounty every second day, with 4+ online
+      - "Merfolk come in two looks: Kelp and Coral"
+  - date: 2026-10-09
+    title: Market street
+    lines:
+      - "New market street: Wanted board, Homes, Cosmetics and Radars shops"
+      - Heads stall replaces the Head collector
+      - Cod and salmon $8 a stack, Smith pays 10% more
+      - "The Wither is much stronger: 600 HP, new attacks"
+      - Loyalty tridents come back from the void
+      - Stonecutter makes dark and pale oak recipes
+      - Merfolk villagers arrive
+      - Guild contracts are taken at the hall staff
+      - Bedrock names show [BE]
+  - date: 2026-10-09
+    title: Bedrock fix
+    lines:
+      - Bedrock players can join again
+  - date: 2026-10-09
+    title: Guild and anti-xray
+    lines:
+      - Guild board gives 5 dailies
+      - Guild staff have their own skins
+      - Dragon Balls can hide in ocean ruins, shipwrecks and monuments
+      - Balls that roll out of a town land in the open
+      - "Anti-xray: xray sees fake ores"
+  - date: 2026-10-08
+    title: New dragons
+    lines:
+      - Shenron and Porunga have new 3D models
+      - Dragon Balls can't be placed in towns; balls in a town roll out
+      - /suggested-price prices enchantments
+      - "Cartel: iron armour, every 3rd shot a firework"
+  - date: 2026-10-08
+    title: Market heads
+    lines:
+      - Market buys breeze rods and mob heads
+      - Easier to read /market
+      - Shenron curses end on time
+  - date: 2026-10-08
+    title: Ranged cousins
+    lines:
+      - The Salamanca cousins fight at range with crossbows

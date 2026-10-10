@@ -93,3 +93,11 @@ messages:
   seagifts-owner-now-owner: "The sea's gifts now answer to <player> (<uuid>)."
   seagifts-owner-no-longer-owner: "The sea's gifts no longer answer to <player> (<uuid>)."
   hearty-food-lore: "<gold>Made by <maker>: twice as filling</gold>"
+  # /changelog's book. Each page opens with the restart's heading, then one changelog-line per line.
+  changelog-book-title: "Changelog"
+  changelog-book-author: "ClaudeSMP"
+  changelog-heading: "<bold><title></bold><newline><dark_gray><date></dark_gray>"
+  changelog-heading-continued: "<bold><title> (cont.)</bold><newline><dark_gray><date></dark_gray>"
+  changelog-line: "- <line>"
+  changelog-empty: "Nothing in the changelog yet."
+  changelog-players-only: "Only players can open the changelog book."

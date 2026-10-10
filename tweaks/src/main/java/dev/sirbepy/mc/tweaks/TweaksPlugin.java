@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.tweaks;
 
 import dev.sirbepy.mc.core.Messages;
+import dev.sirbepy.mc.tweaks.changelog.ChangelogCommand;
 import dev.sirbepy.mc.tweaks.listener.DailyMotdListener;
 import dev.sirbepy.mc.tweaks.listener.EarthbreakerListener;
 import dev.sirbepy.mc.tweaks.listener.MinecartSpeedListener;
@@ -48,6 +49,13 @@ public final class TweaksPlugin extends JavaPlugin {
         // only gains those keys if an owner command's saveConfig() later writes it.
         getConfig().options().copyDefaults(true);
         Messages messages = new Messages(getConfig().getConfigurationSection("messages"));
+        // The server's copy is the one kept up to date at each restart; the jar's only seeds a fresh server.
+        File changelog = new File(getDataFolder(), "changelog.yml");
+        if (!changelog.exists()) {
+            saveResource("changelog.yml", false);
+        }
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
+                new ChangelogCommand(changelog, messages).registerInto(event.registrar()));
         getServer().getPluginManager().registerEvents(new MinecartSpeedListener(), this);
         MinecartSpeedListener.applyToLoaded(getServer().getWorlds());
         getServer().getPluginManager().registerEvents(new PollosGunListener(this), this);
