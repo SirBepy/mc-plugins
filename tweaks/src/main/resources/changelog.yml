@@ -7,6 +7,10 @@
 # /changelog, so add each restart's entry there (kinetic.mjs) and mirror it here in the same session.
 entries:
   - date: 2026-10-10
+    title: Bedrock fix
+    lines:
+      - Bedrock inventories with enchanted items work again
+  - date: 2026-10-10
     title: Less lag
     lines:
       - Shorter view distance for less lag
