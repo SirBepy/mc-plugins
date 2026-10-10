@@ -15,7 +15,7 @@
 
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { PANEL, api, serverIdentifier, filesContents } from "./kinetic.mjs";
+import { PANEL, api, serverIdentifier, filesContents, wait as sleep } from "./kinetic.mjs";
 import {
   appendEvents, daemonHealth, ensureStateDir, formatEvent, freshWishes, isClaudeDoorbell,
   newInboxEntries, parseConsoleLine, readJson, takeNewEvents, wishFromConsole, wishFromLogLine, writeJson,
@@ -30,7 +30,6 @@ const files = {
   wishSeen: join(STATE, "wish-seen.json"),
 };
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const log = (msg) => console.log(`${new Date().toISOString()} ${msg}`);
 
 // Wings sends a stats frame about once a second while connected, so 90 s of silence means the

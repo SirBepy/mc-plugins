@@ -143,7 +143,7 @@ async function cmdPower(action) {
   console.log(`power: ${action} sent`);
 }
 
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+export const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Exported for offline testing. Paper rotates logs/latest.log to a timestamped .log.gz on every
 // boot and starts a brand new latest.log, so a fresh boot's first line is never a continuation of
