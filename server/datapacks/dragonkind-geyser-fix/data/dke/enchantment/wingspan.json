@@ -1,0 +1,43 @@
+{
+  "description": {"translate":"enchantment.dke.wingspan"},
+  "exclusive_set": "#dke:exclusive_set/wingspan",
+  "supported_items": "#minecraft:enchantable/melee_weapon",
+  "weight": 2,
+  "max_level": 5,
+  "min_cost": {
+    "base": 5,
+    "per_level_above_first": 9
+  },
+  "max_cost": {
+    "base": 20,
+    "per_level_above_first": 9
+  },
+  "anvil_cost": 4,
+  "slots": [
+    "mainhand"
+  ],
+  "effects": {
+    "minecraft:attributes": [
+      {
+        "id": "dke:wingspan_damage",
+        "attribute": "minecraft:sweeping_damage_ratio",
+        "amount": {
+          "type": "minecraft:linear",
+          "base": 1.25,
+          "per_level_above_first": 1.5
+        },
+        "operation": "add_multiplied_total"
+      }
+    ],
+    "minecraft:post_attack": [
+      {
+        "enchanted": "attacker",
+        "affected": "damaging_entity",
+        "effect": {
+          "type": "minecraft:run_function",
+          "function": "dke:enchantments/wingspan_effects"
+        }
+      }
+    ]
+  }
+}

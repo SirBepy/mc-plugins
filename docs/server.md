@@ -68,7 +68,14 @@ builds of open PRs on its own download API under the `geyserpreview` project
 (`https://download.geysermc.org/v2/projects/geyserpreview/versions/pr.6712/builds`). `ServerArtifacts.kt`
 is pinned to that preview's build 3090 (resolved 2026-10-10; the earlier 3057 stopped at Bedrock
 26.51, 3090 adds 26.52) instead of a release build, so Geyser enables on server/local. Build 3090
-fails to start at all while DragonBalls' `bedrock-dragon-models` is true, so keep that off. Swap the pin back to a normal `geyser` release build once 26.3 support
+fails to start at all while DragonBalls' `bedrock-dragon-models` is true, so keep that off. Builds
+3090 and 3091 (both tested) also can't read an enchantment whose `exclusive_set` is a single id instead of a #tag
+(two Dragonkind Evolved ones): the whole enchantment registry is then unusable for the session and
+every enchanted item fails to reach Bedrock ("Registry must be frozen"), which broke Bedrock
+inventories on live 2026-10-10. `server/datapacks/dragonkind-geyser-fix` rewrites those two as tags
+(see `server/datapacks/README.md`); keep every datapack enchantment's `exclusive_set` a tag while on
+this preview. Reg's More Foods' cookbook dialogs, which link to each other by id, fail the same way
+for the dialog registry, so Bedrock players can't open that cookbook; nothing else is affected. Swap the pin back to a normal `geyser` release build once 26.3 support
 ships there (check `https://download.geysermc.org/v2/projects/geyser/versions/latest/builds`
 periodically), and once it does, let Geyser generate its own `plugins/Geyser-Spigot/config.yml`
 (replacing the reconstructed one in `server/config/`, see that file's header).
