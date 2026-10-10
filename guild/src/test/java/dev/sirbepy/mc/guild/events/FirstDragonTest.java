@@ -135,6 +135,38 @@ class FirstDragonTest extends GuildTestBase {
     }
 
     @Test
+    void anOnlineFighterTheBankRefusedIsToldTheCoinsArePendingThenWhenTheyLand() {
+        join(alice);
+        while (alice.nextComponentMessage() != null) {
+            // drop the join chatter
+        }
+        bank.up = false;
+
+        firstDragon.dragonKilled(List.of(alice.getUniqueId()));
+
+        String told = chat(alice);
+        assertTrue(told.contains("coins follow when it opens again"), told);
+        assertFalse(told.contains("For the First Dragon: " + FirstDragon.COINS + " coins"), "never told paid: " + told);
+
+        bank.up = true;
+        firstDragon.joined(alice);
+
+        assertEquals(FirstDragon.COINS, bank.balance(alice));
+        assertTrue(chat(alice).contains("First Dragon coins are paid"));
+        firstDragon.joined(alice);
+        assertEquals("", chat(alice), "told once");
+    }
+
+    /** Every line the player was sent since the last drain, as plain text. */
+    private static String chat(PlayerMock player) {
+        StringBuilder out = new StringBuilder();
+        for (var m = player.nextComponentMessage(); m != null; m = player.nextComponentMessage()) {
+            out.append(net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(m)).append('\n');
+        }
+        return out.toString();
+    }
+
+    @Test
     void thePartySurvivesARestart() {
         join(alice);
         firstDragon.dragonKilled(List.of(alice.getUniqueId()));

@@ -149,12 +149,16 @@ public final class FirstDragon {
         // Reputation only: the dragon is no contract, so promotion's contract count stays where it was.
         guild.addReputation(online, member, REPUTATION);
         member.addStat("first-dragon", 1);
-        if (!pay(member.id(), member)) {
+        boolean paid = pay(member.id(), member);
+        if (!paid) {
             state().set(ROOT + ".unpaid." + member.id(), COINS);
         }
-        if (online != null) {
+        if (online != null && paid) {
             Chat.send(online, "For the First Dragon: " + COINS + " coins and " + REPUTATION
                     + " reputation, on top of today's Guild limits.", NamedTextColor.GOLD);
+        } else if (online != null) {
+            Chat.send(online, "For the First Dragon: " + REPUTATION + " reputation now. The Guild's bank is closed, so your "
+                    + COINS + " coins follow when it opens again (on your next join).", NamedTextColor.GOLD);
         } else {
             state().set(ROOT + ".notify." + member.id(), true);
         }
@@ -186,9 +190,17 @@ public final class FirstDragon {
             return;
         }
         boolean changed = false;
+        boolean owedPaid = false;
         if (state().contains(ROOT + ".unpaid." + id) && pay(id, member)) {
             state().set(ROOT + ".unpaid." + id, null);
             changed = true;
+            owedPaid = true;
+        }
+        // A member who was offline at the kill hears about the coins in the "while you were away"
+        // line below; one who was online was told they were pending, so they hear when they land.
+        if (owedPaid && !state().getBoolean(ROOT + ".notify." + id)) {
+            Chat.send(player, "The Guild's bank is open again: your " + COINS + " First Dragon coins are paid.",
+                    NamedTextColor.GOLD);
         }
         if (state().getBoolean(ROOT + ".notify." + id)) {
             state().set(ROOT + ".notify." + id, null);
