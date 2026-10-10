@@ -41,12 +41,8 @@ public final class CustomPrefix {
         prefixes.remove(player, KEY);
     }
 
-    /**
-     * Under an unstyled root, because NameComposer appends what follows onto the prefix and a styled
-     * root would hand its colour to an uncoloured name. The space is added here since the command's
-     * argument split drops a trailing one.
-     */
+    /** The space is added here since the command's argument split drops a trailing one. */
     public static Component render(String miniMessage) {
-        return Component.empty().append(Messages.mini().deserialize(miniMessage)).append(Component.space());
+        return Component.textOfChildren(Messages.mini().deserialize(miniMessage), Component.space());
     }
 }

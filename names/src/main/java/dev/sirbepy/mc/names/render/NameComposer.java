@@ -1,10 +1,16 @@
 package dev.sirbepy.mc.names.render;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.ComponentLike;
 
+import java.util.ArrayList;
 import java.util.List;
 
-/** Pure composition of prefixes + colored name, with no Bukkit dependency, for easy testing. */
+/**
+ * Pure composition of prefixes + colored name, with no Bukkit dependency, for easy testing. Every
+ * part is a sibling under an unstyled root: a child inherits its parent's style, so appending the
+ * name onto a styled prefix (the Guild's gold "[Night Owl] ") would paint an uncoloured name gold.
+ */
 public final class NameComposer {
 
     private NameComposer() {
@@ -14,11 +20,7 @@ public final class NameComposer {
         if (prefixes.isEmpty()) {
             return Component.empty();
         }
-        Component joined = prefixes.get(0);
-        for (int i = 1; i < prefixes.size(); i++) {
-            joined = joined.append(prefixes.get(i));
-        }
-        return joined;
+        return Component.textOfChildren(prefixes.toArray(ComponentLike[]::new));
     }
 
     /** Prefixes (lowest priority first) followed by the colored nickname or real name. */
@@ -26,6 +28,8 @@ public final class NameComposer {
         if (prefixes.isEmpty()) {
             return coloredName;
         }
-        return joinPrefixes(prefixes).append(coloredName);
+        List<Component> parts = new ArrayList<>(prefixes);
+        parts.add(coloredName);
+        return Component.textOfChildren(parts.toArray(ComponentLike[]::new));
     }
 }
