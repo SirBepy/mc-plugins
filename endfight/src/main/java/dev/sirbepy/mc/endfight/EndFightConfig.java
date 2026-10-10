@@ -8,8 +8,13 @@ import dev.sirbepy.mc.endfight.reward.TierRewardRow;
 import dev.sirbepy.mc.endfight.tier.Tier;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 
+import java.time.DateTimeException;
+import java.time.ZoneId;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /** Snapshot of {@code config.yml}, rebuilt by {@code /endfight reload}. */
 public final class EndFightConfig {
@@ -25,6 +30,15 @@ public final class EndFightConfig {
     private final Tier defaultTier;
     private final long tierApplyDelayTicks;
     private final Boolean dkeForceInstalled;
+    private final ZoneId openingZone;
+    private final List<Integer> countdownMinutes;
+    private final Set<Integer> warpHintMinutes;
+    private final Messages openingMessages;
+
+    /** Every key in config.yml's end-opening.messages; read one by one so the jar's defaults fill
+     * in for a live config.yml copied before the section existed. */
+    private static final List<String> OPENING_MESSAGE_KEYS = List.of("closed-join", "countdown", "warp-hint",
+            "portal-closed", "open-chat", "open-title", "open-subtitle", "warp-searching", "warp-done", "warp-failed");
 
     public EndFightConfig(FileConfiguration config) {
         this.autoBuild = config.getBoolean("arena.auto-build", true);
@@ -40,6 +54,42 @@ public final class EndFightConfig {
         this.tierApplyDelayTicks = config.getLong("tiers.apply-delay-ticks", 60L);
         this.dkeForceInstalled = config.isSet("tiers.dke.force-installed")
                 ? config.getBoolean("tiers.dke.force-installed") : null;
+        this.openingZone = parseZone(config.getString("end-opening.zone", "Europe/Zagreb"));
+        this.countdownMinutes = List.copyOf(config.getIntegerList("end-opening.countdown-minutes"));
+        this.warpHintMinutes = Set.copyOf(config.getIntegerList("end-opening.warp-hint-minutes"));
+        YamlConfiguration opening = new YamlConfiguration();
+        for (String key : OPENING_MESSAGE_KEYS) {
+            String template = config.getString("end-opening.messages." + key);
+            if (template != null) {
+                opening.set(key, template);
+            }
+        }
+        this.openingMessages = new Messages(opening);
+    }
+
+    private static ZoneId parseZone(String raw) {
+        try {
+            return ZoneId.of(raw);
+        } catch (DateTimeException | NullPointerException e) {
+            return ZoneId.of("Europe/Zagreb");
+        }
+    }
+
+    public ZoneId openingZone() {
+        return openingZone;
+    }
+
+    public List<Integer> countdownMinutes() {
+        return countdownMinutes;
+    }
+
+    public Set<Integer> warpHintMinutes() {
+        return warpHintMinutes;
+    }
+
+    /** end-opening.messages: the countdown, the closed portal and /warp end's lines. */
+    public Messages openingMessages() {
+        return openingMessages;
     }
 
     private static Tier parseTier(String name) {

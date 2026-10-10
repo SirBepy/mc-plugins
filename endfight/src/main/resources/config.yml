@@ -138,6 +138,31 @@ tiers:
     # filename matches neither and auto-detect guesses wrong.
     force-installed:
 
+# The End's opening (Joe, 2026-10-10): portals into the End stay shut for everyone, ops included,
+# until plugins/EndFight/opening.yml's opens-at (an ISO date-time with offset, e.g.
+# 2026-10-10T20:30+02:00; `endfight opening set 20:30` writes it). No opens-at = no gate.
+# Live's config.yml was copied before this section existed; every key here falls back to the
+# jar's value, so nothing needs adding there.
+end-opening:
+  # Clock shown in the messages (<time>).
+  zone: Europe/Zagreb
+  # Countdown chat lines, in minutes before opening (each with a ding).
+  countdown-minutes: [60, 30, 15, 10, 5, 1]
+  # Countdown steps that also tell players about /warp end and the Eyes of Ender; from the first
+  # of these on, players joining hear it too.
+  warp-hint-minutes: [60]
+  messages:
+    closed-join: "<light_purple>The End opens at <time> (in <left>) for the dragon fight. Be ready!"
+    countdown: "<light_purple>The End opens in <left>, at <time>. Be ready for the dragon fight!"
+    warp-hint: "<gold>/warp end takes you to the stronghold. Bring Eyes of Ender: the portal has to be filled before anyone can go in."
+    portal-closed: "<red>The End is closed until <time> (<left> left)."
+    open-chat: "<light_purple><bold>The End is open! The dragon fight starts now.</bold> <gray>(/warp end to the stronghold)"
+    open-title: "<light_purple>The End is open!"
+    open-subtitle: "<gray>/warp end to the stronghold"
+    warp-searching: "<gray>Finding the stronghold..."
+    warp-done: "<light_purple>The stronghold's portal room. Fill the frames with Eyes of Ender to open the portal."
+    warp-failed: "<red>Couldn't find the stronghold's portal room. Tell an admin."
+
 messages:
   reload-success: "<green>EndFight config reloaded."
   build-success: "<green>Arena built: <pillars> pillars, <blocks> blocks."

@@ -44,6 +44,33 @@ then. `EndFight` auto-builds the arena the moment it does see an End world with 
 live before the End is open. Set `arena.auto-build: false` in `config.yml` to require a manual
 `endfight build` instead.
 
+## Opening the End (gate, countdown, /warp end)
+
+Joe, 2026-10-10: live restarts with `allow-end: true` well before the fight, so the arena is built
+and the End loaded, but nobody gets in until the opening time.
+
+- **The gate.** While `plugins/EndFight/opening.yml`'s `opens-at` (ISO date-time with offset, e.g.
+  `2026-10-10T20:30:00+02:00`) is in the future, every portal into the End is shut for everyone,
+  ops included (Joe: nobody should start the fight early by accident). Items, mobs and pearls are
+  kept out too. A bounced player is set down beside the frame ring, since the stronghold portal
+  sits over lava. The exit portal home is never touched. No `opens-at` (or no file) means no gate.
+- **The countdown.** Players joining while it's closed hear when it opens. At 60, 30, 15, 10, 5 and
+  1 minutes before (`end-opening.countdown-minutes`) everyone online gets a chat line with a ding;
+  the 60-minute one (`warp-hint-minutes`) also explains `/warp end` and the Eyes of Ender, and from
+  then on joiners hear that too. At the opening: a chat line, an on-screen title and the dragon's
+  growl. A step only fires within 2 minutes of its time, so a restart never replays old ones, and
+  the opening needs no restart or command: the plugin's own clock lets players through.
+- **`/warp end`.** Everyone lands in the portal room of the one stronghold nearest the overworld
+  spawn (Joe: one group fills the frames and the whole server uses that portal), beside the frame
+  ring and facing it. HuskHomes owns `/warp`; EndFight takes only `warp end` before HuskHomes sees
+  it. The spot is found once per boot (10 s after enable, logged as `/warp end: stronghold portal
+  room at x y z`): locate the stronghold, read its pieces, scan only the 11x8x16 portal room for
+  frames. It works from any dimension and stays after the opening. If the portal room has been
+  mined out, players get "Couldn't find the stronghold's portal room".
+- Messages live under `end-opening.messages` in `config.yml`; every key falls back to the jar's
+  value, so live's older config.yml needs no edit.
+- Tested by `e2e/end-opening.mjs`.
+
 ## The cult
 
 The dragon's army holds every outpost, balcony, gatehouse and wall spot the arena recorded in
@@ -174,6 +201,9 @@ All require `endfight.admin` (default: op).
 | `endfight restore` | Runs the whole-island restore now |
 | `endfight respawn` | Places the 4 summoning crystals on the portal and starts a dragon respawn (testing) |
 | `endfight reset status` | Watcher phase, vanilla's respawn phase, snapshot presence/size/age, last restore stats |
+| `endfight opening status` | The opening time and whether End portals are shut right now |
+| `endfight opening set <HH:mm or ISO>` | Sets the opening time (HH:mm = today, Europe/Zagreb) and saves opening.yml; the countdown follows it |
+| `endfight opening clear` | Removes the gate: End portals work now, no countdown |
 
 ## Rewards (phase 3)
 

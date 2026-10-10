@@ -21,6 +21,10 @@ import dev.sirbepy.mc.endfight.cult.CultGuards;
 import dev.sirbepy.mc.endfight.cult.CultWaves;
 import dev.sirbepy.mc.endfight.cult.WaveSpawner;
 import dev.sirbepy.mc.endfight.fight.FightStatsListener;
+import dev.sirbepy.mc.endfight.opening.EndGateListener;
+import dev.sirbepy.mc.endfight.opening.EndOpening;
+import dev.sirbepy.mc.endfight.opening.OpeningCommand;
+import dev.sirbepy.mc.endfight.opening.StrongholdWarp;
 import dev.sirbepy.mc.endfight.perch.PerchGateListener;
 import dev.sirbepy.mc.endfight.reset.BukkitDragonBattleView;
 import dev.sirbepy.mc.endfight.reset.IslandResetService;
@@ -176,10 +180,23 @@ public final class EndFightPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new AltarInteractListener(new AltarLocator(registry), altarMenu), this);
         getServer().getPluginManager().registerEvents(new MenuListener(), this);
 
+        // The End's opening: portals shut until opening.yml's time, a countdown, and /warp end.
+        EndOpening opening = new EndOpening(new File(getDataFolder(), "opening.yml"), config.get().countdownMinutes(),
+                config.get().warpHintMinutes(), config.get().openingZone(), getLogger());
+        EndGateListener gate = new EndGateListener(opening, () -> config.get().openingMessages(), clock);
+        getServer().getPluginManager().registerEvents(gate, this);
+        getServer().getScheduler().runTaskTimer(this, gate::tick, 20L, 20L);
+        StrongholdWarp warp = new StrongholdWarp(this, () -> config.get().openingMessages());
+        getServer().getPluginManager().registerEvents(warp, this);
+        // Finds the portal room once at boot, so the first /warp end doesn't wait on chunk loads.
+        getServer().getScheduler().runTaskLater(this, () -> warp.locate(), 200L);
+        OpeningCommand openingCommand = new OpeningCommand(opening, clock);
+
         ResetCommand resetCommand = new ResetCommand(resetService, respawnWatcher, restorer, snapshotStore, service::endWorld);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             EndFightCommand command = new EndFightCommand(service, config::get, this::reload, rewards, tiers);
-            command.registerInto(event.registrar(), new CultCommand(cultGuards, cultCounter, waveSpawner), resetCommand);
+            command.registerInto(event.registrar(), new CultCommand(cultGuards, cultCounter, waveSpawner), resetCommand,
+                    openingCommand);
             new DragonAuraCommand(auras, presence).registerInto(event.registrar());
         });
     }
