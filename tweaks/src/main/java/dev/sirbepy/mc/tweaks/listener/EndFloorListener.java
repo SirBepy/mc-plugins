@@ -54,7 +54,8 @@ public final class EndFloorListener implements Listener {
         rescue(event.getPlayer());
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    // HIGHEST, not MONITOR: this rewrites the destination, and MONITOR handlers expect a settled event.
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onMove(PlayerMoveEvent event) {
         Location to = event.getTo();
         if (to.getY() >= BEDROCK_FLOOR || event.getFrom().getY() < BEDROCK_FLOOR) {
