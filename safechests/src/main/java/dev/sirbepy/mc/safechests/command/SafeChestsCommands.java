@@ -7,6 +7,7 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import dev.sirbepy.mc.core.Durations;
+import dev.sirbepy.mc.core.Players;
 import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.safechests.SafeChestsConfig;
 import dev.sirbepy.mc.safechests.bolt.BoltAccess;
@@ -342,12 +343,7 @@ public final class SafeChestsCommands {
     }
 
     private Optional<OfflinePlayer> resolvePlayer(String name) {
-        Player online = Bukkit.getPlayerExact(name);
-        if (online != null) {
-            return Optional.of(online);
-        }
-        OfflinePlayer cached = Bukkit.getOfflinePlayerIfCached(name);
-        return Optional.ofNullable(cached);
+        return Players.known(name);
     }
 
     private CompletableFuture<Suggestions> suggestPlayers(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx, SuggestionsBuilder builder) {

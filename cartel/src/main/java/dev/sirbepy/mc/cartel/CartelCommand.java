@@ -6,6 +6,7 @@ import com.mojang.brigadier.context.CommandContext;
 import dev.sirbepy.mc.cartel.call.CallManager;
 import dev.sirbepy.mc.cartel.phone.PhoneListener;
 import dev.sirbepy.mc.core.Durations;
+import dev.sirbepy.mc.core.Players;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import net.kyori.adventure.text.Component;
@@ -73,8 +74,7 @@ public final class CartelCommand {
 
     private int owner(CommandContext<CommandSourceStack> c) {
         String name = StringArgumentType.getString(c, "player");
-        Player online = Bukkit.getPlayerExact(name);
-        OfflinePlayer target = online != null ? online : Bukkit.getOfflinePlayerIfCached(name);
+        OfflinePlayer target = Players.known(name).orElse(null);
         if (target == null) {
             send(c, name + " has never joined this server.");
             return Command.SINGLE_SUCCESS;

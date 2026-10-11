@@ -6,6 +6,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import dev.sirbepy.mc.core.Inventories;
+import dev.sirbepy.mc.core.Players;
 import dev.sirbepy.mc.merfolk.bed.KelpBed;
 import dev.sirbepy.mc.merfolk.bed.KelpBeds;
 import dev.sirbepy.mc.merfolk.trade.RareLedger;
@@ -14,7 +15,6 @@ import io.papermc.paper.command.brigadier.Commands;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -112,14 +112,7 @@ final class MerfolkCommand {
     }
 
     private static UUID resolve(String arg) {
-        try {
-            return UUID.fromString(arg);
-        } catch (IllegalArgumentException notUuid) {
-            Player online = Bukkit.getPlayerExact(arg);
-            if (online != null) return online.getUniqueId();
-            OfflinePlayer cached = Bukkit.getOfflinePlayerIfCached(arg);
-            return cached == null ? null : cached.getUniqueId();
-        }
+        return Players.idOf(arg);
     }
 
     private static int say(CommandContext<CommandSourceStack> c, String text) {

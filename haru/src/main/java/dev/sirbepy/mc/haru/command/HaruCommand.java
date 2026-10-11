@@ -6,6 +6,7 @@ import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import dev.sirbepy.mc.core.Players;
 import dev.sirbepy.mc.haru.HaruContext;
 import dev.sirbepy.mc.haru.data.ActiveQuest;
 import dev.sirbepy.mc.haru.data.NpcAnchor;
@@ -116,8 +117,7 @@ public final class HaruCommand {
 
     private int owner(CommandContext<CommandSourceStack> c) {
         String name = StringArgumentType.getString(c, "player");
-        Player online = Bukkit.getPlayerExact(name);
-        OfflinePlayer target = online != null ? online : Bukkit.getOfflinePlayerIfCached(name);
+        OfflinePlayer target = Players.known(name).orElse(null);
         if (target == null) {
             send(c, name + " has never joined this server.");
             return Command.SINGLE_SUCCESS;

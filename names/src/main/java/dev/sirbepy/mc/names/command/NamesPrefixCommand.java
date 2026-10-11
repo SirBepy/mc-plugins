@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.names.command;
 
+import dev.sirbepy.mc.core.Players;
 import dev.sirbepy.mc.names.config.NamesConfig;
 import dev.sirbepy.mc.names.render.CustomPrefix;
 import net.kyori.adventure.text.Component;
@@ -11,6 +12,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -71,18 +73,11 @@ public final class NamesPrefixCommand {
 
     /** Online by exact name, else a player this server has seen, else a raw UUID. */
     private static OfflinePlayer find(String nameOrId) {
-        Player online = Bukkit.getPlayerExact(nameOrId);
-        if (online != null) {
-            return online;
+        Optional<OfflinePlayer> known = Players.known(nameOrId);
+        if (known.isPresent()) {
+            return known.get();
         }
-        OfflinePlayer cached = Bukkit.getOfflinePlayerIfCached(nameOrId);
-        if (cached != null) {
-            return cached;
-        }
-        try {
-            return Bukkit.getOfflinePlayer(UUID.fromString(nameOrId));
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
+        UUID id = Players.idOf(nameOrId);
+        return id == null ? null : Bukkit.getOfflinePlayer(id);
     }
 }

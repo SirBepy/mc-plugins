@@ -6,6 +6,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import dev.sirbepy.mc.core.Players;
 import dev.sirbepy.mc.guild.Guild;
 import dev.sirbepy.mc.guild.contract.ContractDef;
 import dev.sirbepy.mc.guild.data.ActiveContract;
@@ -22,7 +23,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
-import org.bukkit.entity.Player;
 
 import java.util.function.Consumer;
 
@@ -293,8 +293,7 @@ public final class GuildAdminCommand {
 
     private int guildmaster(CommandContext<CommandSourceStack> c) {
         String name = StringArgumentType.getString(c, "player");
-        Player online = Bukkit.getPlayerExact(name);
-        OfflinePlayer target = online != null ? online : Bukkit.getOfflinePlayerIfCached(name);
+        OfflinePlayer target = Players.known(name).orElse(null);
         if (target == null) {
             send(c, name + " has never joined this server.");
             return Command.SINGLE_SUCCESS;

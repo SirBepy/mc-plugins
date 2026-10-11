@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import dev.sirbepy.mc.core.Players;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.effects.DragonType;
 import dev.sirbepy.mc.dragonballs.registry.BallSets;
@@ -315,11 +316,6 @@ public final class ShenronCommand {
     }
 
     private Optional<UUID> resolvePlayer(String name) {
-        Player online = Bukkit.getPlayerExact(name);
-        if (online != null) {
-            return Optional.of(online.getUniqueId());
-        }
-        OfflinePlayer cached = Bukkit.getOfflinePlayerIfCached(name);
-        return cached == null ? Optional.empty() : Optional.of(cached.getUniqueId());
+        return Players.known(name).map(OfflinePlayer::getUniqueId);
     }
 }

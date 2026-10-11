@@ -1,9 +1,8 @@
 package dev.sirbepy.mc.tweaks;
 
 import dev.sirbepy.mc.core.Messages;
+import dev.sirbepy.mc.core.Players;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -23,16 +22,10 @@ public final class OwnerArgument {
 
     /** The UUID {@code arg} names, or null after telling {@code sender} that name never joined. */
     public static UUID resolve(CommandSender sender, String arg, Messages messages) {
-        try {
-            return UUID.fromString(arg);
-        } catch (IllegalArgumentException notUuid) {
-            Player online = Bukkit.getPlayerExact(arg);
-            OfflinePlayer cached = online != null ? online : Bukkit.getOfflinePlayerIfCached(arg);
-            if (cached == null) {
-                messages.send(sender, "owner-not-joined", Placeholder.unparsed("player", arg));
-                return null;
-            }
-            return cached.getUniqueId();
+        UUID id = Players.idOf(arg);
+        if (id == null) {
+            messages.send(sender, "owner-not-joined", Placeholder.unparsed("player", arg));
         }
+        return id;
     }
 }
