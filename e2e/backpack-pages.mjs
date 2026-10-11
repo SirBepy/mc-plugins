@@ -88,7 +88,9 @@ try {
   await click(26);
   m = await menu();
   report('next page shows page 2 (go-back at 18, no next)', m.page === 1 && m.slots[18] === '<' && !m.slots.includes('>'), m.slots);
+  // A full page 2 (open slots 0-12 here), like ImMijo's full page 2 on live.
   await cmd(`minecraft:item replace entity ${M} container.0 with minecraft:dirt 3`);
+  for (let s = 1; s < 13; s++) await cmd(`minecraft:item replace entity ${M} container.${s} with minecraft:cobblestone 64`);
   await sleep(700);
   await click(18);
   m = await menu();
@@ -111,6 +113,7 @@ try {
   await click(26);
   m = await menu();
   report('next page reaches page 2 again', m.page === 1 && m.slots[18] === '<', m.slots);
+  report('page 2 still holds all 13 of its stacks', m.slots.slice(0, 13) === 'd' + 'c'.repeat(12), m.slots);
   const repaired = await storedArrows(0);
   report('the repaired page 1 was saved (next, no go-back)', repaired.next && !repaired.back, JSON.stringify(repaired));
   await click(18);
