@@ -1,9 +1,11 @@
 package dev.sirbepy.mc.tweaks;
 
 import dev.sirbepy.mc.core.Messages;
+import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.tweaks.changelog.ChangelogCommand;
 import dev.sirbepy.mc.tweaks.listener.DailyMotdListener;
 import dev.sirbepy.mc.tweaks.listener.EarthbreakerListener;
+import dev.sirbepy.mc.tweaks.listener.EndFloorListener;
 import dev.sirbepy.mc.tweaks.listener.LoyaltyTridentListener;
 import dev.sirbepy.mc.tweaks.listener.MinecartSpeedListener;
 import dev.sirbepy.mc.tweaks.listener.PendingTridents;
@@ -89,6 +91,10 @@ public final class TweaksPlugin extends JavaPlugin {
             EarthbreakerListener earthbreaker = new EarthbreakerListener(getServer());
             getServer().getPluginManager().registerEvents(earthbreaker, this);
             getServer().getScheduler().runTaskTimer(this, earthbreaker::tick, 1L, 1L);
+        }
+        if (getConfig().getBoolean("end-floor.enabled", true)) {
+            getServer().getPluginManager().registerEvents(
+                    new EndFloorListener(this, BedrockForms.create(this)::isBedrock, messages), this);
         }
         if (getConfig().getBoolean("wither-guard.enabled", true)) {
             // A lambda keeps TownyTowns (and so Towny's classes) unloaded when Towny isn't there.

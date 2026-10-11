@@ -49,6 +49,13 @@ earthbreaker:
 wither-guard:
   enabled: true
 
+# Bedrock clients only get the End between y 0 and 256 from Geyser, so a Bedrock player below y 0
+# there hovers in nothing and is kicked for floating on every join. They are moved on top of the
+# highest solid block in their column, or to overworld spawn (EndFloorListener). Java players are
+# untouched. Off = no rescue after the next restart.
+end-floor:
+  enabled: true
+
 # Porunga's sea gifts: permanent Dolphin's Grace and Conduit Power that each owner switches for himself
 # with /seagifts dolphin|conduit, each at most once per real hour; death switches both off. Owners:
 # ItsLogiks (2026-10-08, session jam0yw) and SirBepy (2026-10-08, session ay4gtv). Switches and cooldowns
@@ -84,6 +91,7 @@ messages:
   wither-refusal-town: "<red>You can't summon the Wither inside a town. Take the fight to the wilderness.</red>"
   wither-refusal-nether-roof: "<red>You can't summon the Wither above the Nether roof.</red>"
   wither-refusal-unbreakable: "<red>You can't summon the Wither this close to bedrock or other blocks it can't break.</red>"
+  end-floor-rescue: "<yellow>Bedrock can't show the End below y 0, so you were moved somewhere you can stand.</yellow>"
   owner-not-joined: "<player> has never joined this server."
   netherwishes-owner-set: "The Nether wishes now answer to <player> (<uuid>)."
   seagifts-flip-refused: "<aqua><gift> was switched less than an hour ago; you can switch it again in <remaining>.</aqua>"
