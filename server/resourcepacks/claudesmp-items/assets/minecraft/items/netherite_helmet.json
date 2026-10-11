@@ -5,6 +5,26 @@
     "index": 0,
     "cases": [
       {
+        "when": "cosmetic_3",
+        "model": {
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": "head",
+              "model": {
+                "type": "minecraft:model",
+                "model": "claudesmp:item/golden_halo"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "claudesmp:item/golden_halo_icon"
+          }
+        }
+      },
+      {
         "when": "dragonscale",
         "model": {
           "type": "minecraft:select",

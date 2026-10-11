@@ -1,0 +1,8 @@
+# Worn looks a server pack can't pick by itself (CosmeticLooks): the game draws worn armor and
+# elytra wings from the item's equippable asset id, not its item model. Keyed by cosmetic request
+# id; every item stamped with that id gets the asset id when its owner joins or puts it on.
+# "none" clears the asset id, so the client draws the item's own model on the head (a 3D helmet).
+# Ships inside the jar, so it arrives at the same restart as the pack that defines the asset.
+# test_golden_cosmetics.py checks every asset named here exists in the join pack.
+2: claudesmp:golden_wings   # dvolic21's Golden Wings (elytra), golden_wings.py
+3: none                     # dvolic21's Golden Halo (netherite helmet), golden_halo.py

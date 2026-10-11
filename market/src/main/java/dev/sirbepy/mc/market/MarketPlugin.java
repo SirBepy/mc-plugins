@@ -77,6 +77,11 @@ public final class MarketPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(cosmeticShop, this);
         cosmeticRequests = new CosmeticRequests(this, config::get, cosmeticToken, new File(getDataFolder(), "cosmetics.yml"), getLogger());
         getServer().getPluginManager().registerEvents(cosmeticRequests, this);
+        try (InputStream stream = Objects.requireNonNull(getResource("cosmetic-looks.yml"), "cosmetic-looks.yml missing from the jar")) {
+            getServer().getPluginManager().registerEvents(new CosmeticLooks(this, CosmeticLooks.load(stream, getLogger()), getLogger()), this);
+        } catch (Exception e) {
+            throw new IllegalStateException("Could not load cosmetic-looks.yml", e);
+        }
         CosmeticCommand cosmeticCommand = new CosmeticCommand(cosmeticRequests);
         MarketWatchCommand watchCommand = new MarketWatchCommand(watches, config::get);
         PriceCommand price;
