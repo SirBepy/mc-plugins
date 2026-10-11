@@ -6,6 +6,18 @@
 # The live server's plugins/Tweaks/changelog.yml is the copy players see, read fresh on every
 # /changelog, so add each restart's entry there (kinetic.mjs) and mirror it here in the same session.
 entries:
+  - date: 2026-10-11
+    title: Classes and more
+    lines:
+      - "RPG classes: type /class (GutGr1nder's wish)"
+      - '/market price \<item> shows the best, usual and worst price a stall pays'
+      - Thrown Loyalty tridents always come back to you
+      - Netherite backpacks stuck on page 2 are fixed
+      - Phantom Membranes no longer turn into Coffee Beans
+      - Dragon helmets look right when worn
+      - "dvolic21's Golden Halo and Golden Wings cosmetics"
+      - Tag is back
+      - Full view distance is back
   - date: 2026-10-10
     title: Bedrock fix
     lines:
