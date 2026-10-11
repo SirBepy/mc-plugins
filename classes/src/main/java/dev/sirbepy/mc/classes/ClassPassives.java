@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.player.PlayerExpChangeEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
 
@@ -18,11 +19,13 @@ import java.util.function.DoubleSupplier;
 
 /**
  * The passives that aren't about damage: Insight (more orb XP), Careful Hands (skipped durability
- * loss), and the Arcanist's Frail Body (a transient max-health modifier, re-applied on join).
+ * loss), Blessed Vigor (more healing received), and the Arcanist's Frail Body and the Guardian's
+ * Heavy Plate (transient max-health and movement-speed modifiers, both re-applied on join).
  */
 public final class ClassPassives implements Listener {
 
     static final NamespacedKey FRAIL_BODY = new NamespacedKey("classes", "frail_body");
+    static final NamespacedKey HEAVY_PLATE = new NamespacedKey("classes", "heavy_plate");
 
     private final Classes classes;
     /** 0 (inclusive) to 1 (exclusive); tests fix it. */
@@ -45,6 +48,13 @@ public final class ClassPassives implements Listener {
         int whole = (int) bonus;
         insightCarry.put(id, bonus - whole);
         if (whole > 0) event.setAmount(event.getAmount() + whole);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onHeal(EntityRegainHealthEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+        double percent = passivePercent(player.getUniqueId(), RpgClass.PALADIN);
+        if (percent > 0) event.setAmount(event.getAmount() * (1 + percent / 100));
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -82,6 +92,22 @@ public final class ClassPassives implements Listener {
             if (player.getHealth() > max.getValue()) player.setHealth(max.getValue());
         } else if (!wanted && has) {
             max.removeModifier(FRAIL_BODY);
+        }
+    }
+
+    /** Adds or removes Heavy Plate to match the player's class; the secondary's weakness is never halved. */
+    public void applyHeavyPlate(Player player) {
+        AttributeInstance speed = player.getAttribute(Attribute.MOVEMENT_SPEED);
+        if (speed == null) return;
+        UUID id = player.getUniqueId();
+        RpgClass active = classes.active(id);
+        boolean wanted = active == RpgClass.GUARDIAN || (active != null && classes.secondary(id) == RpgClass.GUARDIAN);
+        boolean has = speed.getModifier(HEAVY_PLATE) != null;
+        if (wanted && !has) {
+            speed.addTransientModifier(new AttributeModifier(HEAVY_PLATE, -RpgClass.HEAVY_PLATE_SPEED / 100,
+                    AttributeModifier.Operation.ADD_SCALAR));
+        } else if (!wanted && has) {
+            speed.removeModifier(HEAVY_PLATE);
         }
     }
 

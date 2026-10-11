@@ -19,8 +19,10 @@ JEDNU KLASU SADA"
 
 ## The granted terms
 
-- 4 classes: Warrior, Ranger, Arcanist, Artificer. Guardian, Rogue and Paladin are not built; only
-  GutGr1nder's own future Nether or End Shenron wish can add them.
+- 4 classes at first: Warrior, Ranger, Arcanist, Artificer. Guardian, Rogue and Paladin were built
+  later (2026-10-11), cashing in that promise via GutGr1nder's own Nether Shenron wish (session
+  `k07gsq`): "unlock the other classes". No fresh council vote was needed since the terms were
+  already granted; see "Guardian, Rogue and Paladin" below.
 - Opt-in: a player with no class plays exactly as before (no passive, no ability, no class XP).
 - Each class has its own level 1-25 (not the 50 asked for), earned by playing in that class's style.
   Every class keeps its progress across changes; only the active class gives bonuses and earns XP.
@@ -44,18 +46,24 @@ the swap is cancelled, so the items stay where they are.
 | Ranger | Steady Aim: +2% to +10% arrow and trident damage | Fleet Foot: Speed I for 8 to 15 s (90 to 60 s) | Thin Skin: 5% more damage from mobs' melee hits | 5 per hostile mob killed by an arrow or trident, 50 per boss |
 | Arcanist | Insight: +2% to +10% XP from orbs | Mend: heal 1 to 3 hearts and cure poison (120 to 60 s) | Frail Body: 1 heart less max health | 1 per 4 orb XP points picked up, 5 per level spent enchanting |
 | Artificer | Careful Hands: 2% to 10% chance a tool or armour piece takes no durability damage | Overclock: Haste I for 10 to 20 s (90 to 60 s) | Soft Hands: melee damage 5% lower | 2 per ore mined without Silk Touch, 1 per craft |
+| Guardian | Stalwart: 2% to 10% less damage from mobs' melee hits | Last Stand: 10% to 20% less damage taken for 6 to 10 s (90 to 60 s) | Heavy Plate: 5% slower movement speed | 3 per hostile mob's melee hit survived, 10 per boss hit survived |
+| Rogue | Sneak Attack: +2% to +10% melee damage while sneaking | Shadow Step: dash 3 to 6 blocks (90 to 60 s) | Light Fingers: 5% more damage from mobs' ranged attacks | 5 per hostile mob killed in melee while sneaking, 50 per boss |
+| Paladin | Blessed Vigor: +2% to +10% healing received from any source | Smite: 2 to 6 hearts of damage to the nearest hostile mob, cures poison and wither (90 to 60 s) | Merciful Hand: melee damage 5% lower | 1 per 4 health points regenerated |
 
 Details:
 
 - "Melee" is a direct hit or a sweep; "hostile" is any monster (zombies, slimes, ghasts, phantoms,
   shulkers, hoglins, the dragon and the wither); bosses are the wither and the Ender Dragon. Mobs from a
   spawner give no class XP, the same rule as the Guild's farm guard.
-- Battle Cry's cut is halved against player hits (arrows included); Thin Skin only counts mobs. Fleet
-  Foot, Mend and Overclock only touch the player using them.
-- Frail Body is a transient max-health modifier (`classes:frail_body`), applied on join and on picking
-  Arcanist and removed on leaving it, so it is never saved into the player file.
-- Insight carries fractions between orbs, so 2% of small orbs still adds up. Careful Hands rolls once
-  per durability loss.
+- Battle Cry's and Last Stand's cuts are halved against player hits (arrows included); Thin Skin and
+  Stalwart only count mobs, Light Fingers only counts mobs' ranged hits. Fleet Foot, Mend, Overclock,
+  Last Stand, Shadow Step and Smite only touch the player using them (Smite's damage lands on the
+  mob it hits, never a player).
+- Frail Body and Heavy Plate are transient max-health and movement-speed modifiers (`classes:frail_body`,
+  `classes:heavy_plate`), applied on join and on picking Arcanist or Guardian and removed on leaving,
+  so neither is ever saved into the player file.
+- Insight and Blessed Vigor carry fractions between orbs or heals, so a 2% bonus on a small amount
+  still adds up over time. Careful Hands rolls once per durability loss.
 - Ores: every `*_ORE` block and ancient debris. Silk Touch ores give nothing, since they can be placed
   and mined again. A craft counts once per craft action (a shift-click batch is one).
 
@@ -66,13 +74,38 @@ system at every comparable point:
 
 | Class number at level 25 | AuraSkills comparison |
 | --- | --- |
-| Weapon Master / Steady Aim +10% damage | Strength: +0.4% attack damage per point, hand and bow damage (stats.yml), so 25 Strength already matches it |
-| Battle Cry 20% for 10 s every 60 s | Toughness: 0.3% damage reduction per point, always on |
+| Weapon Master / Steady Aim / Sneak Attack +10% damage | Strength: +0.4% attack damage per point, hand and bow damage (stats.yml), so 25 Strength already matches it |
+| Battle Cry / Last Stand 20% for 10 s every 60 s | Toughness: 0.3% damage reduction per point, always on, against every damage type |
 | Insight +10% orb XP | Wisdom: +0.4% experience per point |
 | Careful Hands 10% | Unbreaking I alone saves 50% of a tool's durability loss |
 | Overclock Haste I for 20 s every 60 s | Speed Mine (mana ability): Haste X |
 | Fleet Foot Speed I for 15 s every 60 s | Speed: +1% movement speed per point, always on |
 | Mend 3 hearts every 60 s | Regeneration stat, and Absorption (mana ability) |
+| Stalwart 10% less melee damage from mobs, always on | Toughness: 0.3% per point (7.5% at 25) against every damage type, always on and broader in scope than Stalwart's melee-only, mobs-only cut |
+| Shadow Step dash 6 blocks every 60 s | No direct AuraSkills analog; a one-shot repositioning tool on the same 90-to-60 s cooldown as every other ability, not a fight-ender |
+| Smite 6 hearts to one mob every 60 s | No direct AuraSkills analog; mob-only (never a player) and the same size as Mend's self-heal |
+| Blessed Vigor +10% healing received | Regeneration stat heals passively every tick already, independent of any heal landing; Blessed Vigor only amplifies healing that already happened |
+
+## Guardian, Rogue and Paladin
+
+GutGr1nder's original wish (session `3721nc`) asked for 7 classes but the council only built 4,
+explicitly promising the rest "only via GutGr1nder's own future Nether or End Shenron wish". His
+Nether Shenron wish (session `k07gsq`, 2026-10-11) said "unlock the other classes", cashing in that
+exact promise, so the council didn't vote again: this was a deal already granted, not a new wish.
+
+- Same caps as the first four: a passive at most +10% at level 25, a cooldown no shorter than 30 s,
+  nothing stronger than AuraSkills' own comparable stats, half strength against players, no equipment
+  bans, the same level 1-25 curve and the same XP-source pattern tied to how that class plays.
+- Guardian is the tank: Stalwart and Last Stand both reduce damage taken (Last Stand mirrors Battle
+  Cry's size and length exactly, just for a different class), Heavy Plate costs it mobility.
+- Rogue is the striker: Sneak Attack only pays off while sneaking, Shadow Step is a short, one-shot
+  dash rather than a sustained buff, and Light Fingers punishes it for skipping heavy armour.
+- Paladin is the self-sustain class: Blessed Vigor amplifies any healing it receives, Smite is a
+  small, mob-only burst (never touches a player) that also cures poison and wither, and Merciful Hand
+  trades melee damage for that sustain.
+- Not held to a stricter standard than the first four: where Stalwart could have matched Toughness's
+  max percentage exactly (like Weapon Master matches Strength), it was set lower instead, so it stays
+  safely under Toughness's always-on, every-damage-type reduction (see the table above).
 
 ## Dual-classing (Sivra21's wish)
 
@@ -99,7 +132,7 @@ when they hit the cap, and a title and chat line on every level-up. XP past leve
 
 ## Choosing and changing
 
-- `/class` opens the menu: the four classes with their numbers at the player's level, their progress,
+- `/class` opens the menu: the seven classes with their numbers at the player's level, their progress,
   and whether they can be picked. Picking takes two clicks (the second confirms), since another class
   then waits 7 days. Chest menus reach Bedrock players through Geyser too.
 - The first pick is free. Picking another class starts a 7-day lock (`change-days`) on picking any
@@ -122,7 +155,7 @@ plugins sets one); everyone gets a chat line on join, a title on level-up, and t
 | `/class` | players | The menu |
 | `/class choose <class>` | players | Pick a class (same rules as the menu, no confirm click) |
 | `/class info [class]` | players | Passive, ability and weakness at your level |
-| `/class levels` | players | All four classes' levels |
+| `/class levels` | players | All seven classes' levels |
 | `/class ability` | players | Use the active class's ability |
 | `/class leave` | players | Back to no class |
 | `/class secondary <class>` | players with a dual-class grant | Pick the permanent secondary class (once, ever) |
@@ -146,10 +179,13 @@ Admin commands take a name (online or seen before) or a UUID.
 
 - `:classes:test` (MockBukkit): the XP curve and caps, picking and the 7-day lock, leaving and going
   back, the daily cap at Zagreb midnight, every damage modifier and its half-against-players rule,
-  Battle Cry, each class's XP source, Insight, Careful Hands, Frail Body, the abilities and cooldowns,
-  sneak + swap, the footer, and the menu's two-click pick and lock display.
+  Battle Cry and Last Stand, each class's XP source (including Guardian's survived hits and Paladin's
+  healed points), Insight, Careful Hands, Blessed Vigor, Frail Body and Heavy Plate, the abilities and
+  cooldowns (Shadow Step's dash, Smite's mob-only damage and cleanse), sneak + swap, the footer, and
+  the menu's two-click pick and lock display.
 - `e2e/classes.mjs` (bots on the 26.2 e2e server): no class hits as before and earns nothing, the first
   pick and the lock, a melee kill's Warrior XP and the tab footer, a level-25 punch 10% harder, Battle
   Cry by sneak + swap cutting a mob hit by 20% and then on cooldown, the menu's two-click Arcanist pick
   and its 9 hearts, Mend, leaving and going back free, Fleet Foot and Overclock effects, and Artificer
-  ore XP.
+  ore XP. Not yet extended to Guardian, Rogue or Paladin (repo-only dispatch, 2026-10-11); covered by
+  `:classes:test` for now.

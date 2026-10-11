@@ -27,6 +27,7 @@ public final class ClassSessions implements Listener {
 
     public void sync(Player player) {
         passives.applyFrailBody(player);
+        passives.applyHeavyPlate(player);
         display.refresh(player);
     }
 

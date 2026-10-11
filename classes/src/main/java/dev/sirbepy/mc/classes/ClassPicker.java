@@ -31,6 +31,7 @@ public final class ClassPicker {
                     + ".", NamedTextColor.RED));
             case CHOSEN -> {
                 passives.applyFrailBody(player);
+                passives.applyHeavyPlate(player);
                 int level = classes.level(player.getUniqueId());
                 player.sendMessage(Component.text("You are now " + c.withArticle() + " (level " + level + ").", c.color()));
                 player.sendMessage(Component.text(c.passiveLine(level) + ". " + c.abilityLine(level) + ". "
@@ -55,6 +56,7 @@ public final class ClassPicker {
             case SAME_AS_MAIN -> player.sendMessage(Component.text("Your secondary class can't be the same as your main one.", NamedTextColor.RED));
             case CHOSEN -> {
                 passives.applyFrailBody(player);
+                passives.applyHeavyPlate(player);
                 player.sendMessage(Component.text("Your secondary class is now " + c.withArticle()
                         + ", permanently. It gives half its passive and the full weakness, no ability.", c.color()));
                 player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.6f, 1.2f);
@@ -70,6 +72,7 @@ public final class ClassPicker {
             return false;
         }
         passives.applyFrailBody(player);
+        passives.applyHeavyPlate(player);
         player.sendMessage(Component.text("You left the " + c.displayName() + " class. Your levels are kept; going back to "
                 + c.displayName() + " is free any time.", NamedTextColor.GRAY));
         return true;

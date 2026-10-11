@@ -53,6 +53,7 @@ public final class Classes {
     private final Duration changeLock;
     private final Map<UUID, Long> cooldownUntil = new HashMap<>();
     private final Map<UUID, Long> battleCryUntil = new HashMap<>();
+    private final Map<UUID, Long> lastStandUntil = new HashMap<>();
     /** Players allowed to pick a secondary class at all; everyone else never sees one. */
     private final Set<UUID> dualClassGrants = new HashSet<>();
     private Feedback feedback = Feedback.NONE;
@@ -147,6 +148,7 @@ public final class Classes {
         p.active = target;
         cooldownUntil.remove(player);
         battleCryUntil.remove(player);
+        lastStandUntil.remove(player);
         store.markDirty();
         feedback.changed(player);
         return Choice.CHOSEN;
@@ -159,6 +161,7 @@ public final class Classes {
         p.active = null;
         cooldownUntil.remove(player);
         battleCryUntil.remove(player);
+        lastStandUntil.remove(player);
         store.markDirty();
         feedback.changed(player);
         return true;
@@ -212,6 +215,14 @@ public final class Classes {
 
     public boolean battleCryActive(UUID player) {
         return active(player) == RpgClass.WARRIOR && battleCryUntil.getOrDefault(player, 0L) > now.getAsLong();
+    }
+
+    void startLastStand(UUID player, int seconds) {
+        lastStandUntil.put(player, now.getAsLong() + seconds * 1000L);
+    }
+
+    public boolean lastStandActive(UUID player) {
+        return active(player) == RpgClass.GUARDIAN && lastStandUntil.getOrDefault(player, 0L) > now.getAsLong();
     }
 
     // Admin repairs (/class admin), also used by the e2e suite.

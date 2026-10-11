@@ -15,6 +15,7 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.player.PlayerExpChangeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
@@ -104,6 +105,43 @@ class ClassXpTest extends MockClassesTest {
         artificer.getInventory().setItemInMainHand(new ItemStack(Material.IRON_PICKAXE));
         server.getPluginManager().callEvent(new BlockBreakEvent(stone, artificer));
         assertEquals(ClassXp.ORE, xpOf(artificer, RpgClass.ARTIFICER));
+    }
+
+    @Test
+    void aRogueEarnsForMeleeKillsWhileSneakingOnly() {
+        PlayerMock rogue = server.addPlayer("Rogue");
+        pick(rogue, RpgClass.ROGUE, 1);
+        rogue.setSneaking(false);
+        kill(zombie(), rogue, rogue, DamageCause.ENTITY_ATTACK);
+        assertEquals(0, xpOf(rogue, RpgClass.ROGUE));
+        rogue.setSneaking(true);
+        kill(zombie(), rogue, rogue, DamageCause.ENTITY_ATTACK);
+        assertEquals(ClassXp.KILL, xpOf(rogue, RpgClass.ROGUE));
+    }
+
+    @Test
+    void aGuardianEarnsForSurvivingAMobsMeleeHit() {
+        PlayerMock guardian = server.addPlayer("Guardian");
+        pick(guardian, RpgClass.GUARDIAN, 1);
+        EntityDamageByEntityEvent survived = new EntityDamageByEntityEvent(zombie(), guardian, DamageCause.ENTITY_ATTACK,
+                DamageSource.builder(DamageType.GENERIC).build(), 5);
+        server.getPluginManager().callEvent(survived);
+        assertEquals(ClassXp.HIT_SURVIVED, xpOf(guardian, RpgClass.GUARDIAN));
+        guardian.setHealth(0);
+        EntityDamageByEntityEvent fatal = new EntityDamageByEntityEvent(zombie(), guardian, DamageCause.ENTITY_ATTACK,
+                DamageSource.builder(DamageType.GENERIC).build(), 5);
+        server.getPluginManager().callEvent(fatal);
+        assertEquals(ClassXp.HIT_SURVIVED, xpOf(guardian, RpgClass.GUARDIAN));
+    }
+
+    @Test
+    void aPaladinEarnsOnePointPerFourHealedPointsCarryingTheRest() {
+        PlayerMock paladin = server.addPlayer("Paladin");
+        pick(paladin, RpgClass.PALADIN, 1);
+        server.getPluginManager().callEvent(new EntityRegainHealthEvent(paladin, 3, EntityRegainHealthEvent.RegainReason.REGEN));
+        assertEquals(0, xpOf(paladin, RpgClass.PALADIN));
+        server.getPluginManager().callEvent(new EntityRegainHealthEvent(paladin, 5, EntityRegainHealthEvent.RegainReason.EATING));
+        assertEquals(2, xpOf(paladin, RpgClass.PALADIN));
     }
 
     @Test

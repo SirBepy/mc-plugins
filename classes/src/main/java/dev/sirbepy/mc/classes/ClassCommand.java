@@ -70,7 +70,7 @@ final class ClassCommand {
                 .then(Commands.literal("ability").executes(c -> player(c, abilities::use)))
                 .then(Commands.literal("leave").executes(c -> player(c, picker::leave)))
                 .then(admin());
-        registrar.register(root.build(), "RPG classes: Warrior, Ranger, Arcanist, Artificer");
+        registrar.register(root.build(), "RPG classes: Warrior, Ranger, Arcanist, Artificer, Guardian, Rogue, Paladin");
     }
 
     private LiteralArgumentBuilder<CommandSourceStack> admin() {
@@ -156,7 +156,7 @@ final class ClassCommand {
 
     private static void unknown(Player p, CommandContext<CommandSourceStack> c) {
         p.sendMessage(Component.text("No class called " + StringArgumentType.getString(c, "class")
-                + ". Classes: warrior, ranger, arcanist, artificer.", NamedTextColor.RED));
+                + ". Classes: warrior, ranger, arcanist, artificer, guardian, rogue, paladin.", NamedTextColor.RED));
     }
 
     static void describe(Player p, RpgClass rpg, ClassProfile profile) {

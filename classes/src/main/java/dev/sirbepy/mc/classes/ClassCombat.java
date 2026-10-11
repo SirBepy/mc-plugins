@@ -14,9 +14,10 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import java.util.UUID;
 
 /**
- * The damage side of the classes: Weapon Master, Steady Aim, Heavy Hands and Soft Hands on what a
- * player deals, Battle Cry and Thin Skin on what a player takes. Every percentage counts half when
- * the other side is a player ({@link RpgClass#VS_PLAYERS}).
+ * The damage side of the classes: Weapon Master, Steady Aim, Sneak Attack, Heavy Hands, Soft Hands
+ * and Merciful Hand on what a player deals; Battle Cry, Last Stand, Thin Skin, Stalwart and Light
+ * Fingers on what a player takes. Every percentage counts half when the other side is a player
+ * ({@link RpgClass#VS_PLAYERS}).
  */
 public final class ClassCombat implements Listener {
 
@@ -45,11 +46,12 @@ public final class ClassCombat implements Listener {
         }
         if (attacker == null || attacker == event.getEntity()) return 0;
         UUID id = attacker.getUniqueId();
+        boolean sneaking = attacker.isSneaking();
         RpgClass primary = classes.active(id);
         if (primary == null) return 0;
-        double percent = dealtPercent(primary, classes.level(id), melee, false);
+        double percent = dealtPercent(primary, classes.level(id), melee, sneaking, false);
         RpgClass secondary = classes.secondary(id);
-        if (secondary != null) percent += dealtPercent(secondary, classes.secondaryLevel(id), melee, true);
+        if (secondary != null) percent += dealtPercent(secondary, classes.secondaryLevel(id), melee, sneaking, true);
         return event.getEntity() instanceof Player ? percent * RpgClass.VS_PLAYERS : percent;
     }
 
@@ -58,16 +60,18 @@ public final class ClassCombat implements Listener {
      * rounded down when {@code half} (Sivra21's dual-classing wish, as the secondary class), its
      * weakness always full strength either way.
      */
-    private static double dealtPercent(RpgClass c, int level, boolean melee, boolean half) {
+    private static double dealtPercent(RpgClass c, int level, boolean melee, boolean sneaking, boolean half) {
         double passive = switch (c) {
             case WARRIOR -> melee ? c.passivePercent(level) : 0;
             case RANGER -> melee ? 0 : c.passivePercent(level);
-            case ARTIFICER, ARCANIST -> 0;
+            case ROGUE -> melee && sneaking ? c.passivePercent(level) : 0;
+            case ARTIFICER, ARCANIST, GUARDIAN, PALADIN -> 0;
         };
         double weakness = switch (c) {
             case WARRIOR -> melee ? 0 : -RpgClass.HEAVY_HANDS;
             case ARTIFICER -> melee ? -RpgClass.SOFT_HANDS : 0;
-            case RANGER, ARCANIST -> 0;
+            case PALADIN -> melee ? -RpgClass.MERCIFUL_HAND : 0;
+            case RANGER, ARCANIST, GUARDIAN, ROGUE -> 0;
         };
         return (half ? Math.floor(passive / 2) : passive) + weakness;
     }
@@ -84,13 +88,26 @@ public final class ClassCombat implements Listener {
         if (primary == null) return 0;
         boolean fromPlayer = source instanceof Player;
         boolean mobMelee = source instanceof Mob && event.getDamager() == source && isMelee(event.getCause());
+        boolean mobRanged = source instanceof Mob && event.getDamager() != source;
+        RpgClass secondary = classes.secondary(id);
         double percent = 0;
-        // Battle Cry is an active ability: never granted by a secondary class.
+        // Battle Cry and Last Stand are active abilities: never granted by a secondary class.
         if (classes.battleCryActive(id)) {
             percent -= RpgClass.battleCryPercent(classes.level(id));
         }
-        if (mobMelee && (primary == RpgClass.RANGER || classes.secondary(id) == RpgClass.RANGER)) {
+        if (classes.lastStandActive(id)) {
+            percent -= RpgClass.lastStandPercent(classes.level(id));
+        }
+        if (mobMelee && (primary == RpgClass.RANGER || secondary == RpgClass.RANGER)) {
             percent += RpgClass.THIN_SKIN;
+        }
+        if (mobMelee && primary == RpgClass.GUARDIAN) {
+            percent -= primary.passivePercent(classes.level(id));
+        } else if (mobMelee && secondary == RpgClass.GUARDIAN) {
+            percent -= Math.floor(secondary.passivePercent(classes.secondaryLevel(id)) / 2);
+        }
+        if (mobRanged && (primary == RpgClass.ROGUE || secondary == RpgClass.ROGUE)) {
+            percent += RpgClass.LIGHT_FINGERS;
         }
         return fromPlayer ? percent * RpgClass.VS_PLAYERS : percent;
     }

@@ -49,6 +49,14 @@ class LevelsTest {
         assertEquals(20, RpgClass.ARTIFICER.abilitySeconds(25));
         assertEquals(2, RpgClass.mendHealth(1), 1e-9);
         assertEquals(6, RpgClass.mendHealth(25), 1e-9);
+        assertEquals(10, RpgClass.lastStandPercent(1), 1e-9);
+        assertEquals(20, RpgClass.lastStandPercent(25), 1e-9);
+        assertEquals(6, RpgClass.GUARDIAN.abilitySeconds(1));
+        assertEquals(10, RpgClass.GUARDIAN.abilitySeconds(25));
+        assertEquals(3, RpgClass.shadowStepBlocks(1), 1e-9);
+        assertEquals(6, RpgClass.shadowStepBlocks(25), 1e-9);
+        assertEquals(4, RpgClass.smiteDamage(1), 1e-9);
+        assertEquals(12, RpgClass.smiteDamage(25), 1e-9);
     }
 
     @Test
@@ -56,11 +64,25 @@ class LevelsTest {
         assertEquals("Weapon Master: +2.0% melee damage", RpgClass.WARRIOR.passiveLine(1));
         assertEquals("Mend: heal 1 heart and cure poison (every 120 s)", RpgClass.ARCANIST.abilityLine(1));
         assertEquals("Mend: heal 3 hearts and cure poison (every 60 s)", RpgClass.ARCANIST.abilityLine(25));
+        assertEquals("Stalwart: +10.0% melee damage reduction from mobs", RpgClass.GUARDIAN.passiveLine(25));
+        assertEquals("Last Stand: take 20.0% less damage for 10 s (every 60 s)", RpgClass.GUARDIAN.abilityLine(25));
+        assertEquals("Heavy Plate: 5% slower movement speed", RpgClass.GUARDIAN.weaknessLine());
+        assertEquals("Sneak Attack: +10.0% melee damage while sneaking", RpgClass.ROGUE.passiveLine(25));
+        assertEquals("Shadow Step: dash 6 blocks (every 60 s)", RpgClass.ROGUE.abilityLine(25));
+        assertEquals("Light Fingers: take 5% more damage from mobs' ranged attacks", RpgClass.ROGUE.weaknessLine());
+        assertEquals("Blessed Vigor: +10.0% healing received from any source", RpgClass.PALADIN.passiveLine(25));
+        assertEquals("Smite: deal 6 hearts of damage to the nearest hostile mob and cure poison and wither (every 60 s)",
+                RpgClass.PALADIN.abilityLine(25));
+        assertEquals("Merciful Hand: melee damage 5% lower", RpgClass.PALADIN.weaknessLine());
         assertEquals("a Warrior", RpgClass.WARRIOR.withArticle());
         assertEquals("an Arcanist", RpgClass.ARCANIST.withArticle());
         assertEquals("an Artificer", RpgClass.ARTIFICER.withArticle());
+        assertEquals("a Guardian", RpgClass.GUARDIAN.withArticle());
+        assertEquals("a Rogue", RpgClass.ROGUE.withArticle());
+        assertEquals("a Paladin", RpgClass.PALADIN.withArticle());
         assertEquals(RpgClass.RANGER, RpgClass.parse("Ranger"));
         assertEquals(RpgClass.ARTIFICER, RpgClass.parse("artificer"));
-        assertEquals(null, RpgClass.parse("paladin"));
+        assertEquals(RpgClass.PALADIN, RpgClass.parse("paladin"));
+        assertEquals(null, RpgClass.parse("necromancer"));
     }
 }

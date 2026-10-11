@@ -7,10 +7,12 @@ import org.bukkit.Material;
 import java.util.Locale;
 
 /**
- * The four classes of the wish and every number they use. Each value goes from its level-1 figure
+ * The seven classes of the wish and every number they use. Each value goes from its level-1 figure
  * to its level-25 figure in even steps ({@link Levels#scale}). The caps from the wish: passives at
  * most +10%, cooldowns never under 30 s, everything below AuraSkills' own comparable stats and
  * abilities (docs/classes.md compares them), and half strength against players ({@link #VS_PLAYERS}).
+ * Guardian, Rogue and Paladin were added later, via GutGr1nder's own Nether Shenron wish cashing in
+ * the terms the council promised him when the first four were built (docs/classes.md).
  */
 public enum RpgClass {
 
@@ -29,7 +31,19 @@ public enum RpgClass {
     ARTIFICER("Artificer", NamedTextColor.GOLD, Material.IRON_PICKAXE,
             "Careful Hands", "chance a tool or armour piece takes no durability damage",
             "Overclock", 90, 60,
-            "Soft Hands", "melee damage 5% lower");
+            "Soft Hands", "melee damage 5% lower"),
+    GUARDIAN("Guardian", NamedTextColor.AQUA, Material.SHIELD,
+            "Stalwart", "melee damage reduction from mobs",
+            "Last Stand", 90, 60,
+            "Heavy Plate", "5% slower movement speed"),
+    ROGUE("Rogue", NamedTextColor.DARK_GRAY, Material.FEATHER,
+            "Sneak Attack", "melee damage while sneaking",
+            "Shadow Step", 90, 60,
+            "Light Fingers", "take 5% more damage from mobs' ranged attacks"),
+    PALADIN("Paladin", NamedTextColor.YELLOW, Material.GOLDEN_SWORD,
+            "Blessed Vigor", "healing received from any source",
+            "Smite", 90, 60,
+            "Merciful Hand", "melee damage 5% lower");
 
     /** Every class modifier counts half when the other side is a player, so PvP stays fair. */
     public static final double VS_PLAYERS = 0.5;
@@ -38,11 +52,14 @@ public enum RpgClass {
     public static final double PASSIVE_MIN = 2.0;
     public static final double PASSIVE_MAX = 10.0;
 
-    // Weakness sizes, in percent (Frail Body is a flat heart instead).
+    // Weakness sizes, in percent (Frail Body and Heavy Plate are flat attribute modifiers instead).
     public static final double HEAVY_HANDS = 10.0;
     public static final double THIN_SKIN = 5.0;
     public static final double SOFT_HANDS = 5.0;
     public static final double FRAIL_BODY_HP = 2.0;
+    public static final double LIGHT_FINGERS = 5.0;
+    public static final double MERCIFUL_HAND = 5.0;
+    public static final double HEAVY_PLATE_SPEED = 5.0;
 
     private final String displayName;
     private final TextColor color;
@@ -112,24 +129,40 @@ public enum RpgClass {
     }
 
     // Ability sizes. Warrior: Battle Cry's damage cut in percent and its length. Ranger: Speed I
-    // length. Arcanist: health healed. Artificer: Haste I length.
+    // length. Arcanist: health healed. Artificer: Haste I length. Guardian: Last Stand's length.
+    // Rogue: Shadow Step's dash distance. Paladin: Smite's damage to the hostile mob hit.
 
     public static double battleCryPercent(int level) {
         return Levels.scale(level, 10, 20);
     }
 
-    /** Ability length in seconds (Battle Cry, Fleet Foot, Overclock); 0 for Mend, which is instant. */
+    /** Last Stand's damage cut, same size and duration as Battle Cry (both are timed, self-only). */
+    public static double lastStandPercent(int level) {
+        return Levels.scale(level, 10, 20);
+    }
+
+    /** Ability length in seconds (Battle Cry, Fleet Foot, Overclock, Last Stand); 0 when instant. */
     public int abilitySeconds(int level) {
         return (int) Math.round(switch (this) {
-            case WARRIOR -> Levels.scale(level, 6, 10);
+            case WARRIOR, GUARDIAN -> Levels.scale(level, 6, 10);
             case RANGER -> Levels.scale(level, 8, 15);
-            case ARCANIST -> 0;
+            case ARCANIST, ROGUE, PALADIN -> 0;
             case ARTIFICER -> Levels.scale(level, 10, 20);
         });
     }
 
     public static double mendHealth(int level) {
         return Levels.scale(level, 2, 6);
+    }
+
+    /** Shadow Step's dash distance in blocks. */
+    public static double shadowStepBlocks(int level) {
+        return Levels.scale(level, 3, 6);
+    }
+
+    /** Smite's damage to the nearest hostile mob hit, in health points (2 per heart). */
+    public static double smiteDamage(int level) {
+        return Levels.scale(level, 4, 12);
     }
 
     public String passiveLine(int level) {
@@ -142,6 +175,9 @@ public enum RpgClass {
             case RANGER -> "Speed I for " + abilitySeconds(level) + " s";
             case ARCANIST -> "heal " + hearts(mendHealth(level)) + " and cure poison";
             case ARTIFICER -> "Haste I for " + abilitySeconds(level) + " s";
+            case GUARDIAN -> "take " + percent(lastStandPercent(level)) + " less damage for " + abilitySeconds(level) + " s";
+            case ROGUE -> "dash " + (int) Math.round(shadowStepBlocks(level)) + " blocks";
+            case PALADIN -> "deal " + hearts(smiteDamage(level)) + " of damage to the nearest hostile mob and cure poison and wither";
         };
         return abilityName + ": " + what + " (every " + cooldownSeconds(level) + " s)";
     }

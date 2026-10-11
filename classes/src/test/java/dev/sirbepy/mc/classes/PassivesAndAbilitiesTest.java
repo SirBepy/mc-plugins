@@ -3,6 +3,8 @@ package dev.sirbepy.mc.classes;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.entity.Zombie;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.player.PlayerExpChangeEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
@@ -164,6 +166,68 @@ class PassivesAndAbilitiesTest extends MockClassesTest {
     void noClassNoAbility() {
         PlayerMock plain = server.addPlayer("Plain");
         assertFalse(abilities.use(plain));
+    }
+
+    @Test
+    void heavyPlateComesWithTheGuardianAndGoesWhenLeaving() {
+        PlayerMock guardian = server.addPlayer("Guardian");
+        var speed = guardian.getAttribute(Attribute.MOVEMENT_SPEED);
+        double before = speed.getValue();
+        picker.pick(guardian, RpgClass.GUARDIAN);
+        assertNotNull(speed.getModifier(ClassPassives.HEAVY_PLATE));
+        assertEquals(before * 0.95, speed.getValue(), 1e-9);
+        picker.leave(guardian);
+        assertNull(speed.getModifier(ClassPassives.HEAVY_PLATE));
+        assertEquals(before, speed.getValue(), 1e-9);
+    }
+
+    @Test
+    void blessedVigorAmplifiesHealingReceived() {
+        PlayerMock paladin = server.addPlayer("Paladin");
+        pick(paladin, RpgClass.PALADIN, 25);
+        EntityRegainHealthEvent heal = new EntityRegainHealthEvent(paladin, 4, EntityRegainHealthEvent.RegainReason.REGEN);
+        server.getPluginManager().callEvent(heal);
+        assertEquals(4.4, heal.getAmount(), 1e-9);
+        PlayerMock plain = server.addPlayer("Plain");
+        EntityRegainHealthEvent plainHeal = new EntityRegainHealthEvent(plain, 4, EntityRegainHealthEvent.RegainReason.REGEN);
+        server.getPluginManager().callEvent(plainHeal);
+        assertEquals(4, plainHeal.getAmount(), 1e-9);
+    }
+
+    @Test
+    void lastStandFiresThenWaitsOutItsCooldown() {
+        PlayerMock guardian = server.addPlayer("Guardian");
+        pick(guardian, RpgClass.GUARDIAN, 1);
+        assertTrue(abilities.use(guardian));
+        assertTrue(classes.lastStandActive(guardian.getUniqueId()));
+        assertFalse(abilities.use(guardian));
+        now += 90_000;
+        assertFalse(classes.lastStandActive(guardian.getUniqueId()));
+        assertTrue(abilities.use(guardian));
+    }
+
+    @Test
+    void shadowStepDashesForward() {
+        PlayerMock rogue = server.addPlayer("Rogue");
+        pick(rogue, RpgClass.ROGUE, 25);
+        assertEquals(0, rogue.getVelocity().length(), 1e-9);
+        assertTrue(abilities.use(rogue));
+        assertEquals(6, rogue.getVelocity().length(), 1e-6);
+    }
+
+    @Test
+    void smiteDamagesTheNearestHostileMobAndCuresDebuffs() {
+        PlayerMock paladin = server.addPlayer("Paladin");
+        paladin.teleport(at(0));
+        pick(paladin, RpgClass.PALADIN, 25);
+        paladin.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 200, 0));
+        Zombie far = world.spawn(at(100), Zombie.class);
+        Zombie near = world.spawn(at(1), Zombie.class);
+        near.setHealth(near.getAttribute(Attribute.MAX_HEALTH).getValue());
+        assertTrue(abilities.use(paladin));
+        assertEquals(near.getAttribute(Attribute.MAX_HEALTH).getValue() - 12, near.getHealth(), 1e-9);
+        assertEquals(far.getAttribute(Attribute.MAX_HEALTH).getValue(), far.getHealth(), 1e-9);
+        assertNull(paladin.getPotionEffect(PotionEffectType.POISON));
     }
 
     @Test

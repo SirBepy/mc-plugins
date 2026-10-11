@@ -60,7 +60,7 @@ public final class ClassesPlugin extends JavaPlugin {
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 new ClassCommand(classes, picker, menu, abilities, sessions::sync).registerInto(event.registrar()));
-        getLogger().info("Classes ready: Warrior, Ranger, Arcanist, Artificer; daily cap " + classes.dailyCap()
+        getLogger().info("Classes ready: Warrior, Ranger, Arcanist, Artificer, Guardian, Rogue, Paladin; daily cap " + classes.dailyCap()
                 + " XP, change every " + classes.changeLock().toDays() + " days");
     }
 
@@ -87,6 +87,8 @@ public final class ClassesPlugin extends JavaPlugin {
         for (Player player : getServer().getOnlinePlayers()) {
             AttributeInstance max = player.getAttribute(Attribute.MAX_HEALTH);
             if (max != null) max.removeModifier(ClassPassives.FRAIL_BODY);
+            AttributeInstance speed = player.getAttribute(Attribute.MOVEMENT_SPEED);
+            if (speed != null) speed.removeModifier(ClassPassives.HEAVY_PLATE);
             player.sendPlayerListFooter(Component.empty());
         }
     }

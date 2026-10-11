@@ -17,6 +17,7 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.player.PlayerExpChangeEvent;
 import org.bukkit.inventory.ItemStack;
@@ -29,7 +30,9 @@ import java.util.UUID;
  * Class XP for playing in the active class's style; {@link Classes#addXp} applies the daily cap.
  * Warrior: hostile mobs killed in melee. Ranger: hostile mobs killed with an arrow or trident.
  * Arcanist: XP orbs picked up and enchanting. Artificer: ores mined without Silk Touch, and crafting.
- * Spawner mobs give nothing, the same rule as the Guild's farm guard.
+ * Guardian: hostile mobs' melee hits survived. Rogue: hostile mobs killed in melee while sneaking.
+ * Paladin: health points regenerated from any source. Spawner mobs give nothing, the same rule as
+ * the Guild's farm guard.
  */
 public final class ClassXp implements Listener {
 
@@ -40,9 +43,14 @@ public final class ClassXp implements Listener {
     static final int PER_ENCHANT_LEVEL = 5;
     static final int ORE = 2;
     static final int CRAFT = 1;
+    static final int HIT_SURVIVED = 3;
+    static final int BOSS_HIT_SURVIVED = 10;
+    /** Healed HP points per class XP point. */
+    static final int HEAL_POINTS = 4;
 
     private final Classes classes;
     private final Map<UUID, Integer> orbCarry = new HashMap<>();
+    private final Map<UUID, Double> healCarry = new HashMap<>();
 
     public ClassXp(Classes classes) {
         this.classes = classes;
@@ -55,15 +63,40 @@ public final class ClassXp implements Listener {
         if (killer == null || !(dead instanceof Enemy) || dead instanceof Player) return;
         if (dead.getEntitySpawnReason() == CreatureSpawnEvent.SpawnReason.SPAWNER) return;
         RpgClass c = classes.active(killer.getUniqueId());
-        if (c != RpgClass.WARRIOR && c != RpgClass.RANGER) return;
+        if (c != RpgClass.WARRIOR && c != RpgClass.RANGER && c != RpgClass.ROGUE) return;
         if (!(dead.getLastDamageCause() instanceof EntityDamageByEntityEvent last)) return;
         Entity damager = last.getDamager();
         boolean melee = damager == killer && (last.getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK
                 || last.getCause() == EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK);
         boolean ranged = damager instanceof AbstractArrow arrow && arrow.getShooter() == killer;
-        if ((c == RpgClass.WARRIOR && melee) || (c == RpgClass.RANGER && ranged)) {
+        if ((c == RpgClass.WARRIOR && melee) || (c == RpgClass.RANGER && ranged)
+                || (c == RpgClass.ROGUE && melee && killer.isSneaking())) {
             classes.addXp(killer.getUniqueId(), dead instanceof Boss ? BOSS_KILL : KILL);
         }
+    }
+
+    // Guardian: a hostile mob's melee hit survived. MONITOR runs after the damage is applied, so the
+    // victim's remaining health already reflects this hit.
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSurvivedHit(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof Player victim) || classes.active(victim.getUniqueId()) != RpgClass.GUARDIAN) return;
+        if (!(event.getDamager() instanceof Enemy attacker)) return;
+        if (event.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK
+                && event.getCause() != EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK) return;
+        if (victim.getHealth() <= 0) return;
+        classes.addXp(victim.getUniqueId(), attacker instanceof Boss ? BOSS_HIT_SURVIVED : HIT_SURVIVED);
+    }
+
+    // Paladin: health regenerated from any source, same ratio pattern as the Arcanist's orb XP.
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onHeal(EntityRegainHealthEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+        UUID id = player.getUniqueId();
+        if (classes.active(id) != RpgClass.PALADIN || event.getAmount() <= 0) return;
+        double points = healCarry.getOrDefault(id, 0.0) + event.getAmount();
+        int whole = (int) (points / HEAL_POINTS);
+        healCarry.put(id, points - whole * (double) HEAL_POINTS);
+        if (whole > 0) classes.addXp(id, whole);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -107,5 +140,6 @@ public final class ClassXp implements Listener {
 
     public void forget(UUID player) {
         orbCarry.remove(player);
+        healCarry.remove(player);
     }
 }

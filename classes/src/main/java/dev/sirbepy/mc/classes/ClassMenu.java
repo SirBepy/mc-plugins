@@ -19,13 +19,13 @@ import java.util.UUID;
 import java.util.function.LongSupplier;
 
 /**
- * {@code /class}: a chest screen (Geyser shows chests to Bedrock players too) with the four classes,
+ * {@code /class}: a chest screen (Geyser shows chests to Bedrock players too) with the seven classes,
  * each with its numbers at the player's level. Picking takes two clicks, since a change locks the
  * class for 7 days.
  */
 public final class ClassMenu {
 
-    static final int[] SLOTS = {10, 12, 14, 16};
+    static final int[] SLOTS = {10, 11, 12, 13, 14, 15, 16};
     static final int ABILITY_SLOT = 22;
 
     private final Classes classes;

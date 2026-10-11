@@ -3,14 +3,19 @@ package dev.sirbepy.mc.classes;
 import dev.sirbepy.mc.core.Durations;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.entity.Enemy;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Vector;
 
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 
@@ -56,6 +61,22 @@ public final class Abilities {
                 player.removePotionEffect(PotionEffectType.POISON);
             }
             case ARTIFICER -> player.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, ticks, 0));
+            case GUARDIAN -> classes.startLastStand(id, c.abilitySeconds(level));
+            case ROGUE -> {
+                Vector facing = player.getLocation().getDirection().setY(0);
+                if (facing.lengthSquared() > 1e-6) {
+                    player.setVelocity(player.getVelocity().add(facing.normalize().multiply(RpgClass.shadowStepBlocks(level))));
+                }
+            }
+            case PALADIN -> {
+                Location loc = player.getLocation();
+                LivingEntity target = loc.getNearbyEntitiesByType(Enemy.class, 4)
+                        .stream().min(Comparator.comparingDouble(m -> m.getLocation().distanceSquared(loc)))
+                        .orElse(null);
+                if (target != null) target.damage(RpgClass.smiteDamage(level), player);
+                player.removePotionEffect(PotionEffectType.POISON);
+                player.removePotionEffect(PotionEffectType.WITHER);
+            }
         }
         classes.startCooldown(id);
         player.playSound(player.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 0.7f, 1.4f);

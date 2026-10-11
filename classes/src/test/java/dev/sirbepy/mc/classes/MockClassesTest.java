@@ -81,7 +81,7 @@ abstract class MockClassesTest {
         return event.getDamage();
     }
 
-    Arrow arrowFrom(Player shooter) {
+    Arrow arrowFrom(org.bukkit.projectiles.ProjectileSource shooter) {
         Arrow arrow = world.spawn(at(1), Arrow.class);
         arrow.setShooter(shooter);
         return arrow;

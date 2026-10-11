@@ -118,4 +118,58 @@ class ClassCombatTest extends MockClassesTest {
         now += 10_000;
         assertEquals(10.0, hit(zombie(), warrior, DamageCause.ENTITY_ATTACK), 1e-9);
     }
+
+    @Test
+    void stalwartCutsMobsMeleeHitsOnTheGuardian() {
+        PlayerMock guardian = server.addPlayer("Guardian");
+        pick(guardian, RpgClass.GUARDIAN, 25);
+        assertEquals(9.0, hit(zombie(), guardian, DamageCause.ENTITY_ATTACK), 1e-9);
+        // Projectiles and player hits aren't "mobs' melee hits".
+        assertEquals(10.0, hit(arrowFrom(server.addPlayer("Shooter")), guardian, DamageCause.PROJECTILE), 1e-9);
+        assertEquals(10.0, hit(server.addPlayer("Other"), guardian, DamageCause.ENTITY_ATTACK), 1e-9);
+    }
+
+    @Test
+    void lastStandCutsDamageTakenAndHalfAgainstPlayers() {
+        PlayerMock guardian = server.addPlayer("Guardian");
+        pick(guardian, RpgClass.GUARDIAN, 25);
+        abilities.use(guardian);
+        // Stalwart's 10% and Last Stand's 20% both apply.
+        assertEquals(7.0, hit(zombie(), guardian, DamageCause.ENTITY_ATTACK), 1e-9);
+        PlayerMock other = server.addPlayer("Other");
+        assertEquals(9.0, hit(other, guardian, DamageCause.ENTITY_ATTACK), 1e-9);
+        now += 10_000;
+        assertEquals(9.0, hit(zombie(), guardian, DamageCause.ENTITY_ATTACK), 1e-9);
+    }
+
+    @Test
+    void sneakAttackOnlyAddsMeleeDamageWhileSneaking() {
+        PlayerMock rogue = server.addPlayer("Rogue");
+        pick(rogue, RpgClass.ROGUE, 25);
+        assertEquals(10.0, hit(rogue, zombie(), DamageCause.ENTITY_ATTACK), 1e-9);
+        rogue.setSneaking(true);
+        assertEquals(11.0, hit(rogue, zombie(), DamageCause.ENTITY_ATTACK), 1e-9);
+        assertEquals(10.5, hit(rogue, server.addPlayer("Other"), DamageCause.ENTITY_ATTACK), 1e-9);
+        // Not melee: Sneak Attack doesn't touch arrows.
+        assertEquals(10.0, hit(arrowFrom(rogue), zombie(), DamageCause.PROJECTILE), 1e-9);
+    }
+
+    @Test
+    void lightFingersOnlyCountsMobsRangedHits() {
+        PlayerMock rogue = server.addPlayer("Rogue");
+        pick(rogue, RpgClass.ROGUE, 1);
+        Zombie zombie = zombie();
+        assertEquals(10.5, hit(arrowFrom(zombie), rogue, DamageCause.PROJECTILE), 1e-9);
+        assertEquals(10.0, hit(zombie, rogue, DamageCause.ENTITY_ATTACK), 1e-9);
+        assertEquals(10.0, hit(arrowFrom(server.addPlayer("Other")), rogue, DamageCause.PROJECTILE), 1e-9);
+    }
+
+    @Test
+    void mercifulHandCutsThePaladinsMelee() {
+        PlayerMock paladin = server.addPlayer("Paladin");
+        pick(paladin, RpgClass.PALADIN, 25);
+        assertEquals(9.5, hit(paladin, zombie(), DamageCause.ENTITY_ATTACK), 1e-9);
+        assertEquals(9.75, hit(paladin, server.addPlayer("Other"), DamageCause.ENTITY_ATTACK), 1e-9);
+        assertEquals(10.0, hit(arrowFrom(paladin), zombie(), DamageCause.PROJECTILE), 1e-9);
+    }
 }
