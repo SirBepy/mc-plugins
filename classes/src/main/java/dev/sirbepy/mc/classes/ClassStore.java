@@ -53,6 +53,7 @@ public final class ClassStore {
             if (s == null) continue;
             ClassProfile p = get(id);
             p.active = RpgClass.parse(s.getString("active", ""));
+            p.secondary = RpgClass.parse(s.getString("secondary", ""));
             p.lastPicked = RpgClass.parse(s.getString("last-picked", ""));
             p.lastPickAt = s.getLong("last-pick-at");
             ConfigurationSection xp = s.getConfigurationSection("xp");
@@ -76,9 +77,10 @@ public final class ClassStore {
         YamlConfiguration yaml = new YamlConfiguration();
         for (Map.Entry<UUID, ClassProfile> e : profiles.entrySet()) {
             ClassProfile p = e.getValue();
-            if (p.lastPickAt == 0 && p.active == null && p.xp.isEmpty()) continue;
+            if (p.lastPickAt == 0 && p.active == null && p.secondary == null && p.xp.isEmpty()) continue;
             String k = e.getKey().toString();
             yaml.set(k + ".active", p.active == null ? null : p.active.id());
+            yaml.set(k + ".secondary", p.secondary == null ? null : p.secondary.id());
             yaml.set(k + ".last-picked", p.lastPicked == null ? null : p.lastPicked.id());
             yaml.set(k + ".last-pick-at", p.lastPickAt);
             p.xp.forEach((c, v) -> yaml.set(k + ".xp." + c.id(), v));

@@ -5,6 +5,8 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ClassCombatTest extends MockClassesTest {
@@ -62,6 +64,46 @@ class ClassCombatTest extends MockClassesTest {
         assertEquals(9.5, hit(artificer, zombie(), DamageCause.ENTITY_ATTACK), 1e-9);
         assertEquals(9.75, hit(artificer, server.addPlayer("Other"), DamageCause.ENTITY_ATTACK), 1e-9);
         assertEquals(10.0, hit(arrowFrom(artificer), zombie(), DamageCause.PROJECTILE), 1e-9);
+    }
+
+    @Test
+    void secondaryClassAddsHalfItsPassiveAlongsideTheMainClass() {
+        PlayerMock dual = server.addPlayer("Dual");
+        classes.setDualClassGrants(Set.of(dual.getUniqueId()));
+        pick(dual, RpgClass.RANGER, 1);
+        classes.chooseSecondary(dual.getUniqueId(), RpgClass.WARRIOR);
+        classes.setXp(dual.getUniqueId(), RpgClass.WARRIOR, Levels.totalFor(25));
+        // Ranger contributes nothing on melee; secondary Warrior's +10% passive halves and floors to 5%.
+        assertEquals(10.5, hit(dual, zombie(), DamageCause.ENTITY_ATTACK), 1e-9);
+    }
+
+    @Test
+    void secondaryClassWeaknessIsFullStrengthNotHalved() {
+        PlayerMock dual = server.addPlayer("Dual");
+        classes.setDualClassGrants(Set.of(dual.getUniqueId()));
+        pick(dual, RpgClass.WARRIOR, 25);
+        classes.chooseSecondary(dual.getUniqueId(), RpgClass.ARTIFICER);
+        // Warrior's own +10% melee passive, then Artificer's full (unhalved) -5% Soft Hands weakness.
+        assertEquals(10.5, hit(dual, zombie(), DamageCause.ENTITY_ATTACK), 1e-9);
+    }
+
+    @Test
+    void secondaryClassNeverCountsWithoutAnActiveMainClass() {
+        PlayerMock dual = server.addPlayer("Dual");
+        classes.setDualClassGrants(Set.of(dual.getUniqueId()));
+        pick(dual, RpgClass.WARRIOR, 25);
+        classes.chooseSecondary(dual.getUniqueId(), RpgClass.ARTIFICER);
+        picker.leave(dual);
+        assertEquals(10.0, hit(dual, zombie(), DamageCause.ENTITY_ATTACK), 1e-9);
+    }
+
+    @Test
+    void secondaryRangerAddsFullThinSkinWeaknessToo() {
+        PlayerMock dual = server.addPlayer("Dual");
+        classes.setDualClassGrants(Set.of(dual.getUniqueId()));
+        pick(dual, RpgClass.WARRIOR, 1);
+        classes.chooseSecondary(dual.getUniqueId(), RpgClass.RANGER);
+        assertEquals(10.5, hit(zombie(), dual, DamageCause.ENTITY_ATTACK), 1e-9);
     }
 
     @Test

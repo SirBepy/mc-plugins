@@ -62,6 +62,11 @@ final class ClassCommand {
                             else describe(p, rpg, classes.profile(p.getUniqueId()));
                         }))))
                 .then(Commands.literal("levels").executes(c -> player(c, p -> levels(p, classes.profile(p.getUniqueId())))))
+                .then(Commands.literal("secondary").then(classArg("class").executes(c -> player(c, p -> {
+                    RpgClass rpg = classOf(c, "class");
+                    if (rpg == null) unknown(p, c);
+                    else picker.pickSecondary(p, rpg);
+                }))))
                 .then(Commands.literal("ability").executes(c -> player(c, abilities::use)))
                 .then(Commands.literal("leave").executes(c -> player(c, picker::leave)))
                 .then(admin());
@@ -75,6 +80,12 @@ final class ClassCommand {
                     ClassProfile p = classes.profile(id);
                     say(sender, "Active: " + (p.active() == null ? "none" : p.active().displayName())
                             + ", today " + p.earnedToday() + "/" + classes.dailyCap() + " XP");
+                    if (classes.hasDualClassGrant(id)) {
+                        RpgClass secondary = classes.secondary(id);
+                        say(sender, "Dual-class grant: secondary " + (secondary == null ? "not yet picked" : secondary.displayName() + " (permanent)"));
+                    } else if (p.secondary() != null) {
+                        say(sender, "Dual-class grant revoked; stored secondary pick " + p.secondary().displayName() + " is inactive.");
+                    }
                     for (RpgClass rpg : RpgClass.values()) {
                         long locked = classes.lockedUntil(id, rpg);
                         say(sender, rpg.displayName() + ": " + p.xp(rpg) + " XP, " + ClassDisplay.progress(p, rpg)

@@ -12,6 +12,9 @@ import java.io.File;
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 /** GutGr1nder's RPG classes wish (Overworld Shenron, 2026-10-10). docs/classes.md has the terms. */
@@ -36,6 +39,7 @@ public final class ClassesPlugin extends JavaPlugin {
                 Duration.ofDays(Math.max(1, getConfig().getInt("change-days", 7))));
         ClassDisplay display = new ClassDisplay(classes);
         classes.setFeedback(display);
+        classes.setDualClassGrants(dualClassGrants());
 
         var scheduler = getServer().getScheduler();
         Abilities abilities = new Abilities(classes, (task, ticks) -> scheduler.runTaskLater(this, task, ticks));
@@ -58,6 +62,22 @@ public final class ClassesPlugin extends JavaPlugin {
                 new ClassCommand(classes, picker, menu, abilities, sessions::sync).registerInto(event.registrar()));
         getLogger().info("Classes ready: Warrior, Ranger, Arcanist, Artificer; daily cap " + classes.dailyCap()
                 + " XP, change every " + classes.changeLock().toDays() + " days");
+    }
+
+    /**
+     * UUIDs allowed to pick a secondary class ({@code dual-class-grants} in config.yml): Sivra21's
+     * one-off wish grant (docs/dragonballs.md). Revoke by removing a UUID from the list and restarting.
+     */
+    private List<UUID> dualClassGrants() {
+        List<UUID> ids = new ArrayList<>();
+        for (String raw : getConfig().getStringList("dual-class-grants")) {
+            try {
+                ids.add(UUID.fromString(raw));
+            } catch (IllegalArgumentException e) {
+                getLogger().warning("Bad UUID in dual-class-grants: " + raw);
+            }
+        }
+        return ids;
     }
 
     @Override

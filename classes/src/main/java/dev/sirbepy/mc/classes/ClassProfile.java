@@ -7,6 +7,8 @@ import java.util.Map;
 public final class ClassProfile {
 
     RpgClass active;
+    /** Sivra21's dual-classing wish grant (docs/dragonballs.md): picked once, never again. */
+    RpgClass secondary;
     /** The class of the last pick that started a 7-day lock; going back to it is always free. */
     RpgClass lastPicked;
     /** When that pick happened, epoch ms; 0 = never picked. */
@@ -19,6 +21,11 @@ public final class ClassProfile {
 
     public RpgClass active() {
         return active;
+    }
+
+    /** The raw stored pick, regardless of whether the dual-class grant is still active. */
+    public RpgClass secondary() {
+        return secondary;
     }
 
     public int xp(RpgClass c) {

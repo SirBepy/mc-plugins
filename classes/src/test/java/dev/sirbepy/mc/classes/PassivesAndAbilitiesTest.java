@@ -12,6 +12,8 @@ import org.bukkit.potion.PotionEffectType;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -54,6 +56,54 @@ class PassivesAndAbilitiesTest extends MockClassesTest {
         PlayerExpChangeEvent plainOrb = new PlayerExpChangeEvent(plain, 25);
         server.getPluginManager().callEvent(plainOrb);
         assertEquals(25, plainOrb.getAmount());
+    }
+
+    @Test
+    void secondaryArcanistAddsHalfInsight() {
+        PlayerMock dual = server.addPlayer("Dual");
+        classes.setDualClassGrants(Set.of(dual.getUniqueId()));
+        pick(dual, RpgClass.WARRIOR, 1);
+        classes.chooseSecondary(dual.getUniqueId(), RpgClass.ARCANIST);
+        classes.setXp(dual.getUniqueId(), RpgClass.ARCANIST, Levels.totalFor(25));
+        PlayerExpChangeEvent orb = new PlayerExpChangeEvent(dual, 100);
+        server.getPluginManager().callEvent(orb);
+        // Arcanist's own +10% halves and floors to 5%: 100 + 5.
+        assertEquals(105, orb.getAmount());
+    }
+
+    @Test
+    void secondaryArtificerHalvesTheCarefulHandsChance() {
+        PlayerMock dual = server.addPlayer("Dual");
+        classes.setDualClassGrants(Set.of(dual.getUniqueId()));
+        pick(dual, RpgClass.WARRIOR, 1);
+        classes.chooseSecondary(dual.getUniqueId(), RpgClass.ARTIFICER);
+        classes.setXp(dual.getUniqueId(), RpgClass.ARTIFICER, Levels.totalFor(25));
+        roll = 0.0499;
+        assertFalse(durabilityLost(dual));
+        roll = 0.05;
+        assertTrue(durabilityLost(dual));
+    }
+
+    @Test
+    void secondaryArcanistStillGetsTheFullFrailBodyWeakness() {
+        PlayerMock dual = server.addPlayer("Dual");
+        classes.setDualClassGrants(Set.of(dual.getUniqueId()));
+        var max = dual.getAttribute(Attribute.MAX_HEALTH);
+        double before = max.getValue();
+        picker.pick(dual, RpgClass.WARRIOR);
+        picker.pickSecondary(dual, RpgClass.ARCANIST);
+        assertEquals(before - 2, max.getValue(), 1e-9);
+    }
+
+    @Test
+    void secondaryClassNeverGrantsAnAbility() {
+        PlayerMock dual = server.addPlayer("Dual");
+        classes.setDualClassGrants(Set.of(dual.getUniqueId()));
+        pick(dual, RpgClass.WARRIOR, 25);
+        classes.chooseSecondary(dual.getUniqueId(), RpgClass.ARCANIST);
+        assertTrue(abilities.use(dual));
+        // Battle Cry fired (the main class's own ability), not Mend.
+        assertTrue(classes.battleCryActive(dual.getUniqueId()));
     }
 
     @Test

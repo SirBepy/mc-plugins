@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -166,5 +167,62 @@ class ClassesTest {
         classes.unlock(gut);
         assertEquals(Classes.Choice.CHOSEN, classes.choose(gut, RpgClass.RANGER));
         assertEquals(Classes.Choice.LOCKED, classes.choose(gut, RpgClass.WARRIOR));
+    }
+
+    @Test
+    void secondaryClassNeedsTheWishGrant() {
+        classes.choose(gut, RpgClass.WARRIOR);
+        assertEquals(Classes.DualChoice.NOT_GRANTED, classes.chooseSecondary(gut, RpgClass.ARTIFICER));
+        assertNull(classes.secondary(gut));
+    }
+
+    @Test
+    void secondaryClassIsPickedOnceAndCantMatchTheMainClass() {
+        classes.setDualClassGrants(Set.of(gut));
+        classes.choose(gut, RpgClass.WARRIOR);
+        assertEquals(Classes.DualChoice.SAME_AS_MAIN, classes.chooseSecondary(gut, RpgClass.WARRIOR));
+        assertEquals(Classes.DualChoice.CHOSEN, classes.chooseSecondary(gut, RpgClass.ARTIFICER));
+        assertEquals(RpgClass.ARTIFICER, classes.secondary(gut));
+        assertEquals(Classes.DualChoice.ALREADY_SET, classes.chooseSecondary(gut, RpgClass.RANGER));
+        assertEquals(RpgClass.ARTIFICER, classes.secondary(gut));
+    }
+
+    @Test
+    void noExistingAdminCommandCanTouchThePermanentSecondaryPick() {
+        classes.setDualClassGrants(Set.of(gut));
+        classes.choose(gut, RpgClass.WARRIOR);
+        classes.chooseSecondary(gut, RpgClass.ARTIFICER);
+        classes.unlock(gut);
+        classes.choose(gut, RpgClass.RANGER);
+        classes.setXp(gut, RpgClass.ARTIFICER, 500);
+        classes.resetToday(gut);
+        classes.leave(gut);
+        assertEquals(RpgClass.ARTIFICER, classes.secondary(gut));
+    }
+
+    @Test
+    void revokingTheGrantHidesTheSecondaryWithoutLosingTheStoredPick() {
+        classes.setDualClassGrants(Set.of(gut));
+        classes.choose(gut, RpgClass.WARRIOR);
+        classes.chooseSecondary(gut, RpgClass.ARTIFICER);
+        classes.setDualClassGrants(Set.of());
+        assertNull(classes.secondary(gut));
+        assertEquals(RpgClass.ARTIFICER, classes.profile(gut).secondary());
+        classes.setDualClassGrants(Set.of(gut));
+        assertEquals(RpgClass.ARTIFICER, classes.secondary(gut));
+    }
+
+    @Test
+    void secondaryPickSurvivesASaveAndLoad() {
+        classes.setDualClassGrants(Set.of(gut));
+        classes.choose(gut, RpgClass.WARRIOR);
+        classes.chooseSecondary(gut, RpgClass.ARTIFICER);
+        store.save();
+        ClassStore reloaded = new ClassStore(new File(dir, "players.yml"), Logger.getLogger("test"));
+        reloaded.load();
+        Classes again = new Classes(reloaded, () -> now, ZoneId.of("Europe/Zagreb"), 300, Duration.ofDays(7));
+        again.setDualClassGrants(Set.of(gut));
+        assertEquals(RpgClass.ARTIFICER, again.secondary(gut));
+        assertEquals(Classes.DualChoice.ALREADY_SET, again.chooseSecondary(gut, RpgClass.RANGER));
     }
 }

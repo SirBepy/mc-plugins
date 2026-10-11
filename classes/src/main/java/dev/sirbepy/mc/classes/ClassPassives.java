@@ -39,9 +39,9 @@ public final class ClassPassives implements Listener {
     @EventHandler(priority = EventPriority.LOW)
     public void onOrb(PlayerExpChangeEvent event) {
         UUID id = event.getPlayer().getUniqueId();
-        if (classes.active(id) != RpgClass.ARCANIST || event.getAmount() <= 0) return;
-        double bonus = event.getAmount() * RpgClass.ARCANIST.passivePercent(classes.level(id)) / 100
-                + insightCarry.getOrDefault(id, 0.0);
+        double percent = passivePercent(id, RpgClass.ARCANIST);
+        if (percent <= 0 || event.getAmount() <= 0) return;
+        double bonus = event.getAmount() * percent / 100 + insightCarry.getOrDefault(id, 0.0);
         int whole = (int) bonus;
         insightCarry.put(id, bonus - whole);
         if (whole > 0) event.setAmount(event.getAmount() + whole);
@@ -50,17 +50,32 @@ public final class ClassPassives implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onDurability(PlayerItemDamageEvent event) {
         UUID id = event.getPlayer().getUniqueId();
-        if (classes.active(id) != RpgClass.ARTIFICER) return;
-        if (random.getAsDouble() * 100 < RpgClass.ARTIFICER.passivePercent(classes.level(id))) {
+        double percent = passivePercent(id, RpgClass.ARTIFICER);
+        if (percent > 0 && random.getAsDouble() * 100 < percent) {
             event.setCancelled(true);
         }
     }
 
-    /** Adds or removes Frail Body to match the player's class. */
+    /**
+     * {@code wanted}'s passive bonus for {@code id}: full strength (at that class's own level) if it's
+     * the active class, half strength rounded down (Sivra21's dual-classing wish) if it's the secondary,
+     * else 0.
+     */
+    private double passivePercent(UUID id, RpgClass wanted) {
+        RpgClass active = classes.active(id);
+        if (active == wanted) return wanted.passivePercent(classes.level(id));
+        // The secondary only counts alongside a main class, never on its own.
+        if (active != null && classes.secondary(id) == wanted) return Math.floor(wanted.passivePercent(classes.secondaryLevel(id)) / 2);
+        return 0;
+    }
+
+    /** Adds or removes Frail Body to match the player's class; the secondary's weakness is never halved. */
     public void applyFrailBody(Player player) {
         AttributeInstance max = player.getAttribute(Attribute.MAX_HEALTH);
         if (max == null) return;
-        boolean wanted = classes.active(player.getUniqueId()) == RpgClass.ARCANIST;
+        UUID id = player.getUniqueId();
+        RpgClass active = classes.active(id);
+        boolean wanted = active == RpgClass.ARCANIST || (active != null && classes.secondary(id) == RpgClass.ARCANIST);
         boolean has = max.getModifier(FRAIL_BODY) != null;
         if (wanted && !has) {
             max.addTransientModifier(new AttributeModifier(FRAIL_BODY, -RpgClass.FRAIL_BODY_HP, AttributeModifier.Operation.ADD_NUMBER));

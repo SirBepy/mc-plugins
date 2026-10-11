@@ -74,6 +74,22 @@ system at every comparable point:
 | Fleet Foot Speed I for 15 s every 60 s | Speed: +1% movement speed per point, always on |
 | Mend 3 hearts every 60 s | Regeneration stat, and Absorption (mana ability) |
 
+## Dual-classing (Sivra21's wish)
+
+Sivra21 (`9366f4f8-b61e-4612-8644-f626a9a378bb`) wished for a second class on top of his normal one;
+granted by the Overworld Shenron and the council of 5 on 2026-10-11 (docs/dragonballs.md, Judging).
+Bound to his UUID only, via `dual-class-grants` in config.yml, not a feature every player gets.
+
+- `/class secondary <class>` picks a permanent secondary class alongside the normal, freely-swappable
+  main one. It can be picked once, ever: no admin command, including `/class admin unlock` or
+  `/class admin set`, can change or clear it afterwards.
+- The secondary contributes half its passive bonus (rounded down) at its own level, and the FULL
+  weakness, unhalved, since the weakness is the wish's cost. It gives no ability.
+- The secondary only counts alongside an active main class; leaving the main class (`/class leave`)
+  pauses the secondary's bonus and weakness too, without losing the permanent pick.
+- Revocable without another wish: remove the UUID from `dual-class-grants` and restart. The player's
+  stored pick stays in `players.yml` and resumes counting if the grant is ever restored.
+
 ## Levels and XP
 
 Level 1 to 2 takes 50 XP and every level 10 more (`Levels.toNext`: 40 + 10 x level), 3960 XP from 1 to
@@ -109,6 +125,7 @@ plugins sets one); everyone gets a chat line on join, a title on level-up, and t
 | `/class levels` | players | All four classes' levels |
 | `/class ability` | players | Use the active class's ability |
 | `/class leave` | players | Back to no class |
+| `/class secondary <class>` | players with a dual-class grant | Pick the permanent secondary class (once, ever) |
 | `/class admin info <player>` | `classes.admin` (ops, console) | Active class, today's XP, every class's XP and lock |
 | `/class admin setxp <player> <class> <xp>` | admin | Set a class's XP (0-3960) |
 | `/class admin set <player> <class\|none>` | admin | Force the active class (restarts the 7-day lock) or clear it |
@@ -120,9 +137,10 @@ Admin commands take a name (online or seen before) or a UUID.
 
 ## Files
 
-- `plugins/Classes/config.yml`: `daily-xp-cap`, `zone`, `change-days`.
-- `plugins/Classes/players.yml`: per UUID, the active class, the last pick and when, each class's XP,
-  and today's earnings. Saved every minute when something changed, and on shutdown.
+- `plugins/Classes/config.yml`: `daily-xp-cap`, `zone`, `change-days`, `dual-class-grants`.
+- `plugins/Classes/players.yml`: per UUID, the active class, the secondary class (if granted and
+  picked), the last pick and when, each class's XP, and today's earnings. Saved every minute when
+  something changed, and on shutdown.
 
 ## Tests
 

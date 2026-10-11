@@ -11,3 +11,10 @@ zone: Europe/Zagreb
 # Real days between class changes. The first pick is free, and so is going back to the class you
 # last left with /class leave.
 change-days: 7
+
+# Dual-classing wish grant (Sivra21, 9366f4f8-b61e-4612-8644-f626a9a378bb, Overworld Shenron
+# 2026-10-11): these players may pick ONE permanent secondary class with /class secondary <class>,
+# giving half its passive and the full weakness, no ability, alongside their normal main class.
+# Revoke by removing the UUID here and restarting; their stored pick stays saved but stops counting.
+dual-class-grants:
+  - "9366f4f8-b61e-4612-8644-f626a9a378bb"

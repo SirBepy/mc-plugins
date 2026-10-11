@@ -3,8 +3,11 @@ package dev.sirbepy.mc.classes;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.LongSupplier;
 
@@ -40,6 +43,9 @@ public final class Classes {
 
     public enum Choice { CHOSEN, ALREADY, LOCKED }
 
+    /** Result of picking a second class (Sivra21's dual-classing wish, docs/dragonballs.md). */
+    public enum DualChoice { CHOSEN, NOT_GRANTED, ALREADY_SET, SAME_AS_MAIN }
+
     private final ClassStore store;
     private final LongSupplier now;
     private final ZoneId zone;
@@ -47,6 +53,8 @@ public final class Classes {
     private final Duration changeLock;
     private final Map<UUID, Long> cooldownUntil = new HashMap<>();
     private final Map<UUID, Long> battleCryUntil = new HashMap<>();
+    /** Players allowed to pick a secondary class at all; everyone else never sees one. */
+    private final Set<UUID> dualClassGrants = new HashSet<>();
     private Feedback feedback = Feedback.NONE;
 
     public Classes(ClassStore store, LongSupplier now, ZoneId zone, int dailyCap, Duration changeLock) {
@@ -74,6 +82,42 @@ public final class Classes {
     /** The active class's level, 0 with no class. */
     public int level(UUID player) {
         return store.get(player).activeLevel();
+    }
+
+    /** Replaces the whole dual-class grant list (config-driven; revoking just drops a UUID from it). */
+    public void setDualClassGrants(Collection<UUID> players) {
+        dualClassGrants.clear();
+        dualClassGrants.addAll(players);
+    }
+
+    public boolean hasDualClassGrant(UUID player) {
+        return dualClassGrants.contains(player);
+    }
+
+    /** The granted secondary class, or null with no grant (even if one was picked before revoking). */
+    public RpgClass secondary(UUID player) {
+        return hasDualClassGrant(player) ? store.get(player).secondary : null;
+    }
+
+    /** The secondary class's own level, 0 with none. */
+    public int secondaryLevel(UUID player) {
+        RpgClass c = secondary(player);
+        return c == null ? 0 : store.get(player).level(c);
+    }
+
+    /**
+     * Picks the permanent secondary class: once set it can never change, including through
+     * {@link #unlock} or any other admin repair, since none of them touch {@code secondary}.
+     */
+    public DualChoice chooseSecondary(UUID player, RpgClass target) {
+        if (!hasDualClassGrant(player)) return DualChoice.NOT_GRANTED;
+        ClassProfile p = store.get(player);
+        if (p.secondary != null) return DualChoice.ALREADY_SET;
+        if (target == p.active) return DualChoice.SAME_AS_MAIN;
+        p.secondary = target;
+        store.markDirty();
+        feedback.changed(player);
+        return DualChoice.CHOSEN;
     }
 
     public int dailyCap() {
