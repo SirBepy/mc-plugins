@@ -3,6 +3,7 @@ package dev.sirbepy.mc.market;
 import dev.sirbepy.mc.core.ItemNames;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -132,5 +133,27 @@ class PriceListTest {
     void itemNamesReadAsWords() {
         assertEquals("Dark oak log", ItemNames.sentence("dark_oak_log"));
         assertEquals("Membrane", ItemNames.sentence("membrane"));
+    }
+
+    @Test
+    void signAliasesStillSpellOutAndLeaveMembraneAsIs() {
+        assertEquals("Wither skeleton skull", PriceList.name("withersskull"));
+        assertEquals("Membrane", PriceList.name("membrane"));
+    }
+
+    @Test
+    void everyShippedStallItemThatIsntAVanillaMaterialHasAShortSignId() {
+        // The shipped stalls.yml (server/spawn-market/generate.mjs' output), not the /test-stalls.yml
+        // fixture: a new short id can be added to stalls.yml without this fixture ever seeing it.
+        MarketLayout shipped = MarketLayout.load(Objects.requireNonNull(getClass().getResourceAsStream("/stalls.yml")));
+        for (Stall stall : shipped.stalls()) {
+            for (Offer offer : stall.buys()) {
+                String item = offer.item();
+                if (Material.matchMaterial(item) == null) {
+                    assertTrue(PriceList.SIGN_IDS.containsValue(item),
+                            item + " is not a vanilla material and has no short sign id in PriceList.SIGN_IDS");
+                }
+            }
+        }
     }
 }

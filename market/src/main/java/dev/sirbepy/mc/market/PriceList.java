@@ -17,7 +17,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * The market as text: the price book (every stall item and every Heads stall mob at its base
@@ -28,13 +30,16 @@ final class PriceList {
 
     // A book page holds 14 lines of about 19 characters; a stall heading takes 1 line, an item 2.
     private static final int LINES_PER_PAGE = 14;
-    // Sign names Essentials needs because the vanilla id overflows a sign line, and that read badly
-    // as words. Membrane reads fine as it is.
-    private static final Map<String, String> SIGN_ALIASES = Map.of("withersskull", "wither_skeleton_skull");
     // Every stalls.yml id that isn't the vanilla one (Essentials' short sign names), keyed by the
-    // vanilla id, so a held item or a typed vanilla name finds its stall.
-    private static final Map<String, String> SIGN_IDS = Map.of("wither_skeleton_skull", "withersskull",
+    // vanilla id, so a held item or a typed vanilla name finds its stall. The one table: add a new
+    // short id here, not to SPELLED_OUT_SIGN_IDS, or /market price misses it.
+    static final Map<String, String> SIGN_IDS = Map.of("wither_skeleton_skull", "withersskull",
             "phantom_membrane", "membrane", "torchflower_seeds", "torchseeds");
+    // Short ids from SIGN_IDS that read badly as words, so name() spells out their vanilla id
+    // instead. Membrane reads fine as it is.
+    private static final Set<String> SPELLED_OUT_SIGN_IDS = Set.of("withersskull");
+    private static final Map<String, String> VANILLA_IDS_BY_SIGN_ID = SIGN_IDS.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     private static final String DEFAULT_HEADS_STALL_NAME = "Heads";
 
     /** One priced line of the book or of /market: what, and for how much. */
@@ -143,7 +148,8 @@ final class PriceList {
 
     /** The item's name as words, e.g. {@code Dark oak log}, spelling out a sign alias. */
     static String name(String item) {
-        return ItemNames.sentence(SIGN_ALIASES.getOrDefault(item, item));
+        String spelledOut = SPELLED_OUT_SIGN_IDS.contains(item) ? VANILLA_IDS_BY_SIGN_ID.get(item) : item;
+        return ItemNames.sentence(spelledOut);
     }
 
     /** The stalls.yml id for a vanilla item id, e.g. {@code membrane} for {@code phantom_membrane}. */
