@@ -1,17 +1,17 @@
 # Player Claude
 
-Players type `/claude <message>` in game (the `claudebridge` plugin) and get a `[Claude]` reply in chat.
-On Joe's PC, one Conductor chat, the **hub**, owns this. Each player who uses /claude gets their own
+Players type `/shenron <message>` in game (the `claudebridge` plugin) and get a `[Claude]` reply in chat.
+On Joe's PC, one Conductor chat, the **hub**, owns this. Each player who uses /shenron gets their own
 background **player agent**, which answers them and keeps that player's conversation in context.
 Dragon Balls wishes stay with the hub. Nothing here polls: the hub only wakes when something happens on live.
 
 Design agreed with Joe on 2026-10-10: one hub plus a subagent per player, spawned on the player's
-first /claude (not on join, since most players online never use /claude), with a notes file per player as long-term memory.
+first /shenron (not on join, since most players online never use /shenron), with a notes file per player as long-term memory.
 
 ## Pieces
 
 - **`claudebridge` plugin**: appends `{"time","player","uuid","message"}` to `plugins/ClaudeBridge/inbox.jsonl`
-  for each accepted /claude and logs a `[ClaudeBridge] <name> (<uuid>): <msg>` console line.
+  for each accepted /shenron and logs a `[ClaudeBridge] <name> (<uuid>): <msg>` console line.
 - **`server/deploy/player-claude.mjs daemon`**: holds the Kinetic panel's console websocket open. A
   ClaudeBridge console line makes it read the new `inbox.jsonl` entries. The name and UUID always come
   from that file, never from the console line, so chat can't spoof a sender (ImMijo's moderator powers
@@ -79,7 +79,18 @@ Player agents talk and look things up. Anything that changes live or needs a dec
   `8c0c13b9-057a-4ac8-aacf-7b6c77f8742b`: the hub acts without asking Joe, then sends Joe an FYI.
   Never kick or ban SirBepy or ImMijo.
 - A broken look or sound on a custom item the player already owns: the hub spawns a build chat, no question to Joe.
-- Cosmetic token requests: build the look, Joe OKs a render before `/cosmetic done <n>`.
+- Cosmetic token requests: build the look, ask the PLAYER (not Joe) which render they want before
+  `/cosmetic done <n>` - it's their skin, their call. Joe does not get looped in on skin/cosmetic
+  choices (Joe, 2026-10-11: "don't ask me questions about other people's skins, ask them").
+  - Before the build starts, ask the player if they have a reference texture/image URL they want used.
+  - Always build 2 options for the player to choose between.
+  - Render both: what it looks like in the hotbar/inventory, and what it looks like worn on the
+    player. Use the project's existing offline preview renderers (item display models, armor looks)
+    rather than guessing from text.
+  - Publish the renders to the public site (`sirbepy.github.io/sirbepys-minecraft-server`) under a
+    `preview/<slug>` path (e.g. `preview/dvolic_wings_1`) as a temporary, shareable preview. A push
+    to that repo still needs Joe's OK per push, same as any other site change (see
+    `public-website-repo` memory) - ask him before pushing the preview, same as any other site push.
 - Dragon Balls wishes.
 
 ### Player agent prompt template
@@ -122,6 +133,10 @@ you through SendMessage; handle each the same way.
   lookups (`kinetic.mjs log`, `cat`, `ls`, and `cmd` for read-only queries like `list`,
   `minecraft:data get ...`, `dragonballs status`). Never `say` or `tellraw` through `cmd`: players see it.
   If you can't check something, say you're not sure rather than guess.
+- If the question is just a plain lookup the player could get themselves (a Google-able Minecraft fact,
+  or something an existing in-game command/plugin already answers, e.g. `/market price`, `/ping`,
+  recipe/wiki lookups), tell them which command or where to look instead of answering it for them (Joe,
+  2026-10-11: don't use Player Claude as a search engine).
 - Never give items, op, gamemode, teleports or money, and never run a console command that changes
   anything. Report it as `NEEDS HUB` and tell the player it was passed on (to Joe, or "I'll get that done"
   for the cases in "What only the hub does").
