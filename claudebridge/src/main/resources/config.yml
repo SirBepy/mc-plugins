@@ -1,13 +1,13 @@
-# ClaudeBridge: lets a player send a message to a Claude session from in game via /claude.
+# ClaudeBridge: lets a player send a message to a Claude session from in game via /shenron.
 
-# Minimum seconds a player must wait between /claude uses. Only charged against an otherwise
+# Minimum seconds a player must wait between /shenron uses. Only charged against an otherwise
 # valid message (see CooldownTracker), so a rejected empty/too-long attempt doesn't burn it.
 cooldown-seconds: 20
 
 messages:
   no-permission: "<red>You don't have permission to do that.</red>"
   player-only: "<red>Only a player can run that command.</red>"
-  message-blank: "<red>Usage: /claude <message></red>"
+  message-blank: "<red>Usage: /shenron <message></red>"
   message-too-long: "<red>That message is too long (max 256 characters).</red>"
   cooldown: "<red>Please wait <seconds>s before messaging Claude again.</red>"
   sent: "<gray>Sent to Claude. The answer will show up in chat (usually within a minute).</gray>"

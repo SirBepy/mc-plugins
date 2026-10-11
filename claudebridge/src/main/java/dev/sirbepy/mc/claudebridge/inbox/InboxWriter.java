@@ -11,7 +11,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Appends one {@code {"time","player","uuid","message"}} JSON line per accepted {@code /claude}
+ * Appends one {@code {"time","player","uuid","message"}} JSON line per accepted {@code /shenron}
  * to inbox.jsonl, for an out-of-process reader to pick up. Hand-rolled escaping, not a JSON
  * library dependency: a player's message can contain quotes, backslashes or (pre-validator)
  * newlines, unlike the filenames elsewhere in this repo that get the "never contains a quote"

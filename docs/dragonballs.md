@@ -185,7 +185,7 @@ generous with them, and the council weighs the set too.
 
 Granted the monkey's-paw way, by Joe's call (2026-10-06): the player becomes a ghost
 (`minecraft:gamemode spectator <player>`), and stays one until they beg to be mortal again (a
-`/claude` message or a wish line asking for it). Before switching, read where they stand
+`/shenron` message or a wish line asking for it). Before switching, read where they stand
 (`minecraft:data get entity <player> Pos` and `Dimension`) and put it in the grant note, e.g.
 `shenron grant 1 immortality: ghost, return minecraft:overworld 120 70 -340`. When they beg, send
 them back to exactly that spot (`minecraft:execute in <dimension> run tp <player> <x> <y> <z>`), then
@@ -228,7 +228,7 @@ flip phone (2026-10-06), whose Assassinate Mode sends the Salamanca cousins afte
   said, each voting grant, grant with a deal or curse, reject, or curse the wisher for asking at
   all. The verdict with the most votes is final (a tie is a dice roll between the tied verdicts),
   and the dragon carries it out. No wish ever goes to Joe (Joe, 2026-10-07: "NOTHING GOES BY ME").
-- Feature and cosmetic requests made through `/claude` outside a wish get "find the Dragon Balls".
+- Feature and cosmetic requests made through `/shenron` outside a wish get "find the Dragon Balls".
   Bug reports, lag and moderation work as before.
 
 ## Speaking as the dragon (for Player Claude)

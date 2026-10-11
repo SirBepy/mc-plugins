@@ -3,7 +3,7 @@ package dev.sirbepy.mc.claudebridge.data;
 import java.util.regex.Pattern;
 
 /**
- * Validates a raw {@code /claude} message: strips legacy (section-sign) color codes and control
+ * Validates a raw {@code /shenron} message: strips legacy (section-sign) color codes and control
  * characters first, since the message is logged to console and a file verbatim and never rendered
  * through a component serializer that would otherwise neutralize them, then checks length against
  * the fixed 1..256 bound from the spec (not owner-configurable, unlike the cooldown).

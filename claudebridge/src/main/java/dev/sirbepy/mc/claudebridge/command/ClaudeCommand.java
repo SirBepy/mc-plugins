@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.time.Instant;
 
 /**
- * {@code /claude <message...>}: forwards a player's message to an outside Claude session via the
+ * {@code /shenron <message...>}: forwards a player's message to an outside Claude session via the
  * console log and plugins/ClaudeBridge/inbox.jsonl (see InboxWriter); the reply comes back through
  * server/deploy/claude-reply.mjs as a tellraw, outside this plugin entirely.
  */

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Wakes the Player Claude hub chat only when something happens on live: a /claude message, a
+// Wakes the Player Claude hub chat only when something happens on live: a /shenron message, a
 // Dragon Balls wish, or a Market cosmetic token request. Nothing here polls the panel. The daemon
 // holds the panel's console websocket open (Pterodactyl-style: a token from /servers/{id}/websocket, re-sent when Wings says it is
 // expiring), and a ClaudeBridge console line is just the doorbell: the message itself is read
