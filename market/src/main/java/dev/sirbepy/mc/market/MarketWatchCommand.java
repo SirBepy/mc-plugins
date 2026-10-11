@@ -70,7 +70,7 @@ final class MarketWatchCommand {
                 .then(item);
     }
 
-    private static CompletableFuture<Suggestions> suggest(SuggestionsBuilder builder, Collection<String> options) {
+    static CompletableFuture<Suggestions> suggest(SuggestionsBuilder builder, Collection<String> options) {
         String typed = builder.getRemainingLowerCase();
         options.stream().filter(o -> o.startsWith(typed)).sorted().forEach(builder::suggest);
         return builder.buildFuture();

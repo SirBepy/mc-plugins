@@ -128,7 +128,8 @@ public final class Market {
         return new Offer(offer.item(), offer.amount(), scaled(offer.price(), BigDecimal.valueOf(factor(spread))));
     }
 
-    private static BigDecimal scaled(BigDecimal base, BigDecimal factor) {
+    /** Also /market price's top and bottom, so they round exactly like a real day's roll. */
+    static BigDecimal scaled(BigDecimal base, BigDecimal factor) {
         return base.multiply(factor).setScale(2, RoundingMode.HALF_UP).max(MIN_PRICE);
     }
 

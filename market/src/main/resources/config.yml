@@ -150,3 +150,16 @@ messages:
   watch-list-line: " <dark_gray>-</dark_gray> <white><item></white>"
   watch-rotated: "<gold>Market watch:</gold> <white><item></white> is on sale today at the <white><stall></white> stall (<price>)."
   watch-join: "<gold>Market watch:</gold> <white><item></white> is still on today's market at the <white><stall></white> stall (<price>)."
+  # /market price [item] (Joe, 2026-10-11): the most, usual and least a stall pays for an item.
+  # <spread> the daily swing, <stall>/<amount> who buys it and how many at a time, <price> a bundle
+  # price, <each> the price-range-each part (left out when the stall buys one at a time).
+  price-range-hold: "<gray>Name an item, like /market price raw gold, or hold it in your main hand."
+  price-range-unknown: "<gray>No spawn stall buys <white><item></white>. Tab-complete to see what they buy, or /suggested-price for what it's worth to other players."
+  price-range-header: "<gold><item></gold> <gray>at the spawn market. The price moves up to <spread> each day.</gray>"
+  price-range-stall: "<white><stall></white> <gray>buys <amount> at a time:</gray>"
+  price-range-top: " <dark_gray>-</dark_gray> Top <gold><price></gold><each>"
+  price-range-median: " <dark_gray>-</dark_gray> Median <gold><price></gold><each>"
+  price-range-bottom: " <dark_gray>-</dark_gray> Bottom <gold><price></gold><each>"
+  price-range-today: " <dark_gray>-</dark_gray> Today <green><price></green><each>"
+  price-range-not-today: " <dark_gray>-</dark_gray> <gray>Not on the stall today.</gray>"
+  price-range-each: " <gray>(<each> each)</gray>"

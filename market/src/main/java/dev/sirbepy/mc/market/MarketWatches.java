@@ -81,7 +81,7 @@ public final class MarketWatches implements Listener {
         load();
     }
 
-    private static Set<String> catalogue(MarketLayout layout, MobHeads heads) {
+    static Set<String> catalogue(MarketLayout layout, MobHeads heads) {
         Set<String> items = new LinkedHashSet<>();
         for (Stall stall : layout.stalls()) {
             stall.buys().forEach(offer -> items.add(offer.item()));

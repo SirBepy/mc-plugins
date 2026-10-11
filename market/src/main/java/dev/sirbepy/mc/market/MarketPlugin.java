@@ -141,6 +141,7 @@ public final class MarketPlugin extends JavaPlugin {
                                 }))
                         .then(watchCommand.watchNode())
                         .then(watchCommand.unwatchNode())
+                        .then(new MarketPriceCommand(market, config::get).node())
                         .then(Commands.literal("rotate")
                                 .requires(src -> src.getSender().hasPermission("market.admin"))
                                 .executes(ctx -> {

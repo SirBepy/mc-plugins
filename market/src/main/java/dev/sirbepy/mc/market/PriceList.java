@@ -31,6 +31,10 @@ final class PriceList {
     // Sign names Essentials needs because the vanilla id overflows a sign line, and that read badly
     // as words. Membrane reads fine as it is.
     private static final Map<String, String> SIGN_ALIASES = Map.of("withersskull", "wither_skeleton_skull");
+    // Every stalls.yml id that isn't the vanilla one (Essentials' short sign names), keyed by the
+    // vanilla id, so a held item or a typed vanilla name finds its stall.
+    private static final Map<String, String> SIGN_IDS = Map.of("wither_skeleton_skull", "withersskull",
+            "phantom_membrane", "membrane", "torchflower_seeds", "torchseeds");
     private static final String DEFAULT_HEADS_STALL_NAME = "Heads";
 
     /** One priced line of the book or of /market: what, and for how much. */
@@ -140,6 +144,11 @@ final class PriceList {
     /** The item's name as words, e.g. {@code Dark oak log}, spelling out a sign alias. */
     static String name(String item) {
         return ItemNames.sentence(SIGN_ALIASES.getOrDefault(item, item));
+    }
+
+    /** The stalls.yml id for a vanilla item id, e.g. {@code membrane} for {@code phantom_membrane}. */
+    static String signItem(String item) {
+        return SIGN_IDS.getOrDefault(item, item);
     }
 
     static String money(BigDecimal price) {

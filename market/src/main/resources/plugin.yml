@@ -13,7 +13,7 @@ permissions:
     description: Use /suggested-price.
     default: true
   market.use:
-    description: Use /market (today's buyers) and /market prices (the price book).
+    description: Use /market (today's buyers), /market prices (the price book) and /market price (an item's best and worst price).
     default: true
   market.admin:
     description: Force a new set of buyers at the spawn market, and /cosmetic list/done/refund.
