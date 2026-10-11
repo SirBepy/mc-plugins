@@ -253,6 +253,16 @@ class MarketTest {
         assertEquals("2026-10-06", real.period(0, Instant.parse("2026-10-05T22:30:00Z")), "past midnight in Zagreb (UTC+2)");
     }
 
+    // A typo in config must not take the market down: before Zones.parse, this constructor threw.
+    @Test
+    void aTypodZoneFallsBackToZagrebInsteadOfThrowing() {
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("rotate-on", "real-day");
+        yaml.set("zone", "Europ/Zagreb");
+        MarketConfig config = new MarketConfig(yaml);
+        assertEquals("2026-10-06", config.period(0, Instant.parse("2026-10-05T22:30:00Z")), "falls back to Zagreb (UTC+2)");
+    }
+
     @Test
     void layoutRefusesAPlayerHeadUnderAnyName() {
         for (String name : List.of("player_head", "PLAYER_HEAD", "minecraft:player_head", "playerhead", "player_wall_head")) {

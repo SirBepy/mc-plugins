@@ -1,9 +1,9 @@
 package dev.sirbepy.mc.haru.config;
 
+import dev.sirbepy.mc.core.Zones;
 import dev.sirbepy.mc.core.npc.NpcSkin;
 import org.bukkit.configuration.file.FileConfiguration;
 
-import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.util.UUID;
 
@@ -15,7 +15,7 @@ public record HaruConfig(UUID owner, ZoneId zone, String world, int rotationDays
     public static HaruConfig from(FileConfiguration config) {
         return new HaruConfig(
                 parseOwner(config.getString("owner")),
-                parseZone(config.getString("timezone")),
+                Zones.parse(config.getString("timezone"), ZoneId.of("Europe/Zagreb")),
                 config.getString("world", "world"),
                 Math.max(1, config.getInt("rotation-days", 3)),
                 Math.clamp(config.getDouble("legendary-chance", 0.2), 0.0, 1.0),
@@ -36,11 +36,4 @@ public record HaruConfig(UUID owner, ZoneId zone, String world, int rotationDays
         }
     }
 
-    private static ZoneId parseZone(String value) {
-        try {
-            return value == null ? ZoneId.of("Europe/Zagreb") : ZoneId.of(value.trim());
-        } catch (DateTimeException e) {
-            return ZoneId.of("Europe/Zagreb");
-        }
-    }
 }

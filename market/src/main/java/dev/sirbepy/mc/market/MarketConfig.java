@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.market;
 
 import dev.sirbepy.mc.core.Messages;
+import dev.sirbepy.mc.core.Zones;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -48,7 +49,7 @@ public final class MarketConfig {
     public MarketConfig(FileConfiguration config) {
         this.world = config.getString("world", "world");
         this.realDays = "real-day".equals(config.getString("rotate-on", "minecraft-day").toLowerCase(Locale.ROOT));
-        this.zone = ZoneId.of(config.getString("zone", "Europe/Zagreb"));
+        this.zone = Zones.parse(config.getString("zone"), ZoneId.of("Europe/Zagreb"));
         this.minItems = Math.max(0, config.getInt("items-per-stall.min", 2));
         this.maxItems = Math.max(minItems, config.getInt("items-per-stall.max", 3));
         this.priceSpread = Math.clamp(config.getDouble("price-spread", 0.2), 0.0, 0.9);

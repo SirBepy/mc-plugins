@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.guild.config;
 
+import dev.sirbepy.mc.core.Zones;
 import dev.sirbepy.mc.guild.contract.Board;
 import org.bukkit.configuration.ConfigurationSection;
 
@@ -26,12 +27,7 @@ public record GuildConfig(UUID guildmaster, ZoneId zone, int registrationFee, in
         } catch (IllegalArgumentException e) {
             gm = IMMIJO;
         }
-        ZoneId zone;
-        try {
-            zone = ZoneId.of(c.getString("timezone", "Europe/Zagreb"));
-        } catch (RuntimeException e) {
-            zone = ZoneId.of("Europe/Zagreb");
-        }
+        ZoneId zone = Zones.parse(c.getString("timezone"), ZoneId.of("Europe/Zagreb"));
         // The dragon's caps are ceilings: a config can lower them but never lift them past the wish's terms.
         return new GuildConfig(gm, zone,
                 Math.max(0, c.getInt("registration-fee", 500)),

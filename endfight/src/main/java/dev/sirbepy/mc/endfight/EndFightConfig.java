@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.endfight;
 
 import dev.sirbepy.mc.core.Messages;
+import dev.sirbepy.mc.core.Zones;
 import dev.sirbepy.mc.endfight.cult.CultConfig;
 import dev.sirbepy.mc.endfight.perch.PerchGateConfig;
 import dev.sirbepy.mc.endfight.reset.ResetConfig;
@@ -10,7 +11,6 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
-import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +54,7 @@ public final class EndFightConfig {
         this.tierApplyDelayTicks = config.getLong("tiers.apply-delay-ticks", 60L);
         this.dkeForceInstalled = config.isSet("tiers.dke.force-installed")
                 ? config.getBoolean("tiers.dke.force-installed") : null;
-        this.openingZone = parseZone(config.getString("end-opening.zone", "Europe/Zagreb"));
+        this.openingZone = Zones.parse(config.getString("end-opening.zone"), ZoneId.of("Europe/Zagreb"));
         this.countdownMinutes = List.copyOf(config.getIntegerList("end-opening.countdown-minutes"));
         this.warpHintMinutes = Set.copyOf(config.getIntegerList("end-opening.warp-hint-minutes"));
         YamlConfiguration opening = new YamlConfiguration();
@@ -65,14 +65,6 @@ public final class EndFightConfig {
             }
         }
         this.openingMessages = new Messages(opening);
-    }
-
-    private static ZoneId parseZone(String raw) {
-        try {
-            return ZoneId.of(raw);
-        } catch (DateTimeException | NullPointerException e) {
-            return ZoneId.of("Europe/Zagreb");
-        }
     }
 
     public ZoneId openingZone() {
