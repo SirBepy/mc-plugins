@@ -35,7 +35,10 @@ heads-per-day: 4
 # rather than anyone who has ever joined. A day with a bounty, claimed or not, is always followed by
 # a day without one. min-online: a bounty only goes up with at least this many players online;
 # otherwise that day has none and the next day tries again.
+# enabled: false temporarily pulls the whole board (no new/claimed bounties, sign shows "No bounty
+# today"). Flip it and run /market reload; no restart needed either way.
 wanted:
+  enabled: false
   base: 50
   per-hour: 25
   cap: 500

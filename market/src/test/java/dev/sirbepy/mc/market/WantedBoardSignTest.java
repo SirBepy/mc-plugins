@@ -9,7 +9,9 @@ import org.bukkit.block.data.Directional;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
+import java.io.File;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -99,5 +101,46 @@ class WantedBoardSignTest extends WantedBoardTestBase {
 
         String line = PlainTextComponentSerializer.plainText().serialize(board.todayLines().getFirst());
         assertTrue(line.contains("100") && line.contains("50"), "shows both the fresh and the old-head price: " + line);
+    }
+
+    @Test
+    void disablingTheBoardStopsPicksPayoutsAndTheSignButKeepsTheSavedStateUntouched() {
+        PlayerMock target = server.addPlayer("Target");
+        PlayerMock seller = server.addPlayer("Seller");
+        online.add(target);
+        AtomicReference<MarketConfig> cfg = new AtomicReference<>(flat());
+        WantedBoard board = board(ALWAYS_ONLINE, cfg::get, new File(dir, "wanted.yml"));
+        board.rotate();
+        board.apply(world);
+        assertTrue(board.state().hasTarget(), "posted while enabled");
+        assertEquals("Target", plainLine((Sign) world.getBlockAt(20, 70, 0).getState(), 1));
+
+        // /market reload flipping wanted.enabled to false, no restart.
+        cfg.set(config(100, 0, 1000, 0, false));
+
+        period.set("day-2");
+        assertFalse(board.refresh(), "disabled: no pick even on a new period");
+        board.rotate();
+        assertTrue(board.state().hasTarget(), "disabled rotate is a no-op; the state on disk from before is untouched");
+
+        board.apply(world);
+        Sign sign = (Sign) world.getBlockAt(20, 70, 0).getState();
+        assertEquals("No bounty", plainLine(sign, 1), "sign shows no bounty while disabled, even with a target still saved");
+        assertEquals(Material.AIR, world.getBlockAt(20, 71, 0).getType(), "head cleared too");
+
+        seller.getInventory().setItemInMainHand(headOf(target.getUniqueId(), target.getName(), board.state().postedAt()));
+        board.sell(seller);
+        assertTrue(paid.isEmpty(), "no payout while disabled");
+        assertFalse(board.state().claimed(), "the saved state is untouched, not claimed");
+
+        String line = PlainTextComponentSerializer.plainText().serialize(board.todayLines().getFirst());
+        assertTrue(line.contains("No bounty"), line);
+
+        // Flip back on: the period moved on to day-2 while disabled, so the still-open (unclaimed)
+        // day-1 bounty is treated the same as any bounty whose period passed unclaimed: it rests.
+        cfg.set(flat());
+        assertTrue(board.refresh(), "the period changed while disabled; back on, it catches up");
+        assertTrue(board.state().cooldown());
+        assertFalse(board.state().hasTarget());
     }
 }

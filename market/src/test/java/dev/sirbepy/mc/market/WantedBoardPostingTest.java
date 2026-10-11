@@ -263,6 +263,9 @@ class WantedBoardPostingTest extends WantedBoardTestBase {
         // Joe's 2026-10-10 rule: 3 online is not enough, 4 is.
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(
                 Objects.requireNonNull(WantedBoardPostingTest.class.getResourceAsStream("/config.yml")), StandardCharsets.UTF_8));
+        // This test is about min-online, not the board's own on/off switch (Joe, 2026-10-11: shipped
+        // config.yml now has wanted.enabled: false); force it back on here.
+        yaml.set("wanted.enabled", true);
         MarketConfig shipped = new MarketConfig(yaml);
         assertEquals(4, shipped.wantedMinOnline());
         for (String name : List.of("A", "B", "C")) {

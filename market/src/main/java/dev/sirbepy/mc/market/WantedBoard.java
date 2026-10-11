@@ -112,9 +112,15 @@ public final class WantedBoard implements Listener {
         this.state = stateStore.load();
     }
 
+    /** Whether the board is turned on at all ({@code wanted.enabled}, Joe 2026-10-11: off for now).
+     * {@code /market reload} picks up a flip immediately, no restart either way. */
+    private boolean enabled() {
+        return config.get().wantedEnabled();
+    }
+
     /** Picks a new target if the period has changed since the last pick. Returns whether it did. */
     public boolean refresh() {
-        if (state != null && period.get().equals(state.period())) {
+        if (!enabled() || (state != null && period.get().equals(state.period()))) {
             return false;
         }
         advance(false);
@@ -122,8 +128,12 @@ public final class WantedBoard implements Listener {
     }
 
     /** Forces a normal pick right now, whatever the period: {@code /market rotate} (admin), which
-     * always re-picks even mid-cooldown rather than waiting out the rest period. */
+     * always re-picks even mid-cooldown rather than waiting out the rest period. A no-op while the
+     * board is disabled. */
     public void rotate() {
+        if (!enabled()) {
+            return;
+        }
         advance(true);
     }
 
@@ -207,9 +217,11 @@ public final class WantedBoard implements Listener {
         return valueAt(aliveTicks.applyAsLong(state.targetId()));
     }
 
-    /** Writes the target's head and the WANTED sign, like SignWriter does for a stall's [Sell] signs. */
+    /** Writes the target's head and the WANTED sign, like SignWriter does for a stall's [Sell]
+     * signs. Draws "No bounty today" while disabled, without touching the saved state underneath. */
     public void apply(World world) {
-        BigDecimal value = WantedSign.apply(world, layout, state, this::currentValue, config.get().wantedOldHeadShare());
+        WantedState shown = enabled() ? state : WantedState.none(period.get());
+        BigDecimal value = WantedSign.apply(world, layout, shown, this::currentValue, config.get().wantedOldHeadShare());
         if (value != null) {
             shownValue = value;
         }
@@ -220,7 +232,7 @@ public final class WantedBoard implements Listener {
      * an unloaded sign chunk rather than loading spawn just to repaint a number nobody is near.
      */
     public void tick() {
-        if (state == null || !state.hasTarget() || state.claimed()) {
+        if (!enabled() || state == null || !state.hasTarget() || state.claimed()) {
             return;
         }
         MarketLayout.WantedSpot spot = layout.wantedBoard();
@@ -308,6 +320,10 @@ public final class WantedBoard implements Listener {
     /** One sale per period, server-wide: the first player to bring in the target's head gets paid. */
     void sell(Player player) {
         var messages = config.get().messages();
+        if (!enabled()) {
+            messages.send(player, "wanted-none");
+            return;
+        }
         if (state == null || !state.hasTarget()) {
             messages.send(player, state != null && state.cooldown() ? "wanted-resting" : "wanted-none");
             return;
@@ -346,6 +362,9 @@ public final class WantedBoard implements Listener {
     /** /market's extra line: today's target and whether it has been claimed yet. */
     public List<Component> todayLines() {
         var messages = config.get().messages();
+        if (!enabled()) {
+            return List.of(messages.render("today-wanted-none"));
+        }
         if (state == null || !state.hasTarget()) {
             return List.of(messages.render(state != null && state.cooldown() ? "today-wanted-resting" : "today-wanted-none"));
         }
@@ -362,7 +381,7 @@ public final class WantedBoard implements Listener {
 
     /** The rotation broadcast's extra line, alongside Market's own {@code messages.rotated}; silent during a cooldown. */
     public void broadcastRotated(Audience audience) {
-        if (state != null && state.hasTarget()) {
+        if (enabled() && state != null && state.hasTarget()) {
             config.get().messages().send(audience, "wanted-rotated", Placeholder.unparsed("name", state.targetName()),
                     Placeholder.unparsed("price", currentValue().toBigInteger().toString()));
         }

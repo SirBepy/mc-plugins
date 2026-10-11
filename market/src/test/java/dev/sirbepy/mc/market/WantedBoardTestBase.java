@@ -96,8 +96,15 @@ public abstract class WantedBoardTestBase {
     // The real messages section, not a bare YamlConfiguration: WantedBoard's refusal/sold messages
     // come from config.yml, and tests assert on their actual text.
     protected static MarketConfig config(double base, double perHour, long cap, double spread) {
+        return config(base, perHour, cap, spread, true);
+    }
+
+    // The shipped config.yml has wanted.enabled: false (Joe, 2026-10-11); every test above exercises
+    // the board itself, so they all force it back on except the enabled-flag test, which overrides it.
+    protected static MarketConfig config(double base, double perHour, long cap, double spread, boolean enabled) {
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(new InputStreamReader(
                 Objects.requireNonNull(WantedBoardTestBase.class.getResourceAsStream("/config.yml")), StandardCharsets.UTF_8));
+        yaml.set("wanted.enabled", enabled);
         yaml.set("wanted.base", base);
         yaml.set("wanted.per-hour", perHour);
         yaml.set("wanted.cap", cap);
@@ -118,8 +125,8 @@ public abstract class WantedBoardTestBase {
         return config(50, 25, 500, 0);
     }
 
-    protected WantedBoard board(Random random, MarketConfig cfg, File stateFile) {
-        return new WantedBoard(plugin, layout, () -> cfg, period::get, random, clock::get, () -> List.copyOf(online),
+    protected WantedBoard board(Random random, java.util.function.Supplier<MarketConfig> cfg, File stateFile) {
+        return new WantedBoard(plugin, layout, cfg, period::get, random, clock::get, () -> List.copyOf(online),
                 () -> List.copyOf(everJoined), id -> alive.getOrDefault(id, 0L), (player, amount) -> {
             if (bankOpen) {
                 paid.add(amount);
@@ -127,6 +134,10 @@ public abstract class WantedBoardTestBase {
             }
             return bankOpen;
         }, broadcastRecorder, stateFile, LOG);
+    }
+
+    protected WantedBoard board(Random random, MarketConfig cfg, File stateFile) {
+        return board(random, () -> cfg, stateFile);
     }
 
     protected WantedBoard board(Random random, MarketConfig cfg) {

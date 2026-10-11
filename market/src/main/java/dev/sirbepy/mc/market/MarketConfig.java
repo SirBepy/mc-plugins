@@ -33,6 +33,7 @@ public final class MarketConfig {
     private final int maxItems;
     private final double priceSpread;
     private final int headsPerDay;
+    private final boolean wantedEnabled;
     private final double wantedBase;
     private final double wantedPerHour;
     private final long wantedCap;
@@ -54,6 +55,9 @@ public final class MarketConfig {
         this.maxItems = Math.max(minItems, config.getInt("items-per-stall.max", 3));
         this.priceSpread = Math.clamp(config.getDouble("price-spread", 0.2), 0.0, 0.9);
         this.headsPerDay = Math.max(0, config.getInt("heads-per-day", 5));
+        // Joe, 2026-10-11: pulled temporarily. /market reload picks this up with no restart, so it
+        // can come back the same way.
+        this.wantedEnabled = config.getBoolean("wanted.enabled", true);
         // New key names (cap, not max): live's config.yml still holds the old log-normal block's
         // wanted.max: 1000, which would silently become the cap if the name were reused.
         this.wantedBase = Math.max(0.0, config.getDouble("wanted.base", 50));
@@ -149,6 +153,12 @@ public final class MarketConfig {
     /** How many mobs' heads the Heads stall wants each market day. */
     public int headsPerDay() {
         return headsPerDay;
+    }
+
+    /** Whether the Wanted board posts bounties at all (Joe, 2026-10-11: off for now). Flipping this
+     * and running {@code /market reload} takes effect immediately, no restart. */
+    public boolean wantedEnabled() {
+        return wantedEnabled;
     }
 
     /** The Wanted bounty for a target who just died, before the random factor (Joe, 2026-10-09: $50). */
