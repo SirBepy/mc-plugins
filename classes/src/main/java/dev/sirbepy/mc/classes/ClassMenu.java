@@ -1,11 +1,11 @@
 package dev.sirbepy.mc.classes;
 
 import dev.sirbepy.mc.core.Durations;
+import dev.sirbepy.mc.core.gui.Icons;
 import dev.sirbepy.mc.core.gui.Menu;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
@@ -104,15 +104,9 @@ public final class ClassMenu {
 
     /** Lore lines starting with "!" are highlighted. */
     static ItemStack named(ItemStack item, String name, TextColor color, List<String> lore) {
+        Icons.named(item, name, color, lore, NamedTextColor.GRAY, NamedTextColor.GREEN);
+        // The class icons are a sword and a pickaxe, whose attack stats would bury the lore.
         ItemMeta meta = item.getItemMeta();
-        meta.displayName(Component.text(name, color).decoration(TextDecoration.ITALIC, false));
-        List<Component> lines = new ArrayList<>();
-        for (String line : lore) {
-            boolean highlight = line.startsWith("!");
-            lines.add(Component.text(highlight ? line.substring(1) : line, highlight ? NamedTextColor.GREEN : NamedTextColor.GRAY)
-                    .decoration(TextDecoration.ITALIC, false));
-        }
-        meta.lore(lines);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         item.setItemMeta(meta);
         return item;
