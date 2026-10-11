@@ -28,4 +28,9 @@ tasks.withType<JavaCompile>().configureEach {
 tasks.test {
     useJUnitPlatform()
     maxParallelForks = 1
+    // build/ reports are unreadable in Claude sessions, so per-test lines in the console are the
+    // only way to count passes and spot MockBukkit's silent SKIPPEDs.
+    testLogging {
+        events("passed", "skipped", "failed")
+    }
 }

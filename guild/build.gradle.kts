@@ -20,10 +20,3 @@ dependencies {
         exclude(group = "org.bukkit")
     }
 }
-
-// Verifying pass/skip counts via console since build/ reports aren't readable in this session.
-tasks.test {
-    testLogging {
-        events("passed", "skipped", "failed")
-    }
-}

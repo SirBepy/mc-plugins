@@ -64,10 +64,3 @@ dependencies {
     compileOnly(files(geyserApiJar))
     testImplementation(files(geyserApiJar))
 }
-
-// Verifying pass/skip counts via console since build/ reports aren't readable in this session.
-tasks.test {
-    testLogging {
-        events("passed", "skipped", "failed")
-    }
-}

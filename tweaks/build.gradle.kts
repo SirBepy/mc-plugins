@@ -15,10 +15,3 @@ dependencies {
     testImplementation("io.papermc.paper:paper-api:26.2.build.+")
     testImplementation("dev.aurelium:auraskills-api-bukkit:2.4.0")
 }
-
-// Verifying pass/skip counts via console since build/ reports aren't readable in this session.
-tasks.test {
-    testLogging {
-        events("passed", "skipped", "failed")
-    }
-}
