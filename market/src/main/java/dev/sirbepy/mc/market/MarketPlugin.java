@@ -32,6 +32,7 @@ public final class MarketPlugin extends JavaPlugin {
 
     private final AtomicReference<MarketConfig> config = new AtomicReference<>();
     private Market market;
+    private StarterBoost starterBoost;
     private HeadsStall headsStall;
     private WantedBoard wantedBoard;
     private HomeShop homeShop;
@@ -63,7 +64,10 @@ public final class MarketPlugin extends JavaPlugin {
                 new File(getDataFolder(), "state.yml"), getLogger());
         watches = new MarketWatches(market, layout, heads, config::get, new File(getDataFolder(), "watches.yml"), getLogger());
         getServer().getPluginManager().registerEvents(watches, this);
-        headsStall = new HeadsStall(this, market, config::get, this::pay);
+        starterBoost = new StarterBoost(market, config::get, this::balance, this::pay,
+                new File(getDataFolder(), "starter-boost.yml"), getLogger());
+        getServer().getPluginManager().registerEvents(starterBoost, this);
+        headsStall = new HeadsStall(this, market, config::get, this::payWithStarterBoost);
         getServer().getPluginManager().registerEvents(headsStall, this);
         wantedBoard = new WantedBoard(this, layout, config::get, this::period, new SecureRandom(), Instant::now,
                 () -> List.copyOf(getServer().getOnlinePlayers()), () -> List.of(getServer().getOfflinePlayers()),
@@ -185,6 +189,16 @@ public final class MarketPlugin extends JavaPlugin {
             return false;
         }
         return economy.depositPlayer(player, amount).transactionSuccess();
+    }
+
+    /** Pays a Heads stall sale, then layers the Starter Shop Boost's bonus on top if the player
+     * qualifies - the Heads stall is one of the spawn stalls the boost covers (Joe, 2026-10-11). */
+    private boolean payWithStarterBoost(Player player, double amount) {
+        boolean paid = pay(player, amount);
+        if (paid) {
+            starterBoost.onSale(player, amount);
+        }
+        return paid;
     }
 
     /** Play time since the player's last death, in ticks; an offline player's comes from their stats

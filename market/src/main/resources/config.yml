@@ -62,6 +62,17 @@ homes:
 cosmetics:
   price: 2500
 
+# Starter Shop Boost (Joe, 2026-10-11): a player whose all-time peak net worth has never reached
+# net-worth-threshold sells for max-multiplier at every spawn stall (the five Essentials [Sell]
+# stalls and the Heads stall), tapering smoothly to 1x as their lifetime bonus from it approaches
+# bonus-cap. Net worth only ever rises here, so a veteran who's currently broke never qualifies,
+# and once bonus-cap is paid out the boost stops for good.
+starter-boost:
+  enabled: true
+  net-worth-threshold: 5000
+  max-multiplier: 3.0
+  bonus-cap: 500
+
 # An empty string silences a message.
 messages:
   rotated: "<gold>A new day at the spawn market: the stalls are buying different things. Check the [Sell] signs at spawn."
@@ -166,3 +177,6 @@ messages:
   price-range-today: " <dark_gray>-</dark_gray> Today <green><price></green><each>"
   price-range-not-today: " <dark_gray>-</dark_gray> <gray>Not on the stall today.</gray>"
   price-range-each: " <gray>(<each> each)</gray>"
+  # Starter Shop Boost (Joe, 2026-10-11): shown on every boosted sale at a spawn stall.
+  # <bonus> whole/cents dollars, <multiplier> e.g. 2.4.
+  starter-boost-sale: "<green>+<bonus> Starter Boost (<multiplier>x)</green>"

@@ -45,6 +45,10 @@ public final class MarketConfig {
     private final Map<Integer, BigDecimal> homePrices;
     private final int maxHomes;
     private final BigDecimal cosmeticsPrice;
+    private final boolean starterBoostEnabled;
+    private final BigDecimal starterBoostNetWorthThreshold;
+    private final double starterBoostMaxMultiplier;
+    private final BigDecimal starterBoostBonusCap;
     private final Messages messages;
 
     public MarketConfig(FileConfiguration config) {
@@ -75,6 +79,13 @@ public final class MarketConfig {
         }
         this.homePrices = Map.copyOf(prices);
         this.cosmeticsPrice = BigDecimal.valueOf(config.getLong("cosmetics.price", 2500));
+        // Joe, 2026-10-11: new/poor players sell for a multiplier at the spawn stalls, tapering to
+        // 1x as their lifetime bonus from it nears the cap. Gated on all-time peak net worth so a
+        // veteran who's currently broke never qualifies, even though it only ever rises.
+        this.starterBoostEnabled = config.getBoolean("starter-boost.enabled", true);
+        this.starterBoostNetWorthThreshold = BigDecimal.valueOf(config.getLong("starter-boost.net-worth-threshold", 5000));
+        this.starterBoostMaxMultiplier = Math.max(1.0, config.getDouble("starter-boost.max-multiplier", 3.0));
+        this.starterBoostBonusCap = BigDecimal.valueOf(config.getLong("starter-boost.bonus-cap", 500));
         this.messages = new Messages(messagesWithJarFallback(config));
     }
 
@@ -226,5 +237,25 @@ public final class MarketConfig {
     /** What one Cosmetic Token costs at the Cosmetics shop. */
     public BigDecimal cosmeticsPrice() {
         return cosmeticsPrice;
+    }
+
+    /** Whether the Starter Shop Boost runs at all. */
+    public boolean starterBoostEnabled() {
+        return starterBoostEnabled;
+    }
+
+    /** The all-time peak net worth a player may never have crossed to still qualify (Joe, 2026-10-11: $5000). */
+    public BigDecimal starterBoostNetWorthThreshold() {
+        return starterBoostNetWorthThreshold;
+    }
+
+    /** The sell-price multiplier at no bonus paid yet (Joe, 2026-10-11: 3x). */
+    public double starterBoostMaxMultiplier() {
+        return starterBoostMaxMultiplier;
+    }
+
+    /** The most bonus money the boost ever pays one player, lifetime (Joe, 2026-10-11: $500). */
+    public BigDecimal starterBoostBonusCap() {
+        return starterBoostBonusCap;
     }
 }
