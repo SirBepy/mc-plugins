@@ -28,10 +28,12 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -82,9 +84,11 @@ public final class RewardService {
     private final Map<UUID, Tracking> dying = new ConcurrentHashMap<>();
 
     /** {@code crystals}: pillar crystals each player broke this fight; {@code finalBlow}: who
-     * dealt the lethal damage, or null. */
+     * dealt the lethal damage, or null; {@code damage}: this kill's {@link FightStats#damage}
+     * tally, kept past the dragon's despawn (its PDC is gone by then) for {@link #logKill}. */
     private record Tracking(Set<UUID> participants, Location deathLocation, Tier tier, boolean firstKillEver,
-                            FightHonours honours, Map<UUID, Integer> crystals, UUID finalBlow) {
+                            FightHonours honours, Map<UUID, Integer> crystals, UUID finalBlow,
+                            Map<UUID, Double> damage) {
     }
 
     public RewardService(Plugin plugin, Supplier<EndFightConfig> config, PendingRewardsStore pending,
@@ -127,14 +131,15 @@ public final class RewardService {
         UUID worldId = world.getUID();
         Location deathLocation = dragon.getLocation();
         PersistentDataContainer pdc = dragon.getPersistentDataContainer();
+        Map<UUID, Double> damage = FightStats.damage(pdc);
         FightHonours honours = FightHonours.decide(participants, FightStats.topDamagers(pdc, Integer.MAX_VALUE),
-                FightStats.damage(pdc), FightStats.groupKills(pdc), FightStats.groupLeaders(pdc));
+                damage, FightStats.groupKills(pdc), FightStats.groupLeaders(pdc));
         UUID finalBlow = FightStats.finalBlow(pdc);
         if (finalBlow == null && dragon.getKiller() != null) {
             finalBlow = dragon.getKiller().getUniqueId();
         }
         dying.put(worldId, new Tracking(participants, deathLocation, tier, firstKillEver, honours,
-                FightStats.crystals(pdc), finalBlow));
+                FightStats.crystals(pdc), finalBlow, damage));
         plugin.getLogger().info("The dragon died at " + deathLocation.getBlockX() + "," + deathLocation.getBlockY() + ","
                 + deathLocation.getBlockZ() + "; paying " + participants.size() + " fighter(s) at " + tier.displayName()
                 + (firstKillEver ? " (first kill ever)" : "") + " once its death animation ends.");
@@ -199,6 +204,61 @@ public final class RewardService {
         return name != null ? name : id.toString().substring(0, 8);
     }
 
+    /** Console record of who got what: the per-player honour whispers and
+     * {@code endfight cult stats} are both gone once the dragon despawns, so a "did I get an
+     * honour" question needs an answer that outlives the fight. One line per concern, plain text,
+     * deterministic order, so Player Claude (or an admin) can grep the server log for either. */
+    private void logKill(Tracking tracking) {
+        Map<UUID, String> names = new LinkedHashMap<>();
+        for (UUID id : tracking.participants()) {
+            names.put(id, nameOf(id));
+        }
+        String honoursLine = formatHonoursLog(tracking.honours(), names);
+        if (honoursLine != null) {
+            logger.info(honoursLine);
+        }
+        List<UUID> byDamageDesc = new ArrayList<>(tracking.damage().keySet());
+        byDamageDesc.sort(Comparator.comparingDouble((UUID id) -> tracking.damage().get(id)).reversed());
+        String damageLine = formatDamageLog(byDamageDesc, tracking.damage(), names);
+        if (damageLine != null) {
+            logger.info(damageLine);
+        }
+    }
+
+    /** Pure so it is unit-testable without a dragon or Bukkit: {@code names} is already resolved,
+     * never looked up here. Null when there were no honours this kill (same gate as
+     * {@link #announceHonours}). */
+    static String formatHonoursLog(FightHonours honours, Map<UUID, String> names) {
+        if (honours.isEmpty()) {
+            return null;
+        }
+        List<String> parts = new ArrayList<>();
+        if (honours.bane() != null) {
+            parts.add("Dragon's Bane -> " + nameOrId(honours.bane(), names) + " (" + Math.round(honours.baneDamage()) + ")");
+        }
+        honours.groups().forEach((group, holder) -> parts.add(group.displayName() + " -> " + nameOrId(holder, names)
+                + " (" + honours.groupCounts().get(group) + ")"));
+        return "Honours: " + String.join("; ", parts);
+    }
+
+    /** Pure so it is unit-testable: {@code order} decides the line's order (most damage first),
+     * {@code names} is already resolved. Null when nobody dealt damage this kill. */
+    static String formatDamageLog(List<UUID> order, Map<UUID, Double> damage, Map<UUID, String> names) {
+        if (order.isEmpty()) {
+            return null;
+        }
+        List<String> parts = new ArrayList<>();
+        for (UUID id : order) {
+            parts.add(nameOrId(id, names) + " " + String.format(Locale.ROOT, "%.1f", damage.getOrDefault(id, 0.0)));
+        }
+        return "Damage: " + String.join(", ", parts);
+    }
+
+    private static String nameOrId(UUID id, Map<UUID, String> names) {
+        String name = names.get(id);
+        return name != null ? name : id.toString().substring(0, 8);
+    }
+
     /**
      * Fighter tracking plus the hit confirmation (Joe, 2026-10-09): the first hit that makes a
      * player a fighter this fight gets them a chat line saying what they're in for and a ding, once
@@ -255,6 +315,7 @@ public final class RewardService {
         String dateLabel = DATE_FORMAT.format(LocalDate.now(clock.withZone(WeekKeys.ZONE)));
 
         announceHonours(tracking);
+        logKill(tracking);
         for (UUID id : tracking.participants()) {
             // Honours, plus 5% per pillar crystal this player broke (counts in a solo fight too).
             double bonus = tracking.honours().rollBonus(id) + CRYSTAL_BONUS * tracking.crystals().getOrDefault(id, 0);

@@ -1,7 +1,9 @@
 package dev.sirbepy.mc.endfight.reward;
 
 import dev.sirbepy.mc.endfight.EndFightConfig;
+import dev.sirbepy.mc.endfight.fight.FightHonours;
 import dev.sirbepy.mc.endfight.fight.FightStats;
+import dev.sirbepy.mc.endfight.fight.HonourGroup;
 import dev.sirbepy.mc.endfight.tier.Tier;
 import dev.sirbepy.mc.endfight.tier.TierChoice;
 import org.bukkit.Location;
@@ -508,6 +510,46 @@ class RewardServiceTest {
         controlled.finalizeRewards(end.getUID());
 
         assertEquals(1, progress.load(alice.getUniqueId()).armor().size(), "10% + 5% = 15% beats a 0.12 draw");
+    }
+
+    // The console log needs its own record of honours and damage, independent of the chat
+    // whispers and the dragon's PDC (both gone once the dragon despawns).
+    @Test
+    void formatHonoursLogListsBaneThenGroupsInDeterministicOrder() {
+        UUID aliceId = UUID.randomUUID();
+        UUID bobId = UUID.randomUUID();
+        java.util.Map<HonourGroup, UUID> groups = new java.util.LinkedHashMap<>();
+        groups.put(HonourGroup.PHANTOMS, aliceId);
+        java.util.Map<HonourGroup, Integer> counts = new java.util.LinkedHashMap<>();
+        counts.put(HonourGroup.PHANTOMS, 4);
+        FightHonours honours = new FightHonours(bobId, 600.0, groups, counts);
+        java.util.Map<UUID, String> names = java.util.Map.of(aliceId, "Alice", bobId, "Bob");
+
+        String line = RewardService.formatHonoursLog(honours, names);
+
+        assertEquals("Honours: Dragon's Bane -> Bob (600); Phantoms -> Alice (4)", line);
+    }
+
+    @Test
+    void formatHonoursLogIsNullWhenThereAreNoHonours() {
+        assertEquals(null, RewardService.formatHonoursLog(FightHonours.NONE, java.util.Map.of()));
+    }
+
+    @Test
+    void formatDamageLogOrdersByTheGivenListAndFormatsOneDecimal() {
+        UUID aliceId = UUID.randomUUID();
+        UUID bobId = UUID.randomUUID();
+        java.util.Map<UUID, Double> damage = java.util.Map.of(aliceId, 600.0, bobId, 400.5);
+        java.util.Map<UUID, String> names = java.util.Map.of(aliceId, "Alice", bobId, "Bob");
+
+        String line = RewardService.formatDamageLog(java.util.List.of(aliceId, bobId), damage, names);
+
+        assertEquals("Damage: Alice 600.0, Bob 400.5", line);
+    }
+
+    @Test
+    void formatDamageLogIsNullWithAnEmptyOrder() {
+        assertEquals(null, RewardService.formatDamageLog(java.util.List.of(), java.util.Map.of(), java.util.Map.of()));
     }
 
     private static ShulkerBox hoardBoxFrom(ItemStack hoard) {
