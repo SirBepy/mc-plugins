@@ -45,6 +45,37 @@ const PLUGIN_DRAGON = /I am the Eternal Dragon|weary|considering/i;
 // same spoof guarantee for the reconnect scan.
 const LOG_LINE = /^\[(\d\d:\d\d:\d\d)\] \[Server thread\/INFO\]: (.*)$/;
 
+// Market's plugin.yml name is "Market", so Paper's logger prefixes this with "[Market] " itself
+// (CosmeticRequests.java logs it once, no doubled prefix like DragonBalls). Player chat reaches
+// the console as "Name: text" or "[Not Secure] ... Name: text", never starting with "[Market]",
+// so a player can't fake a request by typing one. materialId never contains " - " (it is a plain
+// material key), so splitting the tail on the first " - " safely separates it from the free-text
+// idea even if the idea itself contains " - ".
+const COSMETIC_MESSAGE = /^\[Market\] Cosmetic request #(\d+) from (.+) \(([0-9a-fA-F-]+)\): (.+)$/;
+
+function cosmeticFromMessage(time, message) {
+  const m = COSMETIC_MESSAGE.exec(message);
+  if (!m) return null;
+  const [, id, player, uuid, rest] = m;
+  const sep = rest.indexOf(" - ");
+  if (sep === -1) return null;
+  return {
+    type: "cosmetic", time, id: Number(id), player, uuid,
+    material: rest.slice(0, sep), idea: rest.slice(sep + 3), key: `cosmetic|${id}`,
+  };
+}
+
+/** A websocket console line -> a cosmetic request event, or null. */
+export function cosmeticFromConsole(parsed) {
+  return parsed === null ? null : cosmeticFromMessage(parsed.time, parsed.message);
+}
+
+/** A latest.log line -> the same cosmetic request event shape, or null. */
+export function cosmeticFromLogLine(line) {
+  const m = LOG_LINE.exec(line.replace(/\r$/, ""));
+  return m ? cosmeticFromMessage(m[1], m[2]) : null;
+}
+
 function wishFromMessage(time, message) {
   const m = WISH_MESSAGE.exec(message);
   if (!m) return null;
@@ -110,6 +141,8 @@ export function formatEvent(e) {
       return `CLAUDE [${e.time}] ${e.player} (${e.uuid}): ${e.message}`;
     case "wish":
       return `DRAGONBALLS ${e.kind} [${e.time}] ${e.text}`;
+    case "cosmetic":
+      return `COSMETIC #${e.id} ${e.player} (${e.uuid}): ${e.material} - ${e.idea}`;
     default:
       return `DAEMON ${e.text}`;
   }

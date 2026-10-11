@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Wakes the Player Claude hub chat only when something happens on live: a /claude message or a
-// Dragon Balls wish. Nothing here polls the panel. The daemon holds the panel's console websocket
-// open (Pterodactyl-style: a token from /servers/{id}/websocket, re-sent when Wings says it is
+// Wakes the Player Claude hub chat only when something happens on live: a /claude message, a
+// Dragon Balls wish, or a Market cosmetic token request. Nothing here polls the panel. The daemon
+// holds the panel's console websocket open (Pterodactyl-style: a token from /servers/{id}/websocket, re-sent when Wings says it is
 // expiring), and a ClaudeBridge console line is just the doorbell: the message itself is read
 // from plugins/ClaudeBridge/inbox.jsonl, which only the plugin writes, so the player name and UUID
 // in an event can't be faked from chat. docs/player-claude.md is the hub's runbook.
@@ -17,8 +17,9 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PANEL, api, serverIdentifier, filesContents, wait as sleep } from "./kinetic.mjs";
 import {
-  appendEvents, daemonHealth, ensureStateDir, formatEvent, freshWishes, isClaudeDoorbell,
-  newInboxEntries, parseConsoleLine, readJson, takeNewEvents, wishFromConsole, wishFromLogLine, writeJson,
+  appendEvents, cosmeticFromConsole, cosmeticFromLogLine, daemonHealth, ensureStateDir, formatEvent,
+  freshWishes, isClaudeDoorbell, newInboxEntries, parseConsoleLine, readJson, takeNewEvents,
+  wishFromConsole, wishFromLogLine, writeJson,
 } from "./player-claude-events.mjs";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -28,6 +29,7 @@ const files = {
   daemon: join(STATE, "daemon.json"),
   cursor: join(STATE, "inbox-cursor.json"),
   wishSeen: join(STATE, "wish-seen.json"),
+  cosmeticSeen: join(STATE, "cosmetic-seen.json"),
 };
 
 const log = (msg) => console.log(`${new Date().toISOString()} ${msg}`);
@@ -92,12 +94,24 @@ async function daemon() {
     for (const w of surfaced) log(formatEvent(w));
   }
 
+  // Cosmetic requests have no echo to filter (unlike DRAGON lines), so every fresh match surfaces.
+  function emitCosmetics(cosmetics) {
+    const seen = readJson(files.cosmeticSeen);
+    const { fresh, seenKeys } = freshWishes(cosmetics, seen ?? []);
+    writeJson(files.cosmeticSeen, seenKeys);
+    if (seen === null) return; // first run: requests already in the log were handled before this watcher existed
+    appendEvents(STATE, fresh);
+    for (const c of fresh) log(formatEvent(c));
+  }
+
   // Lines printed while the socket was down only exist in latest.log, so each (re)connect
   // reads it once. A restart's rotation can still drop some; the inbox has no such gap.
-  async function scanLogForWishes() {
+  async function scanLogOnConnect() {
     try {
       const text = await filesContents(id, "/logs/latest.log");
-      emitWishes(text.split("\n").map(wishFromLogLine).filter(Boolean));
+      const lines = text.split("\n");
+      emitWishes(lines.map(wishFromLogLine).filter(Boolean));
+      emitCosmetics(lines.map(cosmeticFromLogLine).filter(Boolean));
     } catch (err) {
       log(`latest.log scan failed: ${err.message}`);
     }
@@ -137,7 +151,7 @@ async function daemon() {
           state.alerted = false;
           backoff = 5_000;
           syncInbox();
-          scanLogForWishes();
+          scanLogOnConnect();
           break;
         case "token expiring":
           sendAuth(socket).then(() => log("token refreshed"), (err) => log(`token refresh failed: ${err.message}`));
@@ -149,13 +163,17 @@ async function daemon() {
           break;
         case "console output": {
           const wishes = [];
+          const cosmetics = [];
           for (const raw of String(msg.args?.[0] ?? "").split("\n")) {
             const parsed = parseConsoleLine(raw);
             if (isClaudeDoorbell(parsed)) syncInbox();
             const wish = wishFromConsole(parsed);
             if (wish) wishes.push(wish);
+            const cosmetic = cosmeticFromConsole(parsed);
+            if (cosmetic) cosmetics.push(cosmetic);
           }
           if (wishes.length) emitWishes(wishes);
+          if (cosmetics.length) emitCosmetics(cosmetics);
           break;
         }
       }

@@ -15,11 +15,13 @@ first /claude (not on join, since most players online never use /claude), with a
 - **`server/deploy/player-claude.mjs daemon`**: holds the Kinetic panel's console websocket open. A
   ClaudeBridge console line makes it read the new `inbox.jsonl` entries. The name and UUID always come
   from that file, never from the console line, so chat can't spoof a sender (ImMijo's moderator powers
-  depend on the UUID). Dragon Balls `WISH` lines and the plugin's own `DRAGON` lines come straight from
-  the socket. On every (re)connect it catches up from `inbox.jsonl` and reads `latest.log` once for
-  wishes it missed. It writes events to `hub-events.jsonl` in the state dir and a heartbeat every 15 s.
+  depend on the UUID). Dragon Balls `WISH` lines, the plugin's own `DRAGON` lines, and Market's
+  `Cosmetic request #<n> ...` lines (logged with the `[Market] ` prefix Paper's own logger adds, so
+  chat can't fake one) come straight from the socket. On every (re)connect it catches up from
+  `inbox.jsonl` and reads `latest.log` once for wishes and cosmetic requests it missed. It writes
+  events to `hub-events.jsonl` in the state dir and a heartbeat every 15 s.
 - **`player-claude.mjs wait`**: blocks on the local state dir until there are unread events, prints
-  one line each (`CLAUDE ...`, `DRAGONBALLS WISH|DRAGON ...`, `DAEMON ...`) and exits. It also exits
+  one line each (`CLAUDE ...`, `DRAGONBALLS WISH|DRAGON ...`, `COSMETIC #<n> ...`, `DAEMON ...`) and exits. It also exits
   with a `DAEMON not running ...` line when the daemon's heartbeat is over 2 minutes old.
 - **`player-claude.mjs status`**: daemon health and inbox cursor.
 - **`server/deploy/claude-reply.mjs <player> <message>`**: the only way a reply reaches the game (one tellraw).
@@ -41,6 +43,9 @@ counts the existing inbox lines as already handled and replays nothing.
    - `CLAUDE [time] <player> (<uuid>): <message>`: route it to that player's agent (below).
    - `DRAGONBALLS ...`: the hub handles the wish itself, per `docs/dragonballs.md` (the council of 5
      for anything outside the easy rules, never a question to Joe).
+   - `COSMETIC #<n> <player> (<uuid>): <material> - <idea>`: the hub spawns a build chat for that
+     look, per the Cosmetic token requests process (Joe OKs each render before `/cosmetic done <n>`;
+     it ships with the next natural restart). No question to Joe about whether to start the build.
    - `DAEMON ...`: restart the daemon if it says not running. Tell Joe only if it keeps failing.
 4. Nothing is lost while the hub is down or busy: events wait in `hub-events.jsonl` until the next `wait`.
    After a hub restart or /respawn, arm `wait` first.

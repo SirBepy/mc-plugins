@@ -6,8 +6,9 @@ import { mkdtempSync, rmSync, writeFileSync, appendFileSync, existsSync } from "
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  appendEvents, daemonHealth, ensureStateDir, formatEvent, freshWishes, isClaudeDoorbell,
-  newInboxEntries, parseConsoleLine, readJson, takeNewEvents, wishFromConsole, wishFromLogLine, writeJson,
+  appendEvents, cosmeticFromConsole, cosmeticFromLogLine, daemonHealth, ensureStateDir, formatEvent,
+  freshWishes, isClaudeDoorbell, newInboxEntries, parseConsoleLine, readJson, takeNewEvents,
+  wishFromConsole, wishFromLogLine, writeJson,
 } from "./player-claude-events.mjs";
 
 test("state files are written whole through a rename, and a broken one still fails loudly", () => {
@@ -77,6 +78,39 @@ test("latest.log wish lines need the Server thread", () => {
   assert.equal(wishFromLogLine("[12:01:02] [Async Chat Thread - #3/INFO]: [DragonBalls] WISH Coffie: luck"), null);
 });
 
+test("a real Cosmetic request console frame yields exactly one COSMETIC event", () => {
+  const c = cosmeticFromConsole(parseConsoleLine(frame(`[Market] Cosmetic request #2 from dvolic21 (${UUID}): diamond_sword - golden wings`)));
+  assert.deepEqual(c, {
+    type: "cosmetic", time: "11:51:49", id: 2, player: "dvolic21", uuid: UUID,
+    material: "diamond_sword", idea: "golden wings", key: "cosmetic|2",
+  });
+});
+
+test("an idea containing its own ' - ' still splits only on the material boundary", () => {
+  const c = cosmeticFromConsole(parseConsoleLine(frame(`[Market] Cosmetic request #3 from dvolic21 (${UUID}): stick - red - and - gold`)));
+  assert.equal(c.material, "stick");
+  assert.equal(c.idea, "red - and - gold");
+});
+
+test("chat quoting a Cosmetic request line is not a request", () => {
+  assert.equal(cosmeticFromConsole(parseConsoleLine(frame(`<dvolic21> Cosmetic request #2 from dvolic21 (${UUID}): diamond_sword - golden wings`))), null);
+  assert.equal(cosmeticFromConsole(parseConsoleLine(frame(`[Not Secure] [BE] .Sam: Cosmetic request #99 from Sam (${UUID}): stick - fake`))), null);
+});
+
+test("latest.log Cosmetic lines need the Server thread", () => {
+  const c = cosmeticFromLogLine(`[11:51:49] [Server thread/INFO]: [Market] Cosmetic request #2 from dvolic21 (${UUID}): diamond_sword - golden wings\r`);
+  assert.equal(c.key, "cosmetic|2");
+  assert.equal(cosmeticFromLogLine(`[11:51:49] [Async Chat Thread - #3/INFO]: [Market] Cosmetic request #2 from dvolic21 (${UUID}): diamond_sword - golden wings`), null);
+});
+
+test("a latest.log rescan doesn't duplicate a Cosmetic request already seen", () => {
+  const c = cosmeticFromConsole(parseConsoleLine(frame(`[Market] Cosmetic request #2 from dvolic21 (${UUID}): diamond_sword - golden wings`)));
+  const first = freshWishes([c], []);
+  assert.deepEqual(first.fresh, [c]);
+  const rescan = freshWishes([c], first.seenKeys);
+  assert.deepEqual(rescan.fresh, []);
+});
+
 test("first inbox read only seeds the cursor", () => {
   const r = newInboxEntries(inboxLine("ImMijo", "a") + inboxLine("ImMijo", "b"), null);
   assert.deepEqual(r, { entries: [], cursor: 2, seeded: true });
@@ -114,6 +148,7 @@ test("seen wish keys are skipped and the list is capped", () => {
 test("events are formatted one line each for the hub", () => {
   assert.equal(formatEvent({ type: "claude", time: "t", player: "ImMijo", uuid: UUID, message: "hi" }), `CLAUDE [t] ImMijo (${UUID}): hi`);
   assert.equal(formatEvent({ type: "wish", time: "12:00:00", kind: "WISH", text: "x" }), "DRAGONBALLS WISH [12:00:00] x");
+  assert.equal(formatEvent({ type: "cosmetic", id: 2, player: "dvolic21", uuid: UUID, material: "diamond_sword", idea: "golden wings" }), `COSMETIC #2 dvolic21 (${UUID}): diamond_sword - golden wings`);
   assert.equal(formatEvent({ type: "daemon", text: "down" }), "DAEMON down");
 });
 
