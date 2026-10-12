@@ -98,6 +98,21 @@ class ClassCombatTest extends MockClassesTest {
     }
 
     @Test
+    void aMainClassSwitchedToMatchTheSecondaryCountsOnlyOnce() {
+        PlayerMock dual = server.addPlayer("Dual");
+        classes.setDualClassGrants(Set.of(dual.getUniqueId()));
+        pick(dual, RpgClass.RANGER, 1);
+        classes.chooseSecondary(dual.getUniqueId(), RpgClass.WARRIOR);
+        now += java.time.Duration.ofDays(8).toMillis();
+        pick(dual, RpgClass.WARRIOR, 25);
+        assertEquals(RpgClass.WARRIOR, classes.active(dual.getUniqueId()));
+        // Warrior's full +10% once, not +10% main plus +5% secondary.
+        assertEquals(11.0, hit(dual, zombie(), DamageCause.ENTITY_ATTACK), 1e-9);
+        // Heavy Hands -10% once, not twice.
+        assertEquals(9.0, hit(arrowFrom(dual), zombie(), DamageCause.PROJECTILE), 1e-9);
+    }
+
+    @Test
     void secondaryRangerAddsFullThinSkinWeaknessToo() {
         PlayerMock dual = server.addPlayer("Dual");
         classes.setDualClassGrants(Set.of(dual.getUniqueId()));

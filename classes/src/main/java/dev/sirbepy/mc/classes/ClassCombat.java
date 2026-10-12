@@ -51,7 +51,8 @@ public final class ClassCombat implements Listener {
         if (primary == null) return 0;
         double percent = dealtPercent(primary, classes.level(id), melee, sneaking, false);
         RpgClass secondary = classes.secondary(id);
-        if (secondary != null) percent += dealtPercent(secondary, classes.secondaryLevel(id), melee, sneaking, true);
+        // A main class later switched to match the locked secondary counts once, like ClassPassives.
+        if (secondary != null && secondary != primary) percent += dealtPercent(secondary, classes.secondaryLevel(id), melee, sneaking, true);
         return event.getEntity() instanceof Player ? percent * RpgClass.VS_PLAYERS : percent;
     }
 
