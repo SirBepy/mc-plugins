@@ -175,8 +175,25 @@ export function readJson(file, fallback = null) {
   }
 }
 
+// A hard power loss can leave a state file as NUL bytes (daemon.json after the 2026-10-11 ~02:15 UTC
+// reboot), which no retry fixes. Callers that can carry on treat it as missing; onCorrupt lets them
+// say so out loud instead of silently starting over.
+export function readJsonOrNull(file, onCorrupt) {
+  try {
+    return readJson(file);
+  } catch (e) {
+    if (!(e instanceof SyntaxError)) throw e;
+    onCorrupt?.(e);
+    return null;
+  }
+}
+
 export function writeJson(file, value) {
-  writeFileSync(file + ".tmp", JSON.stringify(value));
+  writeAtomic(file, JSON.stringify(value));
+}
+
+function writeAtomic(file, text) {
+  writeFileSync(file + ".tmp", text);
   renameSync(file + ".tmp", file);
 }
 
@@ -197,8 +214,14 @@ export function takeNewEvents(stateDir) {
   const readFile = join(stateDir, "hub-events.read");
   if (!existsSync(file)) return [];
   const lines = completeLines(readFileSync(file, "utf8"));
-  const read = existsSync(readFile) ? Number(readFileSync(readFile, "utf8")) : 0;
+  const raw = existsSync(readFile) ? readFileSync(readFile, "utf8").trim() : "0";
+  const read = /^\d+$/.test(raw) ? Number(raw) : null;
+  // An unreadable marker skips to the end: replaying the whole file would re-raise every old wish.
+  if (read === null) {
+    writeAtomic(readFile, String(lines.length));
+    return [{ type: "daemon", text: "hub-events.read was unreadable; skipped to the end, check the tail of hub-events.jsonl for anything missed" }];
+  }
   if (lines.length <= read) return [];
-  writeFileSync(readFile, String(lines.length));
+  writeAtomic(readFile, String(lines.length));
   return lines.slice(read).map((line) => JSON.parse(line));
 }

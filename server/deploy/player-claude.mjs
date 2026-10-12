@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 import { PANEL, api, serverIdentifier, filesContents, wait as sleep } from "./kinetic.mjs";
 import {
   appendEvents, cosmeticFromConsole, cosmeticFromLogLine, daemonHealth, ensureStateDir, formatEvent,
-  freshWishes, isClaudeDoorbell, newInboxEntries, parseConsoleLine, readJson, takeNewEvents,
+  freshWishes, isClaudeDoorbell, newInboxEntries, parseConsoleLine, readJsonOrNull, takeNewEvents,
   wishFromConsole, wishFromLogLine, writeJson,
 } from "./player-claude-events.mjs";
 
@@ -42,7 +42,7 @@ const DISCONNECTED_ALERT_MS = 5 * 60_000;
 
 async function daemon() {
   ensureStateDir(STATE);
-  const running = readJson(files.daemon);
+  const running = readJsonOrNull(files.daemon);
   if (running && running.pid !== process.pid && daemonHealth(running, Date.now()).ok && isAlive(running.pid)) {
     console.error(`daemon already running as pid ${running.pid}`);
     process.exit(1);
@@ -67,7 +67,10 @@ async function daemon() {
       do {
         inboxAgain = false;
         try {
-          const result = newInboxEntries(await filesContents(id, INBOX), readJson(files.cursor)?.lines ?? null);
+          let cursorCorrupt = false;
+          const cursor = readJsonOrNull(files.cursor, () => (cursorCorrupt = true));
+          const result = newInboxEntries(await filesContents(id, INBOX), cursor?.lines ?? null);
+          if (cursorCorrupt) result.entries.push({ type: "daemon", text: "inbox cursor was unreadable; re-seeded at the inbox end, check the tail of inbox.jsonl for anything missed" });
           if (result.reset) result.entries.push({ type: "daemon", text: "inbox.jsonl got shorter; counting from its new end" });
           // Events first, cursor second: a crash in between repeats a message, never loses one.
           appendEvents(STATE, result.entries);
@@ -85,7 +88,7 @@ async function daemon() {
   }
 
   function emitWishes(wishes) {
-    const seen = readJson(files.wishSeen);
+    const seen = readJsonOrNull(files.wishSeen, () => log("wish-seen.json was unreadable; starting it over as a first run"));
     const { fresh, seenKeys } = freshWishes(wishes, seen ?? []);
     writeJson(files.wishSeen, seenKeys);
     if (seen === null) return; // first run: what is in the log already was handled by the old poller
@@ -96,7 +99,7 @@ async function daemon() {
 
   // Cosmetic requests have no echo to filter (unlike DRAGON lines), so every fresh match surfaces.
   function emitCosmetics(cosmetics) {
-    const seen = readJson(files.cosmeticSeen);
+    const seen = readJsonOrNull(files.cosmeticSeen, () => log("cosmetic-seen.json was unreadable; starting it over as a first run"));
     const { fresh, seenKeys } = freshWishes(cosmetics, seen ?? []);
     writeJson(files.cosmeticSeen, seenKeys);
     if (seen === null) return; // first run: requests already in the log were handled before this watcher existed
@@ -232,7 +235,7 @@ async function wait() {
       for (const e of events) console.log(formatEvent(e));
       return;
     }
-    const health = daemonHealth(readJson(files.daemon), Date.now());
+    const health = daemonHealth(readJsonOrNull(files.daemon), Date.now());
     if (!health.ok) {
       console.log(`DAEMON ${health.reason}`);
       return;
@@ -244,11 +247,11 @@ async function wait() {
 
 function status() {
   ensureStateDir(STATE);
-  const d = readJson(files.daemon);
+  const d = readJsonOrNull(files.daemon);
   const health = daemonHealth(d, Date.now());
   console.log(`state dir: ${STATE}`);
   console.log(health.ok ? `daemon: pid ${d.pid}, socket ${health.connected ? "connected" : "DOWN"}, up since ${d.since}` : `daemon: ${health.reason}`);
-  console.log(`inbox cursor: ${readJson(files.cursor)?.lines ?? "not seeded"} lines`);
+  console.log(`inbox cursor: ${readJsonOrNull(files.cursor)?.lines ?? "not seeded"} lines`);
 }
 
 const sub = process.argv[2];

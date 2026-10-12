@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   appendEvents, cosmeticFromConsole, cosmeticFromLogLine, daemonHealth, ensureStateDir, formatEvent,
-  freshWishes, isClaudeDoorbell, newInboxEntries, parseConsoleLine, readJson, takeNewEvents,
+  freshWishes, isClaudeDoorbell, newInboxEntries, parseConsoleLine, readJson, readJsonOrNull, takeNewEvents,
   wishFromConsole, wishFromLogLine, writeJson,
 } from "./player-claude-events.mjs";
 
@@ -21,6 +21,38 @@ test("state files are written whole through a rename, and a broken one still fai
     assert.equal(readJson(join(dir, "missing.json"), "fallback"), "fallback");
     writeFileSync(file, '{"pid": 1, "heart');
     assert.throws(() => readJson(file), SyntaxError);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("a NUL-filled daemon.json after a power loss reads as a daemon that is not running", () => {
+  const dir = mkdtempSync(join(tmpdir(), "pc-nul-"));
+  try {
+    const file = join(dir, "daemon.json");
+    writeFileSync(file, "\0".repeat(106));
+    let corrupt = false;
+    const state = readJsonOrNull(file, () => (corrupt = true));
+    assert.equal(state, null);
+    assert.equal(corrupt, true);
+    assert.match(daemonHealth(state, Date.now()).reason, /^not running/);
+    assert.equal(readJsonOrNull(join(dir, "missing.json")), null);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("an unreadable hub-events.read skips to the end instead of replaying every old event", () => {
+  const dir = mkdtempSync(join(tmpdir(), "pc-read-"));
+  try {
+    appendEvents(dir, [{ type: "wish", kind: "WISH", time: "t", text: "old one" }, { type: "wish", kind: "WISH", time: "t", text: "old two" }]);
+    writeFileSync(join(dir, "hub-events.read"), "\0\0\0\0");
+    const events = takeNewEvents(dir);
+    assert.equal(events.length, 1);
+    assert.equal(events[0].type, "daemon");
+    assert.deepEqual(takeNewEvents(dir), []);
+    appendEvents(dir, [{ type: "wish", kind: "WISH", time: "t", text: "new" }]);
+    assert.equal(takeNewEvents(dir)[0].text, "new");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
