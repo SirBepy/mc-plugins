@@ -42,6 +42,7 @@ async function isBlock(x, y, z, block) {
 
 try {
   let surfaceY;
+  let altarY;
   let wall;
 
   await step('the arena builds itself when the End loads', async () => {
@@ -52,10 +53,15 @@ try {
     assert(blocks > 5_000, `thousands of arena blocks placed (got ${blocks})`);
     const found = pillars();
     assert(found.length === 10, `state.yml lists 10 pillars (got ${found.length})`);
-    // The fortress stands on the ground the first build read (state.yml's terrain).
-    const fortressY = readFileSync(STATE_YML, 'utf8').match(/fortressY:\s*(-?\d+)/)?.[1];
+    // The fortress stands on the ground the first build read (state.yml's terrain). The altar is
+    // scanned at its own (0, -9) spot (TerrainScanner.java), so it can sit a block above or below
+    // the fortress's average floor; AltarStructures.build(altarY) puts the lodestone at altarY+1.
+    const terrainYaml = readFileSync(STATE_YML, 'utf8');
+    const fortressY = terrainYaml.match(/fortressY:\s*(-?\d+)/)?.[1];
+    const altarYRaw = terrainYaml.match(/altarY:\s*(-?\d+)/)?.[1];
     surfaceY = fortressY !== undefined ? Number(fortressY)
       : Math.round(found.reduce((sum, p) => sum + p.surfaceY, 0) / found.length);
+    altarY = altarYRaw !== undefined ? Number(altarYRaw) : surfaceY;
     wall = { x: 16, y: surfaceY + 2, z: 5 };
     await rcon.command(`${END} forceload add -64 -64 64 64`);
     // A freshly force-loaded chunk answers block queries at once but only ticks entities a moment
@@ -151,9 +157,9 @@ try {
   const healthByTier = { Fledgeling: 250, Powerful: 350, Cruel: 500, Immortal: 750, Ferocious: 850, Primordial: 1000, Ascended: 1250 };
 
   await step('the altar by the portal opens the tier menu and sets the next dragon', async () => {
-    await rcon.command(`${END} minecraft:tp ${GRIEFER} 0.5 ${surfaceY + 1} -6.5`);
+    await rcon.command(`${END} minecraft:tp ${GRIEFER} 0.5 ${altarY + 1} -6.5`);
     await sleep(1_500);
-    const altar = fighter.blockAt(new Vec3(0, surfaceY + 1, -9));
+    const altar = fighter.blockAt(new Vec3(0, altarY + 1, -9));
     assert(altar?.name === 'lodestone', `the altar's lodestone is there (got ${altar?.name})`);
     const opened = new Promise((resolve) => fighter.once('windowOpen', resolve));
     await fighter.activateBlock(altar);
