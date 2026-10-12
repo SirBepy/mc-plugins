@@ -23,10 +23,6 @@ class ServerEventsTest extends GuildTestBase {
         return guild.events();
     }
 
-    private void finishBounty(Member member) {
-        finishBounty(alice);
-    }
-
     private void finishBounty(PlayerMock player) {
         EventPools.Bounty bounty = events().bounty();
         Objective o = bounty.objective();
@@ -40,7 +36,7 @@ class ServerEventsTest extends GuildTestBase {
         member.setRank(Rank.A);
         events().tick();
         assertNotNull(events().bounty());
-        finishBounty(member);
+        finishBounty(alice);
         double before = bank.balance(alice);
         long treasury = store.treasury().balance();
 
@@ -80,7 +76,7 @@ class ServerEventsTest extends GuildTestBase {
         member.setRank(Rank.A);
         events().tick();
         String first = events().bounty().id();
-        finishBounty(member);
+        finishBounty(alice);
         events().claimBounty(alice);
         clock.plusHours(11);
         events().tick();
