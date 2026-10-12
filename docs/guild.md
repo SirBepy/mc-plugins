@@ -310,7 +310,8 @@ join. Without the Names plugin the Guild runs as before and logs that tags won't
 
 ## Server-wide events (`events/ServerEvents.java`, `events/EventPools.java`)
 
-- **Bounties** (C-Rank and up, never the Guildmaster): one at a time on the board, 180-300 coins +
+- **Bounties** (C-Rank and up, the Guildmaster included: the Guild posts them, not him; Joe,
+  2026-10-12): one at a time on the board, 180-300 coins +
   30-50 reputation + 2 levels inside the daily caps (commission minted on top). First to finish and
   claim wins it, announced to all; a new one comes 12 h after a claim, or after 3 days unclaimed. Pool:
   an Evoker, 6 Wither Skeletons, a Ravager (B), 3 Ghasts, 5 Breezes, 3 Piglin Brutes (B), 2 Reactor

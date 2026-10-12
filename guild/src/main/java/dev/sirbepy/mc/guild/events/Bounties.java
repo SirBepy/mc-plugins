@@ -88,7 +88,8 @@ final class Bounties {
 
     boolean eligible(Member member) {
         Bounty bounty = bounty();
-        return bounty != null && member.rank().atLeast(bounty.minRank()) && !guild.config().isGuildmaster(member.id());
+        // The Guild posts bounties, not the Guildmaster, so he races for them like any member (Joe, 2026-10-12).
+        return bounty != null && member.rank().atLeast(bounty.minRank());
     }
 
     Guild.Claim claim(Player player) {

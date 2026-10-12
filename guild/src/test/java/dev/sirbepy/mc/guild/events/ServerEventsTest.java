@@ -7,6 +7,7 @@ import dev.sirbepy.mc.guild.data.LedgerEntry;
 import dev.sirbepy.mc.guild.data.Member;
 import dev.sirbepy.mc.guild.rank.Rank;
 import org.junit.jupiter.api.Test;
+import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 import java.util.Set;
 
@@ -23,10 +24,14 @@ class ServerEventsTest extends GuildTestBase {
     }
 
     private void finishBounty(Member member) {
+        finishBounty(alice);
+    }
+
+    private void finishBounty(PlayerMock player) {
         EventPools.Bounty bounty = events().bounty();
         Objective o = bounty.objective();
         String fact = o.targets().iterator().next();
-        guild.progress(alice, o.kind(), Set.of(fact), o.amount());
+        guild.progress(player, o.kind(), Set.of(fact), o.amount());
     }
 
     @Test
@@ -46,6 +51,20 @@ class ServerEventsTest extends GuildTestBase {
         assertTrue(store.treasury().balance() > treasury, "the commission is minted on bounties too");
         assertEquals(1, member.stat("bounties"));
         assertEquals(Guild.ClaimResult.CLOSED, events().claimBounty(alice).result());
+    }
+
+    @Test
+    void theGuildmasterCanWinABountyLikeAnyMember() {
+        Member member = join(gm);
+        member.setRank(Rank.S);
+        events().tick();
+        finishBounty(gm);
+        double before = bank.balance(gm);
+
+        Guild.Claim claim = events().claimBounty(gm);
+
+        assertEquals(Guild.ClaimResult.CLAIMED, claim.result());
+        assertEquals(before + events().bounty().coins(), bank.balance(gm));
     }
 
     @Test
