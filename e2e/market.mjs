@@ -394,12 +394,26 @@ try {
   let wantedTargetName;
   const wantedBotFor = (name) => bots.find((b) => b.username === name);
 
+  // wanted.enabled ships false (21e2f08, Joe 2026-10-11: Player of the Day pulled for now); confirm
+  // the disabled board's own behaviour before turning it on for this suite's coverage below.
+  await step('a disabled Wanted board draws "No bounty" without posting one', async () => {
+    await waitFor(async () => /picked new buyers/.test(plain(await rcon.command('market rotate'))), 'market rotate (wanted, disabled)', 10_000);
+    assert((await signLine(WANTED_SIGN, 1)) === 'No bounty', 'the sign reads No bounty while wanted.enabled is false');
+  });
+
   // wanted.min-online (4 on live) posts no bounty with fewer players online, and this suite has two
-  // bots; drop it to 1 for the run, restored in finally.
+  // bots; drop it to 1 for the run. wanted.enabled is turned on for this suite only, both restored
+  // in finally.
+  // Anchored to the wanted: block, since starter-boost: has its own enabled: key too.
+  const WANTED_ENABLED = /^(wanted:\r?\n(?:  .*\r?\n)*?  enabled:).*$/m;
   originalMarketConfig = readFileSync(MARKET_CONFIG, 'utf8');
   assert(/^  min-online:/m.test(originalMarketConfig),
     "the run dir's Market config.yml has wanted.min-online (delete a stale run-e2e Market config.yml and restart)");
-  writeFileSync(MARKET_CONFIG, originalMarketConfig.replace(/^(  min-online:).*$/m, '$1 1'));
+  assert(WANTED_ENABLED.test(originalMarketConfig),
+    "the run dir's Market config.yml has wanted.enabled (delete a stale run-e2e Market config.yml and restart)");
+  writeFileSync(MARKET_CONFIG, originalMarketConfig
+    .replace(/^(  min-online:).*$/m, '$1 1')
+    .replace(WANTED_ENABLED, '$1 true'));
   await rcon.command('market reload');
 
   // pick() takes an online player 80% of the time and otherwise "everyone who's ever joined"

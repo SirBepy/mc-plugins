@@ -141,14 +141,14 @@ report('the client was offered the Bedrock dragon pack',
 report('the client knows claudesmp:dragon_shenron_head', identifiers.includes('claudesmp:dragon_shenron_head'));
 
 try {
-  await rcon.command('shenron dismiss').catch(() => {});
+  await rcon.command('dragonballs:shenron dismiss').catch(() => {});
   await rcon.command('dragonballs wake overworld');
   await rcon.command(`minecraft:forceload add ${BALLS.x - 16} ${BALLS.z - 16} ${BALLS.x + 16} ${BALLS.z + 16}`);
   await rcon.command(`minecraft:fill ${BALLS.x - 1} ${BALLS.y - 2} ${BALLS.z + 3} ${BALLS.x + 1} ${BALLS.y - 2} ${BALLS.z + 5} minecraft:stone`);
   await rcon.command(`minecraft:tp ${FLOODGATE_NAME} ${BALLS.x} ${BALLS.y - 1} ${BALLS.z + 4}`);
   await sleep(2000);
 
-  const reply = await rcon.command(`shenron summon ${FLOODGATE_NAME} shenron overworld`);
+  const reply = await rcon.command(`dragonballs:shenron summon ${FLOODGATE_NAME} shenron overworld`);
   report('the summon starts', !/Cannot summon|not online|No placed|Unknown/.test(reply), reply.trim());
 
   await waitFor(() => dragons.size >= 39, 15_000);
@@ -177,7 +177,7 @@ try {
   report('the parts move', ids.filter((id) => moved.has(id)).length >= 30, `${ids.filter((id) => moved.has(id)).length}/39`);
   report('the parts turn (pose property updates)', ids.filter((id) => turned.has(id)).length >= 30, `${ids.filter((id) => turned.has(id)).length}/39`);
 
-  await rcon.command('shenron dismiss');
+  await rcon.command('dragonballs:shenron dismiss');
   await waitFor(() => ids.every((id) => removed.has(id)), 10_000);
   report('dismissing removes every part from Bedrock', ids.every((id) => removed.has(id)), `${ids.filter((id) => removed.has(id)).length}/39`);
   report('the bot was never kicked', kickReason === null, JSON.stringify(kickReason));

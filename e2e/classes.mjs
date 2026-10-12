@@ -164,12 +164,12 @@ try {
     b.chat('/class');
     const menu = await opened;
     assert(/Classes/.test(titleOf(menu)), `the class menu opened (${titleOf(menu)})`);
-    assert(menu.slots[14]?.name === 'amethyst_shard', `Arcanist in slot 14 (${menu.slots[14]?.name})`);
-    await b.clickWindow(14, 0, 0);
+    assert(menu.slots[12]?.name === 'amethyst_shard', `Arcanist in slot 12 (${menu.slots[12]?.name})`);
+    await b.clickWindow(12, 0, 0);
     await sleep(500);
     assert(/Active: none/.test(await admin(`info ${B}`)), 'one click only asks to confirm');
     const since = b.lines.length;
-    await b.clickWindow(14, 0, 0);
+    await b.clickWindow(12, 0, 0);
     await waitForLine(b, /You are now an Arcanist \(level 1\)/, 5_000, since);
     b.closeWindow(menu);
     const max = await number(`minecraft:attribute ${B} minecraft:max_health get`);

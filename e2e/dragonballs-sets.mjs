@@ -214,7 +214,7 @@ try {
     await addNetherCeiling(rcon, BX, BZ, NETHER_PLATFORM_Y, SUMMON_CEILING_HEIGHT);
 
     const since = witness.lines.length;
-    const reply = plain(await rcon.command(`shenron summon ${HUNTER} shenron nether`));
+    const reply = plain(await rcon.command(`dragonballs:shenron summon ${HUNTER} shenron nether`));
     assert(!/Cannot summon|not online|No placed|Unknown dragon|Unknown set/.test(reply),
       `Nether summon via RCON reports no error (got "${reply.trim()}")`);
     // A Nether-set Shenron is Nuova Shenron to players (docs/dragonballs.md).
@@ -254,12 +254,12 @@ try {
       assert(!/passed/i.test(fireCheck), `no real fire at nether ball spot ${i} after the summon's flame burst (got "${fireCheck.trim()}")`);
     }
 
-    const secondSetReply = plain(await rcon.command(`shenron summon ${HUNTER} shenron overworld`));
+    const secondSetReply = plain(await rcon.command(`dragonballs:shenron summon ${HUNTER} shenron overworld`));
     assert(/Cannot summon/.test(secondSetReply),
       `a second set's summon is refused while one is already active (got "${secondSetReply.trim()}")`);
 
     const byeSince = witness.lines.length;
-    await rcon.command('shenron dismiss Farewell, Nether.');
+    await rcon.command('dragonballs:shenron dismiss Farewell, Nether.');
     await waitForLine(witness, /Farewell, Nether\./, 5_000, byeSince);
     await waitFor(async () => !/passed/i.test(await rcon.command('execute if entity @e[type=ender_dragon,tag=dragonballs.shenron]')),
       'the dragon despawns once dismissed', 12_000);

@@ -168,7 +168,7 @@ try {
       'no dragon without a radar');
 
     const since = witness.lines.length;
-    const reply = plain(await rcon.command(`shenron summon ${HUNTER} porunga`));
+    const reply = plain(await rcon.command(`dragonballs:shenron summon ${HUNTER} porunga`));
     // The console sender gets the server-wide broadcast too, so a success echoes it back.
     assert(!/Cannot summon|not online|No placed|Unknown dragon/.test(reply), `summon via RCON reports no error (got "${reply.trim()}")`);
     await waitForLine(witness, /DBHunter has summoned Porunga!/, 5_000, since);
@@ -215,26 +215,26 @@ try {
 
     // The judge side, over RCON exactly like Player Claude drives it on live.
     const saySince = witness.lines.length;
-    await rcon.command('shenron say Your wish is heard, mortal.');
+    await rcon.command('dragonballs:shenron say Your wish is heard, mortal.');
     await waitForLine(witness, /Your wish is heard, mortal\./, 5_000, saySince);
 
-    const grantReply = plain(await rcon.command('shenron grant 1 e2e diamond sword'));
+    const grantReply = plain(await rcon.command('dragonballs:shenron grant 1 e2e diamond sword'));
     assert(!/No dragon|cannot|only/i.test(grantReply), `grant accepted (got "${grantReply.trim()}")`);
     await waitFor(() => fs.readFileSync(wishesPath, 'utf8').includes('"type":"grant","count":1,"note":"e2e diamond sword"'),
       'wishes.jsonl recorded the grant', 5_000);
-    const judgeStatus = plain(await rcon.command('shenron status'));
+    const judgeStatus = plain(await rcon.command('dragonballs:shenron status'));
     assert(/wishesLeft=2/.test(judgeStatus), `Porunga has 2 of 3 wishes left after one grant (got "${judgeStatus.trim()}")`);
 
     const hasSlowness = async () => /slowness/.test(await rcon.command(`data get entity ${WITNESS} active_effects`));
-    await rcon.command(`shenron curse effect ${WITNESS} slowness 0 1`);
+    await rcon.command(`dragonballs:shenron curse effect ${WITNESS} slowness 0 1`);
     await waitFor(hasSlowness, 'the curse applies slowness at once', 3_000);
     await rcon.command(`minecraft:kill ${WITNESS}`);
     await waitFor(async () => witness.health > 0 && await hasSlowness(), 'the curse comes back after death and respawn', 8_000);
-    await rcon.command(`shenron curse lift ${WITNESS}`);
+    await rcon.command(`dragonballs:shenron curse lift ${WITNESS}`);
     await waitFor(async () => !(await hasSlowness()), 'lifting the curse removes the slowness', 3_000);
 
     const byeSince = witness.lines.length;
-    await rcon.command('shenron dismiss Farewell.');
+    await rcon.command('dragonballs:shenron dismiss Farewell.');
     await waitForLine(witness, /Farewell\./, 5_000, byeSince);
     await waitFor(async () => !/passed/i.test(await rcon.command('execute if entity @e[type=ender_dragon,tag=dragonballs.shenron]')),
       'the dragon despawns once dismissed', 12_000);
@@ -262,7 +262,7 @@ try {
 
   // --- 10. dormant: summon is refused while stone --------------------------------------------------
   await step('summon is refused while the balls are dormant', async () => {
-    const reply = plain(await rcon.command(`shenron summon ${HUNTER} shenron`));
+    const reply = plain(await rcon.command(`dragonballs:shenron summon ${HUNTER} shenron`));
     assert(/Cannot summon/.test(reply), `dormant summon refused (got "${reply.trim()}")`);
     await waitFor(async () => !/passed/i.test(await rcon.command('execute if entity @e[type=ender_dragon,tag=dragonballs.shenron]')),
       'still no dragon', 2_000);
