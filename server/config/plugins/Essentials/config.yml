@@ -897,7 +897,7 @@ max-money: 10000000000000
 # Set the minimum amount of money a player can have (must be greater than the negative value of max-money).
 # Setting this to 0 will disable overdrafts/loans completely.
 # Players need 'essentials.eco.loan' permission to have a negative balance.
-min-money: -10000
+min-money: -100000
 
 # Enable this to log all interactions with buy/sell/trade signs and the sell command.
 economy-log-enabled: true
