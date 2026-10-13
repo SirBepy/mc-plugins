@@ -12,6 +12,7 @@ import org.bukkit.damage.DamageType;
 import org.bukkit.entity.ComplexEntityPart;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Tameable;
@@ -40,7 +41,7 @@ import java.util.function.LongSupplier;
  *
  * <p>Plain class, no {@code @EventHandler}s of its own: each plugin's own listener owns the Bukkit
  * wiring (and its own choice of priority/{@code ignoreCancelled}) and calls {@link #onDamage} /
- * {@link #onInteract} / {@link #fighters(EnderDragon)} directly. Two plugins each get their own
+ * {@link #onInteract} / {@link #fighters(LivingEntity)} directly. Two plugins each get their own
  * instance keyed by their own {@link NamespacedKey} (core is shaded + relocated per plugin), so a
  * dragon can carry both a {@code guild:dragon-fighters} and an {@code endfight:dragon-fighters}
  * tally on its PDC without clashing. Moved from guild's {@code DragonSlayers} (2026-10-09) so
@@ -90,8 +91,25 @@ public final class DragonFighters {
                 event.getPlayer().getUniqueId(), time));
     }
 
-    public Set<UUID> fighters(EnderDragon dragon) {
-        return fighters(dragon.getPersistentDataContainer());
+    /**
+     * Call from an {@code EntityDamageEvent} handler for a single-part boss (no Ender Dragon
+     * {@link ComplexEntityPart} unwrapping needed: a miniboss is one whole entity). The event must
+     * name {@code boss} directly.
+     */
+    public void onDamage(EntityDamageEvent event, LivingEntity boss) {
+        if (!event.getEntity().equals(boss) || event.getFinalDamage() <= 0) {
+            return;
+        }
+        Player player = responsible(event);
+        if (player != null) {
+            addFighter(boss.getPersistentDataContainer(), player.getUniqueId());
+        }
+    }
+
+    /** Works for any boss, Ender Dragon or otherwise - an {@link EnderDragon} variable passes
+     * straight in, since it is a {@link LivingEntity}. */
+    public Set<UUID> fighters(LivingEntity boss) {
+        return fighters(boss.getPersistentDataContainer());
     }
 
     public Set<UUID> fighters(PersistentDataContainer pdc) {

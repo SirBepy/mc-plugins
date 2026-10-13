@@ -11,6 +11,7 @@ import org.bukkit.damage.DamageType;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Ravager;
 import org.bukkit.entity.Zombie;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -164,6 +165,24 @@ class DragonFightersTest {
         fighters.onDamage(new EntityDamageByEntityEvent(alice, dragon, EntityDamageEvent.DamageCause.ENTITY_ATTACK,
                 DamageSource.builder(DamageType.PLAYER_ATTACK).withDirectEntity(alice).build(), 0));
         assertTrue(fighters.fighters(dragon).isEmpty());
+    }
+
+    @Test
+    void aSinglePartBossIsTrackedThroughTheGeneralizedOverload() {
+        // A future miniboss is a whole LivingEntity, not an EnderDragon ComplexEntityPart - the
+        // widened onDamage(event, boss) overload must not need the dragon-specific unwrap.
+        Ravager boss = (Ravager) end.spawnEntity(new Location(end, 0, 80, 0), EntityType.RAVAGER);
+        fighters.onDamage(new EntityDamageByEntityEvent(alice, boss, EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                DamageSource.builder(DamageType.PLAYER_ATTACK).withDirectEntity(alice).build(), 6), boss);
+        assertEquals(Set.of(alice.getUniqueId()), fighters.fighters(boss));
+    }
+
+    @Test
+    void aSinglePartBossUnhurtfulHitCreditsNobody() {
+        Ravager boss = (Ravager) end.spawnEntity(new Location(end, 0, 80, 0), EntityType.RAVAGER);
+        fighters.onDamage(new EntityDamageByEntityEvent(alice, boss, EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                DamageSource.builder(DamageType.PLAYER_ATTACK).withDirectEntity(alice).build(), 0), boss);
+        assertTrue(fighters.fighters(boss).isEmpty());
     }
 
     @Test
