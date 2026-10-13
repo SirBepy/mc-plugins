@@ -88,7 +88,7 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
   for the real ball.
 - Picking up a ball is announced to the whole server, from the ground or by hitting a floating
   one, except taking back a ball you set down yourself in the last 30 seconds.
-- Each **radar** (sold at the Dragon Ball station at spawn) points at the nearest awake ball of its
+- Each **radar** (sold at the Radars shop on spawn's shop street) points at the nearest awake ball of its
   own set, including balls someone is carrying, and only works in that set's dimension (elsewhere
   it shows no signal). It shows how far only in bands, never a number (Joe, 2026-10-08): its one
   dot sits further out from the screen's centre the further away the ball is, and the radar's
@@ -167,6 +167,25 @@ Shulker boxes, elytra and anything else that only comes from the End stay locked
 open (`allow-end` in `bukkit.yml`).
 
 ### Nether and End dragons
+
+**End-set wishes should be very permissive** (Joe, 2026-10-13): by the time someone has gathered a
+full End set, most players already have everything material a wish could grant, so a fun wish that
+engages the whole server (a server-wide event, a big group activity, a new piece of content
+everyone gets to experience) should default to yes rather than getting trimmed or questioned the
+way a smaller-set wish would. This sits on top of the council's normal judging, not instead of it -
+it's a strong thumb on the scale toward granting, specifically for End-set wishes with server-wide
+reach.
+
+The dragon's price for that permissiveness can be money (Joe, 2026-10-13): rather than trimming the
+wish's scope, the End dragon can ask the summoner to pay in-game currency as the deal/tribute cost
+of granting it big. Scale the ask to the wish's size, same as any other deal - it's a cost, not a
+refusal. **The dragon extends credit** (Joe, 2026-10-13, overriding the hub's earlier "no loans"
+call): if the summoner can't pay the full price on the spot, the dragon can grant the wish anyway
+and put them into debt - a running balance the player owes Shenron, collected over time rather than
+upfront. Needs a real debt-tracking mechanism (balance per player, how it's collected - passive
+deduction from future earnings, a running negative balance that blocks other spending, interest or
+not) - this is a plugin build, not just a rulebook wording change; file it as a todo and build it
+rather than hand-waving the mechanic.
 
 A dragon from a deeper set is stronger, Shenron and Porunga alike: **Nether 1.5x, End 2x** every
 amount, duration and size above (Joe, 2026-10-07; the End set only counts once the End opens),

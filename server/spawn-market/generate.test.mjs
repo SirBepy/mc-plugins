@@ -138,11 +138,11 @@ const station = JSON.parse(readFileSync(join(here, 'dragonballs-station.json'), 
 
 const SETS = ['overworld', 'nether', 'end'];
 
-test('dragonballs-station.json exports one radar sign per ball set and 7 head-pedestal coordinates', () => {
-  assert.deepEqual(Object.keys(station.radarSigns), SETS);
+test('dragonballs-station.json exports one radar sign per ball set (at the Radars shop) and 7 head-pedestal coordinates', () => {
+  assert.deepEqual(Object.keys(station.shopRadarSigns), SETS);
   for (const s of SETS) {
-    assert.equal(station.radarSigns[s].world, 'world');
-    for (const k of ['x', 'y', 'z']) assert.equal(typeof station.radarSigns[s][k], 'number');
+    assert.equal(station.shopRadarSigns[s].world, 'world');
+    for (const k of ['x', 'y', 'z']) assert.equal(typeof station.shopRadarSigns[s][k], 'number');
   }
   assert.equal(station.displayHeads.length, 7);
   for (const h of station.displayHeads) {
@@ -159,7 +159,7 @@ const RADAR_SIGNS = {
 
 test('each radar sign is a real sign at its exported coordinates, with the exact 4 lines, not an Essentials shop sign', () => {
   for (const [set, want] of Object.entries(RADAR_SIGNS)) {
-    const { x, y, z } = station.radarSigns[set];
+    const { x, y, z } = station.shopRadarSigns[set];
     const radarLine = lines('attach').find((l) => l.startsWith(`setblock ${x} ${y} ${z} `) && l.includes('_sign'));
     assert.ok(radarLine, `no ${set} sign setblock at ${x} ${y} ${z}`);
     assert.ok(!radarLine.includes('{text:"[Sell]"') && !radarLine.includes('{text:"[Buy]"'));
@@ -196,12 +196,12 @@ test('every exported display-head spot sits on a placed pedestal block', () => {
 });
 
 const model = JSON.parse(readFileSync(join(here, 'model.json'), 'utf8'));
-// The Radars corner shop (2026-10-09) carries a second "Dragon Balls" lectern, so picking the
-// FIRST match by object-key order would be ambiguous; pick the one nearest the station's own
-// radar signs instead (same 5x3 stall, a few blocks apart, unlike the Radars shop's own copy).
+// The DragonBall station and the Radars corner shop each carry their own "Dragon Balls" lectern,
+// so picking the FIRST match by object-key order would be ambiguous; pick the one nearest the
+// Radars shop's own radar signs instead (same 5x3 stall, a few blocks apart from the station's).
 const dbLecterns = Object.entries(model.blocks).filter(([, s]) => s.includes('lectern[') && s.includes('title:"Dragon Balls"'));
 const distTo = (key, { x, z }) => { const [kx, , kz] = key.split(',').map(Number); return Math.abs(kx - x) + Math.abs(kz - z); };
-const [lecternKey] = [...dbLecterns].map(([k]) => k).sort((a, b) => distTo(a, station.radarSigns.overworld) - distTo(b, station.radarSigns.overworld));
+const [lecternKey] = [...dbLecterns].map(([k]) => k).sort((a, b) => distTo(a, station.shopRadarSigns.overworld) - distTo(b, station.shopRadarSigns.overworld));
 const [lecternX, lecternY, lecternZ] = lecternKey.split(',').map(Number);
 
 test('the Radars corner shop carries its own Dragon Balls lectern, distinct from the station\'s', () => {
@@ -212,7 +212,7 @@ test('the radar signs, the lectern and all 7 display-head spots sit at distinct 
   const keyOf = ({ x, y, z }) => `${x},${y},${z}`;
   const seen = new Set([`${lecternX},${lecternY},${lecternZ}`]);
   for (const s of SETS) {
-    const k = keyOf(station.radarSigns[s]);
+    const k = keyOf(station.shopRadarSigns[s]);
     assert.ok(!seen.has(k), `${s} radar sign shares ${k}`);
     seen.add(k);
   }
@@ -224,7 +224,7 @@ test('the radar signs, the lectern and all 7 display-head spots sit at distinct 
   // Also distinct in plan view (x,z), regardless of y: a head one block above or below the sign
   // or lectern would still visually block it.
   const planOf = ({ x, z }) => `${x},${z}`;
-  const plans = new Set([...SETS.map((s) => planOf(station.radarSigns[s])), `${lecternX},${lecternZ}`]);
+  const plans = new Set([...SETS.map((s) => planOf(station.shopRadarSigns[s])), `${lecternX},${lecternZ}`]);
   for (const h of station.displayHeads) {
     const p = planOf(h);
     assert.ok(!plans.has(p), `${p} (x,z) is shared between the radar sign/lectern and a display-head spot`);
@@ -246,20 +246,6 @@ test('the lectern holds the Dragon Balls guide book, labelled by a matching sign
     'no lectern with the Dragon Balls book');
   assert.ok(all.some((l) => l.includes('_sign') && l.includes('"Dragon Balls"')),
     'no label sign reading Dragon Balls');
-});
-
-test('shopRadarSigns exports the same 3 sets, same shape as radarSigns, with the same sign text', () => {
-  assert.deepEqual(Object.keys(station.shopRadarSigns), SETS);
-  for (const s of SETS) {
-    assert.equal(station.shopRadarSigns[s].world, 'world');
-    for (const k of ['x', 'y', 'z']) assert.equal(typeof station.shopRadarSigns[s][k], 'number');
-    const { x, y, z } = station.shopRadarSigns[s];
-    const radarLine = lines('attach').find((l) => l.startsWith(`setblock ${x} ${y} ${z} `) && l.includes('_sign'));
-    assert.ok(radarLine, `no ${s} shop radar sign setblock at ${x} ${y} ${z}`);
-    const msgs = radarLine.slice(radarLine.indexOf('_text:')).replace(/color:"[a-z_]+"/g, '')
-      .match(/"((?:[^"\\]|\\.)*)"/g).map((m) => JSON.parse(m));
-    assert.deepEqual(msgs, RADAR_SIGNS[s].lines);
-  }
 });
 
 test('the head-stall, wanted-board and shops spots are all distinct coordinates and air in the model', () => {

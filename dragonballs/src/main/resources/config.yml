@@ -304,16 +304,12 @@ messages:
 # The Dragon Ball station at spawn (built by the spawn-market datapack; coordinates come from
 # server/spawn-market/dragonballs-station.json).
 station:
+  # The 3 Dragon Radars sell only at the Radars shop on the shop street (Joe retired the station's
+  # own duplicate copy, 2026-10-13); coordinates match dragonballs-station.json's shopRadarSigns.
   radar-signs:
-    overworld: { world: world, x: 413, y: 116, z: -873, price: 1000 }
-    nether: { world: world, x: 413, y: 116, z: -875, price: 5000 }
-    end: { world: world, x: 413, y: 117, z: -874, price: 20000 }
-  # The same 3 radars again at the Radars shop on the shop street south of spawn (dragonballs-station.json's shopRadarSigns),
-  # each at its station sign's price above.
-  shop-radar-signs:
-    overworld: { world: world, x: 422, y: 116, z: -841 }
-    nether: { world: world, x: 422, y: 116, z: -839 }
-    end: { world: world, x: 422, y: 117, z: -840 }
+    overworld: { world: world, x: 422, y: 116, z: -841, price: 1000 }
+    nether: { world: world, x: 422, y: 116, z: -839, price: 5000 }
+    end: { world: world, x: 422, y: 117, z: -840, price: 20000 }
   display-heads:
     - { world: world, x: 415, y: 116, z: -873 }
     - { world: world, x: 415, y: 116, z: -874 }

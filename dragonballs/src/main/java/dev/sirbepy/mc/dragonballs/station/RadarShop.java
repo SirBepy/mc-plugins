@@ -20,12 +20,13 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.function.Supplier;
 
 /**
- * Right-clicking one of the configured radar signs (3 at the Dragon Ball station, the same 3 again at
- * the market's Radars shop) buys that set's Dragon Radar through whatever classic Vault
- * {@code Economy} is registered (VaultUnlocked on the live server). No purchase limit, no sign
- * editing - the interact event is always cancelled for any of those blocks. The End
- * sign stays clickable even while the End is disabled, but refuses the sale and takes no money:
- * there would be nothing for the radar to ever point at.
+ * Right-clicking one of the 3 configured radar signs, at the market's Radars shop (the only place
+ * the 3 Dragon Radars sell, since the Dragon Ball station's own duplicate copy was retired), buys
+ * that set's Dragon Radar through whatever classic Vault {@code Economy} is registered
+ * (VaultUnlocked on the live server). No purchase limit, no sign editing - the interact event is
+ * always cancelled for any of those blocks. The End sign stays clickable even while the End is
+ * disabled, but refuses the sale and takes no money: there would be nothing for the radar to ever
+ * point at.
  */
 public final class RadarShop implements Listener {
 

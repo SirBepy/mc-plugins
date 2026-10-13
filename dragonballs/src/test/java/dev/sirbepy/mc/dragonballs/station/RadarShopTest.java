@@ -65,10 +65,10 @@ class RadarShopTest {
         sets = new BallSets(overworld, nether, end, items, () -> new DragonBallsConfig(new YamlConfiguration()));
 
         player = server.addPlayer();
-        player.teleport(new Location(world, 413, 116, -873));
+        player.teleport(new Location(world, 422, 116, -841));
 
         // Defaults (no station.radar-signs.* set) already match the overworld sign used by most tests.
-        signBlock = world.getBlockAt(413, 116, -873);
+        signBlock = world.getBlockAt(422, 116, -841);
     }
 
     @AfterEach
@@ -151,8 +151,8 @@ class RadarShopTest {
     void theNetherSignSellsANetherRadarAtItsOwnPrice() {
         FakeEconomy economy = new FakeEconomy(10000);
         registerEconomy(economy);
-        Block netherSign = world.getBlockAt(413, 116, -875);
-        player.teleport(new Location(world, 413, 116, -875));
+        Block netherSign = world.getBlockAt(422, 116, -839);
+        player.teleport(new Location(world, 422, 116, -839));
 
         shop().onInteract(new org.bukkit.event.player.PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null,
                 netherSign, org.bukkit.block.BlockFace.NORTH, EquipmentSlot.HAND));
@@ -164,26 +164,11 @@ class RadarShopTest {
     }
 
     @Test
-    void theMarketShopsNetherSignSellsANetherRadarAtTheStationPrice() {
-        FakeEconomy economy = new FakeEconomy(10000);
-        registerEconomy(economy);
-        Block shopSign = world.getBlockAt(422, 116, -839);
-        player.teleport(new Location(world, 422, 116, -839));
-
-        shop().onInteract(new org.bukkit.event.player.PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null,
-                shopSign, org.bukkit.block.BlockFace.NORTH, EquipmentSlot.HAND));
-
-        assertEquals(5000, economy.getBalance(player));
-        assertTrue(java.util.Arrays.stream(player.getInventory().getContents()).anyMatch(item -> item != null
-                && radarItems.isRadar(item) && radarItems.setOf(item) == BallSet.NETHER));
-    }
-
-    @Test
     void theEndSignRefusesWhileTheEndIsDisabledAndTakesNoMoney() {
         FakeEconomy economy = new FakeEconomy(50000);
         registerEconomy(economy);
-        Block endSign = world.getBlockAt(413, 117, -874);
-        player.teleport(new Location(world, 413, 117, -874));
+        Block endSign = world.getBlockAt(422, 117, -840);
+        player.teleport(new Location(world, 422, 117, -840));
 
         shop().onInteract(new org.bukkit.event.player.PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null,
                 endSign, org.bukkit.block.BlockFace.NORTH, EquipmentSlot.HAND));

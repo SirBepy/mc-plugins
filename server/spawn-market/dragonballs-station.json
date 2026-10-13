@@ -1,24 +1,4 @@
 {
-  "radarSigns": {
-    "overworld": {
-      "world": "world",
-      "x": 413,
-      "y": 116,
-      "z": -873
-    },
-    "nether": {
-      "world": "world",
-      "x": 413,
-      "y": 116,
-      "z": -875
-    },
-    "end": {
-      "world": "world",
-      "x": 413,
-      "y": 117,
-      "z": -874
-    }
-  },
   "displayHeads": [
     {
       "world": "world",

@@ -27,9 +27,8 @@ const SHOP_SPOT = {
 export function buildStalls(model, { GUIDES, lecternState }) {
   const { set, fill, sign, side, OPPOSITE, ROTATION, P, Y, CX, CZ, here } = model;
 
-  // The 3 Dragon Radar signs, reused byte-for-byte (Joe, 2026-10-09) by the new Radars shop-street
-  // shop: same text, same [a, d, dy] prop slots as the DragonBall station's own copy below, so the
-  // two never drift apart.
+  // The 3 Dragon Radar signs, sold only at the Radars shop-street stall (Joe retired the
+  // DragonBall station's own duplicate copy of these on 2026-10-13 - see the Radars stall below).
   const RADAR_SIGNS = [
     [sign('spruce_wall_sign[facing=INWARD]', [
       { text: '[Dragon Radar]', color: 'gold', bold: true },
@@ -127,11 +126,14 @@ export function buildStalls(model, { GUIDES, lecternState }) {
     },
     {
       // Dragon Balls station, replacing the old Crafting corner (2026-10-06, Joe; reworked
-      // 2026-10-06 so the radar sign and the 7 head-pedestal spots never share a coordinate - the
-      // dragonballs plugin needs every exported spot distinct and each head spot free of blocks).
+      // 2026-10-06 so the 7 head-pedestal spots never share a coordinate - the dragonballs plugin
+      // needs every exported spot distinct and each head spot free of blocks). The station used to
+      // also sell the 3 Dragon Radars here, duplicating the Radars shop-street stall; Joe retired
+      // that duplicate (2026-10-13) so the Radars stall is now the only place that sells them - the
+      // station keeps only its pedestals, guide lectern and trim.
       // The 7 pedestals form an arc across the open front (d=0) plus the eave corners, so every
-      // ball is visible from the plaza; the radar sign and lectern stay on the back wall (d=2),
-      // two rows back, clear of any pedestal. Reuses the old Crafting stall's exact tile
+      // ball is visible from the plaza; the lectern stays on the back wall (d=2), two rows back,
+      // clear of any pedestal. Reuses the old Crafting stall's exact tile
       // coordinates - (1,2)/(3,2) [crafting_table/stonecutter] for trim, (2,2) [smithing_table] for
       // the lectern, (-1,1)/(5,1) [anvil/cartography_table] for 2 pedestals, (-1,2)/(5,2)
       // [grindstone/loom] for trim - so a structure+attach-only refresh on a world that still has
@@ -152,11 +154,6 @@ export function buildStalls(model, { GUIDES, lecternState }) {
         // Orange terracotta trim on the back wall, also clearing the old crafting_table/
         // stonecutter/grindstone/loom tiles (see the note above).
         ['orange_terracotta', 1, 2], ['orange_terracotta', 3, 2], ['orange_terracotta', -1, 2], ['orange_terracotta', 5, 2],
-        // Radar shop sign, mounted on the back wall above the (1,2) trim block - two rows behind
-        // the pedestal arc, so no head ever sits in front of or under it. The dragonballs plugin
-        // recognises it by its exact coordinates (dragonballs-station.json), not by this text, so
-        // it deliberately isn't an Essentials [Buy]/[Sell] sign.
-        ...RADAR_SIGNS,
       ],
     },
     {
@@ -181,9 +178,9 @@ export function buildStalls(model, { GUIDES, lecternState }) {
         ['wither_skeleton_skull[rotation=0]', 5, 1, 1], ['cobweb', 5, 2]],
     },
     {
-      // Radars shop stall (shop street, west side nearest the plaza): the same 3 Dragon Radar
-      // signs and guide lectern as the DragonBall station, at a second location, so the station's
-      // own front stays just pedestals. Cyan: unused by any other stall/station.
+      // Radars shop stall (shop street, west side nearest the plaza): the only place that sells
+      // the 3 Dragon Radars (Joe retired the DragonBall station's own duplicate copy, 2026-10-13),
+      // plus the same guide lectern as the station. Cyan: unused by any other stall/station.
       ...SHOP_SPOT.radars, name: 'Radars', wool: 'cyan', awning: true,
       desc: [['Find the', 'Dragon', 'Balls', ''], ['Guide book', 'inside', '', '']],
       guides: [['dragonballs', 2, 2]],
@@ -334,12 +331,11 @@ export function buildStalls(model, { GUIDES, lecternState }) {
   }
   STALLS.forEach(stall);
 
-  // Dragon Balls station: export the 3 radar signs and the 7 head-pedestal spots for the
-  // dragonballs plugin, which places decorative heads on them and recognises each radar sign by
-  // these exact coordinates, not by its text. Mirrors the (a, d) pairs used in the stall above.
-  // The Radars shop stall (shop street) carries a second copy of the same 3 radar signs under a
-  // NEW key, shopRadarSigns, same shape as radarSigns: the dragonballs plugin reads both sets of
-  // coordinates, radarSigns and displayHeads stay untouched.
+  // Dragon Balls station: export the 7 head-pedestal spots for the dragonballs plugin, which
+  // places decorative heads on them. Mirrors the (a, d) pairs used in the stall above. The Radars
+  // shop stall (shop street) is the only place that sells the 3 Dragon Radars (Joe retired the
+  // station's own duplicate copy, 2026-10-13); its sign coordinates are exported below as
+  // shopRadarSigns, the only radar-sign key the dragonballs plugin reads.
   {
     const S = side('west');
     const at = (a, d, y) => { const [u, v] = S.at(DB_A0 + a, d); return { world: 'world', x: CX + u, y, z: CZ + v }; };
@@ -349,7 +345,6 @@ export function buildStalls(model, { GUIDES, lecternState }) {
     const SR = side(SHOP_SPOT.radars.side);
     const atShop = (a, d, y) => { const [u, v] = SR.at(SHOP_SPOT.radars.a0 + a, d); return { world: 'world', x: CX + u, y, z: CZ + v }; };
     writeFileSync(join(here, 'dragonballs-station.json'), JSON.stringify({
-      radarSigns: { overworld: at(1, 2, Y + 2), nether: at(3, 2, Y + 2), end: at(2, 2, Y + 3) },
       displayHeads: PEDESTALS.map(([a, d]) => at(a, d, Y + 2)),
       shopRadarSigns: { overworld: atShop(1, 2, Y + 2), nether: atShop(3, 2, Y + 2), end: atShop(2, 2, Y + 3) },
     }, null, 2) + '\n');

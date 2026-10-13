@@ -40,9 +40,7 @@ setblock 414 115 -859 lectern[facing=south,has_book=true]{Book:{id:"minecraft:wr
 setblock 431 116 -869 iron_bars
 setblock 430 116 -881 spruce_log[axis=z]
 setblock 424 116 -882 carved_pumpkin[facing=south]
-setblock 413 116 -873 spruce_wall_sign[facing=east]{front_text:{messages:[{text:"[Dragon Radar]",color:"gold",bold:true},"Points at the","nearest ball","1000 coins"]}}
 setblock 413 116 -874 spruce_wall_sign[facing=east]{front_text:{color:"orange",has_glowing_text:1b,messages:["","Dragon Balls","",""]}}
-setblock 413 116 -875 spruce_wall_sign[facing=east]{front_text:{messages:[{text:"[Nether Radar]",color:"red",bold:true},"Finds Nether","balls only","5000 coins"]}}
 setblock 440 116 -877 dried_kelp_block
 setblock 431 116 -867 iron_bars
 setblock 418 116 -855 end_rod[facing=up]
@@ -76,7 +74,6 @@ setblock 438 117 -870 lantern[hanging=false]
 setblock 416 117 -871 lantern[hanging=true]
 setblock 438 117 -871 lantern[hanging=true]
 setblock 427 117 -873 bell[attachment=ceiling,facing=north]
-setblock 413 117 -874 spruce_wall_sign[facing=east]{front_text:{messages:[{text:"[End Radar]",color:"light_purple",bold:true},"Finds End","balls only","20000 coins"]}}
 setblock 415 117 -874 spruce_hanging_sign[attached=false,rotation=12]{front_text:{color:"orange",has_glowing_text:1b,messages:["","DragonBall","",""]},back_text:{color:"orange",has_glowing_text:1b,messages:["","DragonBall","",""]}}
 setblock 439 117 -874 spruce_hanging_sign[attached=false,rotation=4]{front_text:{color:"light_blue",has_glowing_text:1b,messages:["","Fishmonger","",""]},back_text:{color:"light_blue",has_glowing_text:1b,messages:["","Fishmonger","",""]}}
 setblock 416 117 -877 lantern[hanging=true]
