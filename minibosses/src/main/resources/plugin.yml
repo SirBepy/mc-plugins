@@ -1,0 +1,6 @@
+name: Minibosses
+version: ${version}
+main: dev.sirbepy.mc.minibosses.MinibossesPlugin
+api-version: "26.2"
+author: sirbepy
+softdepend: [Guild]
