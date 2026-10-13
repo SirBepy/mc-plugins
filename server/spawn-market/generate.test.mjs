@@ -152,7 +152,7 @@ test('dragonballs-station.json exports one radar sign per ball set (at the Radar
 });
 
 const RADAR_SIGNS = {
-  overworld: { lines: ['[Dragon Radar]', 'Points at the', 'nearest ball', '1000 coins'], title: /text:"\[Dragon Radar\]",color:"gold",bold:true/ },
+  overworld: { lines: ['[Default Radar]', 'Points at the', 'nearest ball', '1000 coins'], title: /text:"\[Default Radar\]",color:"gold",bold:true/ },
   nether: { lines: ['[Nether Radar]', 'Finds Nether', 'balls only', '5000 coins'], title: /text:"\[Nether Radar\]",color:"red",bold:true/ },
   end: { lines: ['[End Radar]', 'Finds End', 'balls only', '20000 coins'], title: /text:"\[End Radar\]",color:"light_purple",bold:true/ },
 };

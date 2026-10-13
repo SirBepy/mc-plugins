@@ -72,7 +72,7 @@ export const GUIDES = {
       "Carrying rules:\nEach ball slows you 5% (all 7: 35%).\n\nNo chests, ender chests, shulkers, bundles, hoppers or item frames - and you can't wear one.",
       'Die and your balls drop where you fell, never your grave.\n\nLog off and they drop where you stood.\n\nLava or the void sends them flying off again.',
       'A ball never leaves its own world: go through a portal (or /home, /spawn) and it stays behind where you left.',
-      'Radars, right here:\nDragon Radar 1000\nNether Radar 5000\nEnd Radar 20000\n\nEach points at the nearest awake ball of its own set, in its own world, even a carried one.',
+      'Radars, right here:\nDefault Radar 1000\nNether Radar 5000\nEnd Radar 20000\n\nEach points at the nearest awake ball of its own set, in its own world, even a carried one.',
       'The radar\'s dot moves in as you get closer: Far, Getting warm, Close, Right here.\n\nSneak + right-click to track the next ball instead of the nearest.',
       "Summoning:\nPlace all 7 of one set within 2 blocks of each other. Hold that set's radar and right-click or hit one.\n\nChoose your dragon. The radar shatters. One dragon at a time.",
       'Shenron grants 1 great wish. From the Nether set he rises as Nuova Shenron.\n\nPorunga grants 3, each about half as strong.\n\nOnly the summoner wishes - everyone reads the answer.',

@@ -634,6 +634,7 @@ setblock 432 118 -866 dark_oak_slab[type=bottom]
 setblock 433 118 -866 dark_oak_stairs[facing=west,half=bottom]
 setblock 424 118 -844 spruce_log[axis=y]
 setblock 430 118 -844 spruce_log[axis=y]
+setblock 422 118 -843 spruce_planks
 setblock 425 118 -843 cyan_wool
 fill 429 118 -843 434 118 -843 dark_oak_stairs[facing=south,half=bottom]
 setblock 421 118 -842 spruce_log

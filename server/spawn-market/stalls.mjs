@@ -29,21 +29,21 @@ export function buildStalls(model, { GUIDES, lecternState }) {
 
   // The 3 Dragon Radar signs, sold only at the Radars shop-street stall (Joe retired the
   // DragonBall station's own duplicate copy of these on 2026-10-13 - see the Radars stall below).
+  // One eye-level row, left to right (Joe, 2026-10-13): Default, Nether, End; the guide lectern
+  // moved to an eave spot to free the centre slot for this row.
   const RADAR_SIGNS = [
     [sign('spruce_wall_sign[facing=INWARD]', [
-      { text: '[Dragon Radar]', color: 'gold', bold: true },
+      { text: '[Default Radar]', color: 'gold', bold: true },
       'Points at the', 'nearest ball', '1000 coins',
     ]), 1, 2, 1],
-    // One radar per ball set (Joe, 2026-10-07): Nether mirrors the Overworld sign across the
-    // lectern, End sits on top, above the guide book's label sign. Same coordinate rule as above.
     [sign('spruce_wall_sign[facing=INWARD]', [
       { text: '[Nether Radar]', color: 'red', bold: true },
       'Finds Nether', 'balls only', '5000 coins',
-    ]), 3, 2, 1],
+    ]), 2, 2, 1],
     [sign('spruce_wall_sign[facing=INWARD]', [
       { text: '[End Radar]', color: 'light_purple', bold: true },
       'Finds End', 'balls only', '20000 coins',
-    ]), 2, 2, 2],
+    ]), 3, 2, 1],
   ];
 
   // Props: [state, a, d, dy]. The 5x3 stalls have no spare floor, so props stand outside the side
@@ -181,9 +181,15 @@ export function buildStalls(model, { GUIDES, lecternState }) {
       // Radars shop stall (shop street, west side nearest the plaza): the only place that sells
       // the 3 Dragon Radars (Joe retired the DragonBall station's own duplicate copy, 2026-10-13),
       // plus the same guide lectern as the station. Cyan: unused by any other stall/station.
+      // One hanging nameplate (2 stacked lines) and one eye-level row of 3 buy signs (Joe,
+      // 2026-10-13); the old flanking description signs are gone and the guide lectern moved to
+      // the left eave to free the row's centre slot.
       ...SHOP_SPOT.radars, name: 'Radars', wool: 'cyan', awning: true,
-      desc: [['Find the', 'Dragon', 'Balls', ''], ['Guide book', 'inside', '', '']],
-      guides: [['dragonballs', 2, 2]],
+      // "DragonBall" squished, no space (Joe asked for "Dragon Ball" / "Radars" stacked, but a
+      // hanging sign line caps at 10 characters - same squish the station's own nameplate already
+      // uses for the same word, see the DragonBall station entry above).
+      nameplate: ['', 'DragonBall', 'Radars', ''],
+      guides: [['dragonballs', -1, 2, 'DragonBall']],
       props: [...RADAR_SIGNS],
     },
     {
@@ -216,7 +222,7 @@ export function buildStalls(model, { GUIDES, lecternState }) {
   // copper and cherry looks he was shown), but never touches the a0/d math any export coordinate
   // is built from.
   function stall({ id, side: sideName, a0, name, wool, buys = [], props, stations = [], guides = [], priceLectern,
-    extraSlot, headStall, shop, shopSignCount, awning, desc }) {
+    extraSlot, headStall, shop, shopSignCount, awning, desc, nameplate }) {
     const S = side(sideName);
     const at = (a, d, y, state, phase) => { const [u, v] = S.at(a0 + a, d); set(u, y, v, state, phase); };
     const inward = S.inward;
@@ -270,7 +276,7 @@ export function buildStalls(model, { GUIDES, lecternState }) {
     }
     // Name sign hangs from the front beam, readable from inside too. It sits a block above the
     // eye-level row the [Sell] signs use, so a player looking at them sees under it.
-    at(2, 0, Y + 3, sign(`spruce_hanging_sign[attached=false,rotation=${ROTATION[inward]}]`, ['', name, '', ''],
+    at(2, 0, Y + 3, sign(`spruce_hanging_sign[attached=false,rotation=${ROTATION[inward]}]`, nameplate ?? ['', name, '', ''],
       { color: wool, back: true }), 'attach');
     // Description hanging signs flank the nameplate (Joe's pick, 2026-10-09: "right clicking a
     // sign buys", so every description moves off the back wall onto these instead), hung from the
@@ -292,11 +298,19 @@ export function buildStalls(model, { GUIDES, lecternState }) {
       const facing = a < 0 ? minusA : a > 4 ? S.plusA : inward;
       const label = ['', title, '', ''];
       at(a, d, Y + 1, state(facing), 'attach');
-      if (eaves) at(a, d, Y + 3, sign(`spruce_hanging_sign[attached=false,rotation=${ROTATION[facing]}]`, label, { color: wool }), 'attach');
-      else at(a, d, Y + 2, sign(`spruce_wall_sign[facing=${inward}]`, label, { color: wool }), 'attach');
+      if (eaves) {
+        // The gable roof's stairs already sit at Y+4 over every eave tile, but the awning's flat
+        // cap only starts at Y+5 (Joe's striped-canvas look, 2026-10-09), leaving nothing for an
+        // eave hanging sign to hang from - add that one support block only when it's missing.
+        if (awning) at(a, d, Y + 4, P.wall, 'build');
+        at(a, d, Y + 3, sign(`spruce_hanging_sign[attached=false,rotation=${ROTATION[facing]}]`, label, { color: wool }), 'attach');
+      } else at(a, d, Y + 2, sign(`spruce_wall_sign[facing=${inward}]`, label, { color: wool }), 'attach');
       return facing;
     };
-    for (const [key, a, d] of guides) lectern(a, d, GUIDES[key].title, (facing) => lecternState(facing, key));
+    // An eave lectern's label is a hanging sign (10-char line limit) instead of a wall sign (15), so
+    // a guide entry may pass its own shorter label - same abbreviation the DragonBall station's
+    // nameplate already uses for "Dragon Balls".
+    for (const [key, a, d, label] of guides) lectern(a, d, label ?? GUIDES[key].title, (facing) => lecternState(facing, key));
     if (priceLectern) {
       const [a, d] = priceLectern;
       const facing = lectern(a, d, 'Prices', (f) => `lectern[facing=${f}]`);
@@ -346,7 +360,7 @@ export function buildStalls(model, { GUIDES, lecternState }) {
     const atShop = (a, d, y) => { const [u, v] = SR.at(SHOP_SPOT.radars.a0 + a, d); return { world: 'world', x: CX + u, y, z: CZ + v }; };
     writeFileSync(join(here, 'dragonballs-station.json'), JSON.stringify({
       displayHeads: PEDESTALS.map(([a, d]) => at(a, d, Y + 2)),
-      shopRadarSigns: { overworld: atShop(1, 2, Y + 2), nether: atShop(3, 2, Y + 2), end: atShop(2, 2, Y + 3) },
+      shopRadarSigns: { overworld: atShop(1, 2, Y + 2), nether: atShop(2, 2, Y + 2), end: atShop(3, 2, Y + 2) },
     }, null, 2) + '\n');
   }
 
