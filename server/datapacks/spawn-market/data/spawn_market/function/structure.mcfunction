@@ -52,8 +52,8 @@ setblock 444 115 -885 mossy_cobblestone
 setblock 416 115 -870 tuff_brick_wall
 setblock 432 115 -870 stripped_dark_oak_log
 setblock 438 115 -870 tuff_brick_wall
-setblock 413 115 -871 orange_terracotta
-fill 414 115 -871 415 115 -871 chiseled_tuff_bricks
+setblock 413 115 -871 bone_block[axis=x]
+setblock 414 115 -871 bone_block[axis=y]
 setblock 440 115 -871 water_cauldron[level=3]
 setblock 441 115 -871 barrel[facing=up]
 setblock 412 115 -872 spruce_log
@@ -63,20 +63,12 @@ setblock 439 115 -872 spruce_log
 fill 440 115 -872 441 115 -872 spruce_planks
 setblock 442 115 -872 spruce_log
 setblock 412 115 -873 tuff_bricks
-setblock 413 115 -873 orange_terracotta
-setblock 414 115 -873 orange_carpet
-setblock 415 115 -873 chiseled_tuff_bricks
 setblock 426 115 -873 spruce_log
 setblock 428 115 -873 spruce_log
 setblock 442 115 -873 tuff_bricks
 setblock 412 115 -874 tuff_bricks
-setblock 414 115 -874 orange_carpet
-setblock 415 115 -874 chiseled_tuff_bricks
 setblock 442 115 -874 tuff_bricks
 setblock 412 115 -875 tuff_bricks
-setblock 413 115 -875 orange_terracotta
-setblock 414 115 -875 orange_carpet
-setblock 415 115 -875 chiseled_tuff_bricks
 setblock 442 115 -875 tuff_bricks
 setblock 412 115 -876 spruce_log
 fill 413 115 -876 414 115 -876 spruce_planks
@@ -84,8 +76,7 @@ setblock 415 115 -876 spruce_log
 setblock 439 115 -876 spruce_log
 fill 440 115 -876 441 115 -876 spruce_planks
 setblock 442 115 -876 spruce_log
-setblock 413 115 -877 orange_terracotta
-fill 414 115 -877 415 115 -877 chiseled_tuff_bricks
+setblock 413 115 -877 cobweb
 fill 440 115 -877 441 115 -877 barrel[facing=up]
 setblock 432 115 -868 dark_oak_planks
 setblock 432 115 -867 dark_oak_planks
@@ -131,8 +122,8 @@ setblock 444 115 -851 spruce_leaves[persistent=true]
 setblock 416 115 -866 tuff_brick_wall
 setblock 432 115 -866 stripped_dark_oak_log
 setblock 438 115 -866 tuff_brick_wall
-setblock 431 115 -843 bone_block[axis=y]
-setblock 432 115 -843 bone_block[axis=x]
+fill 430 115 -843 431 115 -843 chiseled_tuff_bricks
+setblock 432 115 -843 orange_terracotta
 setblock 421 115 -842 spruce_log
 fill 422 115 -842 423 115 -842 spruce_planks
 setblock 424 115 -842 spruce_log
@@ -141,13 +132,20 @@ fill 431 115 -842 432 115 -842 spruce_planks
 setblock 433 115 -842 spruce_log
 setblock 421 115 -841 tuff_bricks
 setblock 424 115 -841 oak_fence
+setblock 430 115 -841 chiseled_tuff_bricks
+setblock 431 115 -841 orange_carpet
+setblock 432 115 -841 orange_terracotta
 setblock 433 115 -841 tuff_bricks
 setblock 421 115 -840 tuff_bricks
 setblock 424 115 -840 oak_fence
-setblock 430 115 -840 tuff_brick_wall
+setblock 430 115 -840 chiseled_tuff_bricks
+setblock 431 115 -840 orange_carpet
 setblock 433 115 -840 tuff_bricks
 setblock 421 115 -839 tuff_bricks
 setblock 424 115 -839 oak_fence
+setblock 430 115 -839 chiseled_tuff_bricks
+setblock 431 115 -839 orange_carpet
+setblock 432 115 -839 orange_terracotta
 setblock 433 115 -839 tuff_bricks
 setblock 440 115 -865 blast_furnace[facing=west]
 setblock 441 115 -865 smoker[facing=west]
@@ -157,7 +155,8 @@ setblock 424 115 -838 spruce_log
 setblock 430 115 -838 spruce_log
 fill 431 115 -838 432 115 -838 spruce_planks
 setblock 433 115 -838 spruce_log
-setblock 432 115 -837 cobweb
+fill 430 115 -837 431 115 -837 chiseled_tuff_bricks
+setblock 432 115 -837 orange_terracotta
 setblock 424 115 -833 tuff_brick_wall
 setblock 430 115 -833 tuff_brick_wall
 setblock 421 115 -832 spruce_log
@@ -316,7 +315,6 @@ setblock 421 116 -841 spruce_planks
 setblock 433 116 -841 spruce_planks
 setblock 421 116 -840 spruce_planks
 setblock 424 116 -840 spruce_fence
-setblock 430 116 -840 spruce_fence
 setblock 433 116 -840 spruce_planks
 setblock 421 116 -839 spruce_planks
 setblock 433 116 -839 spruce_planks
@@ -767,16 +765,16 @@ fill 441 119 -884 443 119 -884 spruce_slab[type=bottom]
 fill 411 119 -872 416 119 -872 dark_oak_stairs[facing=north,half=bottom]
 fill 438 119 -872 443 119 -872 dark_oak_stairs[facing=north,half=bottom]
 setblock 412 119 -873 spruce_planks
-setblock 415 119 -873 orange_wool
+setblock 415 119 -873 red_wool
 fill 426 119 -873 428 119 -873 spruce_slab[type=bottom]
 setblock 439 119 -873 light_blue_wool
 setblock 442 119 -873 spruce_planks
 setblock 412 119 -874 spruce_planks
-setblock 415 119 -874 orange_wool
+setblock 415 119 -874 red_wool
 setblock 439 119 -874 light_blue_wool
 setblock 442 119 -874 spruce_planks
 setblock 412 119 -875 spruce_planks
-setblock 415 119 -875 orange_wool
+setblock 415 119 -875 red_wool
 setblock 439 119 -875 light_blue_wool
 setblock 442 119 -875 spruce_planks
 fill 411 119 -876 416 119 -876 dark_oak_stairs[facing=south,half=bottom]
@@ -828,15 +826,15 @@ setblock 424 119 -842 white_wool
 fill 429 119 -842 434 119 -842 dark_oak_stairs[facing=south,half=bottom]
 fill 421 119 -841 423 119 -841 spruce_planks
 setblock 424 119 -841 cyan_wool
-setblock 430 119 -841 red_wool
+setblock 430 119 -841 orange_wool
 setblock 433 119 -841 spruce_planks
 fill 421 119 -840 423 119 -840 spruce_planks
 setblock 424 119 -840 white_wool
-setblock 430 119 -840 red_wool
+setblock 430 119 -840 orange_wool
 setblock 433 119 -840 spruce_planks
 fill 421 119 -839 423 119 -839 spruce_planks
 setblock 424 119 -839 cyan_wool
-setblock 430 119 -839 red_wool
+setblock 430 119 -839 orange_wool
 setblock 433 119 -839 spruce_planks
 fill 421 119 -838 423 119 -838 spruce_planks
 setblock 424 119 -838 white_wool
@@ -919,7 +917,7 @@ setblock 434 120 -884 dark_oak_stairs[facing=west,half=bottom]
 fill 411 120 -873 416 120 -873 dark_oak_stairs[facing=north,half=bottom]
 fill 438 120 -873 443 120 -873 dark_oak_stairs[facing=north,half=bottom]
 setblock 412 120 -874 spruce_planks
-setblock 415 120 -874 orange_wool
+setblock 415 120 -874 red_wool
 setblock 439 120 -874 light_blue_wool
 setblock 442 120 -874 spruce_planks
 fill 411 120 -875 416 120 -875 dark_oak_stairs[facing=south,half=bottom]
@@ -956,7 +954,7 @@ setblock 432 120 -852 dark_oak_stairs[facing=east,half=bottom]
 setblock 434 120 -852 dark_oak_stairs[facing=west,half=bottom]
 fill 424 120 -844 430 120 -844 stripped_spruce_log[axis=x]
 fill 429 120 -841 434 120 -841 dark_oak_stairs[facing=south,half=bottom]
-setblock 430 120 -840 red_wool
+setblock 430 120 -840 orange_wool
 setblock 433 120 -840 spruce_planks
 fill 429 120 -839 434 120 -839 dark_oak_stairs[facing=north,half=bottom]
 fill 411 120 -863 416 120 -863 dark_oak_stairs[facing=south,half=bottom]

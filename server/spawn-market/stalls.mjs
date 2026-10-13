@@ -11,14 +11,22 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const buy = (amount, item, each) => ({ item, amount, price: +(amount * each).toFixed(2) });
-const DB_A0 = 4; // Dragon Balls stall's a0, reused below for the station coordinate export.
+// Mob Heads now sits in the plaza's own west/4 slot, the DragonBall station's old spot (Joe,
+// 2026-10-13: "put the mob heads stall there, so all the selling stalls are in one spot").
+const HEADS_A0 = 4;
+// 7-point pedestal arc (a, d) pairs, shared between the station's own prop list below and the
+// displayHeads export at the bottom - one source so the two can never drift apart.
+const PEDESTAL_SPOTS = [[1, 0], [2, 0], [3, 0], [-1, 0], [-1, 1], [5, 0], [5, 1]];
 
 // The 4 new stalls (Joe's pick, 2026-10-09: the shop street over the corner-stall and
 // widened-plaza mock-ups he was shown) sit on the street (street.mjs), 2 per side, using the
 // streetWest/streetEast frames core.mjs's side() returns - same stall()/a0/d math as every other
-// stall, just framed on the street's own centreline instead of the plaza's.
+// stall, just framed on the street's own centreline instead of the plaza's. The DragonBall
+// station took over Heads' old streetEast/0 spot in the same swap (Joe, 2026-10-13): it sells
+// nothing, so it moved out of the plaza to make room, keeping its own plain gable roof rather
+// than the awning look its new neighbors use.
 const SHOP_SPOT = {
-  heads: { side: 'streetEast', a0: 0 },
+  dragonballs: { side: 'streetEast', a0: 0 },
   radars: { side: 'streetWest', a0: 0 },
   homes: { side: 'streetEast', a0: 10 },
   cosmetics: { side: 'streetWest', a0: 10 },
@@ -125,15 +133,16 @@ export function buildStalls(model, { GUIDES, lecternState }) {
         ['obsidian', 5, 1], ['end_rod[facing=up]', 5, 1, 1]],
     },
     {
-      // Dragon Balls station, replacing the old Crafting corner (2026-10-06, Joe; reworked
-      // 2026-10-06 so the 7 head-pedestal spots never share a coordinate - the dragonballs plugin
-      // needs every exported spot distinct and each head spot free of blocks). The station used to
-      // also sell the 3 Dragon Radars here, duplicating the Radars shop-street stall; Joe retired
-      // that duplicate (2026-10-13) so the Radars stall is now the only place that sells them - the
-      // station keeps only its pedestals, guide lectern and trim.
+      // Dragon Balls station: 7 head pedestals, a guide lectern, no buys - it never sold anything
+      // (the 3 Dragon Radars it once duplicated sell only at the Radars shop-street stall, retired
+      // 2026-10-13). Moved out to the shop street's old Heads spot (2026-10-13, Joe: "put the mob
+      // heads stall there, so all the selling stalls are in one spot") so Mob Heads could take over
+      // this stall's old plaza slot below - a 1:1 coordinate swap, nothing about the station's own
+      // tile layout changed, it kept its plain gable roof rather than adopting its new shop-street
+      // neighbors' awning look.
       // The 7 pedestals form an arc across the open front (d=0) plus the eave corners, so every
-      // ball is visible from the plaza; the lectern stays on the back wall (d=2), two rows back,
-      // clear of any pedestal. Reuses the old Crafting stall's exact tile
+      // ball is visible; the lectern stays on the back wall (d=2), two rows back, clear of any
+      // pedestal. Reuses the old Crafting stall's exact tile
       // coordinates - (1,2)/(3,2) [crafting_table/stonecutter] for trim, (2,2) [smithing_table] for
       // the lectern, (-1,1)/(5,1) [anvil/cartography_table] for 2 pedestals, (-1,2)/(5,2)
       // [grindstone/loom] for trim - so a structure+attach-only refresh on a world that still has
@@ -142,13 +151,17 @@ export function buildStalls(model, { GUIDES, lecternState }) {
       // limit every other compound-word stall name already respects, e.g. Lumberjack, Fishmonger).
       // The guide book title below stays the full "Dragon Balls": its label uses the wider wall-sign
       // limit (15).
-      side: 'west', a0: DB_A0, name: 'DragonBall', wool: 'orange',
+      ...SHOP_SPOT.dragonballs, name: 'DragonBall', wool: 'orange',
       guides: [['dragonballs', 2, 2]],
       props: [
-        // 7-point arc of pedestals facing the plaza: front row plus the flanking eave corners.
-        ['chiseled_tuff_bricks', 1, 0], ['chiseled_tuff_bricks', 2, 0], ['chiseled_tuff_bricks', 3, 0],
-        ['chiseled_tuff_bricks', -1, 0], ['chiseled_tuff_bricks', -1, 1],
-        ['chiseled_tuff_bricks', 5, 0], ['chiseled_tuff_bricks', 5, 1],
+        // 7-point arc of pedestals facing the open front: entrance row plus the flanking eave
+        // corners (PEDESTAL_SPOTS, shared with the displayHeads export below).
+        ...PEDESTAL_SPOTS.map(([a, d]) => ['chiseled_tuff_bricks', a, d]),
+        // Explicit air one block above each pedestal (dy=1): on the shop street this is also the
+        // lamp posts' own column (street.mjs's fence/lantern sit at this exact height at a=2,d=0
+        // for a0=0), so the head's display spot needs clearing here rather than relying on empty
+        // terrain the way it could back in the plaza.
+        ...PEDESTAL_SPOTS.map(([a, d]) => ['air', a, d, 1]),
         // Orange carpet runner from the entrance to the back wall.
         ['orange_carpet', 1, 1], ['orange_carpet', 2, 1], ['orange_carpet', 3, 1],
         // Orange terracotta trim on the back wall, also clearing the old crafting_table/
@@ -166,11 +179,13 @@ export function buildStalls(model, { GUIDES, lecternState }) {
       props: [],
     },
     {
-      // Heads shop stall (shop street, east side nearest the plaza), replacing the old Head
-      // collector NPC: same sell-stall look as the other six, just with a 4th sign spot (change
-      // 4) since the Market plugin now sells heads through ordinary [Sell]-style signs instead of
-      // an NPC. Red: the one wool colour none of the other seven stalls/stations use.
-      id: 'heads', ...SHOP_SPOT.heads, name: 'Heads', wool: 'red', extraSlot: true, headStall: true,
+      // Heads stall, replacing the old Head collector NPC: same sell-stall look as the other six
+      // plaza stalls, just with a 4th sign spot (change 4) since the Market plugin now sells heads
+      // through ordinary [Sell]-style signs instead of an NPC. Red: the one wool colour none of
+      // the other seven stalls/stations use. Moved from the shop street into the plaza's west/4
+      // slot (2026-10-13, Joe: "put the mob heads stall there, so all the selling stalls are in
+      // one spot"), swapping places with the DragonBall station below.
+      id: 'heads', side: 'west', a0: HEADS_A0, name: 'Heads', wool: 'red', extraSlot: true, headStall: true,
       // Description moved onto hanging signs flanking the nameplate (Joe, 2026-10-09): the back
       // wall's own wall signs are the Market plugin's buy signs only, never static text.
       desc: [['Sell your', 'mob heads', '', ''], ['New buyers', 'every day', '', '']],
@@ -346,20 +361,21 @@ export function buildStalls(model, { GUIDES, lecternState }) {
   STALLS.forEach(stall);
 
   // Dragon Balls station: export the 7 head-pedestal spots for the dragonballs plugin, which
-  // places decorative heads on them. Mirrors the (a, d) pairs used in the stall above. The Radars
-  // shop stall (shop street) is the only place that sells the 3 Dragon Radars (Joe retired the
-  // station's own duplicate copy, 2026-10-13); its sign coordinates are exported below as
-  // shopRadarSigns, the only radar-sign key the dragonballs plugin reads.
+  // places decorative heads on them. Mirrors the (a, d) pairs used in the stall above, following
+  // wherever the station itself sits (SHOP_SPOT.dragonballs - the shop street as of 2026-10-13,
+  // swapped with Mob Heads). The Radars shop stall (shop street) is the only place that sells the
+  // 3 Dragon Radars (Joe retired the station's own duplicate copy, 2026-10-13); its sign
+  // coordinates are exported below as shopRadarSigns, the only radar-sign key the dragonballs
+  // plugin reads.
   {
-    const S = side('west');
-    const at = (a, d, y) => { const [u, v] = S.at(DB_A0 + a, d); return { world: 'world', x: CX + u, y, z: CZ + v }; };
-    const PEDESTALS = [[1, 0], [2, 0], [3, 0], [-1, 0], [-1, 1], [5, 0], [5, 1]];
+    const S = side(SHOP_SPOT.dragonballs.side);
+    const at = (a, d, y) => { const [u, v] = S.at(SHOP_SPOT.dragonballs.a0 + a, d); return { world: 'world', x: CX + u, y, z: CZ + v }; };
     // Follows wherever the Radars shop stall itself sits (SHOP_SPOT.radars, above): the
     // dragonballs plugin reads these coordinates, not the stall's blocks.
     const SR = side(SHOP_SPOT.radars.side);
     const atShop = (a, d, y) => { const [u, v] = SR.at(SHOP_SPOT.radars.a0 + a, d); return { world: 'world', x: CX + u, y, z: CZ + v }; };
     writeFileSync(join(here, 'dragonballs-station.json'), JSON.stringify({
-      displayHeads: PEDESTALS.map(([a, d]) => at(a, d, Y + 2)),
+      displayHeads: PEDESTAL_SPOTS.map(([a, d]) => at(a, d, Y + 2)),
       shopRadarSigns: { overworld: atShop(1, 2, Y + 2), nether: atShop(2, 2, Y + 2), end: atShop(3, 2, Y + 2) },
     }, null, 2) + '\n');
   }

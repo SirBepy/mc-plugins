@@ -234,7 +234,11 @@ test('the radar signs, the lectern and all 7 display-head spots sit at distinct 
 
 test('every display-head spot is air in the generated model, directly above a pedestal block', () => {
   for (const { x, y, z } of station.displayHeads) {
-    assert.ok(!(`${x},${y},${z}` in model.blocks), `${x} ${y} ${z} is not air in model.json`);
+    const key = `${x},${y},${z}`;
+    // Untouched (never written) or explicitly set to 'air' both count: the station's own props
+    // now explicitly clear each head spot (needed since 2026-10-13, when it moved onto the shop
+    // street and a lamp post's fence/lantern could otherwise occupy one of these coordinates).
+    assert.ok(!(key in model.blocks) || model.blocks[key] === 'air', `${x} ${y} ${z} is not air in model.json`);
     const below = model.blocks[`${x},${y - 1},${z}`];
     assert.ok(below, `no pedestal below ${x} ${y} ${z} in model.json`);
     assert.match(below, /^chiseled_tuff_bricks/);
