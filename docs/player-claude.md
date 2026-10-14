@@ -1,5 +1,9 @@
 # Player Claude
 
+This hub follows the generic listener-chat pattern in `.claude/skills/listener-chat/SKILL.md`
+(daemon owns the connection, chat blocks on `wait`, re-arms on respawn, quiet when idle) - this doc
+covers only the domain-specific parts: what the events mean and who may act on them.
+
 Players type `/shenron <message>` in game (the `claudebridge` plugin) and get a `[Claude]` reply in chat.
 On Joe's PC, one Conductor chat, the **hub**, owns this. Each player who uses /shenron gets their own
 background **player agent**, which answers them and keeps that player's conversation in context.
@@ -51,7 +55,7 @@ counts the existing inbox lines as already handled and replays nothing.
    - `DAEMON ...`: restart the daemon if it says not running. Tell Joe only if it keeps failing.
 4. Nothing is lost while the hub is down or busy: events wait in `hub-events.jsonl` until the next `wait`.
    After a hub restart or /respawn, arm `wait` first.
-5. A quiet hub sends Joe nothing (no "no new messages" bubbles). It /respawns itself at 30-40% context.
+5. A quiet hub sends Joe nothing (no "no new messages" bubbles). On every start or respawn it runs `/auto-respawn` first, which opts the hub into Conductor's "Context cap" note (fires past 150k tokens). When that note arrives, it finishes the event in hand and respawns (the `respawn` tool, with a full handoff that starts by running `/auto-respawn` again). Never judge the size yourself: a percentage rule here was read both as used and as left.
 
 ## Routing to player agents
 
