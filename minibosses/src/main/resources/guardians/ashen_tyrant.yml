@@ -1,11 +1,13 @@
-# The Ashen Tyrant: second of the Three Ancient Guardians. Normal tier is this dispatch's real,
-# tested fight content (dev.sirbepy.mc.minibosses.tyrant). Heroic/Mythic list ability ids a
-# follow-up dispatch still has to implement (ashen_tyrant_blaze_wave, ashen_tyrant_ashen_storm) -
-# GuardianAbilityRegistry.get() returns empty for an id nobody registered yet and TyrantFight just
-# skips it, same no-crash precedent overgrown_sentinel.yml already proved for its own Heroic/Mythic
-# rows; proven again here by TyrantFightTest. Nether dimension: TyrantFight/BlazeSummonAbility both
-# use scheduler tick counters for their periodic triggers, never World#getFullTime(), since that
-# call is always 0 in the Nether on this server (memory: nether-end-no-day-clock.md).
+# The Ashen Tyrant: second of the Three Ancient Guardians. All 3 tiers are real, tested fight
+# content (dev.sirbepy.mc.minibosses.tyrant): Normal's ashen_tyrant_blaze_summon (BlazeSummonAbility
+# - one Blaze every 5s for 3 pulses), Heroic's ashen_tyrant_blaze_wave (BlazeWaveAbility - 4 Blazes
+# spawned at once) and Mythic's ashen_tyrant_ashen_storm (AshenStormAbility - an arena-wide
+# fire/ash damage hazard) all fire at half health, registered in MinibossesPlugin#onEnable.
+# GuardianAbilityRegistry.get() still returns empty for any id nobody registered, so a future tier
+# addition that names an unimplemented id still fails safe rather than crashing the trigger path.
+# Nether dimension: every periodic ability here uses a scheduler tick counter, never
+# World#getFullTime(), since that call is always 0 in the Nether on this server (memory:
+# nether-end-no-day-clock.md).
 id: ashen_tyrant
 display-name: "The Ashen Tyrant"
 dimension: NETHER

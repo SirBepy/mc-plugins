@@ -1,7 +1,9 @@
 package dev.sirbepy.mc.minibosses.tyrant;
 
 import dev.sirbepy.mc.core.dragon.DragonFighters;
+import dev.sirbepy.mc.guild.events.GuardianDefeatedEvent;
 import dev.sirbepy.mc.minibosses.ability.GuardianAbilityRegistry;
+import dev.sirbepy.mc.minibosses.hof.HallOfFame;
 import dev.sirbepy.mc.minibosses.registry.GuardianDef;
 import dev.sirbepy.mc.minibosses.registry.GuardianRegistry;
 import dev.sirbepy.mc.minibosses.registry.GuardianTierRow;
@@ -30,6 +32,8 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -38,11 +42,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 /**
- * Owns the Ashen Tyrant's spawn, fighter tracking, half-health blaze-summon trigger, a
- * Fire-Aspect-style burn on every hit it lands, and death loot - the fight-level wiring for Normal
- * tier only, mirroring the shape {@code sentinel.SentinelFight}'s own Phase A dispatch established
- * (see {@link BlazeSummonAbility} and {@link TyrantLoot} for why Heroic/Mythic content is out of
- * scope here). A single {@link WitherSkeleton} stands in for the whole boss: chosen over a
+ * Owns the Ashen Tyrant's spawn (with solo/group scaling via {@link TyrantScaling}), fighter
+ * tracking, half-health ability trigger (all 3 tiers, see {@link BlazeSummonAbility},
+ * {@link BlazeWaveAbility}, {@link AshenStormAbility}), a Fire-Aspect-style burn on every hit it
+ * lands, and death handling - loot, the {@code minibosses} Hall of Fame, and the {@code guild}
+ * {@code GuardianDefeatedEvent} contract hook, the same shape {@code sentinel.SentinelFight}'s own
+ * Phase B dispatch established. A single {@link WitherSkeleton} stands in for the whole boss: chosen over a
  * {@link org.bukkit.entity.PiglinBrute} because a Wither Skeleton is the mob that actually spawns
  * inside a real Nether Fortress (a Piglin Brute guards Bastion Remnants, a different structure),
  * is naturally fire-immune so its own "fire attacks" theme never burns itself, and already carries
@@ -63,6 +68,7 @@ public final class TyrantFight implements Listener {
     private final GuardianAbilityRegistry abilities;
     private final DragonFighters fighters;
     private final TyrantLoot loot;
+    private final HallOfFame hallOfFame;
     private final Logger logger;
 
     private final NamespacedKey guardianKey;
@@ -72,11 +78,12 @@ public final class TyrantFight implements Listener {
     private final Map<UUID, BossBar> bossBars = new ConcurrentHashMap<>();
 
     public TyrantFight(JavaPlugin plugin, GuardianRegistry guardians, GuardianAbilityRegistry abilities,
-                        DragonFighters fighters, TyrantLoot loot, Logger logger) {
+                        DragonFighters fighters, TyrantLoot loot, HallOfFame hallOfFame, Logger logger) {
         this.guardians = guardians;
         this.abilities = abilities;
         this.fighters = fighters;
         this.loot = loot;
+        this.hallOfFame = hallOfFame;
         this.logger = logger;
         this.guardianKey = new NamespacedKey(plugin, "guardian");
         this.tierKey = new NamespacedKey(plugin, "guardian_tier");
@@ -94,15 +101,28 @@ public final class TyrantFight implements Listener {
         }
         GuardianTierRow row = def.tiers().get(tier);
 
+        // Fighter count is read once, here, at summon time: whoever is close enough to see the boss
+        // bar is close enough to be "in the fight", the same radius used below to add them to it -
+        // same convention sentinel.SentinelFight.spawn already established.
+        List<Player> nearbyPlayers = new ArrayList<>();
+        for (Player nearby : location.getWorld().getPlayers()) {
+            if (nearby.getLocation().distanceSquared(location) <= 64 * 64) {
+                nearbyPlayers.add(nearby);
+            }
+        }
+        int fighterCount = Math.max(nearbyPlayers.size(), 1);
+        double health = TyrantScaling.scaledHealth(row.health(), fighterCount);
+        double damage = TyrantScaling.scaledDamage(row.damage(), fighterCount);
+
         WitherSkeleton tyrant = (WitherSkeleton) location.getWorld().spawnEntity(location, EntityType.WITHER_SKELETON);
         AttributeInstance maxHealth = tyrant.getAttribute(Attribute.MAX_HEALTH);
         if (maxHealth != null) {
-            maxHealth.setBaseValue(row.health());
+            maxHealth.setBaseValue(health);
         }
-        tyrant.setHealth(row.health());
+        tyrant.setHealth(health);
         AttributeInstance attack = tyrant.getAttribute(Attribute.ATTACK_DAMAGE);
         if (attack != null) {
-            attack.setBaseValue(row.damage());
+            attack.setBaseValue(damage);
         }
         tyrant.customName(Component.text("The Ashen Tyrant", NamedTextColor.GRAY));
         tyrant.setCustomNameVisible(true);
@@ -116,10 +136,8 @@ public final class TyrantFight implements Listener {
         BossBar bar = Bukkit.createBossBar("The Ashen Tyrant (" + tier.displayName() + ")",
                 BarColor.RED, BarStyle.SOLID);
         bar.setProgress(1.0);
-        for (Player nearby : location.getWorld().getPlayers()) {
-            if (nearby.getLocation().distanceSquared(location) <= 64 * 64) {
-                bar.addPlayer(nearby);
-            }
+        for (Player nearby : nearbyPlayers) {
+            bar.addPlayer(nearby);
         }
         bossBars.put(tyrant.getUniqueId(), bar);
 
@@ -168,11 +186,12 @@ public final class TyrantFight implements Listener {
         }
     }
 
-    /** Fires every Normal-tier ability id the first time the Tyrant's projected health crosses
-     * half its max - a PDC flag makes sure a long fight sitting at the threshold only triggers it
-     * once. An ability id with no registered {@code GuardianAbility} (a Heroic/Mythic id this
-     * dispatch does not implement) is skipped, never a crash - see {@code GuardianAbilityRegistry},
-     * same no-crash precedent {@code sentinel.SentinelFight} already proved. */
+    /** Fires every ability id this boss's own tier lists the first time the Tyrant's projected
+     * health crosses half its max - a PDC flag makes sure a long fight sitting at the threshold
+     * only triggers it once. An ability id with no registered {@code GuardianAbility} (any future
+     * tier row naming an id nobody implemented yet) is skipped, never a crash - see
+     * {@code GuardianAbilityRegistry}, same no-crash precedent {@code sentinel.SentinelFight}
+     * already proved. */
     private void maybeTriggerBlazeSummon(LivingEntity boss, double incomingDamage) {
         PersistentDataContainer pdc = boss.getPersistentDataContainer();
         if (pdc.has(blazeSummonTriggeredKey, PersistentDataType.BOOLEAN)) {
@@ -205,8 +224,16 @@ public final class TyrantFight implements Listener {
         if (!isOurs(boss)) {
             return;
         }
+        Tier tier = tierOf(boss);
         event.getDrops().clear();
-        event.getDrops().addAll(loot.forTier(tierOf(boss)));
+        event.getDrops().addAll(loot.forTier(tier));
+
+        Set<UUID> fighterIds = fighters.fighters(boss);
+        hallOfFame.guardianKilled(GUARDIAN_ID, tier, fighterIds, boss.getWorld().getName());
+        // A plain Bukkit event, not a direct call: Guild is a softdepend (plugin.yml), so this must
+        // not require Guild to be installed - firing to no listener is harmless, same shape as
+        // GuardianDefeatedEvent's own javadoc describes.
+        Bukkit.getPluginManager().callEvent(new GuardianDefeatedEvent(GUARDIAN_ID, tier.name(), fighterIds));
 
         BossBar bar = bossBars.remove(boss.getUniqueId());
         if (bar != null) {
@@ -214,8 +241,8 @@ public final class TyrantFight implements Listener {
         }
     }
 
-    /** Who hurt this boss this fight, for whatever reward/record code a later dispatch adds
-     * (Hall of Fame, Guild contracts - explicitly not wired up by this dispatch). */
+    /** Who hurt this boss this fight - also exposed for tests, since {@link #onDeath} already uses
+     * it internally to feed both the Hall of Fame and the Guild's {@code GuardianDefeatedEvent}. */
     public Set<UUID> fightersOf(LivingEntity boss) {
         return fighters.fighters(boss);
     }

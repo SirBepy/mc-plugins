@@ -1,7 +1,9 @@
 package dev.sirbepy.mc.minibosses.tyrant;
 
 import dev.sirbepy.mc.core.dragon.DragonFighters;
+import dev.sirbepy.mc.guild.events.GuardianDefeatedEvent;
 import dev.sirbepy.mc.minibosses.ability.GuardianAbilityRegistry;
+import dev.sirbepy.mc.minibosses.hof.HallOfFame;
 import dev.sirbepy.mc.minibosses.registry.GuardianDef;
 import dev.sirbepy.mc.minibosses.registry.GuardianRegistry;
 import dev.sirbepy.mc.minibosses.registry.Tier;
@@ -13,6 +15,8 @@ import org.bukkit.damage.DamageType;
 import org.bukkit.entity.Blaze;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.WitherSkeleton;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -65,6 +69,7 @@ class TyrantFightTest {
     private GuardianAbilityRegistry abilities;
     private TyrantFight fight;
     private AshenCore ashenCore;
+    private HallOfFame hallOfFame;
     private final AtomicLong clock = new AtomicLong(0);
 
     @BeforeEach
@@ -82,11 +87,14 @@ class TyrantFightTest {
 
         abilities = new GuardianAbilityRegistry();
         abilities.register(new BlazeSummonAbility(plugin, new Random(0)));
+        abilities.register(new BlazeWaveAbility(new Random(0)));
+        abilities.register(new AshenStormAbility(plugin));
 
         ashenCore = new AshenCore(plugin);
         TyrantLoot loot = new TyrantLoot(ashenCore);
         DragonFighters fighters = new DragonFighters(KEY, clock::get);
-        fight = new TyrantFight(plugin, guardians, abilities, fighters, loot, Logger.getLogger("minibosses-test"));
+        hallOfFame = new HallOfFame(tempDir.toFile(), Logger.getLogger("minibosses-test"));
+        fight = new TyrantFight(plugin, guardians, abilities, fighters, loot, hallOfFame, Logger.getLogger("minibosses-test"));
     }
 
     @AfterEach
@@ -120,10 +128,9 @@ class TyrantFightTest {
         var mythic = def.tiers().get(Tier.MYTHIC);
         assertEquals(List.of(BlazeSummonAbility.ID, "ashen_tyrant_blaze_wave", "ashen_tyrant_ashen_storm"),
                 mythic.abilityIds());
-        // Heroic/Mythic's extra ability ids are not registered yet - same no-crash precedent
-        // sentinel.SentinelFightTest already proved, re-verified for this second Guardian below.
-        assertTrue(abilities.get("ashen_tyrant_blaze_wave").isEmpty());
-        assertTrue(abilities.get("ashen_tyrant_ashen_storm").isEmpty());
+        // Phase B: both Heroic and Mythic's own ability ids now resolve to real implementations.
+        assertTrue(abilities.get(BlazeWaveAbility.ID).isPresent());
+        assertTrue(abilities.get(AshenStormAbility.ID).isPresent());
     }
 
     private LivingEntity spawnNormal() {
@@ -193,6 +200,132 @@ class TyrantFightTest {
         ashenCore.tick(alice);
         assertTrue(!alice.hasPotionEffect(org.bukkit.potion.PotionEffectType.FIRE_RESISTANCE),
                 "no relic held, no passive effect");
+    }
+
+    // --- Heroic's blaze wave + Mythic's ashen storm ---
+
+    @Test
+    void aHeroicTierFightSummonsAFourBlazeWaveAtHalfHealthAlongsideTheNormalTrickle() {
+        alice.teleport(new Location(world, 0, 64, 0));
+        LivingEntity boss = fight.spawn(new Location(world, 0, 64, 0), Tier.HEROIC).orElseThrow();
+        assertEquals(300.0, boss.getHealth());
+        assertEquals(0, world.getEntitiesByClass(Blaze.class).size(), "no blaze before the threshold");
+
+        // Crosses half of Heroic's 300 health (300 -> 100): triggers both the Normal trickle's
+        // periodic loop (ashen_tyrant_blaze_summon, still listed for Heroic) and the new wave
+        // (ashen_tyrant_blaze_wave), which spawns its 4 Blazes immediately, not on a timer.
+        melee(boss, 200);
+        assertEquals(BlazeWaveAbility.WAVE_SIZE, world.getEntitiesByClass(Blaze.class).size(),
+                "crossing half health must spawn the Heroic wave's Blazes immediately");
+
+        // The Normal trickle is also still registered for Heroic; its first pulse lands one tick
+        // later and adds one more Blaze on top of the wave's 4.
+        server.getScheduler().performTicks((int) BlazeSummonAbility.SUMMON_INTERVAL_TICKS + 1);
+        assertEquals(BlazeWaveAbility.WAVE_SIZE + 1, world.getEntitiesByClass(Blaze.class).size(),
+                "the Normal trickle must keep running alongside the Heroic wave");
+    }
+
+    @Test
+    void aMythicTierFightStartsTheAshenStormAtHalfHealthAndItDamagesAndBurnsNearbyPlayers() {
+        alice.teleport(new Location(world, 0, 64, 0));
+        LivingEntity boss = fight.spawn(new Location(world, 0, 64, 0), Tier.MYTHIC).orElseThrow();
+        assertEquals(560.0, boss.getHealth());
+        double healthBefore = alice.getHealth();
+
+        // Crosses half of Mythic's 560 health (560 -> 200): triggers ashen_tyrant_ashen_storm
+        // alongside the trickle and the wave.
+        melee(boss, 360);
+        server.getScheduler().performTicks((int) AshenStormAbility.PULSE_INTERVAL_TICKS + 1);
+
+        assertTrue(alice.getHealth() < healthBefore, "the ashen storm's first pulse must damage a nearby player");
+        assertTrue(alice.getFireTicks() > 0, "the ashen storm's first pulse must also burn a nearby player");
+    }
+
+    // --- Solo/group scaling (TyrantScaling) ---
+
+    @Test
+    void aSoloFighterLeavesHealthAtTheTierBaseline() {
+        alice.teleport(new Location(world, 0, 64, 0));
+        LivingEntity boss = fight.spawn(new Location(world, 0, 64, 0), Tier.NORMAL).orElseThrow();
+
+        assertEquals(140.0, boss.getHealth());
+    }
+
+    @Test
+    void aSecondNearbyFighterScalesHealthUp() {
+        alice.teleport(new Location(world, 0, 64, 0));
+        PlayerMock bob = server.addPlayer("Bob");
+        bob.teleport(new Location(world, 2, 64, 2));
+
+        LivingEntity boss = fight.spawn(new Location(world, 0, 64, 0), Tier.NORMAL).orElseThrow();
+
+        // TyrantScaling: +50% health per fighter beyond the first -> 2 nearby fighters means 1.5x
+        // the Normal baseline's 140 health. (ATTACK_DAMAGE is also scaled the same way in
+        // TyrantFight.spawn, but MockBukkit's WitherSkeleton exposes no ATTACK_DAMAGE
+        // AttributeInstance to assert against - TyrantFight already treats a missing attribute as
+        // a no-op, same null-guard precedent sentinel.SentinelFight already established.)
+        assertEquals(210.0, boss.getHealth(), 0.0001, "2 nearby fighters must scale health up from the solo baseline");
+    }
+
+    @Test
+    void scaledDamageIsAppliedWhenTheAttributeIsAvailable() {
+        // TyrantScaling itself, independent of whatever attributes MockBukkit's WitherSkeleton
+        // exposes: proves the formula TyrantFight.spawn feeds into Attribute.ATTACK_DAMAGE is correct.
+        assertEquals(9.0, TyrantScaling.scaledDamage(9.0, 1), 0.0001);
+        assertEquals(10.8, TyrantScaling.scaledDamage(9.0, 2), 0.0001);
+    }
+
+    // --- Hall of Fame + Guild contract wiring ---
+
+    @Test
+    void aNormalKillRecordsTheFirstEverHallOfFameEntry() {
+        LivingEntity boss = spawnNormal();
+        melee(boss, 1); // registers Alice as a fighter via DragonFighters, without killing the boss
+        EntityDeathEvent death = new EntityDeathEvent(boss,
+                DamageSource.builder(DamageType.PLAYER_ATTACK).withDirectEntity(alice).build(), new java.util.ArrayList<>());
+
+        fight.onDeath(death);
+
+        assertTrue(hallOfFame.done(TyrantFight.GUARDIAN_ID, HallOfFame.Slot.FIRST_KILL));
+        assertEquals(java.util.Map.of(alice.getUniqueId(), "Alice"),
+                hallOfFame.party(TyrantFight.GUARDIAN_ID, HallOfFame.Slot.FIRST_KILL));
+    }
+
+    @Test
+    void aMythicKillRecordsBothFirstKillAndFirstMythicHallOfFameSlots() {
+        alice.teleport(new Location(world, 0, 64, 0));
+        LivingEntity boss = fight.spawn(new Location(world, 0, 64, 0), Tier.MYTHIC).orElseThrow();
+        melee(boss, 1);
+        EntityDeathEvent death = new EntityDeathEvent(boss,
+                DamageSource.builder(DamageType.PLAYER_ATTACK).withDirectEntity(alice).build(), new java.util.ArrayList<>());
+
+        fight.onDeath(death);
+
+        assertTrue(hallOfFame.done(TyrantFight.GUARDIAN_ID, HallOfFame.Slot.FIRST_KILL));
+        assertTrue(hallOfFame.done(TyrantFight.GUARDIAN_ID, HallOfFame.Slot.FIRST_MYTHIC));
+    }
+
+    @Test
+    void aKillFiresTheGuildGuardianDefeatedEventWithTheRightShape() {
+        LivingEntity boss = spawnNormal();
+        melee(boss, 1);
+        List<GuardianDefeatedEvent> captured = new java.util.ArrayList<>();
+        server.getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            public void onGuardianDefeated(GuardianDefeatedEvent event) {
+                captured.add(event);
+            }
+        }, plugin);
+        EntityDeathEvent death = new EntityDeathEvent(boss,
+                DamageSource.builder(DamageType.PLAYER_ATTACK).withDirectEntity(alice).build(), new java.util.ArrayList<>());
+
+        fight.onDeath(death);
+
+        assertEquals(1, captured.size(), "a Guardian kill must fire exactly one GuardianDefeatedEvent");
+        GuardianDefeatedEvent event = captured.get(0);
+        assertEquals(TyrantFight.GUARDIAN_ID, event.guardianId());
+        assertEquals(Tier.NORMAL.name(), event.tier());
+        assertEquals(java.util.Set.of(alice.getUniqueId()), event.fighterIds());
     }
 
     // --- Discovery hook: rare drop + cooldown-gated summon ---

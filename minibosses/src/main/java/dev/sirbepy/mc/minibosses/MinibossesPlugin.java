@@ -13,7 +13,9 @@ import dev.sirbepy.mc.minibosses.sentinel.SentinelLoot;
 import dev.sirbepy.mc.minibosses.sentinel.SummonCooldown;
 import dev.sirbepy.mc.minibosses.sentinel.ThornVinesAbility;
 import dev.sirbepy.mc.minibosses.tyrant.AshenCore;
+import dev.sirbepy.mc.minibosses.tyrant.AshenStormAbility;
 import dev.sirbepy.mc.minibosses.tyrant.BlazeSummonAbility;
+import dev.sirbepy.mc.minibosses.tyrant.BlazeWaveAbility;
 import dev.sirbepy.mc.minibosses.tyrant.TyrantDiscovery;
 import dev.sirbepy.mc.minibosses.tyrant.TyrantFight;
 import dev.sirbepy.mc.minibosses.tyrant.TyrantLoot;
@@ -61,6 +63,8 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
         abilities.register(new ThornVinesAbility(this));
         abilities.register(new RegrowthAbility(this));
         abilities.register(new BlazeSummonAbility(this, new Random()));
+        abilities.register(new BlazeWaveAbility(new Random()));
+        abilities.register(new AshenStormAbility(this));
         hallOfFame = new HallOfFame(getDataFolder(), getLogger());
 
         DragonFighters sentinelFighters = new DragonFighters(new NamespacedKey(this, "sentinel-fighters"),
@@ -71,13 +75,13 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
         SummonCooldown cooldown = new SummonCooldown(SentinelDiscovery.COOLDOWN_MILLIS, System::currentTimeMillis);
         sentinelDiscovery = new SentinelDiscovery(this, sentinelFight, cooldown, new Random());
 
-        // Ashen Tyrant: foundation and Normal-tier fight only - no Hall of Fame/Guild wiring yet,
-        // matching the Sentinel's own foundation scope before its own follow-up dispatch landed.
+        // Ashen Tyrant: all 3 tiers now real (Phase B), wired into Hall of Fame/Guild the same way
+        // the Sentinel's own follow-up dispatch did.
         DragonFighters tyrantFighters = new DragonFighters(new NamespacedKey(this, "tyrant-fighters"),
                 System::currentTimeMillis);
         ashenCore = new AshenCore(this);
         TyrantLoot tyrantLoot = new TyrantLoot(ashenCore);
-        tyrantFight = new TyrantFight(this, guardians, abilities, tyrantFighters, tyrantLoot, getLogger());
+        tyrantFight = new TyrantFight(this, guardians, abilities, tyrantFighters, tyrantLoot, hallOfFame, getLogger());
         dev.sirbepy.mc.minibosses.tyrant.SummonCooldown tyrantCooldown =
                 new dev.sirbepy.mc.minibosses.tyrant.SummonCooldown(TyrantDiscovery.COOLDOWN_MILLIS, System::currentTimeMillis);
         tyrantDiscovery = new TyrantDiscovery(this, tyrantFight, tyrantCooldown, new Random());
