@@ -58,13 +58,14 @@ class MarksmanTest {
     }
 
     @Test
-    void closesInWhenFarOrBlockedHoldsAtRangeAndBacksOffWhenTooClose() {
+    void closesInWhenFarHoldsAtRangeStrafesWhenBlockedAndBacksOffWhenTooClose() {
         Marksman marksman = new Marksman(() -> 0);
 
         assertEquals(Marksman.Move.CLOSE_IN, marksman.move(12, true));
-        assertEquals(Marksman.Move.CLOSE_IN, marksman.move(6, false));
         assertEquals(Marksman.Move.HOLD, marksman.move(6, true));
-        assertEquals(Marksman.Move.BACK_OFF, marksman.move(1, false), "at a pillar's base, back off to see over it");
+        assertEquals(Marksman.Move.STRAFE, marksman.move(6, false), "a blocked angle is sidestepped, not walked into");
+        assertEquals(Marksman.Move.STRAFE, marksman.move(12, false), "blocked overrides far, too - walking in keeps the same angle");
+        assertEquals(Marksman.Move.BACK_OFF, marksman.move(1, false), "too close still wins over a blocked shot");
         assertFalse(marksman.move(Marksman.TOO_CLOSE, true) == Marksman.Move.BACK_OFF);
     }
 }

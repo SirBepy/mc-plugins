@@ -11,7 +11,7 @@ import java.util.function.IntSupplier;
  */
 public final class Marksman {
 
-    public enum Move { CLOSE_IN, HOLD, BACK_OFF }
+    public enum Move { CLOSE_IN, HOLD, BACK_OFF, STRAFE }
 
     public enum Shot { NONE, BOLT, ROCKET }
 
@@ -39,11 +39,19 @@ public final class Marksman {
         this.aimDelay = aimDelay;
     }
 
+    /**
+     * A blocked shot (the owner or the other cousin standing in the line of fire) never resolves by
+     * walking straight at the target - that line is collinear with the blockage by construction, so
+     * {@link #STRAFE} sidesteps it instead of {@link #CLOSE_IN}, at any range.
+     */
     public Move move(double horizontal, boolean clearShot) {
         if (horizontal < TOO_CLOSE) {
             return Move.BACK_OFF;
         }
-        return !clearShot || horizontal > HOLD ? Move.CLOSE_IN : Move.HOLD;
+        if (!clearShot) {
+            return Move.STRAFE;
+        }
+        return horizontal > HOLD ? Move.CLOSE_IN : Move.HOLD;
     }
 
     /** What leaves the crossbow on server tick {@code tick}, if anything; firing starts the next reload. */

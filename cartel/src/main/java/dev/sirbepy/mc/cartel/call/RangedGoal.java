@@ -61,17 +61,23 @@ public final class RangedGoal implements Goal<Mob> {
     static final int ROCKET_FLIGHT = 2;
     static final String SHOT_SOUND = "claudesmp:pollos_gun.shot";
 
+    /** Sidestep this far around a blocked shot - inside {@link Marksman#RANGE} so the resulting spot
+     * can still fire once the angle clears. */
+    private static final double STRAFE_DISTANCE = 4;
+
     private final GoalKey<Mob> key;
     private final Mob cousin;
     private final Predicate<Entity> friendly;
     private final Marksman marksman;
     private int repath;
+    private boolean strafeLeft;
 
     private RangedGoal(Plugin plugin, Mob cousin, Predicate<Entity> friendly, Random random) {
         this.key = GoalKey.of(Mob.class, new NamespacedKey(plugin, "crossbow"));
         this.cousin = cousin;
         this.friendly = friendly;
         this.marksman = new Marksman(() -> random.nextInt(Marksman.AIM_SPREAD));
+        this.strafeLeft = random.nextBoolean();
     }
 
     /**
@@ -126,6 +132,7 @@ public final class RangedGoal implements Goal<Mob> {
                 case CLOSE_IN -> cousin.getPathfinder().moveTo(target, 1.0);
                 case HOLD -> cousin.getPathfinder().stopPathfinding();
                 case BACK_OFF -> backOff(target);
+                case STRAFE -> strafe(target);
             }
         }
         switch (marksman.tick(Bukkit.getCurrentTick(), at.distance(there), clear)) {
@@ -143,6 +150,26 @@ public final class RangedGoal implements Goal<Mob> {
             away = new Vector(1, 0, 0);
         }
         Location spot = target.getLocation().add(away.normalize().multiply(Marksman.HOLD));
+        SpawnSpots.standable(at.getWorld(), spot.getBlockX(), at.getBlockY(), spot.getBlockZ())
+                .ifPresent(standable -> cousin.getPathfinder().moveTo(standable, 1.0));
+    }
+
+    /** The owner between a cousin and his target is collinear with straight approach/retreat, so a
+     * blocked shot sidesteps perpendicular to that line instead - alternating side each call, so a
+     * side that's still blocked (e.g. the owner moved along) doesn't get retried forever. */
+    private void strafe(LivingEntity target) {
+        Location at = cousin.getLocation();
+        Vector line = at.toVector().subtract(target.getLocation().toVector()).setY(0);
+        if (line.lengthSquared() < 0.01) {
+            line = new Vector(1, 0, 0);
+        }
+        line.normalize();
+        Vector perpendicular = new Vector(-line.getZ(), 0, line.getX());
+        if (!strafeLeft) {
+            perpendicular.multiply(-1);
+        }
+        strafeLeft = !strafeLeft;
+        Location spot = at.clone().add(perpendicular.multiply(STRAFE_DISTANCE));
         SpawnSpots.standable(at.getWorld(), spot.getBlockX(), at.getBlockY(), spot.getBlockZ())
                 .ifPresent(standable -> cousin.getPathfinder().moveTo(standable, 1.0));
     }
