@@ -1,0 +1,20 @@
+{
+    "id": "ulgconvert",
+    "pack": {
+      "max_format": [121,0],
+      "min_format": [121,0],
+      "pack_format": 121,
+      "description": [
+        {
+          "text": "ulg -> Eclipse backpack converter ",
+          "color": "gold",
+          "italic": false
+        },
+        {
+          "text": "(legacy-backpack conversion, prototype)",
+          "color": "gray",
+          "italic": false
+        }
+      ]
+    }
+  }
