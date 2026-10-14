@@ -65,6 +65,11 @@ public final class WaveMath {
     public record PlannedSpawn(String type, From from, UUID target) {
     }
 
+    /** {@code spawns} fit under the cap this tick; {@code overflow} is the rest of the same wave,
+     * in entry order, for the caller to retry once room frees up rather than lose it for good. */
+    public record PlanResult(List<PlannedSpawn> spawns, List<PlannedSpawn> overflow) {
+    }
+
     /**
      * Which of {@code thresholds} (fractions of max health, e.g. 0.75/0.5/0.25) this hit newly
      * crossed - the hit's starting fraction was above a threshold and its ending fraction is at or
@@ -97,31 +102,42 @@ public final class WaveMath {
      * What one wave spawns, in entry order: {@code players} fighters scale the gate and dragon
      * entries, and a damagers entry puts its mobs on each of the first {@code topDamagers} of
      * {@code damagers} (already sorted, most damage first). Capped so {@code currentAlive} plus the
-     * spawn never exceeds {@code maxAlive}; mobs past the cap are dropped, in entry order.
+     * spawn never exceeds {@code maxAlive}; mobs past the cap are left for the caller to retry
+     * (see {@link #planWithOverflow}).
      */
     public static List<PlannedSpawn> plan(List<WaveEntry> entries, int players, List<UUID> damagers,
                                           int currentAlive, int maxAlive) {
+        return planWithOverflow(entries, players, damagers, currentAlive, maxAlive).spawns();
+    }
+
+    /**
+     * Same as {@link #plan}, but also returns the entries that didn't fit under the cap instead of
+     * dropping them: a late wave planned while the cult is crowded would otherwise permanently lose
+     * mobs that never get a later chance to spawn once earlier ones die off.
+     */
+    public static PlanResult planWithOverflow(List<WaveEntry> entries, int players, List<UUID> damagers,
+                                          int currentAlive, int maxAlive) {
         List<PlannedSpawn> out = new ArrayList<>();
+        List<PlannedSpawn> overflow = new ArrayList<>();
         int budget = Math.max(0, maxAlive - currentAlive);
         for (WaveEntry entry : entries) {
             if (entry.from() == From.DAMAGERS) {
                 int targets = Math.min(entry.topDamagers(), damagers.size());
                 for (int t = 0; t < targets; t++) {
-                    for (int i = 0; i < entry.base() && out.size() < budget; i++) {
-                        out.add(new PlannedSpawn(entry.type(), From.DAMAGERS, damagers.get(t)));
+                    for (int i = 0; i < entry.base(); i++) {
+                        PlannedSpawn spawn = new PlannedSpawn(entry.type(), From.DAMAGERS, damagers.get(t));
+                        (out.size() < budget ? out : overflow).add(spawn);
                     }
                 }
             } else {
                 int count = entry.count(players);
-                for (int i = 0; i < count && out.size() < budget; i++) {
-                    out.add(new PlannedSpawn(entry.type(), entry.from(), null));
+                for (int i = 0; i < count; i++) {
+                    PlannedSpawn spawn = new PlannedSpawn(entry.type(), entry.from(), null);
+                    (out.size() < budget ? out : overflow).add(spawn);
                 }
             }
-            if (out.size() >= budget) {
-                break;
-            }
         }
-        return out;
+        return new PlanResult(out, overflow);
     }
 
     /** How many queued mobs to spawn per tick so {@code queued} of them come out over about

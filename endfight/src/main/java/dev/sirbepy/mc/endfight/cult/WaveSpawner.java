@@ -71,6 +71,9 @@ public final class WaveSpawner implements Listener {
     private final Random random = new Random();
 
     private final Deque<Pending> queue = new ArrayDeque<>();
+    /** Overflow from a wave planned while the cult was crowded ({@link WaveMath#planWithOverflow}):
+     * held here instead of lost, and promoted into {@code queue} as room frees up. */
+    private final Deque<Pending> overflow = new ArrayDeque<>();
     private final Set<UUID> falling = new HashSet<>();
     private int rate = 1;
     private int gateCursor;
@@ -105,9 +108,22 @@ public final class WaveSpawner implements Listener {
         rate = WaveMath.perTick(queue.size(), config.get().waves().spreadTicks());
     }
 
-    /** Mobs planned but not spawned yet; they count towards the alive cap. */
+    /** Holds a wave's overflow (past {@code maxAlive} at plan time) for {@code dragon}; promoted
+     * into the spawn queue once earlier mobs die off and room frees up. */
+    public void enqueueOverflow(EnderDragon dragon, List<WaveMath.PlannedSpawn> spawns) {
+        if (spawns.isEmpty()) {
+            return;
+        }
+        for (WaveMath.PlannedSpawn spawn : spawns) {
+            overflow.addLast(new Pending(dragon.getWorld().getUID(), dragon.getUniqueId(), spawn, gateCursor++));
+        }
+        logger.info("Cult wave planned " + spawns.size() + " mob(s) past the alive cap; holding them for later instead of dropping them.");
+    }
+
+    /** Mobs planned but not spawned yet, including overflow still waiting on room; they count
+     * towards the alive cap so a later wave doesn't over-commit on top of them. */
     public int queued() {
-        return queue.size();
+        return queue.size() + overflow.size();
     }
 
     void tick() {
@@ -115,6 +131,7 @@ public final class WaveSpawner implements Listener {
         if (ticks % LANDING_CHECK_TICKS == 0) {
             landFallers();
         }
+        promoteOverflow();
         if (queue.isEmpty()) {
             return;
         }
@@ -131,12 +148,39 @@ public final class WaveSpawner implements Listener {
         }
     }
 
+    /** Moves overflow mobs into the live queue as alive-count room frees up, one world's worth of
+     * cap at a time so a crowded world doesn't starve another's overflow. */
+    private void promoteOverflow() {
+        if (overflow.isEmpty()) {
+            return;
+        }
+        int maxAlive = config.get().maxAlive();
+        boolean changed = false;
+        while (!overflow.isEmpty()) {
+            Pending candidate = overflow.peekFirst();
+            World world = Bukkit.getWorld(candidate.world());
+            if (world == null) {
+                overflow.pollFirst();
+                continue;
+            }
+            if (CultRange.aliveWaveCount(world) + queue.size() >= maxAlive) {
+                break;
+            }
+            queue.addLast(overflow.pollFirst());
+            changed = true;
+        }
+        if (changed) {
+            rate = WaveMath.perTick(queue.size(), config.get().waves().spreadTicks());
+        }
+    }
+
     /** A dead dragon's army stops coming. */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onDragonDeath(EntityDeathEvent event) {
         if (event.getEntity() instanceof EnderDragon dragon) {
             UUID world = dragon.getWorld().getUID();
             queue.removeIf(p -> p.world().equals(world));
+            overflow.removeIf(p -> p.world().equals(world));
         }
     }
 
@@ -282,6 +326,9 @@ public final class WaveSpawner implements Listener {
     public Map<String, Integer> queuedByType() {
         Map<String, Integer> out = new HashMap<>();
         for (Pending pending : queue) {
+            out.merge(pending.spawn().type(), 1, Integer::sum);
+        }
+        for (Pending pending : overflow) {
             out.merge(pending.spawn().type(), 1, Integer::sum);
         }
         return out;

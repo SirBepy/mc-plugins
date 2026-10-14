@@ -75,7 +75,11 @@ public final class CultWaves implements Listener {
         List<Player> fighters = CultRange.fighters(world, cfg.waves().range());
         List<UUID> damagers = topDamagers(dragon, fighters);
         int alive = CultRange.aliveWaveCount(world) + spawner.queued();
-        List<WaveMath.PlannedSpawn> spawns = WaveMath.plan(wave.entries(), fighters.size(), damagers, alive, cfg.maxAlive());
+        WaveMath.PlanResult result = WaveMath.planWithOverflow(wave.entries(), fighters.size(), damagers, alive, cfg.maxAlive());
+        List<WaveMath.PlannedSpawn> spawns = result.spawns();
+        if (!result.overflow().isEmpty()) {
+            spawner.enqueueOverflow(dragon, result.overflow());
+        }
         if (spawns.isEmpty()) {
             return;
         }

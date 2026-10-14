@@ -186,6 +186,34 @@ class CultWavesTest {
         assertEquals(4, aliveCult(), "never past the cap, even with two waves queued at once");
     }
 
+    // Mobs a wave can't fit under the cap are held as overflow, never dropped, and promoted into
+    // the live queue once earlier wave mobs die and room frees up.
+    @Test
+    void overflowPastTheCapSpawnsLaterOnceRoomFreesUp() {
+        config = new CultConfig(section("max-alive", 5));
+        EnderDragon dragon = dragon();
+        dragon.setHealth(151);
+
+        hit(dragon, 2); // 151 -> 149: crosses 75% only (4 pillagers, 2 vindicators, 2 piglins = 8)
+        server.getScheduler().performTicks(100);
+
+        assertEquals(5, aliveCult(), "capped at 5; 3 more are held as overflow, not dropped");
+        assertEquals(3, spawner.queued(), "the 3 that didn't fit are still tracked, not lost");
+
+        List<LivingEntity> toKill = end.getEntitiesByClass(LivingEntity.class).stream()
+                .filter(CultMarker::isCult)
+                .limit(3)
+                .toList();
+        for (LivingEntity entity : toKill) {
+            entity.remove();
+        }
+        assertEquals(2, aliveCult(), "3 died, freeing room under the cap");
+        server.getScheduler().performTicks(100);
+
+        assertEquals(5, aliveCult(), "the held overflow fills the freed room back up to the cap");
+        assertEquals(0, spawner.queued(), "nothing left waiting: all 8 planned mobs made it out across the two rounds");
+    }
+
     @Test
     void aSecondHitThatDoesNotCrossAnotherThresholdSpawnsNothingMore() {
         EnderDragon dragon = dragon();

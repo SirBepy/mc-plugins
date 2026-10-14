@@ -100,6 +100,21 @@ class WaveMathTest {
         assertTrue(WaveMath.plan(entries, 0, List.of(), 60, 60).isEmpty());
     }
 
+    // planWithOverflow hands back mobs the cap couldn't fit instead of dropping them, so the
+    // caller can retry once room frees up.
+    @Test
+    void mobsPastTheCapComeBackAsOverflowInsteadOfBeingDropped() {
+        List<WaveMath.WaveEntry> entries = List.of(
+                new WaveMath.WaveEntry("pillager", 4, 0),
+                new WaveMath.WaveEntry("vindicator", 4, 0));
+
+        WaveMath.PlanResult result = WaveMath.planWithOverflow(entries, 0, List.of(), 55, 60);
+
+        assertEquals(5, result.spawns().size(), "60 - 55 alive = room for 5 now");
+        assertEquals(3, result.overflow().size(), "the other 3 vindicators are held, not dropped");
+        assertEquals(List.of("vindicator", "vindicator", "vindicator"), types(result.overflow()));
+    }
+
     // Joe, 2026-10-09: 3 phantoms on each of the top 5-6 damage dealers.
     @Test
     void phantomsGoThreeToEachOfTheTopDamageDealersOnly() {
