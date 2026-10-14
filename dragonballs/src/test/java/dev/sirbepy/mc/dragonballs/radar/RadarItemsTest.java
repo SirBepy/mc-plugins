@@ -71,13 +71,13 @@ class RadarItemsTest {
         assertTrue(items.isShowingIdle(radar));
         assertFalse(items.isShowingActive(radar));
         assertTrue(items.isRadar(radar));
-        assertEquals("Dragon Radar", plain(radar.getItemMeta().displayName()));
+        assertEquals("Default Radar", plain(radar.getItemMeta().displayName()));
 
         assertTrue(items.show(radar, new RadarReading(4, RadarBand.CLOSE, false)));
         assertTrue(items.isShowingActive(radar));
         assertTrue(items.isShowingBand(radar, RadarBand.CLOSE));
         assertEquals(List.of("dragon_radar_close"), radar.getItemMeta().getCustomModelDataComponent().getStrings());
-        assertEquals("Dragon Radar: 4-star (nearest), Close", plain(radar.getItemMeta().displayName()));
+        assertEquals("Default Radar: 4-star (nearest), Close", plain(radar.getItemMeta().displayName()));
     }
 
     @Test
@@ -86,7 +86,7 @@ class RadarItemsTest {
 
         items.show(radar, new RadarReading(2, RadarBand.FAR, true));
 
-        assertEquals("Dragon Radar: 2-star, Far", plain(radar.getItemMeta().displayName()));
+        assertEquals("Default Radar: 2-star, Far", plain(radar.getItemMeta().displayName()));
     }
 
     @Test

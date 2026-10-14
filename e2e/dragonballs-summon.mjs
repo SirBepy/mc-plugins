@@ -29,7 +29,7 @@ try {
   await collectAllSeven(hunter, HUNTER);
 
   // --- 8. radar: purchase, can't-afford, and tracking the nearest active ball -----------------------
-  await step('buying a Dragon Radar costs 1000 and the sign refuses without enough', async () => {
+  await step('buying a Default Radar costs 1000 and the sign refuses without enough', async () => {
     await rcon.command(`minecraft:forceload add ${SIGN.x - 8} ${SIGN.z - 8} ${SIGN.x + 8} ${SIGN.z + 8}`);
     await rcon.command(`minecraft:fill ${SIGN.x - 2} ${SIGN.y - 1} ${SIGN.z - 2} ${SIGN.x + 2} ${SIGN.y - 1} ${SIGN.z + 2} minecraft:stone`);
     await rcon.command(`minecraft:fill ${SIGN.x - 2} ${SIGN.y} ${SIGN.z - 2} ${SIGN.x + 2} ${SIGN.y + 3} ${SIGN.z + 2} minecraft:air`);
@@ -50,7 +50,7 @@ try {
     const sinceBroke = hunter.lines.length;
     await hunter.activateBlock(signBlock);
     await sleep(500);
-    await waitForLine(hunter, /A Dragon Radar costs/, 3_000, sinceBroke);
+    await waitForLine(hunter, /A Default Radar costs/, 3_000, sinceBroke);
     assert((await balance(HUNTER)) === 0, 'balance unchanged when the sign refuses');
     assert(hunter.inventory.items().filter((i) => i.name === 'compass').length === compassesBefore + 1,
       'no second compass was granted without paying');

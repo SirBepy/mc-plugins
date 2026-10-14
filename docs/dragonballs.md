@@ -16,7 +16,7 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
 
   | Set | Lives in | Looks | Its radar |
   | --- | --- | --- | --- |
-  | Overworld | the overworld | orange | Dragon Radar, 1000 coins |
+  | Overworld | the overworld | orange | Default Radar, 1000 coins |
   | Nether | the Nether | red | Nether Radar, 5000 coins |
   | End | the End | purple | End Radar, 20000 coins |
 
@@ -92,7 +92,7 @@ wishes. Joe agreed the rulebook on 2026-10-06 ("Rulebook v2"); change it only wi
   own set, including balls someone is carrying, and only works in that set's dimension (elsewhere
   it shows no signal). It shows how far only in bands, never a number (Joe, 2026-10-08): its one
   dot sits further out from the screen's centre the further away the ball is, and the radar's
-  name says the band and the ball, e.g. "Dragon Radar: 4-star (nearest), Close". The bands are
+  name says the band and the ball, e.g. "Default Radar: 4-star (nearest), Close". The bands are
   Far (1000+ blocks), Getting warm (300-1000), Close (50-300) and Right here (under 50, the dot
   blinks fast); the Nether's are half as wide, since its balls land closer. **Sneak + right-click**
   (in the air or on a block) tracks the next ball instead: the nearest one pinned, then each awake

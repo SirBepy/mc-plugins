@@ -199,7 +199,7 @@ class RadarTaskTest {
         player.teleport(new Location(world, 0, 64, -1980));
         task.run();
         assertTrue(items.isShowingBand(hand(), RadarBand.HERE));
-        assertEquals("Dragon Radar: 3-star (nearest), Right here", plain(hand()));
+        assertEquals("Default Radar: 3-star (nearest), Right here", plain(hand()));
     }
 
     @Test
@@ -213,7 +213,7 @@ class RadarTaskTest {
         task.run();
 
         assertEquals(-900, player.getCompassTarget().getBlockX());
-        assertEquals("Dragon Radar: 6-star, Getting warm", plain(hand()));
+        assertEquals("Default Radar: 6-star, Getting warm", plain(hand()));
     }
 
     @Test
@@ -230,7 +230,7 @@ class RadarTaskTest {
 
         assertEquals(100, player.getCompassTarget().getBlockX());
         assertNull(tracking.picked(player.getUniqueId(), BallSet.OVERWORLD));
-        assertEquals("Dragon Radar: 1-star (nearest), Close", plain(hand()));
+        assertEquals("Default Radar: 1-star (nearest), Close", plain(hand()));
     }
 
     @Test

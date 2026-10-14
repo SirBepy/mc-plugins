@@ -113,7 +113,7 @@ try {
     await buyAndCheck('nether', 'Nether Dragon Radar', 'dragon_radar_nether', false);
     await buyAndCheck('end', 'End Dragon Radar', 'dragon_radar_end', false);
     // Kept deliberately: step 4 needs an Overworld radar in hand to prove it's refused on a Nether ball.
-    await buyAndCheck('overworld', 'Dragon Radar', 'dragon_radar', true);
+    await buyAndCheck('overworld', 'Default Radar', 'dragon_radar', true);
 
     for (const pos of Object.values(SIGNS)) await clearSign(pos);
     await rcon.command(`minecraft:forceload remove ${SIGNS.overworld.x - 8} ${SIGNS.overworld.z - 8} ${SIGNS.overworld.x + 8} ${SIGNS.overworld.z + 8}`);

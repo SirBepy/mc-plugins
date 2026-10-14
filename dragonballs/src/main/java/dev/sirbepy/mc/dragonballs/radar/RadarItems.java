@@ -83,10 +83,10 @@ public final class RadarItems {
         return item;
     }
 
-    /** "Dragon Radar"/"Nether Dragon Radar"/"End Dragon Radar", for purchase/shop messages. */
+    /** "Default Radar"/"Nether Dragon Radar"/"End Dragon Radar", for purchase/shop messages. */
     public static String displayName(BallSet set) {
         String word = set.displayWord();
-        return (word.isEmpty() ? "" : word + " ") + "Dragon Radar";
+        return word.isEmpty() ? "Default Radar" : word + " Dragon Radar";
     }
 
     public boolean isShowingActive(ItemStack item) {

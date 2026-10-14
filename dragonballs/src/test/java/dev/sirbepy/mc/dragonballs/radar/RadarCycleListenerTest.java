@@ -76,7 +76,7 @@ class RadarCycleListenerTest {
 
         click(Action.RIGHT_CLICK_AIR, EquipmentSlot.HAND, null);
         assertEquals(2, tracking.picked(player.getUniqueId(), BallSet.OVERWORLD));
-        assertEquals("Dragon Radar: 2-star, Close", name(player.getInventory().getItemInMainHand()),
+        assertEquals("Default Radar: 2-star, Close", name(player.getInventory().getItemInMainHand()),
                 "the radar shows the new pick straight away, not on the next 1 s pass");
 
         click(Action.RIGHT_CLICK_AIR, EquipmentSlot.HAND, null);
