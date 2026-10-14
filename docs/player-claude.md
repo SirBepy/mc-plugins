@@ -94,9 +94,12 @@ Player agents talk and look things up. Anything that changes live or needs a dec
     player. Use the project's existing offline preview renderers (item display models, armor looks)
     rather than guessing from text.
   - Publish the renders to the public site (`sirbepy.github.io/sirbepys-minecraft-server`) under a
-    `preview/<slug>` path (e.g. `preview/dvolic_wings_1`) as a temporary, shareable preview. A push
-    to that repo still needs Joe's OK per push, same as any other site change (see
-    `public-website-repo` memory) - ask him before pushing the preview, same as any other site push.
+    `preview/<slug>` path (e.g. `preview/dvolic_wings_1`) as a temporary, shareable preview. Push it
+    straight away, no question to Joe first (Joe, 2026-10-14: "i don't want you checking with me if
+    i approve of the style ... upload it to github and give [the player] the images") - this is the
+    one site-push path that's exempt from the usual "ask Joe before pushing" rule in the
+    `public-website-repo` memory, because it's a disposable per-player preview page, not a change to
+    the live site itself.
 - Dragon Balls wishes.
 
 ### Player agent prompt template
