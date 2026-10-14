@@ -1,0 +1,29 @@
+# The Ashen Tyrant: second of the Three Ancient Guardians. Normal tier is this dispatch's real,
+# tested fight content (dev.sirbepy.mc.minibosses.tyrant). Heroic/Mythic list ability ids a
+# follow-up dispatch still has to implement (ashen_tyrant_blaze_wave, ashen_tyrant_ashen_storm) -
+# GuardianAbilityRegistry.get() returns empty for an id nobody registered yet and TyrantFight just
+# skips it, same no-crash precedent overgrown_sentinel.yml already proved for its own Heroic/Mythic
+# rows; proven again here by TyrantFightTest. Nether dimension: TyrantFight/BlazeSummonAbility both
+# use scheduler tick counters for their periodic triggers, never World#getFullTime(), since that
+# call is always 0 in the Nether on this server (memory: nether-end-no-day-clock.md).
+id: ashen_tyrant
+display-name: "The Ashen Tyrant"
+dimension: NETHER
+description: "An ancient fortress warrior: fire attacks and blaze summons."
+summon-hook: "ashen_tyrant_discovery"
+tiers:
+  normal:
+    health: 140.0
+    damage: 9.0
+    abilities: ["ashen_tyrant_blaze_summon"]
+    loot-table: "ashen_tyrant_normal"
+  heroic:
+    health: 300.0
+    damage: 16.0
+    abilities: ["ashen_tyrant_blaze_summon", "ashen_tyrant_blaze_wave"]
+    loot-table: "ashen_tyrant_heroic"
+  mythic:
+    health: 560.0
+    damage: 25.0
+    abilities: ["ashen_tyrant_blaze_summon", "ashen_tyrant_blaze_wave", "ashen_tyrant_ashen_storm"]
+    loot-table: "ashen_tyrant_mythic"
