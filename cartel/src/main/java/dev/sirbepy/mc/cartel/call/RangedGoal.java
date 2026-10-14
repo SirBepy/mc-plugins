@@ -74,11 +74,21 @@ public final class RangedGoal implements Goal<Mob> {
         this.marksman = new Marksman(() -> random.nextInt(Marksman.AIM_SPREAD));
     }
 
-    /** {@code friendly}: whoever a bolt must never be fired through (the other cousin, the boss). */
+    /**
+     * {@code friendly}: whoever a bolt must never be fired through (the other cousin, the boss).
+     * Also strips the zombie's own target-selector goal: left in place, it keeps re-targeting the
+     * nearest player (the owner, cancelled by {@link CousinListener#onTarget} since the owner isn't
+     * fair game) and its {@code stop()} nulls {@link Mob#getTarget()} out from under whatever
+     * {@link CallManager#tick} just assigned, racing with it every 10 ticks. Guard Mode showed this
+     * live (2026-10-14): a husk spawned 3 blocks from the owner sat at full health for a full 20 s
+     * while the owner took repeated hits, because the vanilla goal kept wiping the husk target before
+     * {@link RangedGoal} ever got to fire on it.
+     */
     public static void attach(Plugin plugin, Mob cousin, Predicate<Entity> friendly, Random random) {
         MobGoals goals = plugin.getServer().getMobGoals();
         if (cousin instanceof Zombie zombie) {
             goals.removeGoal(zombie, VanillaGoal.ZOMBIE_ATTACK);
+            goals.removeGoal(zombie, VanillaGoal.NEAREST_ATTACKABLE);
         }
         goals.addGoal(cousin, PRIORITY, new RangedGoal(plugin, cousin, friendly, random));
     }

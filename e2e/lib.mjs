@@ -8,7 +8,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const runDir = path.join(here, '..', 'testserver', 'run-e2e');
 
 export const HOST = '127.0.0.1';
-export const PORT = 25565;
+export const PORT = 25567;
 // Mineflayer tops out at 26.1; ViaBackwards on the 26.2 e2e server bridges the gap.
 export const BOT_VERSION = '26.1';
 

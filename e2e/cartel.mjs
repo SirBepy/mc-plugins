@@ -149,9 +149,19 @@ try {
 
   await step('the guards kill a monster near the owner and leave a bystander alone', async () => {
     const healthBefore = target.health;
+    const t0 = Date.now();
     await rcon.command(`minecraft:summon minecraft:husk ${BX + 3} ${PLATFORM_Y + 1} ${BZ + 8} {Tags:["cartel.probe"],PersistenceRequired:1b}`);
+    // Guard Mode's targeting is still an open issue. Removing VanillaGoal.NEAREST_ATTACKABLE
+    // in RangedGoal.attach fixed one confirmed cause (it fought CallManager for control of the cousins'
+    // target, so a husk could sit at full health while the owner took hits), but a live run on
+    // 2026-10-14 still saw the cousins never land a hit in 20 s while the husk killed both the owner
+    // and the bystander, with both cousins confirmed alive throughout. Keep this assertion strict:
+    // weakening it to "owner survived" would hide that failure mode instead of catching it.
     await waitFor(async () => !/count/i.test(await rcon.command('minecraft:execute if entity @e[tag=cartel.probe]')),
-      'the husk is dead', 20_000);
+      'the husk is dead', 20_000).catch((error) => {
+      throw new Error(`${error.message} (owner ${owner.health}, bystander ${target.health})`);
+    });
+    console.log(`  guards killed the husk in ${Date.now() - t0}ms`);
     assert(target.health >= healthBefore, `bystander unhurt (${healthBefore} -> ${target.health})`);
     assert(owner.health === 20, `owner unhurt (${owner.health})`);
   });
