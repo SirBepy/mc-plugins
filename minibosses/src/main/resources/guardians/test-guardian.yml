@@ -1,0 +1,24 @@
+# Placeholder Guardian, used only to prove GuardianRegistry's YAML loader round-trips correctly.
+# Not real content - the Overgrown Sentinel/Ashen Tyrant/Void Sovereign specifics are each their
+# own future todo.
+id: test-guardian
+display-name: "Test Guardian"
+dimension: THE_END
+description: "A placeholder Guardian for proving the loader works, not real content."
+summon-hook: "test-guardian-ritual"
+tiers:
+  normal:
+    health: 100.0
+    damage: 6.0
+    abilities: ["slam"]
+    loot-table: "test-guardian-normal"
+  heroic:
+    health: 200.0
+    damage: 10.0
+    abilities: ["slam", "roar"]
+    loot-table: "test-guardian-heroic"
+  mythic:
+    health: 400.0
+    damage: 16.0
+    abilities: ["slam", "roar", "nova"]
+    loot-table: "test-guardian-mythic"
