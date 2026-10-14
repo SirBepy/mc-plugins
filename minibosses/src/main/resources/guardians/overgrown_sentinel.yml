@@ -1,0 +1,27 @@
+# The Overgrown Sentinel: first of the Three Ancient Guardians. Normal tier is real,
+# tested fight content as of this file (dev.sirbepy.mc.minibosses.sentinel). Heroic/Mythic list
+# ability ids a follow-up dispatch still has to implement (overgrown_sentinel_thorn_vines,
+# overgrown_sentinel_regrowth) - GuardianAbilityRegistry.get() returns empty for an id nobody
+# registered yet and SentinelFight just skips it, so an unresolved id here does not crash anything;
+# proven by SentinelFightTest.
+id: overgrown_sentinel
+display-name: "The Overgrown Sentinel"
+dimension: NORMAL
+description: "An Overworld nature guardian: ground attacks and defensive/CC abilities."
+summon-hook: "overgrown_sentinel_discovery"
+tiers:
+  normal:
+    health: 120.0
+    damage: 8.0
+    abilities: ["overgrown_sentinel_root"]
+    loot-table: "overgrown_sentinel_normal"
+  heroic:
+    health: 260.0
+    damage: 14.0
+    abilities: ["overgrown_sentinel_root", "overgrown_sentinel_thorn_vines"]
+    loot-table: "overgrown_sentinel_heroic"
+  mythic:
+    health: 480.0
+    damage: 22.0
+    abilities: ["overgrown_sentinel_root", "overgrown_sentinel_thorn_vines", "overgrown_sentinel_regrowth"]
+    loot-table: "overgrown_sentinel_mythic"
