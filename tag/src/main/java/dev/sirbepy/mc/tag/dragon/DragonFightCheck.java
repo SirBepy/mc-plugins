@@ -1,9 +1,7 @@
 package dev.sirbepy.mc.tag.dragon;
 
 import dev.sirbepy.mc.core.dragon.DragonFighters;
-import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
-import org.bukkit.World;
 import org.bukkit.entity.EnderDragon;
 
 import java.util.UUID;
@@ -21,14 +19,9 @@ public final class DragonFightCheck {
             new DragonFighters(new NamespacedKey("endfight", "dragon-fighters"), System::currentTimeMillis);
 
     public boolean isFighting(UUID uuid) {
-        for (World world : Bukkit.getWorlds()) {
-            if (world.getEnvironment() != World.Environment.THE_END) {
-                continue;
-            }
-            for (EnderDragon dragon : world.getEntitiesByClass(EnderDragon.class)) {
-                if (!dragon.isDead() && fighters.fighters(dragon).contains(uuid)) {
-                    return true;
-                }
+        for (EnderDragon dragon : DragonFighters.liveDragonsInTheEnd()) {
+            if (fighters.fighters(dragon).contains(uuid)) {
+                return true;
             }
         }
         return false;

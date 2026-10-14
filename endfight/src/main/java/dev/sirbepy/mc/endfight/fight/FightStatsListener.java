@@ -5,7 +5,6 @@ import dev.sirbepy.mc.endfight.arena.Pillar;
 import dev.sirbepy.mc.endfight.cult.CultMarker;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
-import org.bukkit.World;
 import org.bukkit.entity.ComplexEntityPart;
 import org.bukkit.entity.EnderCrystal;
 import org.bukkit.entity.EnderDragon;
@@ -59,7 +58,7 @@ public final class FightStatsListener implements Listener {
             return;
         }
         Player player = blame.responsible(event);
-        EnderDragon dragon = player != null ? livingDragon(crystal.getWorld()) : null;
+        EnderDragon dragon = player != null ? DragonFighters.liveDragon(crystal.getWorld()).orElse(null) : null;
         if (dragon == null) {
             return;
         }
@@ -105,19 +104,8 @@ public final class FightStatsListener implements Listener {
         if (killer == null || type == null) {
             return;
         }
-        EnderDragon dragon = livingDragon(dead.getWorld());
-        if (dragon != null) {
-            FightStats.addKill(dragon.getPersistentDataContainer(), killer.getUniqueId(), type);
-        }
-    }
-
-    private static EnderDragon livingDragon(World world) {
-        for (EnderDragon dragon : world.getEntitiesByClass(EnderDragon.class)) {
-            if (!dragon.isDead()) {
-                return dragon;
-            }
-        }
-        return null;
+        DragonFighters.liveDragon(dead.getWorld())
+                .ifPresent(dragon -> FightStats.addKill(dragon.getPersistentDataContainer(), killer.getUniqueId(), type));
     }
 
     private static EnderDragon dragonOf(Entity entity) {

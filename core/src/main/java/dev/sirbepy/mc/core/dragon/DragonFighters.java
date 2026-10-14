@@ -25,9 +25,12 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.LongSupplier;
@@ -194,6 +197,30 @@ public final class DragonFighters {
             }
         }
         return null;
+    }
+
+    /** The live (valid, not dead) Ender Dragon in {@code world}, if any. Shared lookup for every
+     * caller that only cares about a fight currently in progress there - the fight-credit tally
+     * above, EndFight's reward/cult listeners, and tag's fight-exemption check all independently
+     * wrote this same loop before. */
+    public static Optional<EnderDragon> liveDragon(World world) {
+        for (EnderDragon dragon : world.getEntitiesByClass(EnderDragon.class)) {
+            if (dragon.isValid() && !dragon.isDead()) {
+                return Optional.of(dragon);
+            }
+        }
+        return Optional.empty();
+    }
+
+    /** Every world's live Ender Dragon across every currently-loaded {@code THE_END} world. */
+    public static List<EnderDragon> liveDragonsInTheEnd() {
+        List<EnderDragon> out = new ArrayList<>();
+        for (World world : Bukkit.getWorlds()) {
+            if (world.getEnvironment() == World.Environment.THE_END) {
+                liveDragon(world).ifPresent(out::add);
+            }
+        }
+        return out;
     }
 
     /** A bed outside the Overworld and a respawn anchor outside the Nether explode when used. */

@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.endfight.cult;
 
+import dev.sirbepy.mc.core.dragon.DragonFighters;
 import dev.sirbepy.mc.endfight.arena.ArenaRegistry;
 import dev.sirbepy.mc.endfight.arena.Pillar;
 import org.bukkit.Bukkit;
@@ -7,7 +8,6 @@ import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.entity.EnderCrystal;
-import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Phantom;
 import org.bukkit.persistence.PersistentDataType;
@@ -139,12 +139,7 @@ public final class CrystalWardens {
     }
 
     private static boolean dragonAlive(World world) {
-        for (EnderDragon dragon : world.getEntitiesByClass(EnderDragon.class)) {
-            if (!dragon.isDead()) {
-                return true;
-            }
-        }
-        return false;
+        return DragonFighters.liveDragon(world).isPresent();
     }
 
     static boolean isWarden(Entity entity) {

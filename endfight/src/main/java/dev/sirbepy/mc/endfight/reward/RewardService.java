@@ -477,15 +477,8 @@ public final class RewardService {
     /** The living dragon's own fighter count in whichever End world has one, for
      * {@code /endfight rewards status}; 0 if no dragon is currently alive there. */
     public int currentFighterCount() {
-        for (World world : Bukkit.getWorlds()) {
-            if (world.getEnvironment() != World.Environment.THE_END) {
-                continue;
-            }
-            for (EnderDragon dragon : world.getEntitiesByClass(EnderDragon.class)) {
-                return fighters.fighters(dragon).size();
-            }
-        }
-        return 0;
+        List<EnderDragon> dragons = DragonFighters.liveDragonsInTheEnd();
+        return dragons.isEmpty() ? 0 : fighters.fighters(dragons.get(0)).size();
     }
 
     /** The tier the next fight (or the server's forced first-ever kill) would pay at, for

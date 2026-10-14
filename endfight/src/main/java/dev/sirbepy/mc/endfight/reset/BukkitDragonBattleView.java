@@ -1,8 +1,8 @@
 package dev.sirbepy.mc.endfight.reset;
 
+import dev.sirbepy.mc.core.dragon.DragonFighters;
 import org.bukkit.World;
 import org.bukkit.boss.DragonBattle;
-import org.bukkit.entity.EnderDragon;
 
 import java.util.Optional;
 
@@ -30,11 +30,6 @@ public final class BukkitDragonBattleView implements DragonBattleView {
 
     @Override
     public boolean hasLivingDragon(World world) {
-        for (EnderDragon dragon : world.getEntitiesByClass(EnderDragon.class)) {
-            if (dragon.isValid() && !dragon.isDead()) {
-                return true;
-            }
-        }
-        return false;
+        return DragonFighters.liveDragon(world).isPresent();
     }
 }
