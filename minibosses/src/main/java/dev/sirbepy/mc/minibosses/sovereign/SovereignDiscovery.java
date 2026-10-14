@@ -1,0 +1,113 @@
+package dev.sirbepy.mc.minibosses.sovereign;
+
+import dev.sirbepy.mc.minibosses.registry.Tier;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.entity.Enderman;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.List;
+import java.util.Random;
+
+/**
+ * The Void Sovereign's discovery/summon hook, the {@code void_sovereign.yml} {@code summon-hook}
+ * names ({@code void_sovereign_discovery}): killing a wild (ordinary, non-boss) Enderman has a
+ * small chance to drop a Void Shard, and right-clicking with the Shard in the main hand spends it
+ * to summon a Normal-tier Sovereign at the player's own feet, no built arena required yet (ImMijo
+ * is building one himself, a separate follow-up concern per the todo). {@link
+ * SovereignFight#isOurs} tells a wild Enderman's death apart from a real Sovereign fight ending
+ * (both are the same entity type), so a kill credited to the fight itself never also rolls a
+ * shard. {@link SummonCooldown} mirrors {@code tyrant.SummonCooldown}/{@code
+ * sentinel.SummonCooldown}'s "refuse and keep tracking" shape so the Shard can't be chain-farmed
+ * into repeat summons.
+ */
+public final class SovereignDiscovery implements Listener {
+
+    /** Same order of magnitude as the Tyrant's own wild-mob roll (0.02): an Enderman is a common
+     * incidental kill (End travel, farms), not a dedicated hunt, so this stays rare rather than
+     * flooding summons. */
+    public static final double ENDERMAN_DROP_CHANCE = 0.02;
+    public static final long COOLDOWN_MILLIS = 30 * 60_000L;
+
+    private final NamespacedKey shardKey;
+    private final SovereignFight fight;
+    private final SummonCooldown cooldown;
+    private final Random random;
+
+    public SovereignDiscovery(JavaPlugin plugin, SovereignFight fight, SummonCooldown cooldown, Random random) {
+        this.shardKey = new NamespacedKey(plugin, "void_shard");
+        this.fight = fight;
+        this.cooldown = cooldown;
+        this.random = random;
+    }
+
+    public ItemStack createShard() {
+        ItemStack item = new ItemStack(Material.ENDER_EYE);
+        ItemMeta meta = item.getItemMeta();
+        meta.displayName(Component.text("Void Shard", NamedTextColor.DARK_PURPLE)
+                .decoration(TextDecoration.ITALIC, false));
+        meta.lore(List.of(Component.text("Right-click to wake the Void Sovereign.", NamedTextColor.GRAY)
+                .decoration(TextDecoration.ITALIC, false)));
+        meta.getPersistentDataContainer().set(shardKey, PersistentDataType.BOOLEAN, true);
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    public boolean isShard(ItemStack item) {
+        return item != null && item.hasItemMeta()
+                && item.getItemMeta().getPersistentDataContainer().has(shardKey, PersistentDataType.BOOLEAN);
+    }
+
+    @EventHandler
+    public void onEndermanKilled(EntityDeathEvent event) {
+        if (!(event.getEntity() instanceof Enderman enderman) || fight.isOurs(enderman)) {
+            return;
+        }
+        Player killer = event.getEntity().getKiller();
+        if (killer == null) {
+            return;
+        }
+        if (random.nextDouble() < ENDERMAN_DROP_CHANCE) {
+            killer.getInventory().addItem(createShard());
+            killer.sendMessage(Component.text("A shard of pure void clings to your blade...",
+                    NamedTextColor.DARK_PURPLE));
+        }
+    }
+
+    @EventHandler
+    public void onShardUsed(PlayerInteractEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND
+                || (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK)) {
+            return;
+        }
+        ItemStack item = event.getItem();
+        if (!isShard(item)) {
+            return;
+        }
+        event.setCancelled(true);
+        Player player = event.getPlayer();
+        if (!cooldown.tryConsume(player.getUniqueId())) {
+            long minutesLeft = (cooldown.remainingMillis(player.getUniqueId()) / 60_000L) + 1;
+            player.sendMessage(Component.text("The void is not yet still. Try again in about "
+                    + minutesLeft + " minute(s).", NamedTextColor.GRAY));
+            return;
+        }
+        item.subtract();
+        fight.spawn(player.getLocation(), Tier.NORMAL);
+        player.sendMessage(Component.text("The void folds inward - the Void Sovereign emerges!",
+                NamedTextColor.DARK_PURPLE));
+    }
+}

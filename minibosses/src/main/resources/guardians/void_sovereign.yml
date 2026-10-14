@@ -1,0 +1,32 @@
+# The Void Sovereign: third and final of the Three Ancient Guardians. Only Normal tier is real,
+# tested fight content so far (dev.sirbepy.mc.minibosses.sovereign): void_sovereign_void_step
+# (VoidStepAbility - the boss blinks to a short random offset near a random nearby fighter every
+# 5s, for the rest of the fight) fires once at half health, registered in
+# MinibossesPlugin#onEnable. Heroic's void_sovereign_rift_zones and Mythic's
+# void_sovereign_void_pull do not resolve yet - GuardianAbilityRegistry.get() returns empty for any
+# id nobody registered, so naming them here still fails safe rather than crashing the trigger path;
+# their real implementations, plus group scaling and Hall-of-Fame/Guild-contract wiring, are a
+# later dispatch's job (phase B of this Guardian's build).
+# End dimension: fully independent of endfight's own Ender Dragon fight/arena
+# (endfight.arena.ArenaRegistry) - this Guardian's fight state never reads or writes that registry.
+id: void_sovereign
+display-name: "The Void Sovereign"
+dimension: THE_END
+description: "An ancient End ruler: melee, and void/teleport abilities."
+summon-hook: "void_sovereign_discovery"
+tiers:
+  normal:
+    health: 130.0
+    damage: 10.0
+    abilities: ["void_sovereign_void_step"]
+    loot-table: "void_sovereign_normal"
+  heroic:
+    health: 280.0
+    damage: 18.0
+    abilities: ["void_sovereign_void_step", "void_sovereign_rift_zones"]
+    loot-table: "void_sovereign_heroic"
+  mythic:
+    health: 520.0
+    damage: 28.0
+    abilities: ["void_sovereign_void_step", "void_sovereign_rift_zones", "void_sovereign_void_pull"]
+    loot-table: "void_sovereign_mythic"

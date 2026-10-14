@@ -12,6 +12,11 @@ import dev.sirbepy.mc.minibosses.sentinel.SentinelFight;
 import dev.sirbepy.mc.minibosses.sentinel.SentinelLoot;
 import dev.sirbepy.mc.minibosses.sentinel.SummonCooldown;
 import dev.sirbepy.mc.minibosses.sentinel.ThornVinesAbility;
+import dev.sirbepy.mc.minibosses.sovereign.HollowCrown;
+import dev.sirbepy.mc.minibosses.sovereign.SovereignDiscovery;
+import dev.sirbepy.mc.minibosses.sovereign.SovereignFight;
+import dev.sirbepy.mc.minibosses.sovereign.SovereignLoot;
+import dev.sirbepy.mc.minibosses.sovereign.VoidStepAbility;
 import dev.sirbepy.mc.minibosses.tyrant.AshenCore;
 import dev.sirbepy.mc.minibosses.tyrant.AshenStormAbility;
 import dev.sirbepy.mc.minibosses.tyrant.BlazeSummonAbility;
@@ -40,6 +45,9 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
     private AshenCore ashenCore;
     private TyrantFight tyrantFight;
     private TyrantDiscovery tyrantDiscovery;
+    private HollowCrown hollowCrown;
+    private SovereignFight sovereignFight;
+    private SovereignDiscovery sovereignDiscovery;
 
     @Override
     public void onEnable() {
@@ -55,6 +63,9 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
         if (!new File(guardiansDir, "ashen_tyrant.yml").exists()) {
             saveResource("guardians/ashen_tyrant.yml", false);
         }
+        if (!new File(guardiansDir, "void_sovereign.yml").exists()) {
+            saveResource("guardians/void_sovereign.yml", false);
+        }
 
         guardians = new GuardianRegistry(guardiansDir, getLogger());
         guardians.load();
@@ -65,6 +76,7 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
         abilities.register(new BlazeSummonAbility(this, new Random()));
         abilities.register(new BlazeWaveAbility(new Random()));
         abilities.register(new AshenStormAbility(this));
+        abilities.register(new VoidStepAbility(this, new Random()));
         hallOfFame = new HallOfFame(getDataFolder(), getLogger());
 
         DragonFighters sentinelFighters = new DragonFighters(new NamespacedKey(this, "sentinel-fighters"),
@@ -86,18 +98,35 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
                 new dev.sirbepy.mc.minibosses.tyrant.SummonCooldown(TyrantDiscovery.COOLDOWN_MILLIS, System::currentTimeMillis);
         tyrantDiscovery = new TyrantDiscovery(this, tyrantFight, tyrantCooldown, new Random());
 
+        // Void Sovereign: foundation and Normal-tier fight only - no Hall of Fame/Guild wiring
+        // yet, matching the Sentinel's and Tyrant's own foundation scope before each one's
+        // follow-up dispatch landed. Its own DragonFighters key/PDC tags are fully independent of
+        // endfight's End-dimension Ender Dragon fight/arena (see SovereignFight's own javadoc).
+        DragonFighters sovereignFighters = new DragonFighters(new NamespacedKey(this, "sovereign-fighters"),
+                System::currentTimeMillis);
+        hollowCrown = new HollowCrown(this);
+        SovereignLoot sovereignLoot = new SovereignLoot(hollowCrown);
+        sovereignFight = new SovereignFight(this, guardians, abilities, sovereignFighters, sovereignLoot, getLogger());
+        dev.sirbepy.mc.minibosses.sovereign.SummonCooldown sovereignCooldown =
+                new dev.sirbepy.mc.minibosses.sovereign.SummonCooldown(SovereignDiscovery.COOLDOWN_MILLIS, System::currentTimeMillis);
+        sovereignDiscovery = new SovereignDiscovery(this, sovereignFight, sovereignCooldown, new Random());
+
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(sentinelFight, this);
         getServer().getPluginManager().registerEvents(sentinelDiscovery, this);
         getServer().getPluginManager().registerEvents(tyrantFight, this);
         getServer().getPluginManager().registerEvents(tyrantDiscovery, this);
+        getServer().getPluginManager().registerEvents(sovereignFight, this);
+        getServer().getPluginManager().registerEvents(sovereignDiscovery, this);
 
-        // Reapplies Heart of the Wild's passive Regeneration and the Ashen Core's passive Fire
-        // Resistance every second to whoever still holds either relic.
+        // Reapplies Heart of the Wild's passive Regeneration, the Ashen Core's passive Fire
+        // Resistance, and the Hollow Crown's passive Slow Falling every second to whoever still
+        // holds any of the three relics.
         getServer().getScheduler().runTaskTimer(this, () -> {
             for (Player player : getServer().getOnlinePlayers()) {
                 heartOfTheWild.tick(player);
                 ashenCore.tick(player);
+                hollowCrown.tick(player);
             }
         }, 20L, 20L);
 
