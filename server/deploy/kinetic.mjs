@@ -22,6 +22,9 @@
 //   upload <local-file> <remote-dir>  upload one file into a server directory (overwrites)
 //   decompress <dir> <file>           decompress an archive already on the server
 //   delete <file...>                  delete files/dirs from server root (kept, unused today)
+//   backup-list                       list backups: uuid, created_at, name, status, size
+//   backup-export <uuid>              kick off an export of one backup, prints the job response
+//   download-url <file>               signed, short-lived download URL for one server file
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -346,6 +349,29 @@ async function cmdDelete(files) {
   console.log(`deleted: ${files.join(", ")}`);
 }
 
+async function cmdBackupList() {
+  const id = await serverIdentifier();
+  const list = await api(`/servers/${id}/backups`);
+  for (const b of list.data ?? []) {
+    const a = b.attributes;
+    console.log(`${a.uuid}  ${a.created_at}  ${a.name}  ${a.is_successful ? "ok" : "FAILED"}  ${(a.bytes / 1e9).toFixed(2)}GB`);
+  }
+}
+
+async function cmdBackupExport(uuid) {
+  if (!uuid) throw new Error("backup-export requires <uuid>, see `backup-list`");
+  const id = await serverIdentifier();
+  const res = await api(`/servers/${id}/backups/${uuid}/export`, { method: "POST" });
+  console.log(JSON.stringify(res));
+}
+
+async function cmdDownloadUrl(file) {
+  if (!file) throw new Error("download-url requires <file>");
+  const id = await serverIdentifier();
+  const res = await api(`/servers/${id}/files/download?file=${encodeURIComponent(file)}`);
+  console.log(res.attributes.url);
+}
+
 // Guarded so `import { cmdConsole } from "./kinetic.mjs"` (claude-reply.mjs does this) never runs
 // this CLI dispatch against the importer's own process.argv; only a direct `node kinetic.mjs ...`
 // invocation reaches here, same as before this guard existed.
@@ -402,6 +428,15 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
         break;
       case "delete":
         await cmdDelete(args);
+        break;
+      case "backup-list":
+        await cmdBackupList();
+        break;
+      case "backup-export":
+        await cmdBackupExport(args[0]);
+        break;
+      case "download-url":
+        await cmdDownloadUrl(args[0]);
         break;
       default:
         console.error("unknown subcommand. See the header comment in this file for usage.");
