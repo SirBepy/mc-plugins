@@ -5,6 +5,7 @@ import dev.sirbepy.mc.guild.contract.ContractDef;
 import dev.sirbepy.mc.guild.contract.ContractPool;
 import dev.sirbepy.mc.guild.data.ActiveContract;
 import dev.sirbepy.mc.guild.data.Member;
+import dev.sirbepy.mc.guild.events.GuardianDefeatedEvent;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -175,6 +176,32 @@ class ProgressListenerTest extends GuildTestBase {
         kill(elder, alice);
         assertEquals(1, aliceElder.progress(0));
         assertEquals(1, gmElder.progress(0));
+    }
+
+    @Test
+    void aGuardianDefeatedEventCreditsEveryoneWhoFoughtIt() {
+        Member a = join(alice);
+        Member b = join(gm);
+        ActiveContract aliceSentinel = place(a, "s_overgrown_sentinel");
+        ActiveContract gmSentinel = place(b, "s_overgrown_sentinel");
+        listener.onGuardianDefeated(new GuardianDefeatedEvent("overgrown_sentinel", "NORMAL",
+                java.util.Set.of(alice.getUniqueId(), gm.getUniqueId())));
+        assertEquals(1, aliceSentinel.progress(0));
+        assertEquals(1, gmSentinel.progress(0));
+    }
+
+    @Test
+    void aGuardianKillIsNeverBlockedByFarmGuardsChunkLimit() {
+        Member member = join(alice);
+        ActiveContract daily = place(member, "s_overgrown_sentinel");
+        // Push the chunk well past farm-chunk-kill-limit, the way a farmed mob kill would be judged -
+        // the Guardian event never consults FarmGuard at all, so this has no effect on its credit.
+        for (int i = 0; i < 40; i++) {
+            Zombie filler = (Zombie) world.spawnEntity(alice.getLocation(), EntityType.ZOMBIE);
+            farms.judge(filler);
+        }
+        listener.onGuardianDefeated(new GuardianDefeatedEvent("overgrown_sentinel", "NORMAL", java.util.Set.of(alice.getUniqueId())));
+        assertEquals(1, daily.progress(0));
     }
 
     @Test

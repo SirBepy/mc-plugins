@@ -19,6 +19,10 @@ public record Objective(Kind kind, Set<String> targets, int amount, String text)
         NAMED_HUNT,
         /** Kill a boss; everyone who hurt it in its last minute is credited. */
         BOSS,
+        /** Kill one of the minibosses module's Guardians, by its id (e.g. {@code overgrown_sentinel});
+         * credited via {@link dev.sirbepy.mc.guild.events.GuardianDefeatedEvent}, not a vanilla
+         * {@code EntityType}, since a Guardian isn't a vanilla mob. */
+        GUARDIAN,
         /** Ores broken without Silk Touch. */
         MINE,
         /** Items handed in when the contract is claimed (consumed). */

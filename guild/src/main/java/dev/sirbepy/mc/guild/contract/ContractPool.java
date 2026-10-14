@@ -202,7 +202,14 @@ public final class ContractPool {
             daily("s_mansion", Rank.S, 1.2, "Find a Woodland Mansion", Material.DARK_OAK_PLANKS, Kind.STRUCTURE, Set.of("minecraft:mansion"), 1),
             daily("s_evokers", Rank.S, 1.3, "Defeat 3 Evokers", Material.TOTEM_OF_UNDYING, Kind.HUNT, Set.of("EVOKER"), 3),
             daily("s_debris", Rank.S, 1.3, "Mine 6 Ancient Debris", Material.ANCIENT_DEBRIS, Kind.MINE, Set.of("ANCIENT_DEBRIS"), 6),
-            daily("s_breezes", Rank.S, 1.2, "Defeat 6 Breezes", Material.BREEZE_ROD, Kind.HUNT, Set.of("BREEZE"), 6));
+            daily("s_breezes", Rank.S, 1.2, "Defeat 6 Breezes", Material.BREEZE_ROD, Kind.HUNT, Set.of("BREEZE"), 6),
+
+            // Three Ancient Guardians (minibosses module): same flat, effort-based reward as every
+            // other BOSS-kind daily - no real Guardian exists yet to read a Normal/Heroic/Mythic tier
+            // from, so none of these scale by tier (see ProgressListener.onGuardianDefeated).
+            guardian("s_overgrown_sentinel", 1.5, "Defeat the Overgrown Sentinel (shared with everyone who fought it)", Material.MOSS_BLOCK, "overgrown_sentinel"),
+            guardian("s_ashen_tyrant", 1.5, "Defeat the Ashen Tyrant (shared with everyone who fought it)", Material.MAGMA_BLOCK, "ashen_tyrant"),
+            guardian("s_void_sovereign", 1.5, "Defeat the Void Sovereign (shared with everyone who fought it)", Material.ENDER_EYE, "void_sovereign"));
 
     public static final List<ContractDef> WEEKLIES = List.of(
             weekly("we_patrol", Rank.E, "The Long Patrol", Material.IRON_SWORD,
@@ -391,6 +398,12 @@ public final class ContractPool {
 
     private static ContractDef boss(String id, Rank rank, double effort, String title, Material icon, String type) {
         return daily(id, rank, effort, title, icon, Kind.BOSS, Set.of(type), 1);
+    }
+
+    /** Always S-rank: the three Guardians sit alongside Wither/Warden/Elder Guardian at the top of
+     * the rank ladder, following {@link #boss} and the BOSS-kind entries' existing precedent. */
+    private static ContractDef guardian(String id, double effort, String title, Material icon, String guardianId) {
+        return daily(id, Rank.S, effort, title, icon, Kind.GUARDIAN, Set.of(guardianId), 1);
     }
 
     private static ContractDef weekly(String id, Rank rank, String title, Material icon, Objective... objectives) {

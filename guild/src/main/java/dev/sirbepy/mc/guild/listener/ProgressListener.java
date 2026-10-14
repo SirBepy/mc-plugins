@@ -2,9 +2,11 @@ package dev.sirbepy.mc.guild.listener;
 
 import dev.sirbepy.mc.guild.Guild;
 import dev.sirbepy.mc.guild.contract.Objective.Kind;
+import dev.sirbepy.mc.guild.events.GuardianDefeatedEvent;
 import io.papermc.paper.event.player.PlayerTradeEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TranslatableComponent;
+import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.enchantments.Enchantment;
@@ -32,6 +34,7 @@ import org.bukkit.event.player.PlayerFishEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Turns gameplay events into contract progress for whoever did them. Bosses go through {@link BossCredit};
@@ -79,6 +82,30 @@ public final class ProgressListener implements Listener {
                 if (member != null) {
                     guild.achievements().bossCredited(credited, member, type);
                 }
+            }
+        }
+    }
+
+    /**
+     * A Guardian (the {@code minibosses} module) died; credits every fighter the same way a vanilla
+     * {@link Kind#BOSS} kill does. Never passes through {@link FarmGuard}: like a Wither or Warden, a
+     * unique Guardian can't be chunk-farmed or fall-cheesed the way a spawned mob can, and this event
+     * only fires once per Guardian life regardless. The Guardian's tier ({@link GuardianDefeatedEvent#tier()})
+     * is not used for reward scaling in this pass: there is no real Guardian boss yet to read a tier
+     * from, so every {@code GUARDIAN} contract pays the same flat, effort-based reward every other
+     * {@code BOSS}-kind contract already gets (see {@code ContractPool}'s {@code GUARDIAN} entries).
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onGuardianDefeated(GuardianDefeatedEvent event) {
+        for (UUID id : event.fighterIds()) {
+            Player credited = Bukkit.getPlayer(id);
+            if (credited == null) {
+                continue;
+            }
+            guild.progress(credited, Kind.GUARDIAN, Set.of(event.guardianId()), 1);
+            var member = guild.store().member(credited.getUniqueId());
+            if (member != null) {
+                guild.achievements().bossCredited(credited, member, event.guardianId());
             }
         }
     }
