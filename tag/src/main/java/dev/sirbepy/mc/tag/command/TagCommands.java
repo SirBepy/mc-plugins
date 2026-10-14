@@ -3,6 +3,7 @@ package dev.sirbepy.mc.tag.command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import dev.sirbepy.mc.core.Messages;
+import dev.sirbepy.mc.tag.TagDisplay;
 import dev.sirbepy.mc.tag.TagPlugin;
 import dev.sirbepy.mc.tag.TagService;
 import dev.sirbepy.mc.tag.logic.LeaderboardRanking;
@@ -178,7 +179,7 @@ public final class TagCommands {
     static void sendStats(CommandSender sender, Messages messages, String name, PlayerStats stats) {
         messages.send(sender, "stats-line",
                 Placeholder.unparsed("player", name),
-                Placeholder.unparsed("points", TagService.formatPoints(stats.points)),
+                Placeholder.unparsed("points", TagDisplay.formatPoints(stats.points)),
                 Placeholder.unparsed("tagged", String.valueOf(stats.timesTagged)),
                 Placeholder.unparsed("made", String.valueOf(stats.tagsMade)),
                 Placeholder.unparsed("minutes-online", String.format(Locale.ROOT, "%.1f", stats.minutesItOnline)),
@@ -189,7 +190,7 @@ public final class TagCommands {
         CommandSender sender = ctx.getSource().getSender();
         TagService service = plugin.service();
         List<LeaderboardRanking.Entry> entries = service.state().stats.entrySet().stream()
-                .map(e -> new LeaderboardRanking.Entry(e.getKey(), service.nameOf(e.getKey()), e.getValue().points))
+                .map(e -> new LeaderboardRanking.Entry(e.getKey(), TagDisplay.nameOf(e.getKey()), e.getValue().points))
                 .toList();
         List<LeaderboardRanking.Row> ranked = LeaderboardRanking.rank(entries, 10);
         sendLeaderboard(sender, service.config().messages, ranked);
@@ -203,7 +204,7 @@ public final class TagCommands {
             messages.send(sender, "leaderboard-entry",
                     Placeholder.unparsed("rank", String.valueOf(row.rank())),
                     Placeholder.unparsed("player", row.name()),
-                    Placeholder.unparsed("points", TagService.formatPoints(row.points())));
+                    Placeholder.unparsed("points", TagDisplay.formatPoints(row.points())));
         }
     }
 
@@ -226,7 +227,7 @@ public final class TagCommands {
         if (it == null) {
             plugin.service().config().messages.send(sender, "nobody-it");
         } else {
-            plugin.service().config().messages.send(sender, "who-is-it", Placeholder.unparsed("it", plugin.service().nameOf(it)));
+            plugin.service().config().messages.send(sender, "who-is-it", Placeholder.unparsed("it", TagDisplay.nameOf(it)));
         }
         return com.mojang.brigadier.Command.SINGLE_SUCCESS;
     }

@@ -1,7 +1,7 @@
 package dev.sirbepy.mc.tag.board;
 
 import dev.sirbepy.mc.core.Messages;
-import dev.sirbepy.mc.tag.TagService;
+import dev.sirbepy.mc.tag.TagDisplay;
 import dev.sirbepy.mc.tag.config.LeaderboardConfig;
 import dev.sirbepy.mc.tag.logic.LeaderboardRanking;
 import dev.sirbepy.mc.tag.state.TagState;
@@ -213,7 +213,7 @@ public final class LeaderboardEntityService implements Listener {
                 text = text.append(Component.newline()).append(Messages.mini().deserialize(config.boardEntry,
                         Placeholder.unparsed("rank", String.valueOf(row.rank())),
                         Placeholder.unparsed("player", row.name()),
-                        Placeholder.unparsed("points", TagService.formatPoints(row.points()))));
+                        Placeholder.unparsed("points", TagDisplay.formatPoints(row.points()))));
             }
         }
         String itName = state.currentIt != null ? nameOf(state.currentIt) : config.boardNobody;

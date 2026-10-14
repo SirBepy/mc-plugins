@@ -27,7 +27,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
@@ -162,7 +161,7 @@ public final class TagService {
             return;
         }
         transferIt(oldIt, newIt, null, 0L, () -> config.logs.fire(LogService.Event.IT_SET,
-                Placeholder.unparsed("it", nameOf(newIt)), Placeholder.unparsed("player", admin.getName())));
+                Placeholder.unparsed("it", TagDisplay.nameOf(newIt)), Placeholder.unparsed("player", admin.getName())));
     }
 
     public void adminClear(CommandSender admin) {
@@ -399,18 +398,5 @@ public final class TagService {
         if (it != null) {
             heads.syncFightExemption(it, config.head, isFightingDragon(it.getUniqueId()));
         }
-    }
-
-    public String nameOf(UUID uuid) {
-        if (uuid == null) {
-            return "nobody";
-        }
-        OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
-        String name = player.getName();
-        return name != null ? name : uuid.toString();
-    }
-
-    public static String formatPoints(double points) {
-        return String.format(Locale.ROOT, "%.1f", points);
     }
 }
