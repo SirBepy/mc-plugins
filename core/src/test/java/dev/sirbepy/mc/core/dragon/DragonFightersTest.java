@@ -186,6 +186,28 @@ class DragonFightersTest {
     }
 
     @Test
+    void liveDragonFindsAnAliveDragonInTheWorld() {
+        EnderDragon dragon = dragon();
+        assertEquals(dragon, DragonFighters.liveDragon(end).orElse(null));
+    }
+
+    @Test
+    void liveDragonSkipsADeadDragon() {
+        // Pins down the isValid() && !isDead() contract: neither half of a dead/invalid dragon
+        // counts as "live", not just the removed-entity half.
+        EnderDragon dragon = dragon();
+        dragon.setHealth(0);
+        assertTrue(DragonFighters.liveDragon(end).isEmpty());
+    }
+
+    @Test
+    void liveDragonSkipsARemovedDragon() {
+        EnderDragon dragon = dragon();
+        dragon.remove();
+        assertTrue(DragonFighters.liveDragon(end).isEmpty());
+    }
+
+    @Test
     void thePdcRoundTripsThroughAddFighterAndTwoKeysDoNotClash() {
         EnderDragon dragon = dragon();
         DragonFighters other = new DragonFighters(new NamespacedKey("other", "dragon-fighters"), clock::get);
