@@ -3,6 +3,7 @@ package dev.sirbepy.mc.market;
 import com.mojang.brigadier.Command;
 import io.papermc.paper.command.brigadier.Commands;
 import dev.sirbepy.mc.core.econ.VaultEconomy;
+import dev.sirbepy.mc.dragonballs.debt.DebtService;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.OfflinePlayer;
@@ -74,10 +75,10 @@ public final class MarketPlugin extends JavaPlugin {
                 this::aliveTicks, this::pay, getServer(), new File(getDataFolder(), "wanted.yml"), getLogger());
         getServer().getPluginManager().registerEvents(wantedBoard, this);
         homeShop = new HomeShop(layout, config::get, this::charge, this::balance, this::pay,
-                new ConsoleHomeGrant(getServer()), new File(getDataFolder(), "homes.yml"), getLogger());
+                new ConsoleHomeGrant(getServer()), this::debtOf, new File(getDataFolder(), "homes.yml"), getLogger());
         getServer().getPluginManager().registerEvents(homeShop, this);
         CosmeticToken cosmeticToken = new CosmeticToken(this);
-        cosmeticShop = new CosmeticShop(layout, config::get, cosmeticToken, this::charge, this::balance);
+        cosmeticShop = new CosmeticShop(layout, config::get, cosmeticToken, this::charge, this::balance, this::debtOf);
         getServer().getPluginManager().registerEvents(cosmeticShop, this);
         cosmeticRequests = new CosmeticRequests(this, config::get, cosmeticToken, new File(getDataFolder(), "cosmetics.yml"), getLogger());
         getServer().getPluginManager().registerEvents(cosmeticRequests, this);
@@ -224,6 +225,14 @@ public final class MarketPlugin extends JavaPlugin {
     private Double balance(Player player) {
         Economy economy = VaultEconomy.find(getServer());
         return economy == null ? null : economy.getBalance(player);
+    }
+
+    /** The player's current debt for the Homes/Cosmetics shops' debt gate, or null when no debt
+     * ledger (dragonballs, a softdepend) is registered - every purchase flow blocks while this is
+     * above 0. Same {@code ServicesManager.load} lookup guild already uses for Names' NamesApi. */
+    private Double debtOf(Player player) {
+        DebtService debt = getServer().getServicesManager().load(DebtService.class);
+        return debt == null ? null : debt.debtOf(player.getUniqueId());
     }
 
     // stalls.yml and prices.yml ship inside the jar, so only config.yml can change without a restart.

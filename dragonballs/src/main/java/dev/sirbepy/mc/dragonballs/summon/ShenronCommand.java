@@ -6,7 +6,9 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import dev.sirbepy.mc.core.Players;
+import dev.sirbepy.mc.core.econ.VaultEconomy;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
+import dev.sirbepy.mc.dragonballs.debt.DebtService;
 import dev.sirbepy.mc.dragonballs.effects.DragonType;
 import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import dev.sirbepy.mc.dragonballs.registry.BallState;
@@ -18,6 +20,7 @@ import dev.sirbepy.mc.dragonballs.summon.wish.WishPublisher;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import net.kyori.adventure.text.Component;
+import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -34,7 +37,8 @@ import java.util.UUID;
 /**
  * {@code /shenron}: the judge's interface to the active wish session plus curse management, plus
  * {@code summon}, a debug-only trigger for bots/scripts. The judge subcommands ({@code say},
- * {@code grant}, {@code dismiss}, {@code status}, {@code curse}) are restricted to the console
+ * {@code grant}, {@code dismiss}, {@code status}, {@code charge}, {@code curse}) are restricted to
+ * the console
  * specifically (not merely permission-gated like {@code /dragonballs}): this is Player Claude's own
  * tool for judging wishes, never a player's, even an op's, since a player running it in-game would
  * bypass the entire "the dragon speaks through console commands" design the rulebook describes.
@@ -92,7 +96,12 @@ public final class ShenronCommand {
                                 .executes(ctx -> reply(ctx, sessions.dismiss(StringArgumentType.getString(ctx, "text"))))))
                 .then(Commands.literal("status")
                         .requires(this::isJudge)
-                        .executes(ctx -> reply(ctx, sessions.statusText())))
+                        .executes(ctx -> reply(ctx, statusWithDebt())))
+                .then(Commands.literal("charge")
+                        .requires(this::isJudge)
+                        .then(Commands.argument("player", StringArgumentType.word())
+                                .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.01))
+                                        .executes(this::charge))))
                 .then(Commands.literal("summon")
                         .then(Commands.argument("player", StringArgumentType.word())
                                 .then(Commands.argument("dragon", StringArgumentType.word())
@@ -137,6 +146,66 @@ public final class ShenronCommand {
             ctx.getSource().getSender().sendMessage(Component.text(message));
         }
         return Command.SINGLE_SUCCESS;
+    }
+
+    /** {@code sessions.statusText()} plus the active summoner's debt (todo 146), when they owe
+     * anything - the judge's view into whether a past wish's unpaid cost is still outstanding. */
+    private String statusWithDebt() {
+        String base = sessions.statusText();
+        UUID summoner = sessions.activeSummoner();
+        if (summoner == null) {
+            return base;
+        }
+        DebtService debt = Bukkit.getServicesManager().load(DebtService.class);
+        if (debt == null) {
+            return base;
+        }
+        double owed = debt.debtOf(summoner);
+        return owed > 0 ? base + " debt=" + formatAmount(owed) : base;
+    }
+
+    /**
+     * The judge's tool for the End dragon's money-cost-or-debt mechanic (docs/dragonballs.md
+     * "Nether and End dragons"): withdraws as much of {@code amount} as the player can
+     * actually afford, and charges the rest - the part they couldn't pay on the spot - straight to
+     * their dragonballs debt ledger, so the wish still gets granted instead of refused or trimmed.
+     */
+    private int charge(CommandContext<CommandSourceStack> ctx) {
+        CommandSender sender = ctx.getSource().getSender();
+        String playerName = StringArgumentType.getString(ctx, "player");
+        double amount = DoubleArgumentType.getDouble(ctx, "amount");
+
+        Optional<UUID> target = resolvePlayer(playerName);
+        if (target.isEmpty()) {
+            sender.sendMessage(Component.text("No such player: " + playerName));
+            return Command.SINGLE_SUCCESS;
+        }
+        OfflinePlayer offline = Bukkit.getOfflinePlayer(target.get());
+        Economy economy = VaultEconomy.find(Bukkit.getServer());
+        double available = economy == null ? 0 : Math.max(0, economy.getBalance(offline));
+        double toWithdraw = Math.min(available, amount);
+        if (economy != null && toWithdraw > 0) {
+            economy.withdrawPlayer(offline, toWithdraw);
+        }
+        double shortfall = amount - toWithdraw;
+        if (shortfall <= 0) {
+            sender.sendMessage(Component.text(playerName + " paid " + formatAmount(amount) + " in full."));
+            return Command.SINGLE_SUCCESS;
+        }
+        DebtService debt = Bukkit.getServicesManager().load(DebtService.class);
+        if (debt == null) {
+            sender.sendMessage(Component.text("No debt ledger registered; " + playerName + " paid only "
+                    + formatAmount(toWithdraw) + ", " + formatAmount(shortfall) + " went uncharged."));
+            return Command.SINGLE_SUCCESS;
+        }
+        debt.charge(target.get(), shortfall);
+        sender.sendMessage(Component.text(playerName + " paid " + formatAmount(toWithdraw) + " and went into debt for "
+                + formatAmount(shortfall) + " (now owes " + formatAmount(debt.debtOf(target.get())) + ")."));
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static String formatAmount(double value) {
+        return value == Math.rint(value) ? String.valueOf((long) value) : String.valueOf(value);
     }
 
     private int curseEffect(CommandContext<CommandSourceStack> ctx) {

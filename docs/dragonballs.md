@@ -182,10 +182,16 @@ of granting it big. Scale the ask to the wish's size, same as any other deal - i
 refusal. **The dragon extends credit** (Joe, 2026-10-13, overriding the hub's earlier "no loans"
 call): if the summoner can't pay the full price on the spot, the dragon can grant the wish anyway
 and put them into debt - a running balance the player owes Shenron, collected over time rather than
-upfront. Needs a real debt-tracking mechanism (balance per player, how it's collected - passive
-deduction from future earnings, a running negative balance that blocks other spending, interest or
-not) - this is a plugin build, not just a rulebook wording change; file it as a todo and build it
-rather than hand-waving the mechanic.
+upfront.
+
+Built (todo 146): `shenron charge <player> <amount>` withdraws whatever the player can afford and
+charges the shortfall to a per-player debt ledger owned by `dragonballs` (flat amount, no interest,
+no deadline, indefinite until paid - no other side effect, just the number). While a player owes
+anything: every purchase flow (the Homes/Cosmetics shops, the Radar shop) refuses outright with a
+clear message, and 100% of every coin that would otherwise reach them - a market sale, a bounty, any
+Vault deposit - pays the debt down first instead, with only the overflow past 0 ever crediting their
+real balance. `shenron status` shows the active summoner's debt when nonzero; `dragonballs debt
+<player>` queries anyone's.
 
 A dragon from a deeper set is stronger, Shenron and Porunga alike: **Nether 1.5x, End 2x** every
 amount, duration and size above (Joe, 2026-10-07; the End set only counts once the End opens),
@@ -302,16 +308,18 @@ DragonBalls. The table below drops the prefix for brevity; it is still required.
 | `shenron grant <count> <note>` | Uses up `count` wishes and logs the note; the session ends at 0 |
 | `shenron public <session> <title> \| <line>` | Logs a player-safe title (max 60 chars) and line (max 200) for a granted session; the public website lists it under Wishes granted (latest one per session wins) |
 | `shenron dismiss [text]` | Optional last words, then the dragon leaves and the balls scatter |
-| `shenron status` | `session=<id> set=<set> summoner=<name> dragon=<dragon> wishesLeft=<n> idleSeconds=<n>` |
+| `shenron status` | `session=<id> set=<set> summoner=<name> dragon=<dragon> wishesLeft=<n> idleSeconds=<n>`, plus ` debt=<n>` when the active summoner owes anything |
+| `shenron charge <player> <amount>` | The End dragon's money-cost-or-debt mechanic (todo 146): withdraws as much of `<amount>` as `<player>` can actually afford, and charges the rest straight to their dragonballs debt ledger - the wish still gets granted, it's never refused or trimmed for this |
 | `shenron curse effect <player> <effect> <amplifier> <hours>` | An effect that comes back after death and rejoin until it expires; `hours` are real hours, online or not, and the effect ends within a minute of expiry (or on the next join) |
 | `shenron curse nowish <player>` | The player can never summon again |
 | `shenron curse lift <player>` | Removes every curse and the wish ban, including the lingering effect of a curse that already expired |
 
 Admin and testing commands (ops, console or RCON): `dragonballs status` (where each ball of each set
-is), `dragonballs give <player> <star> [overworld|nether|end]`, `dragonballs scatter [nether|end]
-[stone]` (no set = overworld), `dragonballs wake [overworld|nether|end]` (ends the stone cooldown
-early; no set = all), `dragonballs reload`, and `shenron summon <player> <shenron|porunga>
-[overworld|nether|end]` (summons for a player whose 7 balls of a set are already placed together,
+is), `dragonballs debt <player>` (any player's current debt, independent of whether they're the
+active wish session's summoner), `dragonballs give <player> <star> [overworld|nether|end]`,
+`dragonballs scatter [nether|end] [stone]` (no set = overworld), `dragonballs wake
+[overworld|nether|end]` (ends the stone cooldown early; no set = all), `dragonballs reload`, and
+`shenron summon <player> <shenron|porunga> [overworld|nether|end]` (summons for a player whose 7 balls of a set are already placed together,
 same checks as right-clicking except the radar: it neither needs nor uses one; no set = the first
 ready set). A scatter always leaves a summon attempt refused as stone exactly when the set's balls
 look stone: plain `dragonballs scatter <set>` wakes the set (same as `wake`) so the fresh balls are

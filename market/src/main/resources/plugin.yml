@@ -6,7 +6,10 @@ author: sirbepy
 # The Heads stall and the Wanted board pay through Vault. No Floodgate dependency: the Heads stall
 # used to need it for its NPC's Bedrock body, removed 2026-10-09 now that spawn protection is off
 # and the stall is sign-based like every other.
-softdepend: [Vault, VaultUnlocked]
+# DragonBalls: not for its own economy (Vault/VaultUnlocked cover that), but so the Homes/Cosmetics
+# shops can see dragonballs' DebtService (a wish-debt block) via the ServicesManager, the
+# same cross-plugin pattern guild already uses for Names' NamesApi.
+softdepend: [Vault, VaultUnlocked, DragonBalls]
 
 permissions:
   market.price:

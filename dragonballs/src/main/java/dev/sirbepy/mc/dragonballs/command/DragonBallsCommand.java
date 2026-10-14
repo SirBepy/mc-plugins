@@ -4,8 +4,10 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import dev.sirbepy.mc.core.Players;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
+import dev.sirbepy.mc.dragonballs.debt.DebtService;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
 import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import dev.sirbepy.mc.dragonballs.registry.BallView;
@@ -15,10 +17,13 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 
+import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
@@ -62,6 +67,9 @@ public final class DragonBallsCommand {
                         .then(Commands.literal("overworld").executes(ctx -> wake(ctx, BallSet.OVERWORLD)))
                         .then(Commands.literal("nether").executes(ctx -> wake(ctx, BallSet.NETHER)))
                         .then(Commands.literal("end").executes(ctx -> wake(ctx, BallSet.END))))
+                .then(Commands.literal("debt")
+                        .then(Commands.argument("player", StringArgumentType.word())
+                                .executes(this::debt)))
                 .then(Commands.literal("reload").executes(this::reload))
                 .build(), "Manage the Dragon Ball hunt");
     }
@@ -200,6 +208,27 @@ public final class DragonBallsCommand {
                 }
             }
         }
+    }
+
+    /** {@code /dragonballs debt <player>}: the admin-facing query for any player's debt (todo 146),
+     * independent of whether they're the active wish session's summoner (unlike {@code shenron
+     * status}'s own debt line, which only ever shows the current summoner's). */
+    private int debt(CommandContext<CommandSourceStack> ctx) {
+        CommandSender sender = ctx.getSource().getSender();
+        String name = StringArgumentType.getString(ctx, "player");
+        Optional<UUID> target = Players.known(name).map(OfflinePlayer::getUniqueId);
+        if (target.isEmpty()) {
+            sender.sendMessage(Component.text(name + " is not a known player."));
+            return Command.SINGLE_SUCCESS;
+        }
+        DebtService debt = Bukkit.getServicesManager().load(DebtService.class);
+        double owed = debt == null ? 0 : debt.debtOf(target.get());
+        sender.sendMessage(Component.text(owed > 0 ? name + " owes " + formatAmount(owed) + "." : name + " owes nothing."));
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static String formatAmount(double value) {
+        return value == Math.rint(value) ? String.valueOf((long) value) : String.valueOf(value);
     }
 
     private int reload(CommandContext<CommandSourceStack> ctx) {

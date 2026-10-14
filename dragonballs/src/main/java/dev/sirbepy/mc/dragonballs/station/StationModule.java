@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.dragonballs.station;
 
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
+import dev.sirbepy.mc.dragonballs.debt.DebtService;
 import dev.sirbepy.mc.dragonballs.placed.FloatingBalls;
 import dev.sirbepy.mc.dragonballs.radar.RadarItems;
 import dev.sirbepy.mc.dragonballs.registry.BallSets;
@@ -15,11 +16,12 @@ public final class StationModule {
     private StationModule() {
     }
 
-    public static void register(JavaPlugin plugin, BallSets sets, FloatingBalls balls, Supplier<DragonBallsConfig> config) {
+    public static void register(JavaPlugin plugin, BallSets sets, FloatingBalls balls, Supplier<DragonBallsConfig> config,
+                                 DebtService debt) {
         Supplier<StationConfig> stationConfig = () -> StationConfig.from(plugin.getConfig());
         RadarItems radarItems = new RadarItems(plugin);
         StationDisplay display = new StationDisplay(plugin, stationConfig, balls, sets.items());
-        RadarShop shop = new RadarShop(plugin, stationConfig, config, radarItems, sets);
+        RadarShop shop = new RadarShop(plugin, stationConfig, config, radarItems, sets, debt);
 
         PluginManager pluginManager = plugin.getServer().getPluginManager();
         pluginManager.registerEvents(display, plugin);

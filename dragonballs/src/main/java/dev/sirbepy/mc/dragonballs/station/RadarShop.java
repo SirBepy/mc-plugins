@@ -4,6 +4,7 @@ import dev.sirbepy.mc.core.Inventories;
 import dev.sirbepy.mc.core.econ.VaultEconomy;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
+import dev.sirbepy.mc.dragonballs.debt.DebtService;
 import dev.sirbepy.mc.dragonballs.radar.RadarItems;
 import dev.sirbepy.mc.dragonballs.registry.BallSets;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -37,14 +38,16 @@ public final class RadarShop implements Listener {
     private final Supplier<DragonBallsConfig> config;
     private final RadarItems radarItems;
     private final BallSets sets;
+    private final DebtService debt;
 
     public RadarShop(JavaPlugin plugin, Supplier<StationConfig> stationConfig, Supplier<DragonBallsConfig> config,
-                      RadarItems radarItems, BallSets sets) {
+                      RadarItems radarItems, BallSets sets, DebtService debt) {
         this.plugin = plugin;
         this.stationConfig = stationConfig;
         this.config = config;
         this.radarItems = radarItems;
         this.sets = sets;
+        this.debt = debt;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -74,6 +77,12 @@ public final class RadarShop implements Listener {
         if (economy == null) {
             plugin.getLogger().warning("Radar shop: no Vault Economy provider registered; the sign is closed.");
             player.sendMessage(MINI.deserialize("<red>The radar shop is closed."));
+            return;
+        }
+
+        double owed = debt.debtOf(player.getUniqueId());
+        if (owed > 0) {
+            player.sendMessage(MINI.deserialize("<red>You owe " + formatAmount(owed) + " and can't buy anything until it's paid off."));
             return;
         }
 

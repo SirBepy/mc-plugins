@@ -63,6 +63,12 @@ public final class HomeShop implements Listener {
         boolean refund(Player player, double amount);
     }
 
+    @FunctionalInterface
+    public interface DebtCheck {
+        /** The player's current debt (0 when clear), or null when no debt ledger is registered. */
+        Double debtOf(Player player);
+    }
+
     /** Grants {@code huskhomes.max_homes.<next>} (and unsets {@code <next - 1>} when the shop was
      * the one that granted it) via LuckPerms console commands; false when there is no LuckPerms to
      * run them (no softdepend registered). */
@@ -81,6 +87,7 @@ public final class HomeShop implements Listener {
     private final Balance balance;
     private final Refund refund;
     private final HomeGrant grant;
+    private final DebtCheck debt;
     private final File stateFile;
     private final Logger logger;
 
@@ -89,13 +96,14 @@ public final class HomeShop implements Listener {
     private final Map<UUID, Integer> sold = new HashMap<>();
 
     public HomeShop(MarketLayout layout, Supplier<MarketConfig> config, Charge charge, Balance balance,
-                     Refund refund, HomeGrant grant, File stateFile, Logger logger) {
+                     Refund refund, HomeGrant grant, DebtCheck debt, File stateFile, Logger logger) {
         this.layout = layout;
         this.config = config;
         this.charge = charge;
         this.balance = balance;
         this.refund = refund;
         this.grant = grant;
+        this.debt = debt;
         this.stateFile = stateFile;
         this.logger = logger;
         load();
@@ -177,6 +185,11 @@ public final class HomeShop implements Listener {
         }
         if (n > current + 1) {
             messages.send(player, "homes-need-earlier", Placeholder.unparsed("n", String.valueOf(current + 1)));
+            return;
+        }
+        Double owed = debt.debtOf(player);
+        if (owed != null && owed > 0) {
+            messages.send(player, "homes-in-debt", Placeholder.unparsed("debt", PriceList.wholeDollars(BigDecimal.valueOf(owed))));
             return;
         }
         BigDecimal price = cfg.homePrice(n);

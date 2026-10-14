@@ -54,6 +54,7 @@ class HomeShopTest {
     private double walletBalance = 100000;
     private boolean economyOpen = true;
     private boolean grantSucceeds = true;
+    private Double debt = 0.0;
 
     @BeforeEach
     void setUp() {
@@ -90,6 +91,7 @@ class HomeShopTest {
                     }
                     return grantSucceeds;
                 },
+                player -> debt,
                 new File(dir, "homes.yml"), LOG);
     }
 
@@ -175,6 +177,16 @@ class HomeShopTest {
         String message = player.nextMessage();
         assertTrue(message.contains("$500"), message);
         assertTrue(message.contains("$100"), message);
+    }
+
+    @Test
+    void inDebtBlocksThePurchaseAndChargesNothingEvenWithEnoughMoney() {
+        debt = 25000.0;
+        PlayerMock player = server.addPlayer();
+        shop().purchase(player, 4);
+        assertTrue(charged.isEmpty(), "blocked by debt before ever reaching the charge");
+        assertTrue(grants.isEmpty());
+        assertTrue(player.nextMessage().contains("$25,000"));
     }
 
     @Test

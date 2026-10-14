@@ -39,18 +39,27 @@ public final class CosmeticShop implements Listener {
         Double balance(Player player);
     }
 
+    @FunctionalInterface
+    public interface DebtCheck {
+        /** The player's current debt (0 when clear), or null when no debt ledger is registered. */
+        Double debtOf(Player player);
+    }
+
     private final MarketLayout layout;
     private final Supplier<MarketConfig> config;
     private final CosmeticToken token;
     private final Charge charge;
     private final Balance balance;
+    private final DebtCheck debt;
 
-    public CosmeticShop(MarketLayout layout, Supplier<MarketConfig> config, CosmeticToken token, Charge charge, Balance balance) {
+    public CosmeticShop(MarketLayout layout, Supplier<MarketConfig> config, CosmeticToken token, Charge charge,
+                         Balance balance, DebtCheck debt) {
         this.layout = layout;
         this.config = config;
         this.token = token;
         this.charge = charge;
         this.balance = balance;
+        this.debt = debt;
     }
 
     public void apply(World world) {
@@ -97,6 +106,11 @@ public final class CosmeticShop implements Listener {
     /** Sells the player one Cosmetic Token. */
     void buy(Player player) {
         var messages = config.get().messages();
+        Double owed = debt.debtOf(player);
+        if (owed != null && owed > 0) {
+            messages.send(player, "cosmetics-in-debt", Placeholder.unparsed("debt", PriceList.wholeDollars(BigDecimal.valueOf(owed))));
+            return;
+        }
         BigDecimal price = config.get().cosmeticsPrice();
         if (!charge.charge(player, price.doubleValue())) {
             Double bal = balance.balance(player);

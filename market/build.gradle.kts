@@ -16,4 +16,10 @@ dependencies {
     compileOnly("com.github.MilkBowl:VaultAPI:1.7.1") {
         exclude(group = "org.bukkit")
     }
+
+    // dragonballs' DebtService only (the Homes/Cosmetics shops' debt gate); same
+    // compileOnly-not-shaded pattern guild already uses for names' NamesApi - dragonballs is a
+    // softdepend, not a hard dependency, so this must never get bundled into market's shaded jar.
+    compileOnly(project(":dragonballs"))
+    testImplementation(project(":dragonballs"))
 }

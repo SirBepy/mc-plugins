@@ -128,10 +128,12 @@ messages:
   homes-need-earlier: "<gray>Buy your <n>th home first."
   homes-poor: "<red>That home costs <price>. You have <balance>."
   homes-closed: "<red>The Homes shop can't process that right now."
+  homes-in-debt: "<red>You owe <debt> and can't buy anything until it's paid off."
   homes-success: "<green>You can now set <n> homes!"
   # The Cosmetics shop's token sign. <price>/<balance> whole dollars.
   cosmetics-poor: "<red>A Cosmetic Token costs <price>. You have <balance>."
   cosmetics-closed: "<red>The Cosmetics shop can't process that right now."
+  cosmetics-in-debt: "<red>You owe <debt> and can't buy anything until it's paid off."
   cosmetics-sold: "<green>You bought a Cosmetic Token!"
   # /cosmetic <idea>. <item> the restyled item's name, <id> the request number.
   cosmetic-hold: "<gray>Hold the item you want restyled in your main hand."

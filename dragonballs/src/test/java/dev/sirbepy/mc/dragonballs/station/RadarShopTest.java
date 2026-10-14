@@ -2,6 +2,7 @@ package dev.sirbepy.mc.dragonballs.station;
 
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
+import dev.sirbepy.mc.dragonballs.debt.DebtService;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
 import dev.sirbepy.mc.dragonballs.radar.RadarItems;
 import dev.sirbepy.mc.dragonballs.registry.BallRegistry;
@@ -77,8 +78,31 @@ class RadarShopTest {
     }
 
     private RadarShop shop() {
+        return shop(new FakeDebtService(0));
+    }
+
+    private RadarShop shop(DebtService debt) {
         return new RadarShop(plugin, () -> StationConfig.from(plugin.getConfig()),
-                () -> new DragonBallsConfig(plugin.getConfig()), radarItems, sets);
+                () -> new DragonBallsConfig(plugin.getConfig()), radarItems, sets, debt);
+    }
+
+    /** Minimal debt ledger stand-in: a single fixed amount, {@link #charge} unused by these tests. */
+    private static final class FakeDebtService implements DebtService {
+        private final double owed;
+
+        FakeDebtService(double owed) {
+            this.owed = owed;
+        }
+
+        @Override
+        public double debtOf(UUID playerId) {
+            return owed;
+        }
+
+        @Override
+        public void charge(UUID playerId, double amount) {
+            throw new UnsupportedOperationException("not used by RadarShopTest");
+        }
     }
 
     private void registerEconomy(FakeEconomy economy) {
@@ -144,6 +168,17 @@ class RadarShopTest {
     void noRegisteredEconomyMeansTheShopIsClosed() {
         shop().onInteract(rightClickSign());
 
+        assertEquals(0, countRadars(player));
+    }
+
+    @Test
+    void aPlayerInDebtCantBuyARadarEvenWithEnoughMoney() {
+        FakeEconomy economy = new FakeEconomy(5000);
+        registerEconomy(economy);
+
+        shop(new FakeDebtService(25000)).onInteract(rightClickSign());
+
+        assertEquals(5000, economy.getBalance(player), "a blocked purchase must not touch their money");
         assertEquals(0, countRadars(player));
     }
 

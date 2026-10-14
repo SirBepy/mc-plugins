@@ -1,11 +1,15 @@
 package dev.sirbepy.mc.dragonballs;
 
 import dev.sirbepy.mc.core.bedrock.BedrockForms;
+import dev.sirbepy.mc.core.econ.VaultEconomy;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.bedrock.BedrockDragons;
 import dev.sirbepy.mc.dragonballs.bedrock.GeyserSkullMappings;
 import dev.sirbepy.mc.dragonballs.command.DragonBallsCommand;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
+import dev.sirbepy.mc.dragonballs.debt.DebtLedger;
+import dev.sirbepy.mc.dragonballs.debt.DebtPaydownEconomy;
+import dev.sirbepy.mc.dragonballs.debt.DebtService;
 import dev.sirbepy.mc.dragonballs.effects.SpectacleEffects;
 import dev.sirbepy.mc.dragonballs.item.BallItems;
 import dev.sirbepy.mc.dragonballs.listener.BallContainerGuardListener;
@@ -31,7 +35,9 @@ import dev.sirbepy.mc.dragonballs.station.StationModule;
 import dev.sirbepy.mc.dragonballs.summon.SummonModule;
 import dev.sirbepy.mc.dragonballs.task.BallMaintenanceTask;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import net.milkbowl.vault.economy.Economy;
 import org.bukkit.World;
+import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -47,6 +53,7 @@ public final class DragonBallsPlugin extends JavaPlugin {
     private SummonModule.Handle summon;
     private BallLogoutDropListener logoutDrop;
     private FloatingBalls floatingBalls;
+    private DebtLedger debt;
 
     // onLoad, not onEnable: Geyser reads its skull mappings while it enables, and every plugin's
     // onLoad runs before any onEnable, so the file is there whichever order the two enable in.
@@ -116,8 +123,24 @@ public final class DragonBallsPlugin extends JavaPlugin {
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                 new DragonBallsCommand(sets, config::get, this::reload).registerInto(event.registrar()));
 
+        // Debt ledger: registered before anything that might query it, and the real
+        // Economy's deposit intercept deferred a tick below, once every plugin's own onEnable
+        // (including whichever registers the real VaultUnlocked-backed Economy) has already run.
+        debt = new DebtLedger(new File(getDataFolder(), "debt.yml"), getLogger());
+        getServer().getServicesManager().register(DebtService.class, debt, this, ServicePriority.Normal);
+        getServer().getScheduler().runTask(this, () -> {
+            Economy underlying = VaultEconomy.find(getServer());
+            if (underlying == null) {
+                getLogger().warning("No Vault Economy registered yet; debt paydown won't intercept "
+                        + "deposits until the next reload/restart.");
+                return;
+            }
+            getServer().getServicesManager().register(Economy.class, new DebtPaydownEconomy(underlying, debt),
+                    this, ServicePriority.Highest);
+        });
+
         RadarModule.register(this, sets, config::get);
-        StationModule.register(this, sets, floatingBalls, config::get);
+        StationModule.register(this, sets, floatingBalls, config::get, debt);
         effects = new SpectacleEffects(this, items, BedrockDragons.hook(this, config.get().bedrockDragonModels()));
         summon = SummonModule.register(this, sets, floatingBalls, config::get, effects);
 

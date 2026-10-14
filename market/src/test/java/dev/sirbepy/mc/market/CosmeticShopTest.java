@@ -42,6 +42,7 @@ class CosmeticShopTest {
     private final List<Double> charged = new ArrayList<>();
     private double walletBalance = 100000;
     private boolean economyOpen = true;
+    private Double debt = 0.0;
 
     @BeforeEach
     void setUp() {
@@ -68,7 +69,8 @@ class CosmeticShopTest {
                     charged.add(amount);
                     return true;
                 },
-                player -> economyOpen ? walletBalance : null);
+                player -> economyOpen ? walletBalance : null,
+                player -> debt);
     }
 
     @Test
@@ -131,6 +133,15 @@ class CosmeticShopTest {
         String message = player.nextMessage();
         assertTrue(message.contains("$2,500"), message);
         assertTrue(message.contains("$10"), message);
+    }
+
+    @Test
+    void inDebtBlocksThePurchaseAndChargesNothingEvenWithEnoughMoney() {
+        debt = 25000.0;
+        PlayerMock player = server.addPlayer();
+        shop().buy(player);
+        assertTrue(charged.isEmpty(), "blocked by debt before ever reaching the charge");
+        assertTrue(player.nextMessage().contains("$25,000"));
     }
 
     @Test
