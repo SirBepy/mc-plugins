@@ -13,9 +13,11 @@ import dev.sirbepy.mc.minibosses.sentinel.SentinelLoot;
 import dev.sirbepy.mc.minibosses.sentinel.SummonCooldown;
 import dev.sirbepy.mc.minibosses.sentinel.ThornVinesAbility;
 import dev.sirbepy.mc.minibosses.sovereign.HollowCrown;
+import dev.sirbepy.mc.minibosses.sovereign.RiftZonesAbility;
 import dev.sirbepy.mc.minibosses.sovereign.SovereignDiscovery;
 import dev.sirbepy.mc.minibosses.sovereign.SovereignFight;
 import dev.sirbepy.mc.minibosses.sovereign.SovereignLoot;
+import dev.sirbepy.mc.minibosses.sovereign.VoidPullAbility;
 import dev.sirbepy.mc.minibosses.sovereign.VoidStepAbility;
 import dev.sirbepy.mc.minibosses.tyrant.AshenCore;
 import dev.sirbepy.mc.minibosses.tyrant.AshenStormAbility;
@@ -77,6 +79,8 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
         abilities.register(new BlazeWaveAbility(new Random()));
         abilities.register(new AshenStormAbility(this));
         abilities.register(new VoidStepAbility(this, new Random()));
+        abilities.register(new RiftZonesAbility(this, new Random()));
+        abilities.register(new VoidPullAbility(this));
         hallOfFame = new HallOfFame(getDataFolder(), getLogger());
 
         DragonFighters sentinelFighters = new DragonFighters(new NamespacedKey(this, "sentinel-fighters"),
@@ -98,15 +102,15 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
                 new dev.sirbepy.mc.minibosses.tyrant.SummonCooldown(TyrantDiscovery.COOLDOWN_MILLIS, System::currentTimeMillis);
         tyrantDiscovery = new TyrantDiscovery(this, tyrantFight, tyrantCooldown, new Random());
 
-        // Void Sovereign: foundation and Normal-tier fight only - no Hall of Fame/Guild wiring
-        // yet, matching the Sentinel's and Tyrant's own foundation scope before each one's
-        // follow-up dispatch landed. Its own DragonFighters key/PDC tags are fully independent of
-        // endfight's End-dimension Ender Dragon fight/arena (see SovereignFight's own javadoc).
+        // Void Sovereign: all 3 tiers now real (Phase B), wired into Hall of Fame/Guild the same
+        // way the Sentinel's and Tyrant's own follow-up dispatches did. Its own DragonFighters
+        // key/PDC tags are fully independent of endfight's End-dimension Ender Dragon fight/arena
+        // (see SovereignFight's own javadoc).
         DragonFighters sovereignFighters = new DragonFighters(new NamespacedKey(this, "sovereign-fighters"),
                 System::currentTimeMillis);
         hollowCrown = new HollowCrown(this);
         SovereignLoot sovereignLoot = new SovereignLoot(hollowCrown);
-        sovereignFight = new SovereignFight(this, guardians, abilities, sovereignFighters, sovereignLoot, getLogger());
+        sovereignFight = new SovereignFight(this, guardians, abilities, sovereignFighters, sovereignLoot, hallOfFame, getLogger());
         dev.sirbepy.mc.minibosses.sovereign.SummonCooldown sovereignCooldown =
                 new dev.sirbepy.mc.minibosses.sovereign.SummonCooldown(SovereignDiscovery.COOLDOWN_MILLIS, System::currentTimeMillis);
         sovereignDiscovery = new SovereignDiscovery(this, sovereignFight, sovereignCooldown, new Random());

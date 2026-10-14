@@ -1,12 +1,12 @@
-# The Void Sovereign: third and final of the Three Ancient Guardians. Only Normal tier is real,
-# tested fight content so far (dev.sirbepy.mc.minibosses.sovereign): void_sovereign_void_step
-# (VoidStepAbility - the boss blinks to a short random offset near a random nearby fighter every
-# 5s, for the rest of the fight) fires once at half health, registered in
-# MinibossesPlugin#onEnable. Heroic's void_sovereign_rift_zones and Mythic's
-# void_sovereign_void_pull do not resolve yet - GuardianAbilityRegistry.get() returns empty for any
-# id nobody registered, so naming them here still fails safe rather than crashing the trigger path;
-# their real implementations, plus group scaling and Hall-of-Fame/Guild-contract wiring, are a
-# later dispatch's job (phase B of this Guardian's build).
+# The Void Sovereign: third and final of the Three Ancient Guardians. All 3 tiers are now real,
+# tested fight content (dev.sirbepy.mc.minibosses.sovereign): void_sovereign_void_step
+# (VoidStepAbility, Normal - the boss blinks to a short random offset near a random nearby fighter
+# every 5s, for the rest of the fight), void_sovereign_rift_zones (RiftZonesAbility, Heroic - fixed
+# void-rift zones that damage and knock back anyone caught standing in them), and
+# void_sovereign_void_pull (VoidPullAbility, Mythic - a periodic arena-edge pull shoving fighters
+# toward the platform's exposed edges) all resolve and fire via GuardianAbilityRegistry, registered
+# in MinibossesPlugin#onEnable. Solo/group scaling (SovereignScaling) and Hall-of-Fame/Guild-contract
+# wiring on death also landed in this phase.
 # End dimension: fully independent of endfight's own Ender Dragon fight/arena
 # (endfight.arena.ArenaRegistry) - this Guardian's fight state never reads or writes that registry.
 id: void_sovereign

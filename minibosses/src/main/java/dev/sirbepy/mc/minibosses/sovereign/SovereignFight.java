@@ -1,7 +1,9 @@
 package dev.sirbepy.mc.minibosses.sovereign;
 
 import dev.sirbepy.mc.core.dragon.DragonFighters;
+import dev.sirbepy.mc.guild.events.GuardianDefeatedEvent;
 import dev.sirbepy.mc.minibosses.ability.GuardianAbilityRegistry;
+import dev.sirbepy.mc.minibosses.hof.HallOfFame;
 import dev.sirbepy.mc.minibosses.registry.GuardianDef;
 import dev.sirbepy.mc.minibosses.registry.GuardianRegistry;
 import dev.sirbepy.mc.minibosses.registry.GuardianTierRow;
@@ -30,6 +32,8 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -38,18 +42,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 /**
- * Owns the Void Sovereign's spawn, fighter tracking, half-health void-step trigger, and death
- * loot - the fight-level wiring for Normal tier only, mirroring the shape
- * {@code sentinel.SentinelFight}/{@code tyrant.TyrantFight}'s own foundation (phase A) dispatches
- * established (see {@link VoidStepAbility} and {@link SovereignLoot} for why Heroic/Mythic content
- * is out of scope here). A single {@link Enderman} stands in for the whole boss: it is the only
- * vanilla mob that natively teleports, exactly the "teleportation + void abilities" brief the todo
- * gives this Guardian - a {@link org.bukkit.entity.Shulker} was the other candidate the todo names,
- * but has no native teleport or mobility at all (just a defensive shell and a levitation shot), a
- * worse fit for a boss whose entire identity is "it is never where you left it". This dispatch
- * does not suppress an Enderman's own vanilla teleport-on-hit/anger-on-stare behavior - the same
- * "do not fight the vanilla mob's own behavior" judgment {@code tyrant.TyrantFight} applied to a
- * Wither Skeleton's natural Wither effect, both read as "the boss is doing boss things", not a bug.
+ * Owns the Void Sovereign's spawn (with solo/group scaling via {@link SovereignScaling}), fighter
+ * tracking, half-health ability trigger (all 3 tiers, see {@link VoidStepAbility},
+ * {@link RiftZonesAbility}, {@link VoidPullAbility}), and death handling - loot, the
+ * {@code minibosses} Hall of Fame, and the {@code guild} {@code GuardianDefeatedEvent} contract
+ * hook, the same shape {@code sentinel.SentinelFight}'s and {@code tyrant.TyrantFight}'s own
+ * Phase B dispatches established (see {@link VoidStepAbility} and {@link SovereignLoot} for why
+ * this was Normal-tier-only in phase A). A single {@link Enderman} stands in for the whole boss: it
+ * is the only vanilla mob that natively teleports, exactly the "teleportation + void abilities"
+ * brief the todo gives this Guardian - a {@link org.bukkit.entity.Shulker} was the other candidate
+ * the todo names, but has no native teleport or mobility at all (just a defensive shell and a
+ * levitation shot), a worse fit for a boss whose entire identity is "it is never where you left
+ * it". This dispatch does not suppress an Enderman's own vanilla teleport-on-hit/anger-on-stare
+ * behavior - the same "do not fight the vanilla mob's own behavior" judgment
+ * {@code tyrant.TyrantFight} applied to a Wither Skeleton's natural Wither effect, both read as
+ * "the boss is doing boss things", not a bug.
  *
  * <p>Regression note (this Guardian's own sensitivity, being End-dimension like the Ender Dragon
  * fight): this fight's state (PDC tags, via the
@@ -57,7 +64,10 @@ import java.util.logging.Logger;
  * never anything {@code endfight}-specific) is fully independent of {@code endfight}'s own
  * End-dimension Ender Dragon fight/arena ({@code endfight.arena.ArenaRegistry}, its own in-memory
  * block-position/guard-post tracker rebuilt from its own {@code ArenaLayout}). Nothing in this
- * dispatch references {@code endfight.arena} or any other {@code endfight} class.
+ * dispatch references {@code endfight.arena} or any other {@code endfight} class; the Hall of Fame
+ * and {@code GuardianDefeatedEvent} wiring added in this phase B reuse the exact same generalized
+ * {@code minibosses.hof.HallOfFame}/{@code guild.events.GuardianDefeatedEvent} surfaces the other
+ * two Guardians already wired, never anything {@code endfight} owns.
  */
 public final class SovereignFight implements Listener {
 
@@ -67,6 +77,7 @@ public final class SovereignFight implements Listener {
     private final GuardianAbilityRegistry abilities;
     private final DragonFighters fighters;
     private final SovereignLoot loot;
+    private final HallOfFame hallOfFame;
     private final Logger logger;
 
     private final NamespacedKey guardianKey;
@@ -76,11 +87,12 @@ public final class SovereignFight implements Listener {
     private final Map<UUID, BossBar> bossBars = new ConcurrentHashMap<>();
 
     public SovereignFight(JavaPlugin plugin, GuardianRegistry guardians, GuardianAbilityRegistry abilities,
-                           DragonFighters fighters, SovereignLoot loot, Logger logger) {
+                           DragonFighters fighters, SovereignLoot loot, HallOfFame hallOfFame, Logger logger) {
         this.guardians = guardians;
         this.abilities = abilities;
         this.fighters = fighters;
         this.loot = loot;
+        this.hallOfFame = hallOfFame;
         this.logger = logger;
         this.guardianKey = new NamespacedKey(plugin, "guardian");
         this.tierKey = new NamespacedKey(plugin, "guardian_tier");
@@ -98,15 +110,28 @@ public final class SovereignFight implements Listener {
         }
         GuardianTierRow row = def.tiers().get(tier);
 
+        // Fighter count is read once, here, at summon time: whoever is close enough to see the boss
+        // bar is close enough to be "in the fight", the same radius used below to add them to it -
+        // same convention sentinel.SentinelFight.spawn/tyrant.TyrantFight.spawn already established.
+        List<Player> nearbyPlayers = new ArrayList<>();
+        for (Player nearby : location.getWorld().getPlayers()) {
+            if (nearby.getLocation().distanceSquared(location) <= 64 * 64) {
+                nearbyPlayers.add(nearby);
+            }
+        }
+        int fighterCount = Math.max(nearbyPlayers.size(), 1);
+        double health = SovereignScaling.scaledHealth(row.health(), fighterCount);
+        double damage = SovereignScaling.scaledDamage(row.damage(), fighterCount);
+
         Enderman sovereign = (Enderman) location.getWorld().spawnEntity(location, EntityType.ENDERMAN);
         AttributeInstance maxHealth = sovereign.getAttribute(Attribute.MAX_HEALTH);
         if (maxHealth != null) {
-            maxHealth.setBaseValue(row.health());
+            maxHealth.setBaseValue(health);
         }
-        sovereign.setHealth(row.health());
+        sovereign.setHealth(health);
         AttributeInstance attack = sovereign.getAttribute(Attribute.ATTACK_DAMAGE);
         if (attack != null) {
-            attack.setBaseValue(row.damage());
+            attack.setBaseValue(damage);
         }
         sovereign.customName(Component.text("The Void Sovereign", NamedTextColor.DARK_PURPLE));
         sovereign.setCustomNameVisible(true);
@@ -120,10 +145,8 @@ public final class SovereignFight implements Listener {
         BossBar bar = Bukkit.createBossBar("The Void Sovereign (" + tier.displayName() + ")",
                 BarColor.PURPLE, BarStyle.SOLID);
         bar.setProgress(1.0);
-        for (Player nearby : location.getWorld().getPlayers()) {
-            if (nearby.getLocation().distanceSquared(location) <= 64 * 64) {
-                bar.addPlayer(nearby);
-            }
+        for (Player nearby : nearbyPlayers) {
+            bar.addPlayer(nearby);
         }
         bossBars.put(sovereign.getUniqueId(), bar);
 
@@ -167,11 +190,12 @@ public final class SovereignFight implements Listener {
         }
     }
 
-    /** Fires every Normal-tier ability id the first time the Sovereign's projected health crosses
-     * half its max - a PDC flag makes sure a long fight sitting at the threshold only triggers it
-     * once. An ability id with no registered {@code GuardianAbility} (a Heroic/Mythic id this
-     * dispatch does not implement) is skipped, never a crash - see {@code GuardianAbilityRegistry},
-     * same no-crash precedent the other two Guardians already proved. */
+    /** Fires every ability id this boss's own tier lists the first time the Sovereign's projected
+     * health crosses half its max - a PDC flag makes sure a long fight sitting at the threshold
+     * only triggers it once. An ability id with no registered {@code GuardianAbility} (any future
+     * tier row naming an id nobody implemented yet) is skipped, never a crash - see
+     * {@code GuardianAbilityRegistry}, same no-crash precedent {@code sentinel.SentinelFight}/
+     * {@code tyrant.TyrantFight} already proved. */
     private void maybeTriggerVoidStep(LivingEntity boss, double incomingDamage) {
         PersistentDataContainer pdc = boss.getPersistentDataContainer();
         if (pdc.has(voidStepTriggeredKey, PersistentDataType.BOOLEAN)) {
@@ -204,8 +228,16 @@ public final class SovereignFight implements Listener {
         if (!isOurs(boss)) {
             return;
         }
+        Tier tier = tierOf(boss);
         event.getDrops().clear();
-        event.getDrops().addAll(loot.forTier(tierOf(boss)));
+        event.getDrops().addAll(loot.forTier(tier));
+
+        Set<UUID> fighterIds = fighters.fighters(boss);
+        hallOfFame.guardianKilled(GUARDIAN_ID, tier, fighterIds, boss.getWorld().getName());
+        // A plain Bukkit event, not a direct call: Guild is a softdepend (plugin.yml), so this must
+        // not require Guild to be installed - firing to no listener is harmless, same shape as
+        // GuardianDefeatedEvent's own javadoc describes.
+        Bukkit.getPluginManager().callEvent(new GuardianDefeatedEvent(GUARDIAN_ID, tier.name(), fighterIds));
 
         BossBar bar = bossBars.remove(boss.getUniqueId());
         if (bar != null) {
@@ -213,8 +245,8 @@ public final class SovereignFight implements Listener {
         }
     }
 
-    /** Who hurt this boss this fight, for whatever reward/record code a later dispatch adds
-     * (Hall of Fame, Guild contracts - explicitly not wired up by this dispatch). */
+    /** Who hurt this boss this fight - also exposed for tests, since {@link #onDeath} already uses
+     * it internally to feed both the Hall of Fame and the Guild's {@code GuardianDefeatedEvent}. */
     public Set<UUID> fightersOf(LivingEntity boss) {
         return fighters.fighters(boss);
     }
