@@ -1,7 +1,9 @@
 package dev.sirbepy.mc.minibosses.sentinel;
 
 import dev.sirbepy.mc.core.dragon.DragonFighters;
+import dev.sirbepy.mc.guild.events.GuardianDefeatedEvent;
 import dev.sirbepy.mc.minibosses.ability.GuardianAbilityRegistry;
+import dev.sirbepy.mc.minibosses.hof.HallOfFame;
 import dev.sirbepy.mc.minibosses.registry.GuardianDef;
 import dev.sirbepy.mc.minibosses.registry.GuardianRegistry;
 import dev.sirbepy.mc.minibosses.registry.Tier;
@@ -12,6 +14,8 @@ import org.bukkit.World;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -49,14 +53,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 /**
- * Phase A coverage for the Overgrown Sentinel: proves the real shipped
+ * Phase A+B coverage for the Overgrown Sentinel: proves the real shipped
  * {@code guardians/overgrown_sentinel.yml} loads with all 3 tiers (not a hand-duplicated copy,
  * same convention as {@code GuardianRegistryTest}), that a Normal-tier fight can be simulated end
  * to end (spawn, fighter tracking via the generalized {@code core.dragon.DragonFighters}, the
  * Normal-tier defensive ability firing once at half health, a kill dropping the Heart of the
- * Wild), that an unresolved Heroic-tier ability id never crashes the trigger path, and that the
- * discovery hook's cooldown blocks a repeat summon. No MockBukkit-free unit test here: every case
- * needs a live world/entity/player double.
+ * Wild), that Heroic/Mythic's own real abilities ({@link ThornVinesAbility}, {@link RegrowthAbility})
+ * resolve and fire alongside Root rather than being skipped, that solo/group scaling changes the
+ * boss's own stats at summon time, that a kill wires into the {@code minibosses} Hall of Fame and
+ * fires the {@code guild} {@code GuardianDefeatedEvent}, and that the discovery hook's cooldown
+ * blocks a repeat summon. No MockBukkit-free unit test here: every case needs a live
+ * world/entity/player double.
  */
 class SentinelFightTest {
 
@@ -70,6 +77,7 @@ class SentinelFightTest {
     private GuardianAbilityRegistry abilities;
     private SentinelFight fight;
     private HeartOfTheWild heartOfTheWild;
+    private HallOfFame hallOfFame;
     private final AtomicLong clock = new AtomicLong(0);
 
     @BeforeEach
@@ -87,11 +95,14 @@ class SentinelFightTest {
 
         abilities = new GuardianAbilityRegistry();
         abilities.register(new RootAbility());
+        abilities.register(new ThornVinesAbility(plugin));
+        abilities.register(new RegrowthAbility(plugin));
 
         heartOfTheWild = new HeartOfTheWild(plugin);
         SentinelLoot loot = new SentinelLoot(heartOfTheWild);
         DragonFighters fighters = new DragonFighters(KEY, clock::get);
-        fight = new SentinelFight(plugin, guardians, abilities, fighters, loot, Logger.getLogger("minibosses-test"));
+        hallOfFame = new HallOfFame(tempDir.toFile(), Logger.getLogger("minibosses-test"));
+        fight = new SentinelFight(plugin, guardians, abilities, fighters, loot, hallOfFame, Logger.getLogger("minibosses-test"));
     }
 
     @AfterEach
@@ -125,9 +136,9 @@ class SentinelFightTest {
         var mythic = def.tiers().get(Tier.MYTHIC);
         assertEquals(List.of(RootAbility.ID, "overgrown_sentinel_thorn_vines", "overgrown_sentinel_regrowth"),
                 mythic.abilityIds());
-        // Neither Heroic nor Mythic's extra ability ids are registered yet - proven not to crash below.
-        assertTrue(abilities.get("overgrown_sentinel_thorn_vines").isEmpty());
-        assertTrue(abilities.get("overgrown_sentinel_regrowth").isEmpty());
+        // Phase B: both Heroic and Mythic's own ability ids now resolve to real implementations.
+        assertTrue(abilities.get(ThornVinesAbility.ID).isPresent());
+        assertTrue(abilities.get(RegrowthAbility.ID).isPresent());
     }
 
     private LivingEntity spawnNormal() {
@@ -176,18 +187,143 @@ class SentinelFightTest {
                 "a Normal-tier kill must drop the Heart of the Wild relic");
     }
 
+    // --- Solo/group scaling (SentinelScaling) ---
+
     @Test
-    void anUnresolvedHeroicAbilityIdDoesNotCrashTheTriggerPath() {
+    void aSoloFighterLeavesHealthAtTheTierBaseline() {
+        alice.teleport(new Location(world, 0, 64, 0));
+        LivingEntity boss = fight.spawn(new Location(world, 0, 64, 0), Tier.NORMAL).orElseThrow();
+
+        assertEquals(120.0, boss.getHealth());
+    }
+
+    @Test
+    void aSecondNearbyFighterScalesHealthUp() {
+        alice.teleport(new Location(world, 0, 64, 0));
+        PlayerMock bob = server.addPlayer("Bob");
+        bob.teleport(new Location(world, 2, 64, 2));
+
+        LivingEntity boss = fight.spawn(new Location(world, 0, 64, 0), Tier.NORMAL).orElseThrow();
+
+        // SentinelScaling: +50% health per fighter beyond the first -> 2 nearby fighters means 1.5x
+        // the Normal baseline's 120 health. (ATTACK_DAMAGE is also scaled the same way in
+        // SentinelFight.spawn, but MockBukkit's Ravager exposes no ATTACK_DAMAGE AttributeInstance
+        // to assert against - SentinelFight already treats a missing attribute as a no-op, same as
+        // the existing MAX_HEALTH/ATTACK_DAMAGE null-guards it had before this dispatch.)
+        assertEquals(180.0, boss.getHealth(), 0.0001, "2 nearby fighters must scale health up from the solo baseline");
+    }
+
+    @Test
+    void scaledDamageIsAppliedWhenTheAttributeIsAvailable() {
+        // SentinelScaling itself, independent of whatever attributes MockBukkit's Ravager exposes:
+        // proves the formula SentinelFight.spawn feeds into Attribute.ATTACK_DAMAGE is correct.
+        assertEquals(8.0, SentinelScaling.scaledDamage(8.0, 1), 0.0001);
+        assertEquals(9.6, SentinelScaling.scaledDamage(8.0, 2), 0.0001);
+    }
+
+    // --- Hall of Fame + Guild contract wiring ---
+
+    @Test
+    void aNormalKillRecordsTheFirstEverHallOfFameEntry() {
+        LivingEntity boss = spawnNormal();
+        melee(boss, 1); // registers Alice as a fighter via DragonFighters, without killing the boss
+        EntityDeathEvent death = new EntityDeathEvent(boss,
+                DamageSource.builder(DamageType.PLAYER_ATTACK).withDirectEntity(alice).build(), new java.util.ArrayList<>());
+
+        fight.onDeath(death);
+
+        assertTrue(hallOfFame.done(SentinelFight.GUARDIAN_ID, HallOfFame.Slot.FIRST_KILL));
+        assertEquals(java.util.Map.of(alice.getUniqueId(), "Alice"),
+                hallOfFame.party(SentinelFight.GUARDIAN_ID, HallOfFame.Slot.FIRST_KILL));
+    }
+
+    @Test
+    void aMythicKillRecordsBothFirstKillAndFirstMythicHallOfFameSlots() {
+        alice.teleport(new Location(world, 0, 64, 0));
+        LivingEntity boss = fight.spawn(new Location(world, 0, 64, 0), Tier.MYTHIC).orElseThrow();
+        melee(boss, 1);
+        EntityDeathEvent death = new EntityDeathEvent(boss,
+                DamageSource.builder(DamageType.PLAYER_ATTACK).withDirectEntity(alice).build(), new java.util.ArrayList<>());
+
+        fight.onDeath(death);
+
+        assertTrue(hallOfFame.done(SentinelFight.GUARDIAN_ID, HallOfFame.Slot.FIRST_KILL));
+        assertTrue(hallOfFame.done(SentinelFight.GUARDIAN_ID, HallOfFame.Slot.FIRST_MYTHIC));
+    }
+
+    @Test
+    void aKillFiresTheGuildGuardianDefeatedEventWithTheRightShape() {
+        LivingEntity boss = spawnNormal();
+        melee(boss, 1);
+        List<GuardianDefeatedEvent> captured = new java.util.ArrayList<>();
+        server.getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            public void onGuardianDefeated(GuardianDefeatedEvent event) {
+                captured.add(event);
+            }
+        }, plugin);
+        EntityDeathEvent death = new EntityDeathEvent(boss,
+                DamageSource.builder(DamageType.PLAYER_ATTACK).withDirectEntity(alice).build(), new java.util.ArrayList<>());
+
+        fight.onDeath(death);
+
+        assertEquals(1, captured.size(), "a Guardian kill must fire exactly one GuardianDefeatedEvent");
+        GuardianDefeatedEvent event = captured.get(0);
+        assertEquals(SentinelFight.GUARDIAN_ID, event.guardianId());
+        assertEquals(Tier.NORMAL.name(), event.tier());
+        assertEquals(java.util.Set.of(alice.getUniqueId()), event.fighterIds());
+    }
+
+    // --- Mythic's healing-roots phase (RegrowthAbility) ---
+
+    @Test
+    void mythicRegrowthHealsTheBossWhenNeverInterrupted() {
+        LivingEntity boss = fight.spawn(new Location(world, 0, 64, 0), Tier.MYTHIC).orElseThrow();
+        boss.setHealth(boss.getHealth() - 200); // wound it well below max so healing is visible and uncapped
+
+        new RegrowthAbility(plugin).trigger(boss);
+        double healthBeforePulses = boss.getHealth();
+        server.getScheduler().performTicks((int) (RegrowthAbility.HEAL_INTERVAL_TICKS * RegrowthAbility.PULSES) + 5);
+
+        assertTrue(boss.getHealth() > healthBeforePulses, "an uninterrupted regrowth window must heal the boss");
+    }
+
+    @Test
+    void mythicRegrowthIsInterruptedByEnoughDamageDuringTheWindow() {
+        LivingEntity boss = fight.spawn(new Location(world, 0, 64, 0), Tier.MYTHIC).orElseThrow();
+        boss.setHealth(boss.getHealth() - 200);
+
+        RegrowthAbility regrowth = new RegrowthAbility(plugin);
+        abilities.register(regrowth);
+        regrowth.trigger(boss);
+        assertTrue(regrowth.isActive(boss));
+
+        // Mythic's max health is 480.0; the interrupt threshold is 15% of that (72.0).
+        regrowth.onIncomingDamage(boss, 80.0);
+
+        assertFalse(regrowth.isActive(boss), "enough damage during the window must interrupt regrowth immediately");
+        double healthAfterInterrupt = boss.getHealth();
+        server.getScheduler().performTicks((int) (RegrowthAbility.HEAL_INTERVAL_TICKS * RegrowthAbility.PULSES) + 5);
+        assertEquals(healthAfterInterrupt, boss.getHealth(), 0.0001, "an interrupted regrowth must not keep healing");
+    }
+
+    @Test
+    void aHeroicTierFightTriggersRootAndThornVinesTogetherAtHalfHealth() {
         alice.teleport(new Location(world, 0, 64, 0));
         LivingEntity boss = fight.spawn(new Location(world, 0, 64, 0), Tier.HEROIC).orElseThrow();
         assertEquals(260.0, boss.getHealth());
 
-        // Crosses half of Heroic's 260 health (260 -> 100): triggers root (registered) and tries
-        // overgrown_sentinel_thorn_vines (not registered yet) right after it in the same ability list.
+        // Crosses half of Heroic's 260 health (260 -> 100): triggers both root and
+        // overgrown_sentinel_thorn_vines, which are both registered for Heroic.
         assertDoesNotThrow(() -> melee(boss, 160));
 
-        assertTrue(alice.hasPotionEffect(PotionEffectType.SLOWNESS),
-                "the registered ability in the list must still fire even though a later one in the same list is unresolved");
+        assertTrue(alice.hasPotionEffect(PotionEffectType.SLOWNESS), "root must still fire alongside thorn vines");
+
+        // Thorn vines' first check (40 ticks later): Alice hasn't moved, so she takes a bite.
+        double healthBefore = alice.getHealth();
+        server.getScheduler().performTicks(ThornVinesAbility.CHECK_INTERVAL_TICKS);
+        assertTrue(alice.getHealth() < healthBefore, "standing still under thorn vines must deal damage");
+        assertTrue(alice.hasPotionEffect(PotionEffectType.POISON), "thorn vines must also apply Poison");
     }
 
     @Test

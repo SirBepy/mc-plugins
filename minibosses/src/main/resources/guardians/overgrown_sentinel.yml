@@ -1,9 +1,10 @@
-# The Overgrown Sentinel: first of the Three Ancient Guardians. Normal tier is real,
-# tested fight content as of this file (dev.sirbepy.mc.minibosses.sentinel). Heroic/Mythic list
-# ability ids a follow-up dispatch still has to implement (overgrown_sentinel_thorn_vines,
-# overgrown_sentinel_regrowth) - GuardianAbilityRegistry.get() returns empty for an id nobody
-# registered yet and SentinelFight just skips it, so an unresolved id here does not crash anything;
-# proven by SentinelFightTest.
+# The Overgrown Sentinel: first of the Three Ancient Guardians. All 3 tiers are real, tested fight
+# content (dev.sirbepy.mc.minibosses.sentinel): Normal's overgrown_sentinel_root, Heroic's
+# overgrown_sentinel_thorn_vines (ThornVinesAbility - standing still near the boss gets you bitten)
+# and Mythic's overgrown_sentinel_regrowth (RegrowthAbility - a healing phase that must be
+# interrupted by damage) all fire at half health, registered in MinibossesPlugin#onEnable.
+# GuardianAbilityRegistry.get() still returns empty for any id nobody registered, so a future tier
+# addition that names an unimplemented id still fails safe rather than crashing the trigger path.
 id: overgrown_sentinel
 display-name: "The Overgrown Sentinel"
 dimension: NORMAL

@@ -1,7 +1,9 @@
 package dev.sirbepy.mc.minibosses.sentinel;
 
 import dev.sirbepy.mc.core.dragon.DragonFighters;
+import dev.sirbepy.mc.guild.events.GuardianDefeatedEvent;
 import dev.sirbepy.mc.minibosses.ability.GuardianAbilityRegistry;
+import dev.sirbepy.mc.minibosses.hof.HallOfFame;
 import dev.sirbepy.mc.minibosses.registry.GuardianDef;
 import dev.sirbepy.mc.minibosses.registry.GuardianRegistry;
 import dev.sirbepy.mc.minibosses.registry.GuardianTierRow;
@@ -30,6 +32,8 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -38,9 +42,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 /**
- * Owns the Overgrown Sentinel's spawn, fighter tracking, half-health defensive trigger and death
- * loot - the fight-level wiring for Normal tier only (see {@link RootAbility} and
- * {@link SentinelLoot} for why Heroic/Mythic content is out of scope here). A single
+ * Owns the Overgrown Sentinel's spawn (with solo/group scaling via {@link SentinelScaling}),
+ * fighter tracking, half-health ability trigger (all 3 tiers, see {@link RootAbility},
+ * {@link ThornVinesAbility}, {@link RegrowthAbility}) and death handling - loot, the
+ * {@code minibosses} Hall of Fame, and the {@code guild} {@code GuardianDefeatedEvent} contract
+ * hook. A single
  * {@link Ravager} stands in for the whole boss (no {@code ComplexEntityPart}s needed): chosen
  * over an {@link org.bukkit.entity.IronGolem} because this repo's own
  * {@code core.dragon.DragonFightersTest} already proves a Ravager works as the generalized
@@ -56,6 +62,7 @@ public final class SentinelFight implements Listener {
     private final GuardianAbilityRegistry abilities;
     private final DragonFighters fighters;
     private final SentinelLoot loot;
+    private final HallOfFame hallOfFame;
     private final Logger logger;
 
     private final NamespacedKey guardianKey;
@@ -65,11 +72,12 @@ public final class SentinelFight implements Listener {
     private final Map<UUID, BossBar> bossBars = new ConcurrentHashMap<>();
 
     public SentinelFight(JavaPlugin plugin, GuardianRegistry guardians, GuardianAbilityRegistry abilities,
-                          DragonFighters fighters, SentinelLoot loot, Logger logger) {
+                          DragonFighters fighters, SentinelLoot loot, HallOfFame hallOfFame, Logger logger) {
         this.guardians = guardians;
         this.abilities = abilities;
         this.fighters = fighters;
         this.loot = loot;
+        this.hallOfFame = hallOfFame;
         this.logger = logger;
         this.guardianKey = new NamespacedKey(plugin, "guardian");
         this.tierKey = new NamespacedKey(plugin, "guardian_tier");
@@ -87,15 +95,27 @@ public final class SentinelFight implements Listener {
         }
         GuardianTierRow row = def.tiers().get(tier);
 
+        // Fighter count is read once, here, at summon time: whoever is close enough to see the boss
+        // bar is close enough to be "in the fight", the same radius used below to add them to it.
+        List<Player> nearbyPlayers = new ArrayList<>();
+        for (Player nearby : location.getWorld().getPlayers()) {
+            if (nearby.getLocation().distanceSquared(location) <= 64 * 64) {
+                nearbyPlayers.add(nearby);
+            }
+        }
+        int fighterCount = Math.max(nearbyPlayers.size(), 1);
+        double health = SentinelScaling.scaledHealth(row.health(), fighterCount);
+        double damage = SentinelScaling.scaledDamage(row.damage(), fighterCount);
+
         Ravager sentinel = (Ravager) location.getWorld().spawnEntity(location, EntityType.RAVAGER);
         AttributeInstance maxHealth = sentinel.getAttribute(Attribute.MAX_HEALTH);
         if (maxHealth != null) {
-            maxHealth.setBaseValue(row.health());
+            maxHealth.setBaseValue(health);
         }
-        sentinel.setHealth(row.health());
+        sentinel.setHealth(health);
         AttributeInstance attack = sentinel.getAttribute(Attribute.ATTACK_DAMAGE);
         if (attack != null) {
-            attack.setBaseValue(row.damage());
+            attack.setBaseValue(damage);
         }
         sentinel.customName(Component.text("The Overgrown Sentinel", NamedTextColor.DARK_GREEN));
         sentinel.setCustomNameVisible(true);
@@ -109,10 +129,8 @@ public final class SentinelFight implements Listener {
         BossBar bar = Bukkit.createBossBar("The Overgrown Sentinel (" + tier.displayName() + ")",
                 BarColor.GREEN, BarStyle.SOLID);
         bar.setProgress(1.0);
-        for (Player nearby : location.getWorld().getPlayers()) {
-            if (nearby.getLocation().distanceSquared(location) <= 64 * 64) {
-                bar.addPlayer(nearby);
-            }
+        for (Player nearby : nearbyPlayers) {
+            bar.addPlayer(nearby);
         }
         bossBars.put(sentinel.getUniqueId(), bar);
 
@@ -142,6 +160,18 @@ public final class SentinelFight implements Listener {
         }
         updateBossBar(boss);
         maybeTriggerRoot(boss, event.getFinalDamage());
+        notifyRegrowth(boss, event.getFinalDamage());
+    }
+
+    /** Forwards this hit to {@link RegrowthAbility} if a Mythic fight's healing-roots phase is
+     * currently active on this boss - a no-op the rest of the time (Normal/Heroic never register
+     * this ability id, and {@code RegrowthAbility.isActive} is false outside its own window). */
+    private void notifyRegrowth(LivingEntity boss, double damage) {
+        abilities.get(RegrowthAbility.ID).ifPresent(ability -> {
+            if (ability instanceof RegrowthAbility regrowth && regrowth.isActive(boss)) {
+                regrowth.onIncomingDamage(boss, damage);
+            }
+        });
     }
 
     private void updateBossBar(LivingEntity boss) {
@@ -152,10 +182,11 @@ public final class SentinelFight implements Listener {
         }
     }
 
-    /** Fires every Normal-tier ability id the first time the Sentinel's projected health crosses
-     * half its max - a PDC flag makes sure a long fight sitting at the threshold only triggers it
-     * once. An ability id with no registered {@code GuardianAbility} (a Heroic/Mythic id this
-     * dispatch does not implement) is skipped, never a crash - see {@code GuardianAbilityRegistry}. */
+    /** Fires every ability id this boss's own tier lists the first time the Sentinel's projected
+     * health crosses half its max - a PDC flag makes sure a long fight sitting at the threshold
+     * only triggers it once. An ability id with no registered {@code GuardianAbility} (any future
+     * tier row naming an id nobody implemented yet) is skipped, never a crash - see
+     * {@code GuardianAbilityRegistry}. */
     private void maybeTriggerRoot(LivingEntity boss, double incomingDamage) {
         PersistentDataContainer pdc = boss.getPersistentDataContainer();
         if (pdc.has(rootTriggeredKey, PersistentDataType.BOOLEAN)) {
@@ -188,8 +219,16 @@ public final class SentinelFight implements Listener {
         if (!isOurs(boss)) {
             return;
         }
+        Tier tier = tierOf(boss);
         event.getDrops().clear();
-        event.getDrops().addAll(loot.forTier(tierOf(boss)));
+        event.getDrops().addAll(loot.forTier(tier));
+
+        Set<UUID> fighterIds = fighters.fighters(boss);
+        hallOfFame.guardianKilled(GUARDIAN_ID, tier, fighterIds, boss.getWorld().getName());
+        // A plain Bukkit event, not a direct call: Guild is a softdepend (plugin.yml), so this must
+        // not require Guild to be installed - firing to no listener is harmless, same shape as
+        // GuardianDefeatedEvent's own javadoc describes.
+        Bukkit.getPluginManager().callEvent(new GuardianDefeatedEvent(GUARDIAN_ID, tier.name(), fighterIds));
 
         BossBar bar = bossBars.remove(boss.getUniqueId());
         if (bar != null) {
@@ -197,8 +236,8 @@ public final class SentinelFight implements Listener {
         }
     }
 
-    /** Who hurt this boss this fight, for whatever reward/record code a later dispatch adds
-     * (Hall of Fame, Guild contracts - explicitly not wired up by this dispatch). */
+    /** Who hurt this boss this fight - also exposed for tests, since {@link #onDeath} already uses
+     * it internally to feed both the Hall of Fame and the Guild's {@code GuardianDefeatedEvent}. */
     public Set<UUID> fightersOf(LivingEntity boss) {
         return fighters.fighters(boss);
     }

@@ -5,11 +5,13 @@ import dev.sirbepy.mc.minibosses.ability.GuardianAbilityRegistry;
 import dev.sirbepy.mc.minibosses.hof.HallOfFame;
 import dev.sirbepy.mc.minibosses.registry.GuardianRegistry;
 import dev.sirbepy.mc.minibosses.sentinel.HeartOfTheWild;
+import dev.sirbepy.mc.minibosses.sentinel.RegrowthAbility;
 import dev.sirbepy.mc.minibosses.sentinel.RootAbility;
 import dev.sirbepy.mc.minibosses.sentinel.SentinelDiscovery;
 import dev.sirbepy.mc.minibosses.sentinel.SentinelFight;
 import dev.sirbepy.mc.minibosses.sentinel.SentinelLoot;
 import dev.sirbepy.mc.minibosses.sentinel.SummonCooldown;
+import dev.sirbepy.mc.minibosses.sentinel.ThornVinesAbility;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -45,13 +47,15 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
         guardians.load();
         abilities = new GuardianAbilityRegistry();
         abilities.register(new RootAbility());
+        abilities.register(new ThornVinesAbility(this));
+        abilities.register(new RegrowthAbility(this));
         hallOfFame = new HallOfFame(getDataFolder(), getLogger());
 
         DragonFighters sentinelFighters = new DragonFighters(new NamespacedKey(this, "sentinel-fighters"),
                 System::currentTimeMillis);
         heartOfTheWild = new HeartOfTheWild(this);
         SentinelLoot loot = new SentinelLoot(heartOfTheWild);
-        sentinelFight = new SentinelFight(this, guardians, abilities, sentinelFighters, loot, getLogger());
+        sentinelFight = new SentinelFight(this, guardians, abilities, sentinelFighters, loot, hallOfFame, getLogger());
         SummonCooldown cooldown = new SummonCooldown(SentinelDiscovery.COOLDOWN_MILLIS, System::currentTimeMillis);
         sentinelDiscovery = new SentinelDiscovery(this, sentinelFight, cooldown, new Random());
 
