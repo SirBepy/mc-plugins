@@ -115,6 +115,26 @@ public final class HeadService {
         }
     }
 
+    /**
+     * Pauses the forced sheep head for the duration of an Ender Dragon fight, without
+     * touching anyone else's IT status. {@code fighting} is the caller's answer to "is this player
+     * an active fighter right now" (sourced from {@code DragonFightCheck}); this method only reacts
+     * to it. While fighting, any sheep head currently worn is removed and the real helmet restored,
+     * the same mechanism {@link #revoke} already uses - so a player who becomes IT (or rejoins)
+     * mid-fight never has it taken in the first place, since there is no tag head yet to remove.
+     * Once {@code fighting} goes false again (checked on the next {@link #ensureWorn}-driven tick,
+     * e.g. the watchdog task), the head resumes being forced like normal.
+     */
+    public void syncFightExemption(Player player, HeadConfig config, boolean fighting) {
+        if (fighting) {
+            if (isTagHead(player.getInventory().getHelmet())) {
+                revoke(player);
+            }
+        } else {
+            ensureWorn(player, config);
+        }
+    }
+
     /** Deletes any stray marked head found outside the helmet slot (e.g. someone pulled it from a hopper). */
     public void purgeStrayHeads(Player player) {
         purgeStray(player.getInventory());

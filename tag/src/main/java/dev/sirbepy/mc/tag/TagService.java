@@ -5,6 +5,7 @@ import dev.sirbepy.mc.tag.afk.AfkTracker;
 import dev.sirbepy.mc.tag.board.LeaderboardEntityService;
 import dev.sirbepy.mc.tag.board.ScoreboardService;
 import dev.sirbepy.mc.tag.config.TagConfig;
+import dev.sirbepy.mc.tag.dragon.DragonFightCheck;
 import dev.sirbepy.mc.tag.event.TagEventService;
 import dev.sirbepy.mc.tag.head.HeadService;
 import dev.sirbepy.mc.tag.log.LogService;
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 
 /** Central orchestrator: the single place that mutates {@link TagState} and keeps it persisted. */
@@ -47,16 +49,25 @@ public final class TagService {
     private final TrackerService tracker;
     private final TagEventService tagEvents = new TagEventService();
     private final PointsTickService pointsTickService = new PointsTickService();
+    private final Predicate<UUID> fightingDragon;
 
     public TagService(JavaPlugin plugin, File stateFile, HeadService heads, PrefixService prefix,
                        ScoreboardService boards, LeaderboardEntityService leaderboard, TagConfig config) {
         this(plugin, stateFile, heads, prefix, boards, leaderboard, config,
-                new AfkTracker(System::currentTimeMillis, config.afk.thresholdSeconds * 1000L));
+                new AfkTracker(System::currentTimeMillis, config.afk.thresholdSeconds * 1000L), new DragonFightCheck()::isFighting);
     }
 
     // Package-private: lets tests inject a fake-clock AfkTracker instead of sleeping through real `afk.*-seconds` durations.
     TagService(JavaPlugin plugin, File stateFile, HeadService heads, PrefixService prefix,
                ScoreboardService boards, LeaderboardEntityService leaderboard, TagConfig config, AfkTracker afkTracker) {
+        this(plugin, stateFile, heads, prefix, boards, leaderboard, config, afkTracker, new DragonFightCheck()::isFighting);
+    }
+
+    // Package-private: lets tests inject a fake "is this player fighting the dragon" check instead of
+    // spawning a real EnderDragon through MockBukkit for every wiring test.
+    TagService(JavaPlugin plugin, File stateFile, HeadService heads, PrefixService prefix,
+               ScoreboardService boards, LeaderboardEntityService leaderboard, TagConfig config, AfkTracker afkTracker,
+               Predicate<UUID> fightingDragon) {
         this.plugin = plugin;
         this.stateFile = stateFile;
         this.heads = heads;
@@ -66,6 +77,7 @@ public final class TagService {
         this.config = config;
         this.afkService = new AfkService(afkTracker);
         this.tracker = new TrackerService(plugin);
+        this.fightingDragon = fightingDragon;
         this.state = loadOrNew();
     }
 
@@ -109,6 +121,11 @@ public final class TagService {
 
     public boolean isOptedOut(UUID uuid) {
         return state.optedOut.contains(uuid);
+    }
+
+    /** An active Ender Dragon fighter is exempt from the forced sheep head for the fight's duration. */
+    public boolean isFightingDragon(UUID uuid) {
+        return uuid != null && fightingDragon.test(uuid);
     }
 
     // --- opt in/out -----------------------------------------------------------------------
@@ -195,7 +212,7 @@ public final class TagService {
     }
 
     private void crownIt(Player player) {
-        heads.grant(player, config.head);
+        heads.syncFightExemption(player, config.head, isFightingDragon(player.getUniqueId()));
         syncTracker(player);
         prefix.apply(player.getUniqueId(), config.prefixTemplate, config.prefixPriority);
     }
@@ -251,7 +268,7 @@ public final class TagService {
 
         if (isIt(player.getUniqueId())) {
             prefix.apply(player.getUniqueId(), config.prefixTemplate, config.prefixPriority);
-            heads.ensureWorn(player, config.head);
+            heads.syncFightExemption(player, config.head, isFightingDragon(player.getUniqueId()));
             syncTracker(player);
             config.logs.fire(LogService.Event.IT_JOINED, Placeholder.unparsed("it", player.getName()));
         } else {
@@ -380,7 +397,7 @@ public final class TagService {
     public void ensureHeadWorn() {
         Player it = onlineIt();
         if (it != null) {
-            heads.ensureWorn(it, config.head);
+            heads.syncFightExemption(it, config.head, isFightingDragon(it.getUniqueId()));
         }
     }
 

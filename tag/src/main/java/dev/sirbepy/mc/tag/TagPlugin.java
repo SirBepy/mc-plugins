@@ -145,7 +145,7 @@ public final class TagPlugin extends JavaPlugin {
         var online = getServer().getPlayer(currentIt);
         if (online != null) {
             prefix.apply(currentIt, service.config().prefixTemplate, service.config().prefixPriority);
-            heads.ensureWorn(online, service.config().head);
+            heads.syncFightExemption(online, service.config().head, service.isFightingDragon(currentIt));
             service.syncTracker(online);
         }
     }
