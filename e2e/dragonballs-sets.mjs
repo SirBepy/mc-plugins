@@ -266,11 +266,24 @@ try {
 
     // The Nether scatter radius for a set's first-ever wish is 125-375 blocks (the overworld's
     // 1000-3000 band at 1/8 scale) from the summon cluster, so >100 away is an unambiguous "moved".
+    // The re-scatter's own 7 placements run one after another (ScatterService.scatterAll chains
+    // them), and each one's structure search/fallback generates brand-new Nether chunks at a never-
+    // visited point in the ring (World#getChunkAtAsync(..., true)) - there's no way to pre-forceload
+    // that, since the point is random within the whole ring, not a fixed spot. 2026-10-14: 5 solo
+    // fresh-wipe runs measured this step at 1696/1852/15296/15891/71172ms - the timeout was
+    // 90s and one run already used 79% of it on a machine that was otherwise under heavy memory
+    // pressure, so 90s was never a safe ceiling, just one that happened not to have been crossed yet
+    // in earlier sessions. 180s leaves the same margin over the worst measured run that 30a8861 left
+    // over its own forceload timing fix. Logged every time so a future flake's actual delay is
+    // visible in stdout instead of just "timed out".
+    const rescatterStart = Date.now();
     await waitFor(async () => {
       const afterNether = (await status()).nether;
-      return Object.values(afterNether).every((v) => v.stone
+      const allStone = Object.values(afterNether).every((v) => v.stone
         && (v.state !== 'placed' || Math.max(Math.abs(v.x - BX), Math.abs(v.z - BZ)) > 100));
-    }, 'all 7 Nether balls are stone and have moved away from the summon cluster', 90_000);
+      if (allStone) console.log(`  all 7 Nether balls stone+moved after ${Date.now() - rescatterStart}ms`);
+      return allStone;
+    }, 'all 7 Nether balls are stone and have moved away from the summon cluster', 180_000);
 
     const overworldAfter = (await status()).overworld;
     assert(JSON.stringify(overworldAfter) === JSON.stringify(overworldBefore),

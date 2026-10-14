@@ -5,10 +5,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const runDir = path.join(here, '..', 'testserver', 'run-e2e');
+// E2E_RUN_DIR/E2E_PORT let a solo run point at its own private server (own run directory, own
+// server-port) instead of the one checkout-wide testserver/run-e2e, so two sessions diagnosing the
+// same suite don't fight over a single server (2026-10-14: a concurrent peer's own RCON `stop`
+// landed mid-boot on the shared instance). Unset, behavior is exactly what it always was.
+export const runDir = process.env.E2E_RUN_DIR ? path.resolve(process.env.E2E_RUN_DIR) : path.join(here, '..', 'testserver', 'run-e2e');
 
 export const HOST = '127.0.0.1';
-export const PORT = 25567;
+export const PORT = process.env.E2E_PORT ? Number(process.env.E2E_PORT) : 25567;
 // Mineflayer tops out at 26.1; ViaBackwards on the 26.2 e2e server bridges the gap.
 export const BOT_VERSION = '26.1';
 

@@ -1,18 +1,18 @@
 import { Vec3 } from 'vec3';
 import {
-  Rcon, assert, buildPlatform, createBot, quit, randomOrigin, releasePlatform, sleep, teleport, waitFor,
+  Rcon, assert, buildPlatform, createBot, quit, randomOrigin, releasePlatform, runDir, sleep, teleport, waitFor,
 } from './lib.mjs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 // Shared setup and helpers for the three Dragon Balls suites: dragonballs.mjs (ball lifecycle),
 // dragonballs-summon.mjs (radar, summon and the stone phase, overworld set only) and
 // dragonballs-sets.mjs (the Nether/End sets, cross-dimension guard, and the structure scatter
 // check). Rules and the console protocol: docs/dragonballs.md.
-const here = path.dirname(fileURLToPath(import.meta.url));
-export const configPath = path.join(here, '..', 'testserver', 'run-e2e', 'plugins', 'DragonBalls', 'config.yml');
-export const wishesPath = path.join(here, '..', 'testserver', 'run-e2e', 'plugins', 'DragonBalls', 'wishes.jsonl');
-export const logPath = path.join(here, '..', 'testserver', 'run-e2e', 'logs', 'latest.log');
+// Follows lib.mjs's own E2E_RUN_DIR override so a private-server run reads the config and log it
+// actually booted, not the checkout-wide default.
+export const configPath = path.join(runDir, 'plugins', 'DragonBalls', 'config.yml');
+export const wishesPath = path.join(runDir, 'plugins', 'DragonBalls', 'wishes.jsonl');
+export const logPath = path.join(runDir, 'logs', 'latest.log');
 
 export const PLATFORM_Y = 200;
 // All 7 within Chebyshev radius 1 of (BX, BZ) - well inside summon.radius (default 2). The bots
