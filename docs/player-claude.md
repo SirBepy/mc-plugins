@@ -36,6 +36,8 @@ counts the existing inbox lines as already handled and replays nothing.
    `/supervised-run` (project `mc_plugins_tag`, command `node server/deploy/player-claude.mjs daemon`),
    so it outlives the hub chat. Only if the supervisor is unreachable, use a Bash `run_in_background`;
    that copy dies with the chat. It refuses to start a second copy while one is alive.
+   The hub chat itself runs on Sonnet (`model: sonnet`), same tier as the per-player agents below -
+   Joe's standing call (2026-10-14), not just the usual subagent-cost default.
 2. **Arm.** Bash with `run_in_background: true`: `node server/deploy/player-claude.mjs wait`. Not
    Monitor: Monitor expires every 30 minutes and wakes the hub for nothing. The completion
    notification is the wake-up.
