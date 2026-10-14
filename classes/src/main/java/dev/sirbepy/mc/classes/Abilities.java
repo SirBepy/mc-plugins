@@ -73,7 +73,10 @@ public final class Abilities {
                 LivingEntity target = loc.getNearbyEntitiesByType(Enemy.class, 4)
                         .stream().min(Comparator.comparingDouble(m -> m.getLocation().distanceSquared(loc)))
                         .orElse(null);
-                if (target != null) target.damage(RpgClass.smiteDamage(level), player);
+                // Direct setHealth, like Mend's heal: a .damage() call would re-enter ClassCombat's
+                // onDamage and let the caster's own dealtPercent modifiers (Merciful Hand, a dual-class
+                // bonus) silently change Smite's documented fixed amount.
+                if (target != null) target.setHealth(Math.max(0, target.getHealth() - RpgClass.smiteDamage(level)));
                 player.removePotionEffect(PotionEffectType.POISON);
                 player.removePotionEffect(PotionEffectType.WITHER);
             }

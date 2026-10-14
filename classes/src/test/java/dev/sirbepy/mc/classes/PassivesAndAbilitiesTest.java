@@ -4,6 +4,9 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Zombie;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.player.PlayerExpChangeEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
@@ -15,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -228,6 +232,31 @@ class PassivesAndAbilitiesTest extends MockClassesTest {
         assertEquals(near.getAttribute(Attribute.MAX_HEALTH).getValue() - 12, near.getHealth(), 1e-9);
         assertEquals(far.getAttribute(Attribute.MAX_HEALTH).getValue(), far.getHealth(), 1e-9);
         assertNull(paladin.getPotionEffect(PotionEffectType.POISON));
+    }
+
+    @Test
+    void smiteDamageIgnoresTheCastersOwnMercifulHandWeakness() {
+        // Merciful Hand is the Paladin's own melee weakness (-5%, ClassCombat.dealtPercent). If Smite
+        // still went through target.damage() and re-entered ClassCombat.onDamage, this would shrink
+        // Smite's documented fixed damage instead of leaving it untouched.
+        PlayerMock paladin = server.addPlayer("Paladin");
+        paladin.teleport(at(0));
+        pick(paladin, RpgClass.PALADIN, 25);
+        Zombie near = world.spawn(at(1), Zombie.class);
+        near.setHealth(near.getAttribute(Attribute.MAX_HEALTH).getValue());
+        // MockBukkit's LivingEntityMock.damage() never fires an event, so a plain damage-amount
+        // assertion can't tell a direct setHealth() apart from a .damage() call that would have
+        // taken the ClassCombat detour on a real Paper server; count the event directly instead.
+        AtomicInteger damageEvents = new AtomicInteger();
+        server.getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            void onDamage(EntityDamageByEntityEvent event) {
+                damageEvents.incrementAndGet();
+            }
+        }, plugin);
+        assertTrue(abilities.use(paladin));
+        assertEquals(0, damageEvents.get(), "Smite must not fire a damage event ClassCombat could modify");
+        assertEquals(near.getAttribute(Attribute.MAX_HEALTH).getValue() - RpgClass.smiteDamage(25), near.getHealth(), 1e-9);
     }
 
     @Test
