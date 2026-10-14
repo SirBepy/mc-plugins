@@ -175,6 +175,23 @@ class SovereignFightTest {
     }
 
     @Test
+    void aCancelledHitDoesNotCountAsAFighterOrTriggerVoidStep() {
+        LivingEntity boss = spawnNormal();
+        Location bossStart = boss.getLocation();
+
+        EntityDamageByEntityEvent cancelled = new EntityDamageByEntityEvent(alice, boss,
+                EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                DamageSource.builder(DamageType.PLAYER_ATTACK).withDirectEntity(alice).build(), 100);
+        cancelled.setCancelled(true);
+        fight.onDamage(cancelled);
+        server.getScheduler().performTicks((int) VoidStepAbility.STEP_INTERVAL_TICKS + 1);
+
+        assertEquals(bossStart, boss.getLocation(), "a cancelled hit must never start the void-step loop");
+        assertEquals(java.util.Set.of(), fight.fightersOf(boss),
+                "a cancelled hit must never credit its attacker as a fighter");
+    }
+
+    @Test
     void aNormalTierKillDropsTheHollowCrown() {
         LivingEntity boss = spawnNormal();
         EntityDeathEvent death = new EntityDeathEvent(boss,

@@ -156,8 +156,11 @@ public final class TyrantFight implements Listener {
         return name == null ? Tier.NORMAL : Tier.valueOf(name);
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onDamage(EntityDamageEvent event) {
+        if (event.isCancelled()) {
+            return;
+        }
         if (event.getEntity() instanceof LivingEntity boss && isOurs(boss)) {
             fighters.onDamage(event, boss);
             if (event instanceof EntityDamageByEntityEvent byEntity && boss instanceof Mob mob

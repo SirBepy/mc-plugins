@@ -146,9 +146,9 @@ public final class SentinelFight implements Listener {
         return name == null ? Tier.NORMAL : Tier.valueOf(name);
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onDamage(EntityDamageEvent event) {
-        if (!(event.getEntity() instanceof LivingEntity boss) || !isOurs(boss)) {
+        if (event.isCancelled() || !(event.getEntity() instanceof LivingEntity boss) || !isOurs(boss)) {
             return;
         }
         fighters.onDamage(event, boss);

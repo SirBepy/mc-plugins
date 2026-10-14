@@ -176,6 +176,22 @@ class SentinelFightTest {
     }
 
     @Test
+    void aCancelledHitDoesNotCountAsAFighterOrTriggerRoot() {
+        LivingEntity boss = spawnNormal();
+
+        EntityDamageByEntityEvent cancelled = new EntityDamageByEntityEvent(alice, boss,
+                EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                DamageSource.builder(DamageType.PLAYER_ATTACK).withDirectEntity(alice).build(), 100);
+        cancelled.setCancelled(true);
+        fight.onDamage(cancelled);
+
+        assertFalse(alice.hasPotionEffect(PotionEffectType.SLOWNESS),
+                "a cancelled hit must never trigger Root");
+        assertEquals(java.util.Set.of(), fight.fightersOf(boss),
+                "a cancelled hit must never credit its attacker as a fighter");
+    }
+
+    @Test
     void aNormalTierKillDropsTheHeartOfTheWild() {
         LivingEntity boss = spawnNormal();
         EntityDeathEvent death = new EntityDeathEvent(boss,

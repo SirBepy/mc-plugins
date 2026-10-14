@@ -164,6 +164,23 @@ class TyrantFightTest {
     }
 
     @Test
+    void aCancelledHitDoesNotCountAsAFighterOrTriggerBlazeSummon() {
+        LivingEntity boss = spawnNormal();
+
+        EntityDamageByEntityEvent cancelled = new EntityDamageByEntityEvent(alice, boss,
+                EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                DamageSource.builder(DamageType.PLAYER_ATTACK).withDirectEntity(alice).build(), 100);
+        cancelled.setCancelled(true);
+        fight.onDamage(cancelled);
+        server.getScheduler().performTicks((int) BlazeSummonAbility.SUMMON_INTERVAL_TICKS + 1);
+
+        assertEquals(0, world.getEntitiesByClass(Blaze.class).size(),
+                "a cancelled hit must never start the blaze-summon loop");
+        assertEquals(java.util.Set.of(), fight.fightersOf(boss),
+                "a cancelled hit must never credit its attacker as a fighter");
+    }
+
+    @Test
     void theTyrantIgnitesAPlayerItHitsFireAspectStyle() {
         LivingEntity boss = spawnNormal();
         assertTrue(alice.getFireTicks() < TyrantFight.FIRE_TICKS, "no burn before the Tyrant lands a hit");
