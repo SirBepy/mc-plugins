@@ -1,0 +1,27 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "cases": [
+      {
+        "when": "druid_scythe_1",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/druid_scythe_1"
+        }
+      },
+      {
+        "when": "druid_scythe_2",
+        "model": {
+          "type": "minecraft:model",
+          "model": "claudesmp:item/druid_scythe_2"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/wooden_sword"
+    }
+  }
+}
