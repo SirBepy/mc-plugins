@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.endfight.cult;
 
+import dev.sirbepy.mc.core.dragon.DragonFighters;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -93,7 +94,7 @@ public final class CultCounter implements Listener {
 
     private void tickWorld(World world) {
         Tracked tracked = perWorld.computeIfAbsent(world.getUID(), id -> new Tracked());
-        EnderDragon dragon = livingDragon(world);
+        EnderDragon dragon = DragonFighters.liveDragon(world).orElse(null);
         Map<String, Integer> counts = config.get().counter().enabled() && dragon != null ? count(world) : Map.of();
         int total = counts.values().stream().mapToInt(Integer::intValue).sum();
         if (total == 0) {
@@ -196,15 +197,6 @@ public final class CultCounter implements Listener {
             }
         }
         return count == 1 ? out.toString() : out + "s";
-    }
-
-    private static EnderDragon livingDragon(World world) {
-        for (EnderDragon dragon : world.getEntitiesByClass(EnderDragon.class)) {
-            if (!dragon.isDead()) {
-                return dragon;
-            }
-        }
-        return null;
     }
 
     /** Per-type counts, for {@code /endfight cult status}. */

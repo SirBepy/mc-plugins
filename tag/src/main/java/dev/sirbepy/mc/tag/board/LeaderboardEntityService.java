@@ -11,7 +11,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.TextDisplay;
@@ -201,7 +200,7 @@ public final class LeaderboardEntityService implements Listener {
 
     private Component renderText(TagState state) {
         List<LeaderboardRanking.Entry> entries = state.stats.entrySet().stream()
-                .map(e -> new LeaderboardRanking.Entry(e.getKey(), nameOf(e.getKey()), e.getValue().points))
+                .map(e -> new LeaderboardRanking.Entry(e.getKey(), TagDisplay.nameOf(e.getKey()), e.getValue().points))
                 .toList();
         List<LeaderboardRanking.Row> ranked = LeaderboardRanking.rank(entries, config.size);
 
@@ -216,15 +215,9 @@ public final class LeaderboardEntityService implements Listener {
                         Placeholder.unparsed("points", TagDisplay.formatPoints(row.points()))));
             }
         }
-        String itName = state.currentIt != null ? nameOf(state.currentIt) : config.boardNobody;
+        String itName = state.currentIt != null ? TagDisplay.nameOf(state.currentIt) : config.boardNobody;
         text = text.append(Component.newline())
                 .append(Messages.mini().deserialize(config.boardFooter, Placeholder.unparsed("it", itName)));
         return text;
-    }
-
-    private String nameOf(UUID uuid) {
-        OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
-        String name = player.getName();
-        return name != null ? name : uuid.toString();
     }
 }
