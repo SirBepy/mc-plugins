@@ -146,6 +146,7 @@ public final class HaruStore {
             }
         }
         state.setClosedUntil(s.getLong("closed-until"));
+        state.setRewardsUnbound(s.getBoolean("rewards-unbound"));
         return state;
     }
 
@@ -218,6 +219,7 @@ public final class HaruStore {
         state.charms().forEach((charm, expiry) -> s.set("charms." + charm, expiry));
         s.set("lost-and-found", new ArrayList<>(state.lostAndFound()));
         s.set("closed-until", state.closedUntil());
+        s.set("rewards-unbound", state.rewardsUnbound());
     }
 
     private static int asInt(Object value) {

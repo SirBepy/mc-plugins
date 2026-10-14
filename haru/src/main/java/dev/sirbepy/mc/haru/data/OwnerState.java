@@ -39,6 +39,7 @@ public final class OwnerState {
     private final Map<String, Long> charms = new HashMap<>();
     private final List<ItemStack> lostAndFound = new ArrayList<>();
     private long closedUntil;
+    private boolean rewardsUnbound;
 
     public int petals() {
         return petals;
@@ -167,5 +168,14 @@ public final class OwnerState {
 
     public void setAnnouncedTier(int announcedTier) {
         this.announcedTier = announcedTier;
+    }
+
+    /** When set, Haru hands over every reward unbound, regardless of the offer/curio's own setting. */
+    public boolean rewardsUnbound() {
+        return rewardsUnbound;
+    }
+
+    public void setRewardsUnbound(boolean rewardsUnbound) {
+        this.rewardsUnbound = rewardsUnbound;
     }
 }

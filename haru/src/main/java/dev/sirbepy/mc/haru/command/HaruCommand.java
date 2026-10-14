@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.haru.command;
 
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -59,6 +60,9 @@ public final class HaruCommand {
                 .then(Commands.literal("rep")
                         .then(Commands.argument("amount", IntegerArgumentType.integer()).executes(this::rep)))
                 .then(Commands.literal("newday").executes(this::newDay))
+                .then(Commands.literal("unbound")
+                        .then(Commands.argument("value", BoolArgumentType.bool())
+                                .executes(this::unbound)))
                 .then(Commands.literal("reload").executes(ctx -> {
                     reload.run();
                     send(ctx, "Haru's config reloaded.");
@@ -157,6 +161,15 @@ public final class HaruCommand {
         ctx.ownerState();
         ctx.store().save();
         send(c, "A new day for Haru's owner: requests and curios are fresh.");
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /** Toggles whether Haru hands over rewards bound to his owner at all. */
+    private int unbound(CommandContext<CommandSourceStack> c) {
+        OwnerState state = ctx.ownerState();
+        state.setRewardsUnbound(BoolArgumentType.getBool(c, "value"));
+        ctx.store().save();
+        send(c, "Haru's rewards are now " + (state.rewardsUnbound() ? "unbound" : "bound to their owner") + ".");
         return Command.SINGLE_SUCCESS;
     }
 

@@ -94,7 +94,7 @@ public final class MysteryCurios {
             return Result.NO_PETALS;
         }
         state.recordPurchase(LEDGER, "day:" + today);
-        given.addAll(rewards.grant(player, state, curio.contents().roll(random), true));
+        given.addAll(rewards.grant(player, state, curio.contents().roll(random), !state.rewardsUnbound()));
         return Result.OPENED;
     }
 

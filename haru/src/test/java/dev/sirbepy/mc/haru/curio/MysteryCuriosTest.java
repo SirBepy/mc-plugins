@@ -13,6 +13,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MysteryCuriosTest extends HaruTestBase {
@@ -62,6 +63,23 @@ class MysteryCuriosTest extends HaruTestBase {
         }
         assertFalse(strangerBoxes.contains("dragon"));
         assertTrue(trustedBoxes.contains("dragon"));
+    }
+
+    @Test
+    void rewardsUnboundOverridesTheHardcodedCurioBind() {
+        OwnerState state = state();
+        state.setPetals(1000);
+        state.setRewardsUnbound(true);
+        List<String> given = new ArrayList<>();
+
+        assertEquals(MysteryCurios.Result.OPENED, ctx.curios().open(owner, state, clock.today, new Random(1), given));
+
+        assertFalse(given.isEmpty());
+        for (org.bukkit.inventory.ItemStack item : owner.getInventory().getContents()) {
+            if (item != null) {
+                assertNull(ctx.bound().ownerOf(item), "curio rewards stay unbound when rewardsUnbound is set");
+            }
+        }
     }
 
     @Test

@@ -39,6 +39,7 @@ class HaruStoreTest {
         state.blessings().put("haste", new OwnerState.Blessing("haste", 1, 123456789L));
         state.charms().put("ward", 987654321L);
         state.setClosedUntil(555L);
+        state.setRewardsUnbound(true);
         store.save();
 
         HaruStore reloaded = new HaruStore(file, Logger.getLogger("test"));
@@ -60,6 +61,7 @@ class HaruStoreTest {
         assertEquals(123456789L, back.blessings().get("haste").expiryMillis());
         assertEquals(987654321L, back.charms().get("ward"));
         assertEquals(555L, back.closedUntil());
+        assertTrue(back.rewardsUnbound());
     }
 
     @Test

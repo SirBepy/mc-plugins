@@ -74,6 +74,21 @@ class ShopTest extends HaruTestBase {
     }
 
     @Test
+    void rewardsUnboundOverridesAnOfferThatWouldNormallyBind() {
+        state().setReputation(Tier.SAKURA_BOUND.threshold());
+        state().setPetals(500);
+        state().setRewardsUnbound(true);
+        give(owner, Material.EMERALD, 64);
+        Offer light = ctx.shop().secretStock(Tier.SAKURA_BOUND).stream()
+                .filter(o -> o.id().equals("sec_light")).findFirst().orElseThrow();
+
+        assertEquals(Shop.Result.BOUGHT, ctx.shop().buy(owner, state(), light, new ArrayList<>()));
+
+        assertNull(ctx.bound().ownerOf(owner.getInventory().getItem(owner.getInventory().first(Material.LIGHT))),
+                "rewardsUnbound overrides the offer's own bound() setting");
+    }
+
+    @Test
     void waresAboveTheOwnersTierCannotBeBoughtOrSeen() {
         give(owner, Material.EMERALD, 64);
         Offer mending = everyday("ev_book_mending");

@@ -130,7 +130,7 @@ public final class Shop {
         if (offer.limited()) {
             state.recordPurchase(offer.id(), period(offer.restock()));
         }
-        given.addAll(rewards.grant(player, state, offer.reward(), offer.bound()));
+        given.addAll(rewards.grant(player, state, offer.reward(), offer.bound() && !state.rewardsUnbound()));
         return Result.BOUGHT;
     }
 
