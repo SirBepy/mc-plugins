@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.guild.data;
 
+import dev.sirbepy.mc.guild.rank.Rank;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 
@@ -63,6 +64,17 @@ public final class GuildStore {
 
     public Collection<Member> members() {
         return members.values();
+    }
+
+    /** Highest rank any current member holds, or {@link Rank#E} with no members at all. */
+    public Rank highestRank() {
+        Rank highest = Rank.E;
+        for (Member member : members.values()) {
+            if (member.rank().atLeast(highest)) {
+                highest = member.rank();
+            }
+        }
+        return highest;
     }
 
     /** The backing map, for {@link GuildStoreYaml} to populate on load. */

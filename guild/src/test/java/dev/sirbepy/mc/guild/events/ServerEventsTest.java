@@ -98,6 +98,23 @@ class ServerEventsTest extends GuildTestBase {
     }
 
     @Test
+    void rotationNeverPicksABountyRankNoMemberHolds() {
+        Member member = join(alice);
+        member.setRank(Rank.C);
+        // Rotate many times (seed 42 is fixed, but exercise enough draws that a B/A pick would show up
+        // pre-fix) and confirm every bounty posted stays claimable by the C rank Alice is capped at.
+        for (int i = 0; i < 30; i++) {
+            events().tick();
+            EventPools.Bounty bounty = events().bounty();
+            assertNotNull(bounty);
+            assertTrue(Rank.C.atLeast(bounty.minRank()),
+                    "rotated in " + bounty.id() + " (" + bounty.minRank() + "), above the only rank any member holds");
+            clock.plusDays(3);
+            clock.plusHours(1);
+        }
+    }
+
+    @Test
     void aGrandQuestCompletesTogetherAndSharesItsReward() {
         Member a = join(alice);
         Member g = join(gm);

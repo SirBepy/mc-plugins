@@ -7,6 +7,7 @@ import dev.sirbepy.mc.guild.contract.Objective.Kind;
 import dev.sirbepy.mc.guild.data.Member;
 import dev.sirbepy.mc.guild.events.EventPools.Bounty;
 import dev.sirbepy.mc.guild.gui.Text;
+import dev.sirbepy.mc.guild.rank.Rank;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -71,7 +72,16 @@ final class Bounties {
             return;
         }
         String last = state().getString("bounty.id");
-        List<Bounty> options = EventPools.BOUNTIES.stream().filter(b -> !b.id().equals(last)).toList();
+        Rank highest = guild.store().highestRank();
+        List<Bounty> reachable = EventPools.BOUNTIES.stream()
+                .filter(b -> !b.id().equals(last))
+                .filter(b -> highest.atLeast(b.minRank()))
+                .toList();
+        // No bounty is reachable yet (e.g. a fresh Guild with only E/D members, since the pool starts at C):
+        // fall back to the full pool rather than post nothing, same as before this filter existed.
+        List<Bounty> options = reachable.isEmpty()
+                ? EventPools.BOUNTIES.stream().filter(b -> !b.id().equals(last)).toList()
+                : reachable;
         Bounty next = options.get(random.nextInt(options.size()));
         state().set("bounty", null);
         state().set("bounty.id", next.id());
