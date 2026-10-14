@@ -7,6 +7,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import dev.sirbepy.mc.core.Players;
 import dev.sirbepy.mc.core.econ.VaultEconomy;
+import dev.sirbepy.mc.dragonballs.CoinFormat;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.debt.DebtService;
 import dev.sirbepy.mc.dragonballs.effects.DragonType;
@@ -161,7 +162,7 @@ public final class ShenronCommand {
             return base;
         }
         double owed = debt.debtOf(summoner);
-        return owed > 0 ? base + " debt=" + formatAmount(owed) : base;
+        return owed > 0 ? base + " debt=" + CoinFormat.format(owed) : base;
     }
 
     /**
@@ -189,23 +190,19 @@ public final class ShenronCommand {
         }
         double shortfall = amount - toWithdraw;
         if (shortfall <= 0) {
-            sender.sendMessage(Component.text(playerName + " paid " + formatAmount(amount) + " in full."));
+            sender.sendMessage(Component.text(playerName + " paid " + CoinFormat.format(amount) + " in full."));
             return Command.SINGLE_SUCCESS;
         }
         DebtService debt = Bukkit.getServicesManager().load(DebtService.class);
         if (debt == null) {
             sender.sendMessage(Component.text("No debt ledger registered; " + playerName + " paid only "
-                    + formatAmount(toWithdraw) + ", " + formatAmount(shortfall) + " went uncharged."));
+                    + CoinFormat.format(toWithdraw) + ", " + CoinFormat.format(shortfall) + " went uncharged."));
             return Command.SINGLE_SUCCESS;
         }
         debt.charge(target.get(), shortfall);
-        sender.sendMessage(Component.text(playerName + " paid " + formatAmount(toWithdraw) + " and went into debt for "
-                + formatAmount(shortfall) + " (now owes " + formatAmount(debt.debtOf(target.get())) + ")."));
+        sender.sendMessage(Component.text(playerName + " paid " + CoinFormat.format(toWithdraw) + " and went into debt for "
+                + CoinFormat.format(shortfall) + " (now owes " + CoinFormat.format(debt.debtOf(target.get())) + ")."));
         return Command.SINGLE_SUCCESS;
-    }
-
-    private static String formatAmount(double value) {
-        return value == Math.rint(value) ? String.valueOf((long) value) : String.valueOf(value);
     }
 
     private int curseEffect(CommandContext<CommandSourceStack> ctx) {

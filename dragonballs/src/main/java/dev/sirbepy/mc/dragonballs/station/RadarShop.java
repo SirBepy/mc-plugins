@@ -2,6 +2,7 @@ package dev.sirbepy.mc.dragonballs.station;
 
 import dev.sirbepy.mc.core.Inventories;
 import dev.sirbepy.mc.core.econ.VaultEconomy;
+import dev.sirbepy.mc.dragonballs.CoinFormat;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.debt.DebtService;
@@ -82,7 +83,7 @@ public final class RadarShop implements Listener {
 
         double owed = debt.debtOf(player.getUniqueId());
         if (owed > 0) {
-            player.sendMessage(MINI.deserialize("<red>You owe " + formatAmount(owed) + " and can't buy anything until it's paid off."));
+            player.sendMessage(MINI.deserialize("<red>You owe " + CoinFormat.format(owed) + " and can't buy anything until it's paid off."));
             return;
         }
 
@@ -90,8 +91,8 @@ public final class RadarShop implements Listener {
         String radarName = RadarItems.displayName(set);
         if (!economy.has(player, price)) {
             double balance = economy.getBalance(player);
-            player.sendMessage(MINI.deserialize("<red>A " + radarName + " costs " + formatAmount(price)
-                    + " coins. You have " + formatAmount(balance) + "."));
+            player.sendMessage(MINI.deserialize("<red>A " + radarName + " costs " + CoinFormat.format(price)
+                    + " coins. You have " + CoinFormat.format(balance) + "."));
             return;
         }
 
@@ -102,9 +103,5 @@ public final class RadarShop implements Listener {
 
     private Economy economy() {
         return VaultEconomy.find(plugin.getServer());
-    }
-
-    private static String formatAmount(double value) {
-        return value == Math.rint(value) ? String.valueOf((long) value) : String.valueOf(value);
     }
 }

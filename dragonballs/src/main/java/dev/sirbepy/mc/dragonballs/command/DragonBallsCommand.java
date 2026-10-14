@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import dev.sirbepy.mc.core.Players;
+import dev.sirbepy.mc.dragonballs.CoinFormat;
 import dev.sirbepy.mc.dragonballs.ball.BallSet;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.debt.DebtService;
@@ -223,12 +224,8 @@ public final class DragonBallsCommand {
         }
         DebtService debt = Bukkit.getServicesManager().load(DebtService.class);
         double owed = debt == null ? 0 : debt.debtOf(target.get());
-        sender.sendMessage(Component.text(owed > 0 ? name + " owes " + formatAmount(owed) + "." : name + " owes nothing."));
+        sender.sendMessage(Component.text(owed > 0 ? name + " owes " + CoinFormat.format(owed) + "." : name + " owes nothing."));
         return Command.SINGLE_SUCCESS;
-    }
-
-    private static String formatAmount(double value) {
-        return value == Math.rint(value) ? String.valueOf((long) value) : String.valueOf(value);
     }
 
     private int reload(CommandContext<CommandSourceStack> ctx) {
