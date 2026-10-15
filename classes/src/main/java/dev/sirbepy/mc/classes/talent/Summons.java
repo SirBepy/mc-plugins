@@ -65,7 +65,8 @@ public final class Summons implements Listener {
 
     /** {@code owner}'s live summons. */
     public List<Entity> of(UUID owner) {
-        List<Entity> list = byOwner.getOrDefault(owner, List.of());
+        List<Entity> list = byOwner.get(owner);
+        if (list == null) return List.of();
         list.removeIf(e -> !e.isValid());
         return List.copyOf(list);
     }

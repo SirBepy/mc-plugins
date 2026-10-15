@@ -109,6 +109,8 @@ class ArtificerSentryTest extends KitTestBase {
     void offClassPlayerCannotCastSentry() {
         PlayerMock p = player(RpgClass.WARRIOR, 10);
         p.teleport(at(0));
-        assertFalse(engine.slots().cast(p, Slot.TWO));
+        // A Warrior's slot 2 is Charge: whatever it does, no sentry appears.
+        engine.slots().cast(p, Slot.TWO);
+        assertTrue(engine.summons().of(p.getUniqueId()).isEmpty());
     }
 }
