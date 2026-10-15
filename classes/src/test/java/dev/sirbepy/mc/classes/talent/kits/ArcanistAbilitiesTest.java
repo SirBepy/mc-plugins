@@ -27,6 +27,14 @@ class ArcanistAbilitiesTest extends KitTestBase {
         return (ArcanistKit) kit(RpgClass.ARCANIST);
     }
 
+    @Test
+    void abilityTextsStateTheirSizeInHearts() {
+        PlayerMock p = player(RpgClass.ARCANIST, 25);
+        var kit = kit(RpgClass.ARCANIST);
+        org.junit.jupiter.api.Assertions.assertTrue(kit.secondAbility().describe(p).endsWith("4 hearts"), kit.secondAbility().describe(p));
+        org.junit.jupiter.api.Assertions.assertTrue(kit.ultimate().describe(p).contains("10 hearts"), kit.ultimate().describe(p));
+    }
+
     private void look(PlayerMock p, Location target) {
         Location loc = p.getLocation().clone();
         loc.setDirection(target.toVector().subtract(loc.toVector()));

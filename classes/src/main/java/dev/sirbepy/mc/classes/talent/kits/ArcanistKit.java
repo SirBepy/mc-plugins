@@ -722,8 +722,8 @@ final class ArcanistKit implements ClassKit, Listener {
         return last;
     }
 
-    private static String heartsText(double health) {
-        double heartsValue = health / 2;
+    // The ability constants are already in hearts (see the class doc), so no halving here.
+    private static String heartsText(double heartsValue) {
         String number = heartsValue == Math.rint(heartsValue) ? String.valueOf((int) heartsValue) : String.valueOf(heartsValue);
         return number + (heartsValue == 1 ? " heart" : " hearts");
     }
