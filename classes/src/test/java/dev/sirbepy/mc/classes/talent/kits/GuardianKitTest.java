@@ -145,6 +145,43 @@ class GuardianKitTest extends KitTestBase {
     }
 
     @Test
+    void shoulderChargeDashesForwardBeforeShieldBashLands() {
+        PlayerMock p = player(RpgClass.GUARDIAN, 25);
+        faceEast(p, 0);
+        rank(p, "shoulder_charge", 2); // rank 2 is a 6-block dash
+        Vector before = p.getVelocity().clone();
+        assertTrue(cast(p, Slot.TWO));
+        assertTrue(p.getVelocity().getX() > before.getX(), "Shoulder Charge gives the caster forward velocity");
+    }
+
+    @Test
+    void shoulderChargeMovesTheConesOriginSoAFarMobIsStillHit() {
+        PlayerMock p = player(RpgClass.GUARDIAN, 25);
+        faceEast(p, 0);
+        rank(p, "shoulder_charge", 2); // rank 2 dashes 6 blocks forward first
+        // 7 blocks out, outside Shield Bash's own 4-block cone from the caster's start, but inside
+        // it once the dash moves the cone's origin to x=6.
+        Zombie z = zombie(7);
+        double before = z.getHealth();
+        assertTrue(cast(p, Slot.TWO));
+        assertEquals(before - 2.0, z.getHealth(), 0.001, "1 heart from Shield Bash, reached because the dash moved the cone forward");
+    }
+
+    @Test
+    void bulldozeDamagesAMobKnockedIntoAWall() {
+        PlayerMock p = player(RpgClass.GUARDIAN, 25);
+        faceEast(p, 0);
+        rank(p, "bulldoze", 2); // 2 hearts
+        Zombie z = zombie(1);
+        double before = z.getHealth();
+        assertTrue(cast(p, Slot.TWO));
+        advance(3);
+        // Shield Bash's own 1 heart, then Bulldoze's 2 hearts 3 ticks later since the mock mob never
+        // actually moves off the spot it was knocked to (no physics simulation), same as hitting a wall.
+        assertEquals(before - (2.0 + 4.0), z.getHealth(), 0.001);
+    }
+
+    @Test
     void unbreakableStopsTheShieldWearingDownDuringLastStand() {
         PlayerMock p = player(RpgClass.GUARDIAN, 10);
         rank(p, "unbreakable", 1);

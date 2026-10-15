@@ -123,6 +123,71 @@ class ArcanistAbilitiesTest extends KitTestBase {
     }
 
     @Test
+    void spreadingFlameJumpsKindledFireToNearbyMobs() {
+        PlayerMock p = player(RpgClass.ARCANIST, 10);
+        rank(p, "kindle", 1);
+        rank(p, "spreading_flame", 2);
+        Zombie target = zombie(3);
+        Zombie nearbyA = world.spawn(new Location(world, 4, 64, 0), Zombie.class);
+        Zombie nearbyB = world.spawn(new Location(world, 2, 64, 0), Zombie.class);
+        kit().applyBoltHit(p, target);
+        assertTrue(nearbyA.getFireTicks() > 0, "rank 2 jumps fire to 2 nearby mobs");
+        assertTrue(nearbyB.getFireTicks() > 0, "rank 2 jumps fire to 2 nearby mobs");
+    }
+
+    @Test
+    void permafrostExtendsHowLongYourSlowsLast() {
+        PlayerMock p = player(RpgClass.ARCANIST, 10);
+        rank(p, "chill", 1);
+        rank(p, "permafrost", 2);
+        Zombie z = zombie(3);
+        kit().applyBoltHit(p, z);
+        // Chill rank 1 is 2 s, Permafrost rank 2 is +100%, so 4 s (80 ticks).
+        assertEquals(4 * 20, z.getPotionEffect(PotionEffectType.SLOWNESS).getDuration());
+    }
+
+    @Test
+    void echoHasAChanceToFireAFreeSecondBolt() {
+        PlayerMock p = player(RpgClass.ARCANIST, 10);
+        rank(p, "echo", 3);
+        roll = 0;
+        p.teleport(at(0));
+        Zombie z = zombie(3);
+        look(p, z.getLocation());
+        assertTrue(cast(p, Slot.TWO));
+        advance(20);
+        // 4 hearts (8 hp) hits twice at roll 0, well under rank 3's 15% proc chance.
+        assertEquals(20 - 2 * 8, z.getHealth(), 0.01, "Echo's free second bolt doubles the hit");
+    }
+
+    @Test
+    void flameTrailIgnitesMobsCrossingYourPathAfterArcaneBolt() {
+        PlayerMock p = player(RpgClass.ARCANIST, 10);
+        rank(p, "flame_trail", 1);
+        p.teleport(at(0));
+        Zombie target = zombie(5);
+        look(p, target.getLocation());
+        Zombie trailMob = zombie(1);
+        assertTrue(cast(p, Slot.TWO));
+        advance(5);
+        assertTrue(trailMob.getFireTicks() > 0, "Flame Trail ignites mobs near the caster for 5 s after Arcane Bolt");
+    }
+
+    @Test
+    void recallReturnsYouToWhereYouCastArcaneBoltAfterFiveSeconds() {
+        PlayerMock p = player(RpgClass.ARCANIST, 10);
+        rank(p, "recall", 1);
+        p.teleport(at(0));
+        Zombie target = zombie(5);
+        look(p, target.getLocation());
+        Location origin = p.getLocation().clone();
+        assertTrue(cast(p, Slot.TWO));
+        p.teleport(at(20));
+        advance(100);
+        assertEquals(origin.getBlockX(), p.getLocation().getBlockX(), "Recall returns you to where you cast it");
+    }
+
+    @Test
     void coldSnapShortensArcaneBoltsCooldownOnASlowedKill() {
         PlayerMock p = player(RpgClass.ARCANIST, 10);
         rank(p, "cold_snap", 1);
@@ -148,6 +213,33 @@ class ArcanistAbilitiesTest extends KitTestBase {
         assertTrue(cast(p, Slot.ULTIMATE));
         assertEquals(0, near.getHealth(), 0.01, "20 - 20 health points (10 hearts)");
         assertEquals(20, far.getHealth(), 0.01, "outside the 4-block radius");
+    }
+
+    @Test
+    void hailstormSlowsMobsWithinSixBlocksOfTheMeteor() {
+        PlayerMock p = player(RpgClass.ARCANIST, 25);
+        p.teleport(at(0));
+        rank(p, "hailstorm", 2);
+        Location landing = ArcanistKit.findLookAtGround(p, 30);
+        // Outside the meteor's own 4-block damage radius so it survives to check the slow.
+        Zombie mob = world.spawn(landing.clone().add(5, 0, 0), Zombie.class);
+        assertTrue(cast(p, Slot.ULTIMATE));
+        assertEquals(20, mob.getHealth(), 0.01, "outside the 4-block damage radius");
+        assertEquals(8 * 20, mob.getPotionEffect(PotionEffectType.SLOWNESS).getDuration(), "rank 2 is 8 s");
+    }
+
+    @Test
+    void pyreLeavesBurningGroundAfterMeteor() {
+        PlayerMock p = player(RpgClass.ARCANIST, 25);
+        p.teleport(at(0));
+        rank(p, "pyre", 1);
+        Location landing = ArcanistKit.findLookAtGround(p, 30);
+        Zombie mob = world.spawn(landing.clone(), Zombie.class);
+        mob.getAttribute(Attribute.MAX_HEALTH).setBaseValue(100);
+        mob.setHealth(100);
+        assertTrue(cast(p, Slot.ULTIMATE));
+        advance(5);
+        assertTrue(mob.getFireTicks() > 0, "Pyre leaves burning ground after the meteor lands");
     }
 
     @Test

@@ -62,6 +62,27 @@ class ArtificerGadgetsTest extends KitTestBase {
     }
 
     @Test
+    void thrustersBoostsYouForwardWhileGliding() {
+        PlayerMock p = player(RpgClass.ARTIFICER, 10);
+        rank(p, "thrusters", 1);
+        Location facingX = at(0);
+        facingX.setDirection(new org.bukkit.util.Vector(1, 0, 0));
+        p.teleport(facingX);
+        p.setGliding(true);
+        assertTrue(cast(p, Slot.ONE));
+        assertTrue(p.getVelocity().getX() > 0, "Thrusters pushes you forward while gliding");
+    }
+
+    @Test
+    void thrustersDoesNothingWhenNotGliding() {
+        PlayerMock p = player(RpgClass.ARTIFICER, 10);
+        rank(p, "thrusters", 1);
+        p.teleport(at(0));
+        assertTrue(cast(p, Slot.ONE));
+        assertEquals(0, p.getVelocity().lengthSquared(), 0.0001, "no boost while not gliding");
+    }
+
+    @Test
     void rocketJumpGrantsFallImmunityForTheNextFall() {
         PlayerMock p = player(RpgClass.ARTIFICER, 25);
         rank(p, "rocket_jump", 1);

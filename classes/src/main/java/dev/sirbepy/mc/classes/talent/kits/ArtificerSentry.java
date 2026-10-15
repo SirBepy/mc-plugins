@@ -186,7 +186,10 @@ final class ArtificerSentry implements Listener {
     private void teslaZap(Player owner, LivingEntity first, int chain) {
         ctx.damage(first, 2, owner);
         ctx.fx().line(first.getLocation(), first.getLocation().add(0, 2, 0), Particle.ELECTRIC_SPARK);
-        List<LivingEntity> nearby = nearbyHostiles(first.getLocation(), 6);
+        // nearbyHostiles' Stream#toList() is immutable, and it refuses List#sort unconditionally
+        // (even on an empty list), so this used to crash the sentry's tick every time Tesla Coil
+        // found a target: copy into a mutable list first.
+        List<LivingEntity> nearby = new java.util.ArrayList<>(nearbyHostiles(first.getLocation(), 6));
         nearby.sort(Comparator.comparingDouble(m -> m.getLocation().distanceSquared(first.getLocation())));
         for (int i = 0; i < Math.min(chain, nearby.size()); i++) {
             ctx.damage(nearby.get(i), 2, owner);

@@ -117,6 +117,20 @@ class WarriorKitTest extends KitTestBase {
     }
 
     @Test
+    void bladestormRankTwoHitsEveryMobInChargesPathForFullWeaponDamage() {
+        PlayerMock p = player(RpgClass.WARRIOR, 10);
+        rank(p, "bladestorm", 2);
+        p.teleport(at(0));
+        Zombie first = zombie(1);
+        Zombie second = zombie(1.5);
+        double weaponDamage = WarriorKit.weaponDamage(p);
+        assertTrue(cast(p, Slot.TWO));
+        advance(10);
+        assertEquals(20 - weaponDamage, first.getHealth(), 0.001, "Bladestorm rank 2: 100% weapon damage to every mob hit");
+        assertEquals(20 - weaponDamage, second.getHealth(), 0.001, "Bladestorm rank 2: 100% weapon damage to every mob hit");
+    }
+
+    @Test
     void groundSlamHitsAndLaunchesEveryMobInRangeAfterTheLeap() {
         PlayerMock p = player(RpgClass.WARRIOR, 25);
         p.teleport(at(0));

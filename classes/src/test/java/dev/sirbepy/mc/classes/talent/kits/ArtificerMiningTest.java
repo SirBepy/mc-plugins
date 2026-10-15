@@ -57,6 +57,57 @@ class ArtificerMiningTest extends KitTestBase {
     }
 
     @Test
+    void veinSenseGlowsSameTypeOresWithinItsRankRadiusOnly() {
+        PlayerMock p = player(RpgClass.ARTIFICER, 10);
+        rank(p, "vein_sense", 2); // rank 2 is 5 blocks
+        Block origin = world.getBlockAt(0, 64, 0);
+        origin.setType(Material.IRON_ORE);
+        world.getBlockAt(5, 64, 0).setType(Material.IRON_ORE);
+        world.getBlockAt(6, 64, 0).setType(Material.IRON_ORE);
+        server.getPluginManager().callEvent(new BlockBreakEvent(origin, p));
+        boolean withinRadius = world.getSpawnedParticles().stream()
+                .anyMatch(sp -> sp.particle() == org.bukkit.Particle.GLOW && Math.abs(sp.x() - 5.5) < 0.01);
+        boolean outsideRadius = world.getSpawnedParticles().stream()
+                .anyMatch(sp -> sp.particle() == org.bukkit.Particle.GLOW && Math.abs(sp.x() - 6.5) < 0.01);
+        assertTrue(withinRadius, "rank 2's 5-block radius should glow the ore at distance 5");
+        assertFalse(outsideRadius, "distance 6 is outside rank 2's radius");
+    }
+
+    @Test
+    void geodeFinderGlowsDiamondOreWithinEightBlocksOncePerThirtySeconds() {
+        PlayerMock p = player(RpgClass.ARTIFICER, 10);
+        rank(p, "geode_finder", 1);
+        Block origin = world.getBlockAt(0, 64, 0);
+        origin.setType(Material.STONE);
+        world.getBlockAt(8, 64, 0).setType(Material.DIAMOND_ORE);
+        world.getBlockAt(9, 64, 0).setType(Material.DIAMOND_ORE);
+        server.getPluginManager().callEvent(new BlockBreakEvent(origin, p));
+        boolean withinRadius = world.getSpawnedParticles().stream()
+                .anyMatch(sp -> sp.particle() == org.bukkit.Particle.GLOW && Math.abs(sp.x() - 8.5) < 0.01);
+        boolean outsideRadius = world.getSpawnedParticles().stream()
+                .anyMatch(sp -> sp.particle() == org.bukkit.Particle.GLOW && Math.abs(sp.x() - 9.5) < 0.01);
+        assertTrue(withinRadius, "8 blocks away is within Geode Finder's radius");
+        assertFalse(outsideRadius, "9 blocks away is outside Geode Finder's radius");
+        world.clearSpawnedParticles();
+        server.getPluginManager().callEvent(new BlockBreakEvent(origin, p));
+        assertTrue(world.getSpawnedParticles().isEmpty(), "Geode Finder only glows once per 30 s");
+    }
+
+    @Test
+    void magnetPullsDropsTowardThePlayerFromItsRankRadius() {
+        PlayerMock p = player(RpgClass.ARTIFICER, 25);
+        rank(p, "magnet", 2); // rank 2 is 8 blocks, well past rank 1's 4
+        p.teleport(at(0));
+        Block block = world.getBlockAt(5, 64, 0);
+        block.setType(Material.STONE);
+        var drop = world.dropItem(block.getLocation(), new ItemStack(Material.IRON_INGOT));
+        var event = new org.bukkit.event.block.BlockDropItemEvent(block, block.getState(), p, new java.util.ArrayList<>(List.of(drop)));
+        server.getPluginManager().callEvent(event);
+        advance(4);
+        assertTrue(drop.getVelocity().getX() < 0, "rank 2 pulls a drop 5 blocks away (past rank 1's 4-block reach) toward the player at x=0");
+    }
+
+    @Test
     void veinMinerBreaksConnectedOresUpToTheRankCapWhileSneaking() {
         PlayerMock p = player(RpgClass.ARTIFICER, 25);
         rank(p, "vein_miner", 1);
