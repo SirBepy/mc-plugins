@@ -21,8 +21,8 @@ class StationConfigTest {
         assertEquals(new StationConfig.RadarSign("world", 422, 116, -839, 5000), config.radarSign(BallSet.NETHER));
         assertEquals(new StationConfig.RadarSign("world", 422, 117, -840, 20000), config.radarSign(BallSet.END));
         assertEquals(7, config.displayHeads().size());
-        assertEquals(new StationConfig.HeadLocation("world", 415, 116, -873), config.displayHeads().get(0));
-        assertEquals(new StationConfig.HeadLocation("world", 414, 116, -877), config.displayHeads().get(6));
+        assertEquals(new StationConfig.HeadLocation("world", 430, 116, -841), config.displayHeads().get(0));
+        assertEquals(new StationConfig.HeadLocation("world", 431, 116, -837), config.displayHeads().get(6));
     }
 
     @Test

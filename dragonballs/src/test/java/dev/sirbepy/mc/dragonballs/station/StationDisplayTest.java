@@ -49,8 +49,8 @@ class StationDisplayTest {
         items = new BallItems(plugin, () -> dragonBallsConfig);
         balls = new FloatingBalls(plugin, items, id -> false);
         display = new StationDisplay(plugin, () -> StationConfig.from(plugin.getConfig()), balls, items);
-        world.getChunkAt(415 >> 4, -873 >> 4).load();
-        world.getChunkAt(414 >> 4, -877 >> 4).load();
+        world.getChunkAt(430 >> 4, -841 >> 4).load();
+        world.getChunkAt(431 >> 4, -837 >> 4).load();
     }
 
     @AfterEach

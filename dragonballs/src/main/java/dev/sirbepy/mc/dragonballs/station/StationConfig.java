@@ -37,13 +37,13 @@ public record StationConfig(Map<BallSet, RadarSign> radarSigns, List<HeadLocatio
 
     // Matches server/spawn-market/dragonballs-station.json's own displayHeads.
     private static final List<HeadLocation> DEFAULT_DISPLAY_HEADS = List.of(
-            new HeadLocation("world", 415, 116, -873),
-            new HeadLocation("world", 415, 116, -874),
-            new HeadLocation("world", 415, 116, -875),
-            new HeadLocation("world", 415, 116, -871),
-            new HeadLocation("world", 414, 116, -871),
-            new HeadLocation("world", 415, 116, -877),
-            new HeadLocation("world", 414, 116, -877));
+            new HeadLocation("world", 430, 116, -841),
+            new HeadLocation("world", 430, 116, -840),
+            new HeadLocation("world", 430, 116, -839),
+            new HeadLocation("world", 430, 116, -843),
+            new HeadLocation("world", 431, 116, -843),
+            new HeadLocation("world", 430, 116, -837),
+            new HeadLocation("world", 431, 116, -837));
 
     public static StationConfig from(FileConfiguration config) {
         Map<BallSet, RadarSign> signs = new EnumMap<>(BallSet.class);

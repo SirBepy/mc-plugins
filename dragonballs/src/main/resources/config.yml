@@ -311,13 +311,13 @@ station:
     nether: { world: world, x: 422, y: 116, z: -839, price: 5000 }
     end: { world: world, x: 422, y: 117, z: -840, price: 20000 }
   display-heads:
-    - { world: world, x: 415, y: 116, z: -873 }
-    - { world: world, x: 415, y: 116, z: -874 }
-    - { world: world, x: 415, y: 116, z: -875 }
-    - { world: world, x: 415, y: 116, z: -871 }
-    - { world: world, x: 414, y: 116, z: -871 }
-    - { world: world, x: 415, y: 116, z: -877 }
-    - { world: world, x: 414, y: 116, z: -877 }
+    - { world: world, x: 430, y: 116, z: -841 }
+    - { world: world, x: 430, y: 116, z: -840 }
+    - { world: world, x: 430, y: 116, z: -839 }
+    - { world: world, x: 430, y: 116, z: -843 }
+    - { world: world, x: 431, y: 116, z: -843 }
+    - { world: world, x: 430, y: 116, z: -837 }
+    - { world: world, x: 431, y: 116, z: -837 }
 
 summon:
   # Every ball must be within this many blocks (on each axis) of the one right-clicked.
