@@ -37,8 +37,9 @@ JEDNU KLASU SADA"
 
 Every value grows in even steps from level 1 to level 25. "Half against players" means the
 percentage is halved when the other side of the hit is a player (Weapon Master +10% is +5% on a
-player). Abilities fire with `/class ability`, the menu's nether star, or sneak + swap hands (F, Java);
-the swap is cancelled, so the items stay where they are.
+player). Abilities fire with `/class ability [1|2|3]`, the buttons in `/class` and `/class tree`, or sneak +
+their bound key (`/class binds`); sneak + swap hands (F) also fires ability 1 unless F is bound to
+another slot. The key's normal action is cancelled, so items stay where they are.
 
 | Class | Passive | Ability (cooldown) | Weakness | Class XP from |
 | --- | --- | --- | --- | --- |
@@ -123,6 +124,14 @@ Bound to his UUID only, via `dual-class-grants` in config.yml, not a feature eve
 - Revocable without another wish: remove the UUID from `dual-class-grants` and restart. The player's
   stored pick stays in `players.yml` and resumes counting if the grant is ever restored.
 
+## Talent trees
+
+Every class has a 33-node talent tree, a resource (Rage, Focus, Arcana, Charge, Resolve, Energy, Faith)
+on a boss bar, a second ability at level 10 and an ultimate at level 25: one talent point per level after
+the first, spent in `/class tree`, refunded for free. docs/classes-revamp.md has every node, the rules
+they follow and where the code differs from the spec. Ability 1 below is still the class's own; the
+numbers in this file are before talents.
+
 ## Levels and XP
 
 Level 1 to 2 takes 50 XP and every level 10 more (`Levels.toNext`: 40 + 10 x level), 3960 XP from 1 to
@@ -143,7 +152,9 @@ when they hit the cap, and a title and chat line on every level-up. XP past leve
 
 ## Showing the class
 
-AuraSkills redraws its HP/mana action bar every 5 ticks, so the plugin never uses the action bar. Java
+AuraSkills redraws its HP/mana action bar every 5 ticks, so the plugin never uses the action bar. The
+class resource is a boss bar instead, up while it has something in it or the player is fighting;
+holding sneak for 0.4 s swaps its text for the key legend. Java
 players see `Warrior · Level 7 (30/110 XP) · today 45/300 XP` as the tab list footer (none of our other
 plugins sets one); everyone gets a chat line on join, a title on level-up, and the ability's message and a
 "ready again" line in chat. The plugin adds nothing to names or nametags.
@@ -156,7 +167,9 @@ plugins sets one); everyone gets a chat line on join, a title on level-up, and t
 | `/class choose <class>` | players | Pick a class (same rules as the menu, no confirm click) |
 | `/class info [class]` | players | Passive, ability and weakness at your level |
 | `/class levels` | players | All seven classes' levels |
-| `/class ability` | players | Use the active class's ability |
+| `/class ability [1\|2\|3]` | players | Use ability 1 (default), ability 2 or the ultimate |
+| `/class tree [class]` | players | The talent tree (another class's is view only) |
+| `/class binds` | players | Which sneak + key fires each ability |
 | `/class leave` | players | Back to no class |
 | `/class secondary <class>` | players with a dual-class grant | Pick the permanent secondary class (once, ever) |
 | `/class admin info <player>` | `classes.admin` (ops, console) | Active class, today's XP, every class's XP and lock |
@@ -164,15 +177,20 @@ plugins sets one); everyone gets a chat line on join, a title on level-up, and t
 | `/class admin set <player> <class\|none>` | admin | Force the active class (restarts the 7-day lock) or clear it |
 | `/class admin unlock <player>` | admin | Lift the lock: the next pick is free |
 | `/class admin today <player>` | admin | Reset today's earned XP |
-| `/class admin ready <player>` | admin | Make the ability ready now |
+| `/class admin ready <player>` | admin | Make every ability ready now |
+| `/class admin tree <player> <class>` | admin | Spent points and every learned talent |
+| `/class admin talent <player> <class> <talent> <rank>` | admin | Set a rank, ignoring points and gates |
+| `/class admin respec <player> <class>` | admin | Refund a class's tree |
+| `/class admin resource <player> <0-100>` | admin | Set the resource bar |
 
 Admin commands take a name (online or seen before) or a UUID.
 
 ## Files
 
-- `plugins/Classes/config.yml`: `daily-xp-cap`, `zone`, `change-days`, `dual-class-grants`.
+- `plugins/Classes/config.yml`: `daily-xp-cap`, `zone`, `change-days`, `dual-class-grants`,
+  `default-binds`, `tree-background`.
 - `plugins/Classes/players.yml`: per UUID, the active class, the secondary class (if granted and
-  picked), the last pick and when, each class's XP, and today's earnings. Saved every minute when
+  picked), the last pick and when, each class's XP, today's earnings, every class's talent ranks and the player's key binds. Saved every minute when
   something changed, and on shutdown.
 
 ## Tests

@@ -1,26 +1,25 @@
-# Classes revamp: talent trees (spec for review)
+# Classes: talent trees
 
-Status: DRAFT for Joe's review, nothing built yet. Once approved and built, the shipped rules move into
-docs/classes.md and this file is deleted.
+The talent trees on top of the RPG classes (docs/classes.md). Built 2026-10-15/16 from this spec, which
+Joe approved on 2026-10-15; the node tables below are what shipped, and "As built" at the end lists every
+place the code differs from a table and why.
 
-Decisions already made (Joe, 2026-10-15):
+Decisions (Joe, 2026-10-15):
 
-- **Power budget:** always-on flat stats stay capped (the level passive, at most +10% at level 25, as
-  today). Tree nodes are conditional mechanics and may go past the old wish caps, but stay mob-focused.
+- **Power budget:** always-on flat stats stay capped (the level passive, at most +10% at level 25).
+  Tree nodes are conditional mechanics and may go past the old wish caps, but stay mob-focused.
 - **Tree shape:** 3 branches per class, points spent freely across all 3, tier gates per branch.
-- **Size:** a big tree (33 nodes per class), shown as a scrolling canvas, not a single 9x6 screen.
+- **Size:** 33 nodes per class, shown as a scrolling canvas, not a single 9x6 screen.
 - **Extras:** a class resource on a boss bar, a 2nd ability at level 10, an ultimate at level 25,
   particles and sounds on every proc.
-- **Keys:** sneak + 1 / 2 / 3 by default, a legend shown after holding sneak for 0.4 s, and a
-  `/class binds` menu for rebinding.
+- **Keys:** sneak + a key, rebindable in `/class binds`, with a legend after holding sneak for 0.4 s.
 - **Respec:** always free.
-- **Look:** Java gets a custom painted tree background through the server resource pack; Bedrock gets
-  the plain chest.
-- **Rollout:** all 7 classes at once.
+- **Look:** Java can get a painted tree background from the server resource pack (`tree-background`
+  in config.yml, off until the pack carries the glyphs); Bedrock always gets the plain chest.
 
-Unchanged from today: the 7 classes, levels 1-25 per class, the class XP sources, the 300 XP daily cap,
-the 7-day change lock, the level passives and weaknesses, Sivra21's dual-class grant (the secondary
-still gives half its passive and its full weakness, but no tree, abilities or resource).
+Unchanged: the 7 classes, levels 1-25 per class, the class XP sources, the 300 XP daily cap, the 7-day
+change lock, the level passives and weaknesses, Sivra21's dual-class grant (the secondary still gives
+half its passive and its full weakness, but no tree, abilities or resource).
 
 ## Rules every node follows
 
@@ -526,27 +525,51 @@ reviewed in the bot screenshots, not this spec.
 
 ---
 
-## Data and migration
+## Data
 
-- `players.yml` gains per class: spent ranks per node (`tree.<class>.<node>: <rank>`), per player:
-  key binds. Resource, cooldowns and summons stay in memory only, as cooldowns do today.
-- On first start of the revamp every class has 0 spent points and N-1 to spend. Nothing to convert.
-- `/class admin` gains `tree <player> <class>` (show), `respec <player> <class>` and `resource <player>
-  <0-100>` for testing.
+- `players.yml` keeps per class the spent ranks (`tree.<class>.<talent>: <rank>`) and per player the
+  key binds (`binds.<slot>: <input>`). Resource, cooldowns and summons stay in memory only.
+- Existing class levels carried over: every class started the trees with 0 spent and N-1 points.
+- A class whose XP an admin lowers below its spent points is refunded on the player's next join.
 
-## Risks and things to check before building
+## As built
 
-- UNVERIFIED: sneak + hotbar key reaches the server as a cancellable slot change on Bedrock through
-  Geyser; would check with the headless Bedrock bot on server/local.
-- UNVERIFIED: right click air with an empty hand sends no packet, so a right-click bind only works
-  while holding an item; would check PlayerInteractEvent on server/local 26.3.
-- UNVERIFIED: the negative-space font trick for the tree background still works in 26.3 inventory
-  titles; would check with a test glyph in the server pack.
-- Double Jump uses the allow-flight trick; anti-cheat or Paper's fly kick must not fire. Wall Climb and
-  Grapple need the same check.
-- Vein Miner, Tunneler, Seismic and Drill must go through Towny's build check per block (rule 5),
-  and Drill must stop at claim borders.
-- Load: Sentry, Tesla Coil, auras and boss-bar updates run on timers. Live lag is already tight
-  (see the datapack NBT notes), so every timer is per active player only, at most every 5 ticks.
-- Size: about 230 nodes in total. The build splits into the shared engine first, then one subagent
-  per class, each with MockBukkit tests for its 33 nodes, then one bot e2e pass per class.
+Where the code differs from the tables above, and why:
+
+- **Glow "for you only"** (Eagle Eye, Hunter's Instinct): Paper has no per-viewer glow, so the mob
+  glows for everyone. Vein Sense and Geode Finder can't glow blocks at all, so they show a particle
+  burst on each ore instead.
+- **"The block / mob you look at"**: found by walking the look direction block by block, or by a cone
+  search for mobs, instead of Bukkit ray traces (MockBukkit can't run those).
+- **Freezes and roots** are heavy Slowness (amplifier 9), never `Mob#setAware(false)`: that flag is
+  saved with the mob and would survive a restart.
+- **Railshot** deals its 6 hearts through normal ability damage, so the kill is credited and the
+  Ender Dragon's death still runs, at the cost of armour applying.
+- **Heavy Blow** stuns on any axe hit: the attack's charge isn't visible to the damage event.
+- **Seismic** breaks the 3x3 around the broken block on its own level (the clicked face isn't known).
+- **Drill** refuses a fixed list of unbreakable blocks (Paper has no hardness getter) and stops at the
+  first block a claim refuses.
+- **Rapid Deploy** shortens slot 2's cooldown, so it also shortens Drill's when Drill replaced Sentry.
+- **Golem** is a normal-size iron golem (no size API for golems).
+- **Recall**: casting Arcane Bolt with Recall learned returns you to the cast spot after 5 s unless you
+  sneak in that time (the engine has no "same key again" hook).
+- **Shadow Dance**: a single stored charge that skips one Shadow Step cooldown and recharges over
+  Shadow Step's own cooldown (25% faster at rank 2), not two independent charges.
+- **Knockback nodes** (Steady, Stone Skin, Immovable, Stalwart Aura, Fortress, Unstoppable) only cut
+  knockback from hostile mobs, through Paper's push events, never from players.
+- **Guardian Spirit**'s 4-heart cost never takes the Guardian below 1 heart; **Ascension** never takes
+  the Paladin below half a heart.
+- **War Drums** covers allies within 8 blocks (the table gives no radius).
+- **Holy Light, Smite and other heals** set health directly, so they don't feed Blessed Vigor or the
+  Paladin's heal XP twice; Faith is added per heal instead.
+- **Allies** are other players within range who haven't traded a hit with you in the last 10 s.
+- **Double Jump** uses allow-flight; a marker saved on the player hands that flight back at plugin
+  disable or on the next join after a crash, and never touches creative or Essentials flight.
+
+## Tests
+
+- `:classes:test` (MockBukkit): the engine (points, gates, respec, resource, slots, binds, summons,
+  allies, the tree menu) and every node, ability and keystone of all 7 kits.
+- `e2e/classes-talents.mjs` (bots on the 26.2 e2e server): the tree menu learns a node and scrolls,
+  `/class binds`, sneak + hotbar 2 fires ability 2 without moving the held slot, the Rage boss bar, and
+  every class's ability 2 and ultimate hitting mobs but never a bystander bot.
