@@ -97,6 +97,7 @@ public final class TalentEngine implements Listener {
     }
 
     public void stop() {
+        kits.values().forEach(ClassKit::disable);
         summons.dismissEveryone();
         plugin.getServer().getOnlinePlayers().forEach(bar::hide);
     }

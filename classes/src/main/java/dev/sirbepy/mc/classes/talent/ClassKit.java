@@ -41,4 +41,12 @@ public interface ClassKit {
 
     /** Registers listeners and timers through the context. Called once, at plugin enable. */
     void enable();
+
+    /**
+     * Undoes anything a kit changed on online players that would otherwise be saved with them,
+     * at plugin disable. Paper disables plugins before disconnecting players, so quit handlers
+     * never run on a restart.
+     */
+    default void disable() {
+    }
 }
