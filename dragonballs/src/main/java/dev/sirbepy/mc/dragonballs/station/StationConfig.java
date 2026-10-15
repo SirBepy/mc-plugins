@@ -32,8 +32,8 @@ public record StationConfig(Map<BallSet, RadarSign> radarSigns, List<HeadLocatio
     // DragonBall station's own duplicate copy, 2026-10-13).
     private static final Map<BallSet, RadarSign> DEFAULT_RADAR_SIGNS = Map.of(
             BallSet.OVERWORLD, new RadarSign("world", 422, 116, -841, 1000),
-            BallSet.NETHER, new RadarSign("world", 422, 116, -839, 5000),
-            BallSet.END, new RadarSign("world", 422, 117, -840, 20000));
+            BallSet.NETHER, new RadarSign("world", 422, 116, -840, 5000),
+            BallSet.END, new RadarSign("world", 422, 116, -839, 20000));
 
     // Matches server/spawn-market/dragonballs-station.json's own displayHeads.
     private static final List<HeadLocation> DEFAULT_DISPLAY_HEADS = List.of(

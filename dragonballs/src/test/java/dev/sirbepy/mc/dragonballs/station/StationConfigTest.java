@@ -18,8 +18,8 @@ class StationConfigTest {
         StationConfig config = StationConfig.from(new YamlConfiguration());
 
         assertEquals(new StationConfig.RadarSign("world", 422, 116, -841, 1000), config.radarSign(BallSet.OVERWORLD));
-        assertEquals(new StationConfig.RadarSign("world", 422, 116, -839, 5000), config.radarSign(BallSet.NETHER));
-        assertEquals(new StationConfig.RadarSign("world", 422, 117, -840, 20000), config.radarSign(BallSet.END));
+        assertEquals(new StationConfig.RadarSign("world", 422, 116, -840, 5000), config.radarSign(BallSet.NETHER));
+        assertEquals(new StationConfig.RadarSign("world", 422, 116, -839, 20000), config.radarSign(BallSet.END));
         assertEquals(7, config.displayHeads().size());
         assertEquals(new StationConfig.HeadLocation("world", 430, 116, -841), config.displayHeads().get(0));
         assertEquals(new StationConfig.HeadLocation("world", 431, 116, -837), config.displayHeads().get(6));
@@ -39,7 +39,7 @@ class StationConfigTest {
 
         assertEquals(new StationConfig.RadarSign("world_nether", 1, 2, 3, 500.0), config.radarSign(BallSet.OVERWORLD));
         // An untouched set keeps its own default, independent of the overworld override above.
-        assertEquals(new StationConfig.RadarSign("world", 422, 116, -839, 5000), config.radarSign(BallSet.NETHER));
+        assertEquals(new StationConfig.RadarSign("world", 422, 116, -840, 5000), config.radarSign(BallSet.NETHER));
         assertEquals(List.of(new StationConfig.HeadLocation("world_nether", 10, 20, 30)), config.displayHeads());
     }
 }

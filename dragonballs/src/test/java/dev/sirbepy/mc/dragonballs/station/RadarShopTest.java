@@ -186,8 +186,8 @@ class RadarShopTest {
     void theNetherSignSellsANetherRadarAtItsOwnPrice() {
         FakeEconomy economy = new FakeEconomy(10000);
         registerEconomy(economy);
-        Block netherSign = world.getBlockAt(422, 116, -839);
-        player.teleport(new Location(world, 422, 116, -839));
+        Block netherSign = world.getBlockAt(422, 116, -840);
+        player.teleport(new Location(world, 422, 116, -840));
 
         shop().onInteract(new org.bukkit.event.player.PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null,
                 netherSign, org.bukkit.block.BlockFace.NORTH, EquipmentSlot.HAND));
@@ -202,8 +202,8 @@ class RadarShopTest {
     void theEndSignRefusesWhileTheEndIsDisabledAndTakesNoMoney() {
         FakeEconomy economy = new FakeEconomy(50000);
         registerEconomy(economy);
-        Block endSign = world.getBlockAt(422, 117, -840);
-        player.teleport(new Location(world, 422, 117, -840));
+        Block endSign = world.getBlockAt(422, 116, -839);
+        player.teleport(new Location(world, 422, 116, -839));
 
         shop().onInteract(new org.bukkit.event.player.PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null,
                 endSign, org.bukkit.block.BlockFace.NORTH, EquipmentSlot.HAND));
