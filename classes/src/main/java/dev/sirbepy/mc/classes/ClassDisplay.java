@@ -48,7 +48,7 @@ public final class ClassDisplay implements Classes.Feedback {
         RpgClass c = classes.active(player.getUniqueId());
         if (c == null) return;
         player.sendMessage(Component.text("You are " + c.withArticle() + ", " + progress(classes.profile(player.getUniqueId()), c)
-                + ". /class for your class, /class ability for " + c.abilityName() + ".", c.color()));
+                + ". /class for your class, /class tree for your talents.", c.color()));
     }
 
     @Override
@@ -59,7 +59,8 @@ public final class ClassDisplay implements Classes.Feedback {
                 Component.text(c.passiveLine(level), NamedTextColor.GRAY),
                 Title.Times.times(Duration.ofMillis(250), Duration.ofSeconds(3), Duration.ofMillis(750))));
         player.sendMessage(Component.text(c.displayName() + " level " + level + "! ", c.color())
-                .append(Component.text(c.passiveLine(level) + "; " + c.abilityLine(level), NamedTextColor.GRAY)));
+                .append(Component.text(c.passiveLine(level) + "; " + c.abilityLine(level)
+                        + ". +1 talent point: /class tree", NamedTextColor.GRAY)));
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.8f, 1.2f);
     }
 

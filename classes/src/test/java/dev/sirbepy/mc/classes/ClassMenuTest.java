@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ClassMenuTest extends MockClassesTest {
 
     private ClassMenu menu() {
-        return new ClassMenu(classes, picker, abilities, () -> now);
+        return new ClassMenu(classes, picker, engine.slots(), engine.treeMenu(), () -> now);
     }
 
     private static List<String> lore(ItemStack item) {

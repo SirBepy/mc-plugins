@@ -203,10 +203,23 @@ public final class Classes {
         return Math.max(0, cooldownUntil.getOrDefault(player, 0L) - now.getAsLong());
     }
 
-    void startCooldown(UUID player) {
-        RpgClass c = active(player);
-        if (c == null) return;
-        cooldownUntil.put(player, now.getAsLong() + c.cooldownSeconds(level(player)) * 1000L);
+    void startCooldown(UUID player, int seconds) {
+        cooldownUntil.put(player, now.getAsLong() + seconds * 1000L);
+    }
+
+    /** Takes {@code millis} off ability 1's running cooldown (talents like Finisher and Zeal). */
+    public void shortenCooldown(UUID player, long millis) {
+        Long until = cooldownUntil.get(player);
+        if (until != null) cooldownUntil.put(player, until - millis);
+    }
+
+    /** For the talent engine, which keeps ranks and binds in the profile but has no store of its own. */
+    public void markDirty() {
+        store.markDirty();
+    }
+
+    public long now() {
+        return now.getAsLong();
     }
 
     void startBattleCry(UUID player, int seconds) {

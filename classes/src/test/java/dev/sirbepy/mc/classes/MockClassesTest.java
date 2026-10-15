@@ -1,5 +1,7 @@
 package dev.sirbepy.mc.classes;
 
+import dev.sirbepy.mc.classes.talent.TalentEngine;
+import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import org.bukkit.Location;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
@@ -21,6 +23,7 @@ import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /** A mock server with the Classes wiring, a fixed clock and one world. */
@@ -39,6 +42,7 @@ abstract class MockClassesTest {
     ClassXp xp;
     Abilities abilities;
     ClassPicker picker;
+    TalentEngine engine;
 
     @BeforeEach
     void mockServer() {
@@ -57,7 +61,9 @@ abstract class MockClassesTest {
         plugins.registerEvents(new ClassCombat(classes), plugin);
         plugins.registerEvents(passives, plugin);
         plugins.registerEvents(xp, plugin);
-        plugins.registerEvents(new ClassSessions(classes, passives, xp, display, abilities), plugin);
+        plugins.registerEvents(new ClassSessions(passives, xp, display), plugin);
+        engine = new TalentEngine(plugin, classes, abilities, () -> roll, Map.of(), false, BedrockForms.create(plugin));
+        engine.start();
     }
 
     @AfterEach

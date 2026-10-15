@@ -130,7 +130,7 @@ class ClassesTest {
     @Test
     void cooldownsRunFromTheLevelsCooldown() {
         classes.choose(gut, RpgClass.WARRIOR);
-        classes.startCooldown(gut);
+        classes.startCooldown(gut, RpgClass.WARRIOR.cooldownSeconds(1));
         assertEquals(90_000, classes.cooldownLeftMillis(gut));
         now += 89_000;
         assertEquals(1000, classes.cooldownLeftMillis(gut));

@@ -1,5 +1,9 @@
 package dev.sirbepy.mc.classes;
 
+import dev.sirbepy.mc.classes.talent.Bind;
+import dev.sirbepy.mc.classes.talent.Slot;
+import dev.sirbepy.mc.classes.talent.TalentEngine;
+import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.core.gui.MenuListener;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.kyori.adventure.text.Component;
@@ -13,7 +17,9 @@ import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -21,6 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class ClassesPlugin extends JavaPlugin {
 
     private ClassStore store;
+    private TalentEngine engine;
 
     @Override
     public void onEnable() {
@@ -46,8 +53,10 @@ public final class ClassesPlugin extends JavaPlugin {
         ClassPassives passives = new ClassPassives(classes, () -> ThreadLocalRandom.current().nextDouble());
         ClassXp xp = new ClassXp(classes);
         ClassPicker picker = new ClassPicker(classes, passives, System::currentTimeMillis);
-        ClassMenu menu = new ClassMenu(classes, picker, abilities, System::currentTimeMillis);
-        ClassSessions sessions = new ClassSessions(classes, passives, xp, display, abilities);
+        engine = new TalentEngine(this, classes, abilities, () -> ThreadLocalRandom.current().nextDouble(),
+                defaultBinds(), getConfig().getBoolean("tree-background", false), BedrockForms.create(this));
+        ClassMenu menu = new ClassMenu(classes, picker, engine.slots(), engine.treeMenu(), System::currentTimeMillis);
+        ClassSessions sessions = new ClassSessions(passives, xp, display);
 
         var plugins = getServer().getPluginManager();
         plugins.registerEvents(new MenuListener(), this);
@@ -55,11 +64,12 @@ public final class ClassesPlugin extends JavaPlugin {
         plugins.registerEvents(passives, this);
         plugins.registerEvents(xp, this);
         plugins.registerEvents(sessions, this);
+        engine.start();
         getServer().getOnlinePlayers().forEach(sessions::sync);
         scheduler.runTaskTimer(this, store::saveIfDirty, 1200L, 1200L);
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
-                new ClassCommand(classes, picker, menu, abilities, sessions::sync).registerInto(event.registrar()));
+                new ClassCommand(classes, picker, menu, engine, sessions::sync).registerInto(event.registrar()));
         getLogger().info("Classes ready: Warrior, Ranger, Arcanist, Artificer, Guardian, Rogue, Paladin; daily cap " + classes.dailyCap()
                 + " XP, change every " + classes.changeLock().toDays() + " days");
     }
@@ -80,8 +90,23 @@ public final class ClassesPlugin extends JavaPlugin {
         return ids;
     }
 
+    /** {@code default-binds} in config.yml; a slot left out or misspelled keeps the built-in default. */
+    private Map<Slot, Bind> defaultBinds() {
+        Map<Slot, Bind> binds = new EnumMap<>(Slot.class);
+        var section = getConfig().getConfigurationSection("default-binds");
+        if (section == null) return binds;
+        for (String key : section.getKeys(false)) {
+            Slot slot = Slot.parse(key);
+            Bind bind = Bind.parse(section.getString(key, ""));
+            if (slot == null || bind == null) getLogger().warning("Bad default-binds entry: " + key);
+            else binds.put(slot, bind);
+        }
+        return binds;
+    }
+
     @Override
     public void onDisable() {
+        if (engine != null) engine.stop();
         if (store == null) return;
         store.save();
         for (Player player : getServer().getOnlinePlayers()) {

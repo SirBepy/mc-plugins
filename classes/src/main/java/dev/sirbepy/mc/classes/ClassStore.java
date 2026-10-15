@@ -1,5 +1,7 @@
 package dev.sirbepy.mc.classes;
 
+import dev.sirbepy.mc.classes.talent.Bind;
+import dev.sirbepy.mc.classes.talent.Slot;
 import dev.sirbepy.mc.core.YamlFiles;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -66,6 +68,26 @@ public final class ClassStore {
             p.day = s.getString("day", "");
             p.earnedToday = s.getInt("earned-today");
             p.capNoticeSent = s.getBoolean("cap-notice-sent");
+            ConfigurationSection tree = s.getConfigurationSection("tree");
+            if (tree != null) {
+                for (String c : tree.getKeys(false)) {
+                    RpgClass rpg = RpgClass.parse(c);
+                    ConfigurationSection ranks = tree.getConfigurationSection(c);
+                    if (rpg == null || ranks == null) continue;
+                    for (String talent : ranks.getKeys(false)) {
+                        int rank = ranks.getInt(talent);
+                        if (rank > 0) p.tree(rpg).put(talent, rank);
+                    }
+                }
+            }
+            ConfigurationSection binds = s.getConfigurationSection("binds");
+            if (binds != null) {
+                for (String slot : binds.getKeys(false)) {
+                    Slot sl = Slot.parse(slot);
+                    Bind b = Bind.parse(binds.getString(slot, ""));
+                    if (sl != null && b != null) p.binds.put(sl, b);
+                }
+            }
         }
     }
 
@@ -77,7 +99,7 @@ public final class ClassStore {
         YamlConfiguration yaml = new YamlConfiguration();
         for (Map.Entry<UUID, ClassProfile> e : profiles.entrySet()) {
             ClassProfile p = e.getValue();
-            if (p.lastPickAt == 0 && p.active == null && p.secondary == null && p.xp.isEmpty()) continue;
+            if (p.lastPickAt == 0 && p.active == null && p.secondary == null && p.xp.isEmpty() && p.binds.isEmpty()) continue;
             String k = e.getKey().toString();
             yaml.set(k + ".active", p.active == null ? null : p.active.id());
             yaml.set(k + ".secondary", p.secondary == null ? null : p.secondary.id());
@@ -87,6 +109,10 @@ public final class ClassStore {
             yaml.set(k + ".day", p.day);
             yaml.set(k + ".earned-today", p.earnedToday);
             yaml.set(k + ".cap-notice-sent", p.capNoticeSent);
+            p.tree.forEach((c, ranks) -> ranks.forEach((talent, rank) -> {
+                if (rank > 0) yaml.set(k + ".tree." + c.id() + "." + talent, rank);
+            }));
+            p.binds.forEach((slot, bind) -> yaml.set(k + ".binds." + slot.id(), bind.id()));
         }
         try {
             YamlFiles.saveAtomically(yaml, file);

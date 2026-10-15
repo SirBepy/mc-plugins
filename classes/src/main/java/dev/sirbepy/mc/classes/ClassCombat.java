@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.classes;
 
+import dev.sirbepy.mc.classes.talent.AbilityDamage;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Mob;
@@ -29,6 +30,8 @@ public final class ClassCombat implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onDamage(EntityDamageByEntityEvent event) {
+        // An ability's own hit (Smite-style fixed numbers) keeps its documented size.
+        if (AbilityDamage.inProgress()) return;
         double percent = dealt(event) + taken(event);
         if (percent != 0) event.setDamage(Math.max(0, event.getDamage() * (1 + percent / 100)));
     }

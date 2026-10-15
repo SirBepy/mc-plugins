@@ -6,6 +6,10 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import dev.sirbepy.mc.classes.talent.Slot;
+import dev.sirbepy.mc.classes.talent.Talent;
+import dev.sirbepy.mc.classes.talent.TalentEngine;
+import dev.sirbepy.mc.classes.talent.Talents;
 import dev.sirbepy.mc.core.Players;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -21,7 +25,7 @@ import java.util.function.Consumer;
 
 /**
  * {@code /class}: the menu, {@code choose <class>}, {@code info [class]}, {@code levels},
- * {@code ability} and {@code leave}; {@code admin ...} for ops and the console (Player Claude).
+ * {@code ability [1-3]}, {@code tree [class]}, {@code binds} and {@code leave}; {@code admin ...} for ops and the console (Player Claude).
  */
 final class ClassCommand {
 
@@ -30,15 +34,15 @@ final class ClassCommand {
     private final Classes classes;
     private final ClassPicker picker;
     private final ClassMenu menu;
-    private final Abilities abilities;
+    private final TalentEngine engine;
     /** Re-applies Frail Body and the footer after an admin change to an online player. */
     private final Consumer<Player> resync;
 
-    ClassCommand(Classes classes, ClassPicker picker, ClassMenu menu, Abilities abilities, Consumer<Player> resync) {
+    ClassCommand(Classes classes, ClassPicker picker, ClassMenu menu, TalentEngine engine, Consumer<Player> resync) {
         this.classes = classes;
         this.picker = picker;
         this.menu = menu;
-        this.abilities = abilities;
+        this.engine = engine;
         this.resync = resync;
     }
 
@@ -67,7 +71,17 @@ final class ClassCommand {
                     if (rpg == null) unknown(p, c);
                     else picker.pickSecondary(p, rpg);
                 }))))
-                .then(Commands.literal("ability").executes(c -> player(c, abilities::use)))
+                .then(Commands.literal("ability").executes(c -> player(c, p -> engine.slots().cast(p, Slot.ONE)))
+                        .then(Commands.argument("slot", IntegerArgumentType.integer(1, 3)).executes(c -> player(c, p ->
+                                engine.slots().cast(p, Slot.values()[IntegerArgumentType.getInteger(c, "slot") - 1])))))
+                .then(Commands.literal("tree")
+                        .executes(c -> player(c, p -> engine.treeMenu().open(p)))
+                        .then(classArg("class").executes(c -> player(c, p -> {
+                            RpgClass rpg = classOf(c, "class");
+                            if (rpg == null) unknown(p, c);
+                            else engine.treeMenu().open(p, rpg);
+                        }))))
+                .then(Commands.literal("binds").executes(c -> player(c, p -> engine.treeMenu().bindsMenu().open(p))))
                 .then(Commands.literal("leave").executes(c -> player(c, picker::leave)))
                 .then(admin());
         registrar.register(root.build(), "RPG classes: Warrior, Ranger, Arcanist, Artificer, Guardian, Rogue, Paladin");
@@ -135,8 +149,50 @@ final class ClassCommand {
                 }))))
                 .then(Commands.literal("ready").then(playerArg().executes(c -> target(c, (sender, id) -> {
                     classes.readyAbility(id);
-                    say(sender, "Ability ready.");
-                }))));
+                    for (Slot s : Slot.values()) engine.cooldowns().ready(id, s);
+                    say(sender, "Every ability ready.");
+                }))))
+                .then(Commands.literal("tree").then(playerArg().then(classArg("class").executes(c -> target(c, (sender, id) -> {
+                    RpgClass rpg = classOf(c, "class");
+                    if (rpg == null) {
+                        say(sender, "No such class.");
+                        return;
+                    }
+                    Talents t = engine.talents();
+                    say(sender, rpg.displayName() + ": " + t.spent(id, rpg) + "/" + t.points(id, rpg) + " points spent");
+                    for (Talent talent : t.all(rpg)) {
+                        int rank = t.rank(id, rpg, talent.id());
+                        if (rank > 0) say(sender, "  " + talent.id() + " " + rank + "/" + talent.maxRank());
+                    }
+                })))))
+                .then(Commands.literal("talent").then(playerArg().then(classArg("class")
+                        .then(Commands.argument("talent", StringArgumentType.word())
+                                .then(Commands.argument("rank", IntegerArgumentType.integer(0, 5)).executes(c -> target(c, (sender, id) -> {
+                                    RpgClass rpg = classOf(c, "class");
+                                    Talent talent = rpg == null ? null : engine.talents().get(rpg, StringArgumentType.getString(c, "talent"));
+                                    if (talent == null) {
+                                        say(sender, "No such class or talent.");
+                                        return;
+                                    }
+                                    int rank = Math.min(talent.maxRank(), IntegerArgumentType.getInteger(c, "rank"));
+                                    engine.talents().force(id, rpg, talent.id(), rank);
+                                    say(sender, talent.name() + " set to rank " + rank + " (points and gates ignored).");
+                                })))))))
+                .then(Commands.literal("respec").then(playerArg().then(classArg("class").executes(c -> target(c, (sender, id) -> {
+                    RpgClass rpg = classOf(c, "class");
+                    if (rpg == null) {
+                        say(sender, "No such class.");
+                        return;
+                    }
+                    engine.talents().respec(id, rpg);
+                    say(sender, rpg.displayName() + " tree refunded.");
+                })))))
+                .then(Commands.literal("resource").then(playerArg().then(Commands.argument("value", IntegerArgumentType.integer(0, 100))
+                        .executes(c -> target(c, (sender, id) -> {
+                            engine.resources().set(id, IntegerArgumentType.getInteger(c, "value"));
+                            engine.resources().tagCombat(id);
+                            say(sender, "Resource set to " + IntegerArgumentType.getInteger(c, "value") + ".");
+                        })))));
     }
 
     private static RequiredArgumentBuilder<CommandSourceStack, String> classArg(String name) {
@@ -178,7 +234,7 @@ final class ClassCommand {
         if (c.getSource().getExecutor() instanceof Player p) {
             action.accept(p);
         } else {
-            say(c.getSource().getSender(), "Players only. Ops: /class admin info|setxp|set|unlock|today|ready <player> ...");
+            say(c.getSource().getSender(), "Players only. Ops: /class admin info|setxp|set|unlock|today|ready|tree|talent|respec|resource <player> ...");
         }
         return Command.SINGLE_SUCCESS;
     }

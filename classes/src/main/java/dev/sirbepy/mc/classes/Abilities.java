@@ -26,13 +26,25 @@ import java.util.function.BiConsumer;
  */
 public final class Abilities {
 
+    /** Talents that change ability 1's cooldown (Blood Price, Veteran, Quick Mind) hook in here. */
+    public interface CooldownAdjuster {
+        int seconds(Player player, RpgClass c, int base);
+
+        CooldownAdjuster NONE = (player, c, base) -> base;
+    }
+
     private final Classes classes;
     /** Runs a task after the given number of ticks (the Bukkit scheduler outside tests). */
     private final BiConsumer<Runnable, Long> later;
+    private CooldownAdjuster adjuster = CooldownAdjuster.NONE;
 
     public Abilities(Classes classes, BiConsumer<Runnable, Long> later) {
         this.classes = classes;
         this.later = later;
+    }
+
+    public void setCooldownAdjuster(CooldownAdjuster adjuster) {
+        this.adjuster = adjuster;
     }
 
     /** Uses the player's ability if it's ready; tells them either way. Returns whether it fired. */
@@ -81,10 +93,10 @@ public final class Abilities {
                 player.removePotionEffect(PotionEffectType.WITHER);
             }
         }
-        classes.startCooldown(id);
+        int cooldown = adjuster.seconds(player, c, c.cooldownSeconds(level));
+        classes.startCooldown(id, cooldown);
         player.playSound(player.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 0.7f, 1.4f);
         player.sendMessage(Component.text(c.abilityLine(level), c.color()));
-        int cooldown = c.cooldownSeconds(level);
         later.accept(() -> {
             // Under a second of slack: the tick timer and the wall clock never line up exactly.
             if (player.isOnline() && classes.active(id) == c && classes.cooldownLeftMillis(id) < 1000) {

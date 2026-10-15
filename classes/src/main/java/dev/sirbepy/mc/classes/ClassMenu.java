@@ -1,5 +1,8 @@
 package dev.sirbepy.mc.classes;
 
+import dev.sirbepy.mc.classes.talent.AbilitySlots;
+import dev.sirbepy.mc.classes.talent.Slot;
+import dev.sirbepy.mc.classes.talent.TreeMenu;
 import dev.sirbepy.mc.core.Durations;
 import dev.sirbepy.mc.core.gui.Icons;
 import dev.sirbepy.mc.core.gui.Menu;
@@ -26,18 +29,22 @@ import java.util.function.LongSupplier;
 public final class ClassMenu {
 
     static final int[] SLOTS = {10, 11, 12, 13, 14, 15, 16};
-    static final int ABILITY_SLOT = 22;
+    static final int ABILITY_SLOT = 21;
+    static final int TREE_SLOT = 23;
 
     private final Classes classes;
     private final ClassPicker picker;
-    private final Abilities abilities;
+    private final AbilitySlots slots;
+    private final TreeMenu tree;
     private final LongSupplier now;
 
-    public ClassMenu(Classes classes, ClassPicker picker, Abilities abilities, LongSupplier now) {
+    public ClassMenu(Classes classes, ClassPicker picker, AbilitySlots slots, TreeMenu tree, LongSupplier now) {
         this.classes = classes;
         this.picker = picker;
-        this.abilities = abilities;
+        this.slots = slots;
+        this.tree = tree;
         this.now = now;
+        tree.setBack(this::open);
     }
 
     public void open(Player player) {
@@ -63,12 +70,16 @@ public final class ClassMenu {
         }
         if (p.active() != null) {
             RpgClass c = p.active();
-            menu.set(ABILITY_SLOT, named(new ItemStack(Material.NETHER_STAR), "Use " + c.abilityName(), c.color(),
-                    List.of(c.abilityLine(p.level(c)), "Also: /class ability, or sneak + swap hands (F).")),
+            String name = slots.name(id, c, Slot.ONE);
+            menu.set(ABILITY_SLOT, named(new ItemStack(Material.NETHER_STAR), "Use " + name, c.color(),
+                    List.of(c.abilityLine(p.level(c)), "Also: /class ability, or the sneak keys in /class binds.")),
                     (shown, click) -> {
                         player.closeInventory();
-                        abilities.use(player);
+                        slots.cast(player, Slot.ONE);
                     });
+            menu.set(TREE_SLOT, named(new ItemStack(Material.OAK_SAPLING), "Talent tree", c.color(),
+                    List.of("Spend your talent points, see every ability", "Also: /class tree")),
+                    (shown, click) -> tree.open(player, c));
         }
         menu.frame(Material.GRAY_STAINED_GLASS_PANE);
         return menu;
