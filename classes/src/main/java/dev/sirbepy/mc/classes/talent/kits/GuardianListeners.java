@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.classes.talent.kits;
 
+import io.papermc.paper.event.entity.EntityPushedByEntityAttackEvent;
 import dev.sirbepy.mc.classes.RpgClass;
 import dev.sirbepy.mc.classes.talent.AbilityDamage;
 import dev.sirbepy.mc.classes.talent.ClassAbilityEvent;
@@ -53,7 +54,6 @@ final class GuardianListeners implements Listener {
         this.ctx = ctx;
         this.state = state;
         ctx.repeat(this::checkPlated, 20, 20);
-        ctx.repeat(this::checkKnockbackResistance, 20, 20);
     }
 
     // Ability 1 (Last Stand): Iron Will, Shared Stand. Unbreakable and Stone Skin read the window
@@ -282,30 +282,20 @@ final class GuardianListeners implements Listener {
         }
     }
 
-    // Steady, Stone Skin, Immovable, Stalwart Aura, Fortress's "no knockback": the only Bukkit event
-    // for cancelling knockback (EntityKnockbackByEntityEvent) is deprecated for removal, and in this
-    // Paper build registering a listener for it throws inside Paper's own deprecation-warning path
-    // (NPE on PluginDescriptionFile#getAuthors() with MockBukkit's plugin). KNOCKBACK_RESISTANCE is
-    // the non-event route Minecraft itself uses for the same effect, checked on the same cadence as
-    // Plated. It resists knockback from any source, not only mobs, which is broader than the spec's
-    // wording but keeps the feature working.
-    static final NamespacedKey KNOCKBACK_RESIST_KEY = new NamespacedKey("classes", "guardian_knockback_resist");
-
-    private void checkKnockbackResistance() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            AttributeInstance kb = player.getAttribute(Attribute.KNOCKBACK_RESISTANCE);
-            if (kb == null) continue;
-            double resist = desiredKnockbackResistance(player);
-            AttributeModifier existing = kb.getModifier(KNOCKBACK_RESIST_KEY);
-            if (existing != null && existing.getAmount() == resist) continue;
-            if (existing != null) kb.removeModifier(KNOCKBACK_RESIST_KEY);
-            if (resist > 0) {
-                kb.addTransientModifier(new AttributeModifier(KNOCKBACK_RESIST_KEY, resist, AttributeModifier.Operation.ADD_NUMBER));
-            }
-        }
+    // Steady, Stone Skin, Immovable, Stalwart Aura, Fortress's "no knockback": Paper's push event
+    // names the attacker, so these only ever cut knockback from hostile mobs, never from a player.
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPushed(EntityPushedByEntityAttackEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+        Entity source = event.getPushedBy();
+        if (source instanceof Projectile projectile && projectile.getShooter() instanceof Entity shooter) source = shooter;
+        if (!Mobs.hostile(source)) return;
+        double resist = desiredKnockbackResistance(player);
+        if (resist >= 1) event.setCancelled(true);
+        else if (resist > 0) event.setKnockback(event.getKnockback().multiply(1 - resist));
     }
 
-    /** Package-visible so the rule for each case can be unit tested without the attribute plumbing. */
+    /** How much of a mob's knockback this player shrugs off, 0 to 1. */
     double desiredKnockbackResistance(Player player) {
         if (state.fortressUntil.getOrDefault(player.getUniqueId(), 0L) > ctx.now()) return 1.0;
         if (state.fortressAllyUntil.getOrDefault(player.getUniqueId(), 0L) > ctx.now()) return 1.0;
