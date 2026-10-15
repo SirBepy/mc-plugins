@@ -6,6 +6,10 @@
 # The live server's plugins/Tweaks/changelog.yml is the copy players see, read fresh on every
 # /changelog, so add each restart's entry there (kinetic.mjs) and mirror it here in the same session.
 entries:
+  - date: 2026-10-15
+    title: Haru's gifts
+    lines:
+      - Haru's gifts aren't bound to their owner anymore
   - date: 2026-10-11
     title: Classes and more
     lines:
