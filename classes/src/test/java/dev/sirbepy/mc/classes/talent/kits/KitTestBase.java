@@ -64,7 +64,7 @@ public abstract class KitTestBase {
                 ZoneId.of("Europe/Zagreb"), 300, Duration.ofDays(7));
         Abilities abilities = new Abilities(classes, (task, ticks) -> server.getScheduler().runTaskLater(plugin, task, ticks));
         server.getPluginManager().registerEvents(new ClassCombat(classes), plugin);
-        engine = new TalentEngine(plugin, classes, abilities, () -> roll, Map.of(), false, BedrockForms.create(plugin));
+        engine = new TalentEngine(plugin, classes, abilities, () -> roll, Map.of(), false, false, BedrockForms.create(plugin));
         engine.start();
     }
 

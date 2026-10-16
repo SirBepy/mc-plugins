@@ -16,7 +16,8 @@ import java.util.UUID;
 /**
  * The resource as a boss bar (AuraSkills owns the action bar), up while there's something in it or
  * the player is fighting. Holding sneak swaps its text for the key legend:
- * {@code [1] Battle Cry  [2] Charge (12s)  [3] Ground Slam (needs 100 Rage)}.
+ * {@code [1] Battle Cry  [2] Charge (12s)  [3] Ground Slam (needs 100 Rage)}, or with the pack's
+ * ability icons ({@link AbilityIcons}) each name becomes its icon: {@code <icon> 1  <icon> 2 (12s)}.
  */
 public final class ResourceBar {
 
@@ -27,10 +28,11 @@ public final class ResourceBar {
     private final Binds binds;
     private final BindListener sneaking;
     private final Fx fx;
+    private final AbilityIcons icons;
     private final Map<UUID, BossBar> bars = new HashMap<>();
 
     public ResourceBar(Classes classes, Resources resources, Map<RpgClass, ClassKit> kits, AbilitySlots slots,
-                       Binds binds, BindListener sneaking, Fx fx) {
+                       Binds binds, BindListener sneaking, Fx fx, AbilityIcons icons) {
         this.classes = classes;
         this.resources = resources;
         this.kits = kits;
@@ -38,6 +40,7 @@ public final class ResourceBar {
         this.binds = binds;
         this.sneaking = sneaking;
         this.fx = fx;
+        this.icons = icons;
         resources.onFull(this::filled);
     }
 
@@ -73,21 +76,26 @@ public final class ResourceBar {
     Component legend(Player player, RpgClass c, ClassKit kit) {
         UUID id = player.getUniqueId();
         int level = classes.level(id);
-        StringBuilder text = new StringBuilder();
+        Component legend = Component.empty().color(NamedTextColor.WHITE);
         for (Slot slot : Slot.values()) {
-            if (!text.isEmpty()) text.append("   ");
-            text.append('[').append(binds.bind(id, slot).key()).append("] ").append(slots.name(id, c, slot));
+            if (slot.ordinal() > 0) legend = legend.append(Component.text("   "));
+            String name = slots.name(id, c, slot);
+            String key = binds.bind(id, slot).key();
+            Component icon = icons.icon(player, name);
+            StringBuilder text = new StringBuilder(icon == null ? "[" + key + "] " + name : " " + key);
             if (level < slot.unlockLevel()) {
                 text.append(" (level ").append(slot.unlockLevel()).append(')');
-                continue;
+            } else {
+                long left = slots.cooldownLeft(id, c, slot);
+                if (left > 0) text.append(" (").append((left + 999) / 1000).append("s)");
+                else if (slot == Slot.ULTIMATE && !resources.isFull(id)) {
+                    text.append(" (needs ").append((int) Resources.MAX).append(' ').append(kit.resourceName()).append(')');
+                }
             }
-            long left = slots.cooldownLeft(id, c, slot);
-            if (left > 0) text.append(" (").append((left + 999) / 1000).append("s)");
-            else if (slot == Slot.ULTIMATE && !resources.isFull(id)) {
-                text.append(" (needs ").append((int) Resources.MAX).append(' ').append(kit.resourceName()).append(')');
-            }
+            if (icon != null) legend = legend.append(icon);
+            legend = legend.append(Component.text(text.toString()));
         }
-        return Component.text(text.toString(), NamedTextColor.WHITE);
+        return legend;
     }
 
     private void filled(Player player) {

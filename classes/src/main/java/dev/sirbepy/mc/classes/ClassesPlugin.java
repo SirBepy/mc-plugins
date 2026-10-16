@@ -54,7 +54,8 @@ public final class ClassesPlugin extends JavaPlugin {
         ClassXp xp = new ClassXp(classes);
         ClassPicker picker = new ClassPicker(classes, passives, System::currentTimeMillis);
         engine = new TalentEngine(this, classes, abilities, () -> ThreadLocalRandom.current().nextDouble(),
-                defaultBinds(), getConfig().getBoolean("tree-background", false), BedrockForms.create(this));
+                defaultBinds(), getConfig().getBoolean("tree-background", false),
+                getConfig().getBoolean("ability-icons", false), BedrockForms.create(this));
         ClassMenu menu = new ClassMenu(classes, picker, engine.slots(), engine.treeMenu(), System::currentTimeMillis);
         ClassSessions sessions = new ClassSessions(passives, xp, display);
 

@@ -49,13 +49,13 @@ public final class TalentEngine implements Listener {
     private final Map<UUID, RpgClass> lastSeen = new HashMap<>();
 
     public TalentEngine(Plugin plugin, Classes classes, Abilities abilities, DoubleSupplier random,
-                        Map<Slot, Bind> defaultBinds, boolean treeBackground, BedrockForms bedrock) {
-        this(plugin, classes, abilities, random, defaultBinds, treeBackground, bedrock, Kits::create);
+                        Map<Slot, Bind> defaultBinds, boolean treeBackground, boolean abilityIcons, BedrockForms bedrock) {
+        this(plugin, classes, abilities, random, defaultBinds, treeBackground, abilityIcons, bedrock, Kits::create);
     }
 
     /** {@code kitFactory} builds each class's kit; tests pass fakes. */
     public TalentEngine(Plugin plugin, Classes classes, Abilities abilities, DoubleSupplier random,
-                        Map<Slot, Bind> defaultBinds, boolean treeBackground, BedrockForms bedrock,
+                        Map<Slot, Bind> defaultBinds, boolean treeBackground, boolean abilityIcons, BedrockForms bedrock,
                         BiFunction<RpgClass, KitContext, ClassKit> kitFactory) {
         this.plugin = plugin;
         this.classes = classes;
@@ -68,7 +68,7 @@ public final class TalentEngine implements Listener {
         this.binds = new Binds(classes, defaultBinds);
         this.slots = new AbilitySlots(plugin, classes, abilities, talents, resources, cooldowns, view);
         this.bindListener = new BindListener(classes, binds, slots, classes::now);
-        this.bar = new ResourceBar(classes, resources, view, slots, binds, bindListener, fx);
+        this.bar = new ResourceBar(classes, resources, view, slots, binds, bindListener, fx, new AbilityIcons(abilityIcons, bedrock));
         this.treeMenu = new TreeMenu(classes, talents, view, slots, binds, resources, new TreeLook(treeBackground, bedrock));
         abilities.setCooldownAdjuster((player, c, base) -> cooldowns.adjust(player, Slot.ONE, base));
         for (RpgClass c : RpgClass.values()) {

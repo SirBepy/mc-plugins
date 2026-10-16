@@ -70,7 +70,7 @@ class TalentEngineTest {
         classes = new Classes(store, () -> now,
                 ZoneId.of("Europe/Zagreb"), 300, Duration.ofDays(7));
         Abilities abilities = new Abilities(classes, (task, ticks) -> server.getScheduler().runTaskLater(plugin, task, ticks));
-        engine = new TalentEngine(plugin, classes, abilities, () -> 0.5, Map.of(), false, BedrockForms.create(plugin),
+        engine = new TalentEngine(plugin, classes, abilities, () -> 0.5, Map.of(), false, false, BedrockForms.create(plugin),
                 (c, ctx) -> c == RpgClass.WARRIOR ? (kit = new FakeKit(ctx)) : Kits.create(c, ctx));
         engine.start();
         server.getPluginManager().registerEvents(new Listener() {
@@ -222,6 +222,47 @@ class TalentEngineTest {
         assertTrue(legend.contains("[1] Battle Cry"), legend);
         assertTrue(legend.contains("[2] Fake Two"), legend);
         assertTrue(legend.contains("[3] Fake Ult (needs 100 Fury)"), legend);
+    }
+
+    @Test
+    void withAbilityIconsTheLegendShowsEachIconAndItsKey() {
+        TalentEngine icons = iconEngine();
+        PlayerMock p = warrior(25);
+        ClassKit warrior = icons.kit(RpgClass.WARRIOR);
+        net.kyori.adventure.text.Component legend = icons.bar().legend(p, RpgClass.WARRIOR, warrior);
+        String text = plain(legend);
+        String rage = warrior.resourceName();
+        assertEquals(" 1    2    3 (needs 100 " + rage + ")", text);
+        net.kyori.adventure.text.Component glyph = legend.children().getFirst();
+        assertEquals(AbilityIcons.FONT, glyph.font());
+        // The fake kit's made-up names have no icon, so they fall back to the text form.
+        String fallback = plain(engine.bar().legend(p, RpgClass.WARRIOR, kit));
+        assertTrue(fallback.contains("[2] Fake Two"), fallback);
+    }
+
+    @Test
+    void everyKitAbilityHasItsOwnIcon() {
+        java.util.Set<Character> glyphs = new java.util.HashSet<>();
+        for (AbilityIcons.Icon icon : AbilityIcons.all().values()) assertTrue(glyphs.add(icon.glyph()), "glyph " + icon);
+        TalentEngine real = iconEngine();
+        int named = 0;
+        for (RpgClass c : RpgClass.values()) {
+            ClassKit k = real.kit(c);
+            List<String> names = new ArrayList<>(List.of(c.abilityName(), k.secondAbility().name(), k.ultimate().name()));
+            for (Talent t : k.talents()) if (t.keystone()) names.add(k.keystoneAbility(t).name());
+            for (String name : names) {
+                assertTrue(AbilityIcons.all().containsKey(name), c + ": " + name + " has no icon");
+                named++;
+            }
+        }
+        assertEquals(42, named);
+        assertEquals(42, AbilityIcons.all().size());
+    }
+
+    /** Real kits, ability icons on, never started. */
+    private TalentEngine iconEngine() {
+        return new TalentEngine(plugin, classes, new Abilities(classes, (task, ticks) -> { }), () -> 0.5,
+                Map.of(), false, true, BedrockForms.create(plugin));
     }
 
     private static int count(PlayerMock p) {

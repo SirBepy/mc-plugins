@@ -30,3 +30,7 @@ default-binds:
 # Paint the tree menu's background with the server resource pack's classes:tree font (Java only).
 # Leave off until the pack with the tree glyphs is live, or players see boxes in the title.
 tree-background: false
+
+# Show each ability as its icon in the held-sneak key legend, drawn by the server resource pack's
+# classes:icons font (Java only). Same rule: leave off until that pack is live.
+ability-icons: false
