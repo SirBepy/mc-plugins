@@ -15,7 +15,9 @@ Decisions (Joe, 2026-10-15):
 - **Keys:** sneak + a key, rebindable in `/class binds`, with a legend after holding sneak for 0.4 s.
 - **Respec:** always free.
 - **Look:** Java can get a painted tree background from the server resource pack (`tree-background`
-  in config.yml, off until the pack carries the glyphs); Bedrock always gets the plain chest.
+  in config.yml, off until the pack carries the glyphs); Bedrock always gets the plain chest. The
+  held-sneak legend can show each ability as its icon (`ability-icons`, same rule); Joe's ask,
+  2026-10-16.
 
 Unchanged: the 7 classes, levels 1-25 per class, the class XP sources, the 300 XP daily cap, the 7-day
 change lock, the level passives and weaknesses, Sivra21's dual-class grant (the secondary still gives
@@ -72,7 +74,9 @@ half its passive and its full weakness, but no tree, abilities or resource).
   Switching slots with the scroll wheel while sneaking still works.
 - **Legend:** after holding sneak for 0.4 s the resource boss bar's text changes to the key legend,
   for example `[1] Battle Cry  [2] Charge (12s)  [3] Ground Slam (needs 100 Rage)`. Letting go of
-  sneak puts the resource text back. Quick crouches while building never show it.
+  sneak puts the resource text back. Quick crouches while building never show it. With
+  `ability-icons` on, Java players see each ability's icon followed by its key instead, for example
+  `<goat horn> 1   <sword> 2 (12s)   <mace> 3 (needs 100 Rage)`; Bedrock keeps the text form.
 - **`/class binds`:** a menu where each of the 3 slots can be rebound to any input the server can
   see while sneaking: left click air, right click air, F (swap hands), Q (drop), or a hotbar key
   1-9. Left and right click are marked "may clash" (missed swings, shields, bows, food). Binds are
@@ -535,6 +539,13 @@ reviewed in the bot screenshots, not this spec.
 ## As built
 
 Where the code differs from the tables above, and why:
+
+- **Pack art:** `server/resourcepacks/class_tree_art.py` writes both fonts. Each tree background is
+  176 x 125 (title strip plus the slot grid), not the full 176 x 222 chest, so the player inventory
+  below keeps vanilla's own texture; column 175 copies vanilla's black outline so the glyph still
+  advances 177 px. One image per scroll position serves every class, since all seven trees have the
+  same shape. The empty control slot 50 shows 3 pips for the scroll position. The ability icons are
+  vanilla item and block textures (`AbilityIcons.java`, U+E100 up), so the pack ships no icon art.
 
 - **Glow "for you only"** (Eagle Eye, Hunter's Instinct): Paper has no per-viewer glow, so the mob
   glows for everyone. Vein Sense and Geode Finder can't glow blocks at all, so they show a particle

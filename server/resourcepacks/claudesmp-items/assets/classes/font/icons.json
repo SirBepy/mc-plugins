@@ -1,0 +1,382 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/goat_horn.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue100"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/feather.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue101"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/glistering_melon_slice.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue102"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/redstone.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue103"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/iron_chestplate.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue104"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/ender_pearl.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue105"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/golden_sword.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue106"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/iron_sword.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue110"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/arrow.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue111"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/amethyst_shard.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue112"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/crossbow_standby.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue113"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/iron_axe.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue114"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/gunpowder.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue115"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/glowstone_dust.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue116"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/mace.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue120"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/spectral_arrow.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue121"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/fire_charge.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue122"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/blaze_powder.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue123"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:block/stone_bricks.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue124"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:block/wither_rose.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue125"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/golden_axe.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue126"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/totem_of_undying.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue130"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/netherite_sword.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue131"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:block/red_wool.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue132"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:block/end_rod.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue133"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:block/iron_bars.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue134"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/polar_bear_spawn_egg.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue135"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/blaze_rod.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue136"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:block/blue_ice.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue137"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/clock_00.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue138"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:block/observer_front.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue139"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:block/carved_pumpkin.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue13a"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:block/piston_top.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue13b"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:block/obsidian.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue13c"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/golden_apple.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue13d"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/slime_ball.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue13e"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/ender_eye.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue13f"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/black_dye.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue140"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/spider_eye.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue141"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:block/conduit.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue142"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:block/lightning_rod.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue143"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:item/nether_star.png",
+      "height": 9,
+      "ascent": 8,
+      "chars": [
+        "\ue144"
+      ]
+    }
+  ]
+}

@@ -154,7 +154,8 @@ when they hit the cap, and a title and chat line on every level-up. XP past leve
 
 AuraSkills redraws its HP/mana action bar every 5 ticks, so the plugin never uses the action bar. The
 class resource is a boss bar instead, up while it has something in it or the player is fighting;
-holding sneak for 0.4 s swaps its text for the key legend. Java
+holding sneak for 0.4 s swaps its text for the key legend (each ability's icon and key with
+`ability-icons` on, Java only). Java
 players see `Warrior · Level 7 (30/110 XP) · today 45/300 XP` as the tab list footer (none of our other
 plugins sets one); everyone gets a chat line on join, a title on level-up, and the ability's message and a
 "ready again" line in chat. The plugin adds nothing to names or nametags.
@@ -188,7 +189,7 @@ Admin commands take a name (online or seen before) or a UUID.
 ## Files
 
 - `plugins/Classes/config.yml`: `daily-xp-cap`, `zone`, `change-days`, `dual-class-grants`,
-  `default-binds`, `tree-background`.
+  `default-binds`, `tree-background`, `ability-icons`.
 - `plugins/Classes/players.yml`: per UUID, the active class, the secondary class (if granted and
   picked), the last pick and when, each class's XP, today's earnings, every class's talent ranks and the player's key binds. Saved every minute when
   something changed, and on shutdown.
