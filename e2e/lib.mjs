@@ -104,10 +104,14 @@ export class Rcon {
   }
 }
 
-/** Bots record every chat/system line they receive as plain text in `bot.lines`. */
-export function createBot(username) {
+/**
+ * Bots record every chat/system line they receive as plain text in `bot.lines`. `beforeJoin` gets the
+ * bot before it logs in, for listeners that must see packets sent before spawn (minecraft:register).
+ */
+export function createBot(username, { beforeJoin } = {}) {
   return new Promise((resolve, reject) => {
     const bot = mineflayer.createBot({ host: HOST, port: PORT, username, version: BOT_VERSION, auth: 'offline' });
+    beforeJoin?.(bot);
     bot.lines = [];
     bot.clicks = [];
     bot.on('messagestr', (text) => bot.lines.push(text));
