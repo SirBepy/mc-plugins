@@ -46,6 +46,8 @@ public final class TreeMenu {
     private final BindsMenu bindsMenu;
     /** Back to the class list ({@code /class}). */
     private Consumer<Player> back = p -> p.closeInventory();
+    /** Players with the tree mod get its screen instead of the chest; null until the engine wires it. */
+    private TreeChannel channel;
 
     public TreeMenu(Classes classes, Talents talents, Map<RpgClass, ClassKit> kits, AbilitySlots slots, Binds binds,
                     Resources resources, TreeLook look) {
@@ -63,6 +65,10 @@ public final class TreeMenu {
         this.back = back;
     }
 
+    void setChannel(TreeChannel channel) {
+        this.channel = channel;
+    }
+
     public BindsMenu bindsMenu() {
         return bindsMenu;
     }
@@ -78,6 +84,10 @@ public final class TreeMenu {
     }
 
     public void open(Player player, RpgClass c) {
+        if (channel != null && channel.supports(player)) {
+            channel.send(player, c, true);
+            return;
+        }
         player.openInventory(build(player, c, 0, false).getInventory());
     }
 
@@ -171,8 +181,7 @@ public final class TreeMenu {
             int level = classes.level(id);
             List<String> lore = new ArrayList<>();
             lore.add(s.label() + " · " + binds.bind(id, s).label());
-            Ability a = slots.resolve(id, c, s);
-            lore.add(a == null ? c.abilityLine(talents.level(id, c)) : a.describe(player));
+            lore.add(abilityLine(player, c, s));
             if (s == Slot.ULTIMATE) lore.add("Needs a full " + kit.resourceName() + " bar");
             boolean own = classes.active(id) == c;
             if (talents.level(id, c) < s.unlockLevel()) lore.add("Unlocks at level " + s.unlockLevel());
@@ -192,6 +201,12 @@ public final class TreeMenu {
         }
     }
 
+    /** What the ability in {@code s} does, with its cooldown. */
+    String abilityLine(Player player, RpgClass c, Slot s) {
+        Ability a = slots.resolve(player.getUniqueId(), c, s);
+        return a == null ? c.abilityLine(talents.level(player.getUniqueId(), c)) : a.describe(player);
+    }
+
     private ItemStack branchHeader(UUID id, RpgClass c, ClassKit kit, int branch) {
         int spent = talents.spentBelow(id, c, branch, Talent.KEYSTONE_TIER + 1);
         Material icon = Material.BOOK;
@@ -204,27 +219,17 @@ public final class TreeMenu {
     ItemStack node(UUID id, RpgClass c, Talent t, boolean own) {
         int rank = talents.rank(id, c, t.id());
         Talents.Result state = talents.check(id, c, t);
-        List<String> lore = new ArrayList<>();
-        lore.add("Rank " + rank + "/" + t.maxRank() + (t.keystone() ? " · Keystone" : " · Tier " + t.tier()));
-        if (rank > 0) lore.add("Now: " + t.effect().apply(rank));
-        if (rank < t.maxRank()) lore.add((rank == 0 ? "" : "Next: ") + t.effect().apply(rank + 1));
-        if (t.keystone()) lore.add("Replaces " + replacedName(id, c, t));
+        List<String> lore = new ArrayList<>(nodeInfo(id, c, t));
         if (own) {
+            String locked = lockReason(id, c, t, state);
             lore.add(switch (state) {
                 case OK -> "!Click to learn";
                 case MAXED -> "!Maxed";
-                case NO_POINTS -> "No points left";
-                case TIER_LOCKED -> "Locked: spend " + (t.gate() - talents.spentBelow(id, c, t.branch(), t.tier()))
-                        + " more points in the lower tiers of this branch";
-                case LEVEL_LOCKED -> "Locked: needs level " + Talent.KEYSTONE_LEVEL;
-                case OTHER_KEYSTONE -> "Locked: another keystone is learned";
-                case NOT_LEARNED, STRANDS_HIGHER -> "";
+                default -> locked == null ? "" : locked;
             });
             if (rank > 0) lore.add("Right or shift click to refund a rank");
         }
-        boolean locked = rank == 0 && (state == Talents.Result.TIER_LOCKED || state == Talents.Result.LEVEL_LOCKED
-                || state == Talents.Result.OTHER_KEYSTONE);
-        ItemStack item = named(new ItemStack(locked ? Material.GRAY_DYE : t.icon()), t.name(),
+        ItemStack item = named(new ItemStack(locked(rank, state) ? Material.GRAY_DYE : t.icon()), t.name(),
                 rank > 0 ? c.color() : NamedTextColor.WHITE, lore);
         item.setAmount(Math.max(1, rank));
         if (rank >= t.maxRank()) {
@@ -233,6 +238,35 @@ public final class TreeMenu {
             item.setItemMeta(meta);
         }
         return item;
+    }
+
+    /** A node with no ranks that can't take one for a reason more points alone won't fix. */
+    static boolean locked(int rank, Talents.Result state) {
+        return rank == 0 && (state == Talents.Result.TIER_LOCKED || state == Talents.Result.LEVEL_LOCKED
+                || state == Talents.Result.OTHER_KEYSTONE);
+    }
+
+    /** The node's description, shared by the chest and the mod screen: rank, current and next effect, what a keystone replaces. */
+    List<String> nodeInfo(UUID id, RpgClass c, Talent t) {
+        int rank = talents.rank(id, c, t.id());
+        List<String> lines = new ArrayList<>();
+        lines.add("Rank " + rank + "/" + t.maxRank() + (t.keystone() ? " · Keystone" : " · Tier " + t.tier()));
+        if (rank > 0) lines.add("Now: " + t.effect().apply(rank));
+        if (rank < t.maxRank()) lines.add((rank == 0 ? "" : "Next: ") + t.effect().apply(rank + 1));
+        if (t.keystone()) lines.add("Replaces " + replacedName(id, c, t));
+        return lines;
+    }
+
+    /** Why {@code t} can't take a rank, or null when nothing locks it (it may still be maxed or the points gone). */
+    String lockReason(UUID id, RpgClass c, Talent t, Talents.Result state) {
+        return switch (state) {
+            case NO_POINTS -> "No points left";
+            case TIER_LOCKED -> "Locked: spend " + (t.gate() - talents.spentBelow(id, c, t.branch(), t.tier()))
+                    + " more points in the lower tiers of this branch";
+            case LEVEL_LOCKED -> "Locked: needs level " + Talent.KEYSTONE_LEVEL;
+            case OTHER_KEYSTONE -> "Locked: another keystone is learned";
+            default -> null;
+        };
     }
 
     private String replacedName(UUID id, RpgClass c, Talent t) {
@@ -276,7 +310,7 @@ public final class TreeMenu {
                 (shown, click) -> player.closeInventory());
     }
 
-    private static void feedback(Player player, Talent t, Talents.Result r, boolean refund) {
+    static void feedback(Player player, Talent t, Talents.Result r, boolean refund) {
         String text = switch (r) {
             case OK -> null;
             case NO_POINTS -> "No talent points left. You get one each level.";

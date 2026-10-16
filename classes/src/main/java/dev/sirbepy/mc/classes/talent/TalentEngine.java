@@ -20,8 +20,10 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.DoubleSupplier;
+import java.util.function.Predicate;
 
 /**
  * The talent trees (docs/classes.md, Talent trees): builds every service and the seven kits, wires
@@ -86,6 +88,7 @@ public final class TalentEngine implements Listener {
         events.registerEvents(summons, plugin);
         events.registerEvents(bindListener, plugin);
         events.registerEvents(this, plugin);
+        treeMenu.setChannel(TreeChannel.register(plugin, classes, talents, kits, slots, binds, resources, treeMenu));
         kits.values().forEach(ClassKit::enable);
         var scheduler = plugin.getServer().getScheduler();
         scheduler.runTaskTimer(plugin, () -> plugin.getServer().getOnlinePlayers().forEach(this::update), 5L, 5L);
@@ -161,6 +164,13 @@ public final class TalentEngine implements Listener {
 
     public TreeMenu treeMenu() {
         return treeMenu;
+    }
+
+    /** Replaces the tree mod channel with one whose player check and sender are fakes (tests). */
+    TreeChannel fakeTreeChannel(Predicate<Player> supports, BiConsumer<Player, byte[]> sender) {
+        TreeChannel channel = new TreeChannel(classes, talents, kits, slots, binds, resources, treeMenu, supports, sender);
+        treeMenu.setChannel(channel);
+        return channel;
     }
 
     public Summons summons() {
