@@ -7,6 +7,13 @@
 # /changelog, so add each restart's entry there (kinetic.mjs) and mirror it here in the same session.
 entries:
   - date: 2026-10-16
+    title: Guardians are back
+    lines:
+      - Guardians boss fights
+      - no longer crash the server
+      - The talent tree screen
+      - now works with the client mod
+  - date: 2026-10-16
     title: Class talent trees
     lines:
       - "/class tree: 33 talents per class"
