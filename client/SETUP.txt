@@ -172,6 +172,9 @@ Quality of life:
     Ctrl+O hides or shows the list. It only knows vanilla recipes: the server's own
     recipes (backpacks, the new foods, extra stonecutter recipes) are listed at
     https://sirbepy.github.io/sirbepys-minecraft-server/recipes/
+  - Claude SMP Talent Tree: our own mod. /class tree (or J) opens a clickable talent tree
+    for your class instead of the chest menu. Left click a node to learn a rank, right
+    click to refund it. J can be remapped in Options > Controls > Key Binds (Claude SMP).
   - Controlify: play with a controller (Xbox, PlayStation, Switch). Plug it in or pair it
     before or after launching; Controlify shows a setup screen the first time it sees it.
 

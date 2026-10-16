@@ -124,6 +124,25 @@ Unlike the out-of-combat drain, the Artificer's Charge does not drain while mini
   glyphs so it sits behind the slots. Empty canvas cells are invisible (air) so the painting shows.
   Each scroll position gets its own background glyph. Bedrock players (detected through Floodgate) get
   a plain title and coloured glass panes for the connectors instead.
+- **Modpack screen** (Joe, 2026-10-16): players whose client has the Claude SMP modpack's talent-tree
+  mod (`treemod/`) get its own screen instead of the chest, from `/class tree`, the `/class` button
+  and a rebindable key (default J; K is Iris's shader toggle). Joe's picks: one fixed panel, the
+  three branches as columns growing bottom to top (keystone on top), vanilla advancement frames
+  around the node's item (grey when locked, gold when maxed, the spiky challenge frame for
+  keystones), ranks as pips under each node, connector lines and "N pts" gate marks lit in the class
+  colour once a tier has its points, the walnut-and-gold colours of the painted chest, a header with
+  the level, points left, the three abilities with their keys (click to use), Binds and Respec
+  (click twice), and a glow pulse plus the trunk filling up when a rank is learned. Left click
+  learns, right click refunds.
+- **The channel:** `classes:tree` (`TreeChannel.java`). Both directions carry one UTF-8 JSON object
+  with no length prefix. The server sends `{"type":"tree","v":1,...}` snapshots holding everything
+  the screen draws, every tooltip line included, so the mod holds no game rules; the mod sends
+  `{"op":"learn"|"refund","id":...}`, `respec`, `binds` (opens the chest binds menu), `cast` with a
+  `slot`, and `open`. The server picks the screen by whether the client registered the channel
+  (`minecraft:register`, which Fabric sends for every receiver), validates every request through
+  `Talents` exactly like a chest click and answers with a fresh snapshot. Learn/refund/respec only
+  ever act on the player's active class. Vanilla Java and Bedrock never register it and keep the
+  chest.
 
 ## Effects and sounds
 
@@ -581,6 +600,13 @@ Where the code differs from the tables above, and why:
 
 - `:classes:test` (MockBukkit): the engine (points, gates, respec, resource, slots, binds, summons,
   allies, the tree menu) and every node, ability and keystone of all 7 kits.
+- `TreeChannelTest` (MockBukkit) and `:treemod:test`: the mod channel's snapshot, routing (modded
+  client gets a snapshot, others the chest), learn/refund/respec through `Talents`, refusals, the
+  active-class rule, malformed requests; the mod's snapshot parsing and bottom-to-top layout.
+- `e2e/classes-tree-mod.mjs`: a bot that registers `classes:tree` like the mod does gets snapshots
+  instead of the chest, learns and refunds through the channel, is refused a tier-locked node, and a
+  bot without the channel still gets the chest. The mod's screen itself can't be rendered by a bot,
+  so its look is checked in a real client.
 - `e2e/classes-talents.mjs` (bots on the 26.2 e2e server): the tree menu learns a node and scrolls,
   `/class binds`, sneak + hotbar 2 fires ability 2 without moving the held slot, the Rage boss bar, and
   every class's ability 2 and ultimate hitting mobs but never a bystander bot.

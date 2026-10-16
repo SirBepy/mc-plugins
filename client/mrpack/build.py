@@ -11,11 +11,16 @@ the source folders stay the only thing committed and the zips are always rebuilt
 contents: client/resourcepack/rmf-26.3-fix/ (our own RMF carrier-item fix, see its README.md) and
 server/resourcepacks/eclipse-backpacks/ (the 26.3-patched Backpacks! textures, see its PORTED.md).
 
+Our own mods aren't on Modrinth, so they can't be index entries: each Gradle project in OWN_MODS is
+built and its jar copied into overrides/mods/ (treemod/, the Classes talent-tree screen).
+
 Run from anywhere: python client/mrpack/build.py
 """
 
 import hashlib
 import json
+import shutil
+import subprocess
 import sys
 import urllib.request
 import zipfile
@@ -31,6 +36,11 @@ RESOURCEPACKS = [
     (HERE.parent / "resourcepack" / "rmf-26.3-fix", "rmf-26.3-fix.zip"),
     (HERE.parent.parent / "server" / "resourcepacks" / "eclipse-backpacks",
      "Eclipse-Backpacks-textures-26.3.zip"),
+]
+REPO = HERE.parent.parent
+# (Gradle project, jar it builds under <project>/build/libs/)
+OWN_MODS = [
+    ("treemod", "classes-tree-1.0.0.jar"),
 ]
 # Modrinth asks API/CDN clients for a descriptive User-Agent.
 USER_AGENT = "SirBepy/mc-plugins client-kit"
@@ -53,6 +63,16 @@ def build_resourcepack_zips():
         with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
             zip_tree(zf, src)
         print(f"built {out} from {src}")
+
+
+def build_own_mods():
+    gradlew = REPO / ("gradlew.bat" if sys.platform == "win32" else "gradlew")
+    mods = OVERRIDES / "mods"
+    mods.mkdir(parents=True, exist_ok=True)
+    for project, jar in OWN_MODS:
+        subprocess.run([str(gradlew), f":{project}:build", "-q"], cwd=REPO, check=True)
+        shutil.copyfile(REPO / project / "build" / "libs" / jar, mods / jar)
+        print(f"built {mods / jar} from {project}/")
 
 
 def verify(entry):
@@ -80,6 +100,7 @@ def main():
     if failed:
         sys.exit(1)
     build_resourcepack_zips()
+    build_own_mods()
     with zipfile.ZipFile(OUT, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.write(INDEX, "modrinth.index.json")
         if OVERRIDES.is_dir():

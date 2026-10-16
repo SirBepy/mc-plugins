@@ -22,6 +22,10 @@ server/bundle/
 
 # Zipped by client/mrpack/build.py from client/resourcepack/ on every build.
 client/mrpack/overrides/resourcepacks/
+# Built by client/mrpack/build.py from our own mod projects (treemod/) on every build.
+client/mrpack/overrides/mods/
+# Fabric Loom's own log folder.
+treemod/logs/
 
 # Zipped by server/resourcepacks/build_server_pack.py, hosted on the website.
 server/resourcepacks/dist/

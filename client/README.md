@@ -61,6 +61,7 @@ subdomain with an SRV record to `eu-de-p59-a6-cg.kineticpanel.net:25566` (checke
 | Roughly Enough Items (REI) | 26.3.823+fabric (`ePn2dRJ1`) | release | recipe viewer (vanilla recipes only on this server, see below); added 2026-10-04 |
 | YetAnotherConfigLib (YACL) | 3.9.7+26.3-fabric (`s9SjoFu1`) | release | required dependency of Controlify |
 | Controlify | 3.5.3+mc26.3 (`fo76vL20`) | release | controller support (Xbox/PlayStation/Switch pads), Joe asked 2026-10-04 |
+| Claude SMP Talent Tree | 1.0.0 (our own, `treemod/`) | - | the clickable `/class tree` screen (docs/classes-revamp.md); not on Modrinth, so `build.py` builds it and ships it under `overrides/mods/`; added 2026-10-16 |
 
 ### Recipe viewer: REI, vanilla recipes only
 
