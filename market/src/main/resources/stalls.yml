@@ -3,7 +3,7 @@
 sign-block: spruce_wall_sign
 price-lectern: {x: 415, y: 115, z: -865, facing: north}
 head-stall:
-  name: Heads
+  name: Mob Heads
   color: red
   slots:
     - {x: 413, y: 116, z: -873, facing: east}

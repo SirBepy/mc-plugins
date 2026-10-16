@@ -47,16 +47,11 @@ setblock 431 116 -867 iron_bars
 setblock 418 116 -855 end_rod[facing=up]
 setblock 424 116 -855 purple_candle[candles=3,lit=true]
 setblock 436 116 -855 skeleton_skull[rotation=0]
-fill 430 116 -843 431 116 -843 air
 setblock 422 116 -841 spruce_wall_sign[facing=east]{front_text:{messages:[{text:"[Default Radar]",color:"gold",bold:true},"Points at the","nearest ball","1000 coins"]}}
-setblock 430 116 -841 air
 setblock 422 116 -840 spruce_wall_sign[facing=east]{front_text:{messages:[{text:"[Nether Radar]",color:"red",bold:true},"Finds Nether","balls only","5000 coins"]}}
-setblock 430 116 -840 air
 setblock 432 116 -840 spruce_wall_sign[facing=west]{front_text:{color:"orange",has_glowing_text:1b,messages:["","Dragon Balls","",""]}}
 setblock 422 116 -839 spruce_wall_sign[facing=east]{front_text:{messages:[{text:"[End Radar]",color:"light_purple",bold:true},"Finds End","balls only","20000 coins"]}}
-setblock 430 116 -839 air
 setblock 440 116 -865 lantern[hanging=false]
-fill 430 116 -837 431 116 -837 air
 setblock 426 116 -864 spruce_wall_sign[facing=north]{front_text:{color:"lime",has_glowing_text:1b,messages:["NEW HERE?","Read the books","at the Guide","stall (west)"]}}
 setblock 427 116 -864 spruce_wall_sign[facing=north]{front_text:{color:"yellow",has_glowing_text:1b,messages:["Welcome to","the Claude SMP","",""]}}
 setblock 428 116 -864 spruce_wall_sign[facing=north]{front_text:{color:"red",has_glowing_text:1b,messages:["RULES","No griefing","No stealing","Don't be an ass"]}}
@@ -78,11 +73,9 @@ setblock 416 117 -870 lantern[hanging=false]
 setblock 438 117 -870 lantern[hanging=false]
 setblock 416 117 -871 lantern[hanging=true]
 setblock 438 117 -871 lantern[hanging=true]
-setblock 415 117 -873 spruce_hanging_sign[attached=false,rotation=12]{front_text:{color:"red",has_glowing_text:1b,messages:["Sell your","mob heads","",""]},back_text:{color:"red",has_glowing_text:1b,messages:["Sell your","mob heads","",""]}}
 setblock 427 117 -873 bell[attachment=ceiling,facing=north]
-setblock 415 117 -874 spruce_hanging_sign[attached=false,rotation=12]{front_text:{color:"red",has_glowing_text:1b,messages:["","Heads","",""]},back_text:{color:"red",has_glowing_text:1b,messages:["","Heads","",""]}}
+setblock 415 117 -874 spruce_hanging_sign[attached=false,rotation=12]{front_text:{color:"red",has_glowing_text:1b,messages:["","Mob Heads","",""]},back_text:{color:"red",has_glowing_text:1b,messages:["","Mob Heads","",""]}}
 setblock 439 117 -874 spruce_hanging_sign[attached=false,rotation=4]{front_text:{color:"light_blue",has_glowing_text:1b,messages:["","Fishmonger","",""]},back_text:{color:"light_blue",has_glowing_text:1b,messages:["","Fishmonger","",""]}}
-setblock 415 117 -875 spruce_hanging_sign[attached=false,rotation=12]{front_text:{color:"red",has_glowing_text:1b,messages:["New buyers","every day","",""]},back_text:{color:"red",has_glowing_text:1b,messages:["New buyers","every day","",""]}}
 setblock 416 117 -877 lantern[hanging=true]
 setblock 438 117 -877 lantern[hanging=true]
 setblock 431 117 -868 spruce_wall_sign[facing=west]{front_text:{messages:[{text:"WANTED",color:"red",bold:true},"","",""]}}

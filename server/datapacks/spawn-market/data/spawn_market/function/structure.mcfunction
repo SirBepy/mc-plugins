@@ -122,7 +122,7 @@ setblock 444 115 -851 spruce_leaves[persistent=true]
 setblock 416 115 -866 tuff_brick_wall
 setblock 432 115 -866 stripped_dark_oak_log
 setblock 438 115 -866 tuff_brick_wall
-fill 430 115 -843 431 115 -843 chiseled_tuff_bricks
+fill 430 115 -843 431 115 -843 air
 setblock 432 115 -843 orange_terracotta
 setblock 421 115 -842 spruce_log
 fill 422 115 -842 423 115 -842 spruce_planks
@@ -131,19 +131,17 @@ setblock 430 115 -842 spruce_log
 fill 431 115 -842 432 115 -842 spruce_planks
 setblock 433 115 -842 spruce_log
 setblock 421 115 -841 tuff_bricks
-setblock 424 115 -841 oak_fence
-setblock 430 115 -841 chiseled_tuff_bricks
+setblock 430 115 -841 air
 setblock 431 115 -841 orange_carpet
 setblock 432 115 -841 orange_terracotta
 setblock 433 115 -841 tuff_bricks
 setblock 421 115 -840 tuff_bricks
-setblock 424 115 -840 oak_fence
-setblock 430 115 -840 chiseled_tuff_bricks
+setblock 424 115 -840 tuff_brick_wall
+setblock 430 115 -840 air
 setblock 431 115 -840 orange_carpet
 setblock 433 115 -840 tuff_bricks
 setblock 421 115 -839 tuff_bricks
-setblock 424 115 -839 oak_fence
-setblock 430 115 -839 chiseled_tuff_bricks
+setblock 430 115 -839 air
 setblock 431 115 -839 orange_carpet
 setblock 432 115 -839 orange_terracotta
 setblock 433 115 -839 tuff_bricks
@@ -155,7 +153,7 @@ setblock 424 115 -838 spruce_log
 setblock 430 115 -838 spruce_log
 fill 431 115 -838 432 115 -838 spruce_planks
 setblock 433 115 -838 spruce_log
-fill 430 115 -837 431 115 -837 chiseled_tuff_bricks
+fill 430 115 -837 431 115 -837 air
 setblock 432 115 -837 orange_terracotta
 setblock 424 115 -833 tuff_brick_wall
 setblock 430 115 -833 tuff_brick_wall
@@ -166,16 +164,10 @@ setblock 430 115 -832 spruce_log
 fill 431 115 -832 432 115 -832 spruce_planks
 setblock 433 115 -832 spruce_log
 setblock 421 115 -831 tuff_bricks
-setblock 424 115 -831 oak_fence
-setblock 430 115 -831 oak_fence
 setblock 433 115 -831 tuff_bricks
 setblock 421 115 -830 tuff_bricks
-setblock 424 115 -830 oak_fence
-setblock 430 115 -830 oak_fence
 setblock 433 115 -830 tuff_bricks
 setblock 421 115 -829 tuff_bricks
-setblock 424 115 -829 oak_fence
-setblock 430 115 -829 oak_fence
 setblock 433 115 -829 tuff_bricks
 setblock 412 115 -864 spruce_log
 fill 413 115 -864 414 115 -864 spruce_planks
@@ -315,6 +307,7 @@ setblock 421 116 -841 spruce_planks
 setblock 433 116 -841 spruce_planks
 setblock 421 116 -840 spruce_planks
 setblock 424 116 -840 spruce_fence
+setblock 430 116 -840 spruce_fence
 setblock 433 116 -840 spruce_planks
 setblock 421 116 -839 spruce_planks
 setblock 433 116 -839 spruce_planks

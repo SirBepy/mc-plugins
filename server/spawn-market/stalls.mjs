@@ -133,18 +133,18 @@ export function buildStalls(model, { GUIDES, lecternState }) {
         ['obsidian', 5, 1], ['end_rod[facing=up]', 5, 1, 1]],
     },
     {
-      // Dragon Balls station: 7 head pedestals, a guide lectern, no buys - it never sold anything
+      // Dragon Balls station: 7 floor-level balls, a guide lectern, no buys - it never sold anything
       // (the 3 Dragon Radars it once duplicated sell only at the Radars shop-street stall, retired
       // 2026-10-13). Moved out to the shop street's old Heads spot (2026-10-13, Joe: "put the mob
       // heads stall there, so all the selling stalls are in one spot") so Mob Heads could take over
       // this stall's old plaza slot below - a 1:1 coordinate swap, nothing about the station's own
       // tile layout changed, it kept its plain gable roof rather than adopting its new shop-street
       // neighbors' awning look.
-      // The 7 pedestals form an arc across the open front (d=0) plus the eave corners, so every
-      // ball is visible; the lectern stays on the back wall (d=2), two rows back, clear of any
-      // pedestal. Reuses the old Crafting stall's exact tile
+      // The 7 balls form an arc across the open front (d=0) plus the eave corners, so every
+      // one is visible; the lectern stays on the back wall (d=2), two rows back, clear of any
+      // ball. Reuses the old Crafting stall's exact tile
       // coordinates - (1,2)/(3,2) [crafting_table/stonecutter] for trim, (2,2) [smithing_table] for
-      // the lectern, (-1,1)/(5,1) [anvil/cartography_table] for 2 pedestals, (-1,2)/(5,2)
+      // the lectern, (-1,1)/(5,1) [anvil/cartography_table] for 2 ball spots, (-1,2)/(5,2)
       // [grindstone/loom] for trim - so a structure+attach-only refresh on a world that still has
       // the old blocks overwrites every one of them instead of leaving a leftover.
       // Hanging nameplate is "DragonBall", not "Dragon Balls" (12 chars > the 10-char hanging-sign
@@ -154,14 +154,14 @@ export function buildStalls(model, { GUIDES, lecternState }) {
       ...SHOP_SPOT.dragonballs, name: 'DragonBall', wool: 'orange',
       guides: [['dragonballs', 2, 2]],
       props: [
-        // 7-point arc of pedestals facing the open front: entrance row plus the flanking eave
-        // corners (PEDESTAL_SPOTS, shared with the displayHeads export below).
-        ...PEDESTAL_SPOTS.map(([a, d]) => ['chiseled_tuff_bricks', a, d]),
-        // Explicit air one block above each pedestal (dy=1): on the shop street this is also the
-        // lamp posts' own column (street.mjs's fence/lantern sit at this exact height at a=2,d=0
-        // for a0=0), so the head's display spot needs clearing here rather than relying on empty
-        // terrain the way it could back in the plaza.
-        ...PEDESTAL_SPOTS.map(([a, d]) => ['air', a, d, 1]),
+        // No pedestals (Joe, 2026-10-17: the balls floated too high over them) - the 7 balls sit
+        // right on the stall floor instead, at the same (a, d) arc (PEDESTAL_SPOTS, shared with
+        // the displayHeads export below).
+        // Explicit air at ball height: on the shop street this is also the lamp posts' own column
+        // (street.mjs's fence/lantern sit at this exact height at a=2,d=0 for a0=0), so the
+        // display spot needs clearing here rather than relying on empty terrain the way it could
+        // back in the plaza.
+        ...PEDESTAL_SPOTS.map(([a, d]) => ['air', a, d, 0]),
         // Orange carpet runner from the entrance to the back wall.
         ['orange_carpet', 1, 1], ['orange_carpet', 2, 1], ['orange_carpet', 3, 1],
         // Orange terracotta trim on the back wall, also clearing the old crafting_table/
@@ -185,10 +185,9 @@ export function buildStalls(model, { GUIDES, lecternState }) {
       // the other seven stalls/stations use. Moved from the shop street into the plaza's west/4
       // slot (2026-10-13, Joe: "put the mob heads stall there, so all the selling stalls are in
       // one spot"), swapping places with the DragonBall station below.
-      id: 'heads', side: 'west', a0: HEADS_A0, name: 'Heads', wool: 'red', extraSlot: true, headStall: true,
-      // Description moved onto hanging signs flanking the nameplate (Joe, 2026-10-09): the back
-      // wall's own wall signs are the Market plugin's buy signs only, never static text.
-      desc: [['Sell your', 'mob heads', '', ''], ['New buyers', 'every day', '', '']],
+      // No flanking description signs (Joe, 2026-10-17: every other sell stall just has its
+      // plain nameplate, so this one should too) - "Mob Heads" says what it is on its own.
+      id: 'heads', side: 'west', a0: HEADS_A0, name: 'Mob Heads', wool: 'red', extraSlot: true, headStall: true,
       props: [['bone_block[axis=y]', -1, 1], ['bone_block[axis=AXIS]', -1, 2], ['skeleton_skull[rotation=0]', -1, 1, 1],
         ['wither_skeleton_skull[rotation=0]', 5, 1, 1], ['cobweb', 5, 2]],
     },
@@ -277,8 +276,8 @@ export function buildStalls(model, { GUIDES, lecternState }) {
       }
       for (const a of [0, 4]) for (let y = Y + 3; y <= Y + 4; y++) at(a, -1, y, 'stripped_birch_log[axis=y]');
       for (let d = 1; d <= 3; d++) for (let a = -1; a <= 5; a++) at(a, d, Y + 5, P.wall);
-      // A waist-high counter across the open front, not left fully open like the other stalls.
-      for (let a = 1; a <= 3; a++) at(a, 0, Y + 1, 'oak_fence');
+      // No counter fence across the front (Joe, 2026-10-17: open like every other stall) - just
+      // the canopy overhead marks this as a shop rather than a sell stall.
     } else {
       // Steep gable roof, ridge running from the plaza to the back, one block of overhang all round.
       for (let d = -1; d <= 4; d++) for (let a = -1; a <= 5; a++) {
@@ -375,7 +374,7 @@ export function buildStalls(model, { GUIDES, lecternState }) {
     const SR = side(SHOP_SPOT.radars.side);
     const atShop = (a, d, y) => { const [u, v] = SR.at(SHOP_SPOT.radars.a0 + a, d); return { world: 'world', x: CX + u, y, z: CZ + v }; };
     writeFileSync(join(here, 'dragonballs-station.json'), JSON.stringify({
-      displayHeads: PEDESTAL_SPOTS.map(([a, d]) => at(a, d, Y + 2)),
+      displayHeads: PEDESTAL_SPOTS.map(([a, d]) => at(a, d, Y + 1)),
       shopRadarSigns: { overworld: atShop(1, 2, Y + 2), nether: atShop(2, 2, Y + 2), end: atShop(3, 2, Y + 2) },
     }, null, 2) + '\n');
   }

@@ -53,9 +53,9 @@ test('every selling stall has a free sign spot per slot (farmer: 4, the rest: 3)
 
 test('the head-stall, wanted-board and shops spots are all 4/3/1 free sign (or head) slots, matching the model', () => {
   const content = readStallsYml();
-  const headStall = content.match(/^head-stall:\n {2}name: (\w+)\n {2}color: (\w+)\n {2}slots:\n((?: {4}-.*\n)+)/m);
+  const headStall = content.match(/^head-stall:\n {2}name: ([\w ]+)\n {2}color: (\w+)\n {2}slots:\n((?: {4}-.*\n)+)/m);
   assert.ok(headStall, 'no head-stall block');
-  assert.equal(headStall[1], 'Heads');
+  assert.equal(headStall[1], 'Mob Heads');
   const headSlots = [...headStall[3].matchAll(/\{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: (\w+)\}/g)];
   assert.equal(headSlots.length, 4, 'head-stall needs the same 4 slots as the Farmer');
   const placed = new Set(all.filter((l) => l.startsWith('setblock ')).map((l) => l.split(' ').slice(1, 4).join(' ')));
@@ -186,12 +186,14 @@ function blockAt(phaseLines, x, y, z) {
   return null;
 }
 
-test('every exported display-head spot sits on a placed pedestal block', () => {
-  const structureLines = lines('structure');
+test('every exported display-head spot sits on the stall floor', () => {
+  const terrainLines = lines('terrain');
   for (const { x, y, z } of station.displayHeads) {
-    const below = blockAt(structureLines, x, y - 1, z);
-    assert.ok(below, `no pedestal below ${x} ${y} ${z}`);
-    assert.match(below, /^chiseled_tuff_bricks/);
+    const below = blockAt(terrainLines, x, y - 1, z);
+    assert.ok(below, `no floor below ${x} ${y} ${z}`);
+    // The entrance-row spots sit on the stall's own planks, the eave-corner spots (a < 0 or a > 4)
+    // on the eaves strip's coarse dirt (see stall()'s terrain loop) - both are solid floor.
+    assert.match(below, /^(spruce_planks|coarse_dirt)/);
   }
 });
 
@@ -232,7 +234,7 @@ test('the radar signs, the lectern and all 7 display-head spots sit at distinct 
   }
 });
 
-test('every display-head spot is air in the generated model, directly above a pedestal block', () => {
+test('every display-head spot is air in the generated model, directly above the stall floor', () => {
   for (const { x, y, z } of station.displayHeads) {
     const key = `${x},${y},${z}`;
     // Untouched (never written) or explicitly set to 'air' both count: the station's own props
@@ -240,9 +242,20 @@ test('every display-head spot is air in the generated model, directly above a pe
     // street and a lamp post's fence/lantern could otherwise occupy one of these coordinates).
     assert.ok(!(key in model.blocks) || model.blocks[key] === 'air', `${x} ${y} ${z} is not air in model.json`);
     const below = model.blocks[`${x},${y - 1},${z}`];
-    assert.ok(below, `no pedestal below ${x} ${y} ${z} in model.json`);
-    assert.match(below, /^chiseled_tuff_bricks/);
+    assert.ok(below, `no floor below ${x} ${y} ${z} in model.json`);
+    assert.match(below, /^(spruce_planks|coarse_dirt)/);
   }
+});
+
+test('the Mob Heads stall has only its plain nameplate, no flanking description signs', () => {
+  const headSigns = all.filter((l) => l.includes('hanging_sign') && l.includes('"Mob Heads"'));
+  assert.equal(headSigns.length, 1, 'expected exactly one Mob Heads nameplate sign');
+  assert.ok(!all.some((l) => l.includes('"Sell your"') || l.includes('"New buyers"')),
+    'the old flanking description signs should be gone');
+});
+
+test('no shop-street stall places a counter fence across its front', () => {
+  assert.ok(!all.some((l) => l.includes('oak_fence')), 'a stall still places an oak_fence counter');
 });
 
 test('the lectern holds the Dragon Balls guide book, labelled by a matching sign', () => {
@@ -254,7 +267,7 @@ test('the lectern holds the Dragon Balls guide book, labelled by a matching sign
 
 test('the head-stall, wanted-board and shops spots are all distinct coordinates and air in the model', () => {
   const content = readStallsYml();
-  const headStall = content.match(/^head-stall:\n {2}name: \w+\n {2}color: \w+\n {2}slots:\n((?: {4}-.*\n)+)/m);
+  const headStall = content.match(/^head-stall:\n {2}name: [\w ]+\n {2}color: \w+\n {2}slots:\n((?: {4}-.*\n)+)/m);
   const headSlots = [...headStall[1].matchAll(/\{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: (\w+)\}/g)]
     .map((m) => ({ x: +m[1], y: +m[2], z: +m[3] }));
   const wanted = content.match(/^wanted-board:\n {2}sign: \{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: \w+\}\n {2}head: \{x: (-?\d+), y: (-?\d+), z: (-?\d+), facing: \w+\}/m);
