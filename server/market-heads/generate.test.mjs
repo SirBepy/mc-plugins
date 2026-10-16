@@ -3,12 +3,18 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PRICE_PER_KILL, catalogue, headsOf, price, textureHash } from './generate.mjs';
+import { KILL_COUNTS, PRICE_PER_KILL, catalogue, headsOf, price, scarcity, textureHash } from './generate.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const yml = readFileSync(join(here, '..', '..', 'market', 'src', 'main', 'resources', 'heads.yml'), 'utf8');
-const heads = [...yml.matchAll(/\{name: "([^"]+)", texture: (\w+), chance: ([\d.e-]+), price: ([\d.]+)\}/g)]
-  .map(([, name, texture, chance, p]) => ({ name, texture, chance: Number(chance), price: Number(p) }));
+// Each mob block (2-space id, 4-space name/heads) so a head's price can be checked against its
+// own mob's scarcity, not just its drop chance.
+const mobBlocks = yml.slice(yml.indexOf('\nmobs:\n')).split(/\n(?=  [a-z_]+:\n)/).slice(1);
+const heads = mobBlocks.flatMap((block) => {
+  const id = block.match(/^ {2}([a-z_]+):/)[1];
+  return [...block.matchAll(/\{name: "([^"]+)", texture: (\w+), chance: ([\d.e-]+), price: ([\d.]+)\}/g)]
+    .map(([, name, texture, chance, p]) => ({ id, name, texture, chance: Number(chance), price: Number(p) }));
+});
 
 const profile = (hash) => ({
   properties: [{ name: 'textures', value: Buffer.from(JSON.stringify({ textures: { SKIN: { url: `http://textures.minecraft.net/texture/${hash}` } } })).toString('base64') }],
@@ -44,10 +50,17 @@ test('chances multiply down alternatives and into referenced variant tables', ()
   assert.deepEqual([...catalogue(all).keys()], ['sheep'], 'a variant table is not a mob of its own');
 });
 
-test('every shipped head pays $0.50 over its drop chance, and no two share a texture', () => {
+test('every shipped head pays $0.50 over its drop chance times its mob\'s scarcity, and no two share a texture', () => {
   assert.ok(heads.length > 150, `${heads.length} heads`);
-  for (const h of heads) assert.equal(h.price, price(h.chance), h.name);
+  for (const h of heads) assert.equal(h.price, price(h.chance, h.id), h.name);
   assert.equal(PRICE_PER_KILL, 0.5);
   assert.equal(new Set(heads.map((h) => h.texture)).size, heads.length);
-  assert.equal(heads.find((h) => h.name === 'Breeze Head').price, 5);
+  assert.equal(heads.find((h) => h.name === 'Breeze Head').price, 26.64);
+});
+
+test('a heavily-farmed mob keeps its 1x baseline price; a rare or never-killed one costs more', () => {
+  assert.equal(scarcity('zombie'), 1, 'the most-killed mob should be the 1x baseline');
+  assert.ok(scarcity('ghast') > 5, 'ghast (52 kills) should cost well above the baseline');
+  assert.equal(scarcity('warden'), 20, 'a mob absent from KILL_COUNTS should hit the scarcity cap');
+  assert.ok(Object.values(KILL_COUNTS).every((n) => n > 0), 'KILL_COUNTS should hold only positive counts');
 });

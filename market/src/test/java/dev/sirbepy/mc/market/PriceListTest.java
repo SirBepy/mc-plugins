@@ -95,8 +95,8 @@ class PriceListTest {
         for (MobHeads.Mob mob : heads.mobs()) {
             assertTrue(all.contains(PriceList.headsName(mob) + "\n  1 for "), mob.id());
         }
-        assertTrue(all.contains("Heads\nAllay head\n  1 for $2.50"), "the Heads stall's pages start with a heading");
-        assertTrue(all.contains("Axolotl heads\n  1 for $0.50 to $2.50"), "a mob with several looks shows its range");
+        assertTrue(all.contains("Heads\nAllay head\n  1 for $50.00"), "the Heads stall's pages start with a heading");
+        assertTrue(all.contains("Axolotl heads\n  1 for $10.00 to $50.00"), "a mob with several looks shows its range");
         for (Component page : pages.subList(1, pages.size())) {
             assertTrue(plain(page).split("\n").length <= 14, plain(page));
         }
@@ -125,8 +125,8 @@ class PriceListTest {
                 "Rare goods",
                 " - 1 wither skeleton skull $21.50",
                 "Heads",
-                " - Breeze head $5.50",
-                " - Axolotl heads $0.55 to $2.75"), lines);
+                " - Breeze head $29.30",
+                " - Axolotl heads $11.00 to $55.00"), lines);
     }
 
     @Test
