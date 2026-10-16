@@ -6,6 +6,14 @@
 # The live server's plugins/Tweaks/changelog.yml is the copy players see, read fresh on every
 # /changelog, so add each restart's entry there (kinetic.mjs) and mirror it here in the same session.
 entries:
+  - date: 2026-10-16
+    title: Class talent trees
+    lines:
+      - "/class tree: 33 talents per class"
+      - A second ability at level 10, an ultimate at 25
+      - Sneak + 1, 2 or 3 casts them
+      - Hold sneak to see your abilities
+      - /class binds changes the keys
   - date: 2026-10-15
     title: Haru's gifts
     lines:
