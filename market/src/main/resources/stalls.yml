@@ -6,10 +6,10 @@ head-stall:
   name: Heads
   color: red
   slots:
-    - {x: 432, y: 116, z: -841, facing: west}
-    - {x: 432, y: 116, z: -840, facing: west}
-    - {x: 432, y: 116, z: -839, facing: west}
-    - {x: 432, y: 117, z: -840, facing: west}
+    - {x: 413, y: 116, z: -873, facing: east}
+    - {x: 413, y: 116, z: -874, facing: east}
+    - {x: 413, y: 116, z: -875, facing: east}
+    - {x: 413, y: 117, z: -874, facing: east}
 wanted-board:
   sign: {x: 431, y: 115, z: -868, facing: west}
   head: {x: 431, y: 116, z: -868, facing: west}
