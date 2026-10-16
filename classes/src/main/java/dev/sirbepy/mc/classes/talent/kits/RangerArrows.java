@@ -369,9 +369,7 @@ final class RangerArrows implements Listener {
         if (ctx.rank(player, "homecoming") == 0 || !player.isOnline()) return;
         for (ItemStack drop : event.getDrops()) {
             if (drop == null || drop.getType().isAir()) continue;
-            for (ItemStack overflow : player.getInventory().addItem(drop).values()) {
-                player.getWorld().dropItem(player.getLocation(), overflow);
-            }
+            dev.sirbepy.mc.core.Inventories.giveOrDrop(player, drop);
         }
         event.getDrops().clear();
         if (event.getDroppedExp() > 0) {
