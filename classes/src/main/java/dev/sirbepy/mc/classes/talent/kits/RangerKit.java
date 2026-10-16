@@ -45,7 +45,7 @@ final class RangerKit implements ClassKit {
 
     @Override
     public String resourceGain() {
-        return "+5 per arrow or trident hit on a mob, +10 more for a fully charged bow shot";
+        return "+5 per arrow or trident hit on a mob, +10 more for a fully charged bow shot or any trident throw";
     }
 
     @Override
@@ -78,6 +78,8 @@ final class RangerKit implements ClassKit {
                                 + (rank == 1 ? 6 : 10) + " blocks"),
                 Talent.node("snipers_nest", "Sniper's Nest", 0, 4, 1, Material.SCAFFOLDING,
                         rank -> "After standing still and sneaking for 1 s, shots deal +15% to mobs"),
+                Talent.node("homecoming", "Homecoming", 0, 4, 1, Material.HEART_OF_THE_SEA,
+                        rank -> "Mobs your arrows or thrown tridents kill send their drops and XP straight to you"),
                 Talent.keystone("railshot", "Railshot", 0, dev.sirbepy.mc.classes.talent.Slot.TWO, Material.END_ROD,
                         "One beam along a 40-block line, 6 hearts to every mob on it. 45 s"),
 

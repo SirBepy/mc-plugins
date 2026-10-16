@@ -7,11 +7,13 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Arrow;
+import org.bukkit.entity.Trident;
 import org.bukkit.entity.Zombie;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
+import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
@@ -49,10 +51,19 @@ class RangerArrowsTest extends KitTestBase {
         return hit(arrow, z, DamageCause.PROJECTILE, 10);
     }
 
+    /** Spawns a trident, sets its shooter and fires the launch event the real plugin reacts to. */
+    private Trident throwTrident(PlayerMock p, double x) {
+        Trident trident = world.spawn(at(x), Trident.class);
+        trident.setShooter(p);
+        trident.setVelocity(new org.bukkit.util.Vector(2, 0, 0));
+        server.getPluginManager().callEvent(new ProjectileLaunchEvent(trident));
+        return trident;
+    }
+
     @Test
-    void talentShapeIsThirtyThreeNodesTwoThreeThreeTwoOnePerBranch() {
+    void talentShapeIsThirtyFourNodesWithSharpshooterCarryingTheExtraHomecomingNode() {
         List<dev.sirbepy.mc.classes.talent.Talent> all = engine.talents().all(RpgClass.RANGER);
-        assertEquals(33, all.size());
+        assertEquals(34, all.size());
         java.util.Set<String> ids = new java.util.HashSet<>();
         for (var t : all) assertTrue(ids.add(t.id()), "duplicate id " + t.id());
         for (int branch = 0; branch < 3; branch++) {
@@ -60,7 +71,11 @@ class RangerArrowsTest extends KitTestBase {
             for (var t : all) {
                 if (t.branch() == branch) perTier.merge(t.tier(), 1L, Long::sum);
             }
-            assertEquals(java.util.Map.of(1, 2L, 2, 3L, 3, 3L, 4, 2L, 5, 1L), perTier, "branch " + branch);
+            // Sharpshooter (branch 0) carries Homecoming as a third tier-4 node.
+            java.util.Map<Integer, Long> expected = branch == 0
+                    ? java.util.Map.of(1, 2L, 2, 3L, 3, 3L, 4, 3L, 5, 1L)
+                    : java.util.Map.of(1, 2L, 2, 3L, 3, 3L, 4, 2L, 5, 1L);
+            assertEquals(expected, perTier, "branch " + branch);
         }
     }
 
@@ -232,6 +247,140 @@ class RangerArrowsTest extends KitTestBase {
         assertTrue(cast(p, Slot.ULTIMATE));
         advance(31); // 3 ticks of the ability's 10-tick repeat
         assertEquals(20 - 3 * 3, z.getHealth(), 0.01);
+    }
+
+    // Tridents: every throw counts as a fully charged shot.
+
+    @Test
+    void aThrownTridentGetsLongShotLikeAFullyChargedArrow() {
+        PlayerMock p = ranger(25);
+        rank(p, "long_shot", 2);
+        Zombie far = zombie(20);
+        assertEquals(10 * STEADY_AIM_25 * 1.08, hitWith(throwTrident(p, 0), far), 0.001);
+    }
+
+    @Test
+    void aThrownTridentGetsPiercingShotAndWindReader() {
+        PlayerMock p = ranger(25);
+        assertEquals(0, throwTrident(p, 0).getPierceLevel(), "nothing learned yet");
+        double baseSpeed = throwTrident(p, 0).getVelocity().length();
+        rank(p, "piercing_shot", 2);
+        rank(p, "wind_reader", 2);
+        Trident t = throwTrident(p, 0);
+        assertEquals(2, t.getPierceLevel());
+        assertEquals(baseSpeed * 1.2, t.getVelocity().length(), 0.01);
+    }
+
+    @Test
+    void aThrownTridentHitGlowsTheMobForEagleEyeAndMarked() {
+        PlayerMock p = ranger(25);
+        rank(p, "eagle_eye", 1);
+        rank(p, "marked", 1);
+        Zombie z = zombie(5);
+        hitWith(throwTrident(p, 0), z);
+        assertTrue(z.isGlowing());
+        assertEquals(10 * STEADY_AIM_25 * 1.10, hitWith(throwTrident(p, 0), z), 0.001, "Marked on the next throw");
+    }
+
+    @Test
+    void aThrownTridentHitFillsFocusLikeAFullyChargedShot() {
+        PlayerMock p = ranger(25);
+        Zombie z = zombie(5);
+        double before = resource(p);
+        hitWith(throwTrident(p, 0), z);
+        assertEquals(before + 15, resource(p), 0.001);
+    }
+
+    @Test
+    void volleyArmsTheNextTridentThrowToo() {
+        PlayerMock p = ranger(10);
+        assertTrue(cast(p, Slot.TWO));
+        int before = world.getEntitiesByClass(Arrow.class).size();
+        throwTrident(p, 0);
+        assertEquals(before + 4, world.getEntitiesByClass(Arrow.class).size(), "4 fan arrows beside the trident");
+    }
+
+    @Test
+    void aThrownTridentNeverTriggersRecoveryArrows() {
+        PlayerMock p = ranger(25);
+        rank(p, "recovery", 2);
+        roll = 0;
+        hitWith(throwTrident(p, 0), zombie(5));
+        assertTrue(p.getInventory().all(Material.ARROW).isEmpty());
+    }
+
+    @Test
+    void anUnclassedTridentThrowIsNotTreatedAsCharged() {
+        PlayerMock p = server.addPlayer();
+        Zombie far = zombie(20);
+        assertEquals(10, hitWith(throwTrident(p, 0), far), 0.001);
+    }
+
+    // Homecoming: a ranged kill's drops and XP go straight to the shooter.
+
+    private EntityDeathEvent killWith(AbstractArrow projectile, Zombie dead, List<ItemStack> drops, int exp) {
+        EntityDamageByEntityEvent cause = new EntityDamageByEntityEvent(projectile, dead, DamageCause.PROJECTILE,
+                org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.TRIDENT).build(), 20);
+        dead.setLastDamageCause(cause);
+        EntityDeathEvent death = new EntityDeathEvent(dead, cause.getDamageSource(), new java.util.ArrayList<>(drops), exp);
+        server.getPluginManager().callEvent(death);
+        return death;
+    }
+
+    @Test
+    void homecomingSendsATridentKillsDropsAndXpToTheThrower() {
+        PlayerMock p = ranger(25);
+        rank(p, "homecoming", 1);
+        Zombie dead = zombie(30);
+        int expBefore = p.getTotalExperience();
+        EntityDeathEvent death = killWith(throwTrident(p, 0), dead, List.of(new ItemStack(Material.ROTTEN_FLESH, 2)), 5);
+        assertTrue(death.getDrops().isEmpty(), "nothing left on the ground where it died");
+        assertEquals(0, death.getDroppedExp());
+        assertTrue(p.getInventory().containsAtLeast(new ItemStack(Material.ROTTEN_FLESH), 2));
+        assertEquals(expBefore + 5, p.getTotalExperience());
+    }
+
+    @Test
+    void homecomingWorksForArrowKillsToo() {
+        PlayerMock p = ranger(25);
+        rank(p, "homecoming", 1);
+        EntityDeathEvent death = killWith(shoot(p, 0, 0.3f), zombie(30), List.of(new ItemStack(Material.BONE)), 0);
+        assertTrue(death.getDrops().isEmpty());
+        assertTrue(p.getInventory().contains(Material.BONE));
+    }
+
+    @Test
+    void withoutHomecomingDropsStayWhereTheMobDied() {
+        PlayerMock p = ranger(25);
+        EntityDeathEvent death = killWith(throwTrident(p, 0), zombie(30), List.of(new ItemStack(Material.ROTTEN_FLESH)), 5);
+        assertEquals(1, death.getDrops().size());
+        assertEquals(5, death.getDroppedExp());
+        assertFalse(p.getInventory().contains(Material.ROTTEN_FLESH));
+    }
+
+    /**
+     * Homecoming runs at HIGHEST so it reads whatever an earlier, lower-priority plugin left in
+     * event.getDrops(): it must redistribute that final list exactly once, neither reverting a
+     * NORMAL-priority plugin's edit nor leaving a second copy behind.
+     */
+    @Test
+    void homecomingSeesALowerPriorityPluginsEditAndRedistributesItOnce() {
+        PlayerMock p = ranger(25);
+        rank(p, "homecoming", 1);
+        org.bukkit.event.Listener otherPlugin = new org.bukkit.event.Listener() {
+            @org.bukkit.event.EventHandler(priority = org.bukkit.event.EventPriority.NORMAL)
+            public void onDeath(EntityDeathEvent event) {
+                event.getDrops().clear();
+                event.getDrops().add(new ItemStack(Material.BONE, 3));
+            }
+        };
+        server.getPluginManager().registerEvents(otherPlugin, plugin);
+
+        EntityDeathEvent death = killWith(throwTrident(p, 0), zombie(30), List.of(new ItemStack(Material.ROTTEN_FLESH)), 0);
+
+        assertTrue(death.getDrops().isEmpty(), "Homecoming claims the final drop list, not the original one");
+        assertTrue(p.getInventory().containsAtLeast(new ItemStack(Material.BONE), 3), "the other plugin's bones, not the rotten flesh it replaced");
+        assertFalse(p.getInventory().contains(Material.ROTTEN_FLESH), "original drop was already replaced before Homecoming ran");
     }
 
     @Test

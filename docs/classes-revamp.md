@@ -96,7 +96,7 @@ trade is deliberate.
 | Class | Resource | Bar colour | Fills from |
 | --- | --- | --- | --- |
 | Warrior | Rage | Red | +5 per melee hit on a mob, +3 per mob hit taken |
-| Ranger | Focus | Green | +5 per arrow or trident hit on a mob, +10 more for a fully charged bow shot |
+| Ranger | Focus | Green | +5 per arrow or trident hit on a mob, +10 more for a fully charged bow shot or any trident throw |
 | Arcanist | Arcana | Purple | +1 per 2 orb XP points, +5 per enchanting level spent, +5 per ability hit on a mob |
 | Artificer | Charge | Yellow | +2 per ore mined (no Silk Touch), +1 per 10 blocks broken with a tool, +5 per Sentry kill |
 | Guardian | Resolve | Blue | +4 per mob hit taken, +3 per mob hit blocked with a shield |
@@ -213,8 +213,11 @@ reviewed in the bot screenshots, not this spec.
 ## Ranger (Focus)
 
 - Ability 1 **Fleet Foot** (today's).
-- Ability 2 **Volley** (level 10): the next bow shot within 5 s fires 5 arrows in a fan. The extra
-  arrows can't be picked up. 45 s.
+- Ability 2 **Volley** (level 10): the next bow shot or trident throw within 5 s fires 5 arrows in a
+  fan. The extra arrows can't be picked up. 45 s.
+- Tridents: a thrown trident counts as a fully charged shot, so every Sharpshooter and Trapper node
+  that works on arrows works on it too (Cage Shot and Volley arm the next throw as well). Recovery
+  skips tridents, which are never used up.
 - Ultimate **Arrow Rain**: arrows fall on a 5-block circle around the block you look at (up to 40
   blocks away) for 6 s, 1.5 hearts per arrow to mobs.
 
@@ -232,6 +235,7 @@ reviewed in the bot screenshots, not this spec.
 | 3 | Wind Reader (2) | Your arrows fly 10 / 20% faster |
 | 4 | Ricochet (2) | An arrow that kills a mob fires a new arrow at the nearest mob within 6 / 10 blocks |
 | 4 | Sniper's Nest (1) | After standing still and sneaking for 1 s, shots deal +15% to mobs |
+| 4 | Homecoming (1) | Mobs your arrows or thrown tridents kill send their drops and XP straight to you |
 | 5 | **Railshot** (keystone, replaces Volley) | One beam along a 40-block line, 6 hearts to every mob on it, ignores armour. 45 s |
 
 ### Trapper: control the ground

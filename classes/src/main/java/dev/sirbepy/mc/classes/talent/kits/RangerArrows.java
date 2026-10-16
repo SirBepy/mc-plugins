@@ -17,6 +17,7 @@ import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Trident;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -24,6 +25,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
@@ -78,7 +80,7 @@ final class RangerArrows implements Listener {
         this.cageShotKey = new NamespacedKey(ctx.plugin(), "ranger_cage_shot");
         this.caltropArrowKey = new NamespacedKey(ctx.plugin(), "ranger_caltrop_arrow");
         this.volley = SimpleAbility.of("Volley", 45,
-                p -> "the next bow shot within 5 s fires 5 arrows in a fan",
+                p -> "the next bow shot or trident throw within 5 s fires 5 arrows in a fan",
                 p -> {
                     volleyArmed.add(p.getUniqueId());
                     ctx.later(() -> volleyArmed.remove(p.getUniqueId()), CAGE_SHOT_WINDOW_TICKS);
@@ -104,7 +106,7 @@ final class RangerArrows implements Listener {
         return railshot;
     }
 
-    /** Arms the next bow shot to carry a Cage Shot root, consumed in {@link #onShoot}. Called by RangerSnares. */
+    /** Arms the next bow shot or trident throw to carry a Cage Shot root, see {@link #consumeArmedShot}. Called by RangerSnares. */
     void armCageShot(Player player) {
         cageShotArmed.add(player.getUniqueId());
         ctx.later(() -> cageShotArmed.remove(player.getUniqueId()), CAGE_SHOT_WINDOW_TICKS);
@@ -138,19 +140,42 @@ final class RangerArrows implements Listener {
         boolean charged = event.getForce() >= 0.99f;
         if (charged) arrow.getPersistentDataContainer().set(chargedKey, PersistentDataType.BOOLEAN, true);
 
+        applyLaunchTalents(player, arrow, charged);
+    }
+
+    /** Piercing Shot (charged only), Wind Reader, then any armed Cage Shot or Volley. */
+    private void applyLaunchTalents(Player player, AbstractArrow projectile, boolean charged) {
         int pierce = ctx.rank(player, "piercing_shot");
-        if (charged && pierce > 0) arrow.setPierceLevel(Math.max(arrow.getPierceLevel(), pierce));
+        if (charged && pierce > 0) projectile.setPierceLevel(Math.max(projectile.getPierceLevel(), pierce));
 
         int wind = ctx.rank(player, "wind_reader");
-        if (wind > 0) arrow.setVelocity(arrow.getVelocity().multiply(1 + 0.1 * wind));
+        if (wind > 0) projectile.setVelocity(projectile.getVelocity().multiply(1 + 0.1 * wind));
 
+        consumeArmedShot(player, projectile);
+    }
+
+    /** Hands an armed Cage Shot or Volley to this bow shot or trident throw. */
+    private void consumeArmedShot(Player player, AbstractArrow projectile) {
         if (cageShotArmed.remove(player.getUniqueId())) {
-            arrow.getPersistentDataContainer().set(cageShotKey, PersistentDataType.BOOLEAN, true);
+            projectile.getPersistentDataContainer().set(cageShotKey, PersistentDataType.BOOLEAN, true);
             return; // One ability arms a shot at a time; Cage Shot takes priority over a stale Volley arm.
         }
         if (volleyArmed.remove(player.getUniqueId())) {
-            fireVolleyFan(player, arrow);
+            fireVolleyFan(player, projectile);
         }
+    }
+
+    /**
+     * A trident has no draw, so every throw counts as a fully charged shot: Long Shot, Eagle Eye,
+     * Marked and Piercing Shot all apply. Tridents never fire EntityShootBowEvent, so the launch-time
+     * nodes (pierce, Wind Reader, Volley, Cage Shot) are applied here instead of in {@link #onShoot}.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onThrowTrident(ProjectileLaunchEvent event) {
+        if (!(event.getEntity() instanceof Trident trident)) return;
+        if (!(trident.getShooter() instanceof Player player) || !ctx.active(player)) return;
+        trident.getPersistentDataContainer().set(chargedKey, PersistentDataType.BOOLEAN, true);
+        applyLaunchTalents(player, trident, true);
     }
 
     /** 4 extra arrows in a fan alongside the real one: mob-only, never picked up, tagged for Caltrops. */
@@ -269,7 +294,8 @@ final class RangerArrows implements Listener {
         }
 
         int recovery = ctx.rank(player, "recovery");
-        if (recovery > 0 && ctx.random() < 0.2 * recovery) {
+        // A trident is never used up, so there is nothing for Recovery to give back.
+        if (recovery > 0 && !(arrow instanceof Trident) && ctx.random() < 0.2 * recovery) {
             player.getInventory().addItem(new ItemStack(Material.ARROW));
         }
 
@@ -327,6 +353,31 @@ final class RangerArrows implements Listener {
             a.getPersistentDataContainer().set(mobOnlyKey, PersistentDataType.BOOLEAN, true);
         });
         ctx.fx().line(dead.getLocation(), target.getLocation(), Particle.CRIT);
+    }
+
+    /**
+     * Homecoming: a ranged kill's drops go into the shooter's inventory (overflow at their feet) and
+     * its XP straight onto their bar, instead of landing where the mob died. HIGHEST, not MONITOR,
+     * because it edits the drop list; other plugins' drop changes at HIGH and below are kept.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onHomecoming(EntityDeathEvent event) {
+        LivingEntity dead = event.getEntity();
+        if (dead instanceof Player) return;
+        if (!(dead.getLastDamageCause() instanceof EntityDamageByEntityEvent last)) return;
+        if (!(last.getDamager() instanceof AbstractArrow arrow) || !(arrow.getShooter() instanceof Player player)) return;
+        if (ctx.rank(player, "homecoming") == 0 || !player.isOnline()) return;
+        for (ItemStack drop : event.getDrops()) {
+            if (drop == null || drop.getType().isAir()) continue;
+            for (ItemStack overflow : player.getInventory().addItem(drop).values()) {
+                player.getWorld().dropItem(player.getLocation(), overflow);
+            }
+        }
+        event.getDrops().clear();
+        if (event.getDroppedExp() > 0) {
+            player.giveExp(event.getDroppedExp());
+            event.setDroppedExp(0);
+        }
     }
 
     private LivingEntity nearest(Location at, double radius) {
