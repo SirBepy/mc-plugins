@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "classes_tree",
+  "version": "${version}",
+  "name": "Claude SMP Talent Tree",
+  "description": "A clickable talent tree screen for the Claude SMP server's classes (/class tree). Does nothing on other servers.",
+  "authors": ["sirbepy"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["dev.sirbepy.mc.treemod.TreeMod"]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}
