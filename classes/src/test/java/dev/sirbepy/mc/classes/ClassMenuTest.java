@@ -73,6 +73,8 @@ class ClassMenuTest extends MockClassesTest {
         assertTrue(none.getInventory().getItem(ClassMenu.ABILITY_SLOT).getItemMeta().isHideTooltip());
         classes.choose(gut.getUniqueId(), RpgClass.ARTIFICER);
         Menu shown = menu().build(gut, null);
+        assertEquals("Also: /class ability, or L-R-L with a crossbow.",
+                lore(shown.getInventory().getItem(ClassMenu.ABILITY_SLOT)).getLast(), "the Artificer's combo opens with a left click");
         shown.click(ClassMenu.ABILITY_SLOT, ClickType.LEFT);
         assertTrue(classes.cooldownLeftMillis(gut.getUniqueId()) > 0);
     }

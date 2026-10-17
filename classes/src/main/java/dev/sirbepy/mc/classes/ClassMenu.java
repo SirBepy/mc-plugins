@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.classes;
 
 import dev.sirbepy.mc.classes.talent.AbilitySlots;
+import dev.sirbepy.mc.classes.talent.Combo;
 import dev.sirbepy.mc.classes.talent.Slot;
 import dev.sirbepy.mc.classes.talent.TreeMenu;
 import dev.sirbepy.mc.core.Durations;
@@ -72,7 +73,8 @@ public final class ClassMenu {
             RpgClass c = p.active();
             String name = slots.name(id, c, Slot.ONE);
             menu.set(ABILITY_SLOT, named(new ItemStack(Material.NETHER_STAR), "Use " + name, c.color(),
-                    List.of(c.abilityLine(p.level(c)), "Also: /class ability, or the sneak keys in /class binds.")),
+                    List.of(c.abilityLine(p.level(c)), "Also: /class ability, or " + Combo.label(Slot.ONE, Combo.defaultFirst(c))
+                            + " with " + Combo.weapons(c) + ".")),
                     (shown, click) -> {
                         player.closeInventory();
                         slots.cast(player, Slot.ONE);
