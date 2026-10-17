@@ -53,6 +53,12 @@ test("an unrecognised console command is detected from the lines appended after 
   assert.equal(commandWasUnknown(before, after), true);
 });
 
+test("the 'Unknown or incomplete command' form Paper actually logs on live is also detected", () => {
+  const before = oldLog;
+  const after = `${oldLog}\n[12:30:01] [Server thread/INFO]: System chat: Unknown or incomplete command. See below for error\nrestartcountdown status<--[HERE]`;
+  assert.equal(commandWasUnknown(before, after), true);
+});
+
 test("ordinary log growth after a command is not mistaken for an unknown command", () => {
   const before = oldLog;
   const after = `${oldLog}\n[12:30:01] [Server thread/INFO]: Saving worlds`;
