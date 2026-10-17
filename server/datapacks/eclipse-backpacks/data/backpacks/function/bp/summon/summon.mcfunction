@@ -27,6 +27,9 @@ function backpacks:bp/summon/name/main
 
 # Scores:
 scoreboard players set @n[tag=backpacks.backpack_menu,tag=!backpacks.backpack_menu_ready] backpacks.pages 0
+# Matches what the Items set above actually show (page 0) - see load.mcfunction's note on
+# backpacks.displayed_page.
+scoreboard players set @n[tag=backpacks.backpack_menu,tag=!backpacks.backpack_menu_ready] backpacks.displayed_page 0
 
 # Tags:
 execute as @n[tag=backpacks.backpack_menu,tag=!backpacks.backpack_menu_ready] run function senti:start

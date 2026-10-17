@@ -4,6 +4,10 @@ tellraw @a [{"text":"[BP] ","color":"yellow"},{"translate":"load.backpacks.messa
 scoreboard objectives add backpacks.id dummy
 scoreboard objectives add backpacks.slots dummy
 scoreboard objectives add backpacks.pages dummy
+# Set only in the same breath as the menu's Items are actually replaced from a stored page
+# (summon/summon, update/update), never from interaction/main's own page-navigation intent -
+# see save/main, which saves into this page, not backpacks.pages.
+scoreboard objectives add backpacks.displayed_page dummy
 scoreboard objectives add backpacks.type dummy
 scoreboard objectives add backpacks.join minecraft.custom:minecraft.leave_game
 scoreboard objectives add backpacks.crouch_timer dummy

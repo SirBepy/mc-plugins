@@ -17,10 +17,12 @@ import { Rcon, readGeyserBedrockPort, sleep } from './lib.mjs';
 // Usage: node backpack-pages.mjs   (server/local booted with RCON up; its Geyser login check is off)
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const localDir = path.join(here, '..', 'server', 'local');
+// BP_SERVER_DIR lets a command-chain-length cutoff investigation point this suite at a private
+// scratch server copy instead of the shared server/local, without touching the suite's default.
+const localDir = process.env.BP_SERVER_DIR ?? path.join(here, '..', 'server', 'local');
 // Floodgate gives every offline Bedrock login the zero UUID, so clear its player data for a fresh join.
 const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
-for (const f of [`${ZERO_UUID}.dat`, `${ZERO_UUID}.dat_old`]) fs.rmSync(path.join(localDir, 'world', 'playerdata', f), { force: true });
+for (const f of [`${ZERO_UUID}.dat`, `${ZERO_UUID}.dat_old`]) fs.rmSync(path.join(localDir, 'world', 'players', 'data', f), { force: true });
 
 const P = '.BedrockE2E';
 const M = '@e[tag=backpacks.backpack_menu_ready,limit=1]';
@@ -55,6 +57,7 @@ async function slot(s) {
 }
 async function menu() {
   const page = Number((await cmd(`scoreboard players get ${M} backpacks.pages`)).match(/has (-?\d+)/)?.[1]);
+  if (process.env.BP_DEBUG_PAGE) console.log('  [debug] backpacks.pages score =', page);
   let slots = '';
   for (let s = 0; s < 27; s++) slots += await slot(s);
   return { page, slots };
@@ -88,6 +91,11 @@ try {
   await click(26);
   m = await menu();
   report('next page shows page 2 (go-back at 18, no next)', m.page === 1 && m.slots[18] === '<' && !m.slots.includes('>'), m.slots);
+  if (process.env.BP_DEBUG_PAGE) {
+    console.log('  [debug] displayed_page score:', await cmd(`scoreboard players get ${M} backpacks.displayed_page`));
+    console.log('  [debug] stored page[0] arrows:', JSON.stringify(await storedArrows(0)));
+    console.log('  [debug] stored page[1] arrows:', JSON.stringify(await storedArrows(1)));
+  }
   // A full page 2 (open slots 0-12 here), like ImMijo's full page 2 on live.
   await cmd(`minecraft:item replace entity ${M} container.0 with minecraft:dirt 3`);
   for (let s = 1; s < 13; s++) await cmd(`minecraft:item replace entity ${M} container.${s} with minecraft:cobblestone 64`);
@@ -96,9 +104,15 @@ try {
   m = await menu();
   report('go back returns to page 1 with its stone', m.page === 0 && m.slots[0] === 's' && m.slots[26] === '>', m.slots);
 
-  // Save page 2's display over page 1: page score 0 while page 2 is shown, then a click saves it.
+  // Save page 2's display over page 1: a command-chain-length cutoff (the real default of
+  // 65536) between interaction/main's page-score change and its update/main call can leave
+  // the menu showing an old page while backpacks.pages has already moved on. save/main now reads
+  // backpacks.displayed_page (only ever set in the same breath as the Items that make up the
+  // display, inside update/update.mcfunction) instead of backpacks.pages, so that disagreement
+  // has to be simulated on displayed_page directly, not the navigation score, to still land a
+  // page-2 display over page 1's stored slot - then a click saves it.
   await click(26);
-  await cmd(`scoreboard players set ${M} backpacks.pages 0`);
+  await cmd(`scoreboard players set ${M} backpacks.displayed_page 0`);
   await click(18);
   const broken = await storedArrows(0);
   report('stored page 1 now looks like live had it (go-back, no next)', broken.back && !broken.next, JSON.stringify(broken));
