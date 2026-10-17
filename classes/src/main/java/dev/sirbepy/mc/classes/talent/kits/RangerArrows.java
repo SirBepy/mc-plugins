@@ -157,11 +157,15 @@ final class RangerArrows implements Listener {
      * A trident has no draw, so every throw counts as a fully charged shot: Long Shot, Eagle Eye,
      * Marked and Piercing Shot all apply. Tridents never fire EntityShootBowEvent, so the launch-time
      * nodes (pierce, Wind Reader, Volley, Cage Shot) are applied here instead of in {@link #onShoot}.
+     * Volley's own fan tridents (tagged {@code mobOnlyKey} before this event fires) are excluded, or
+     * each would re-enter here and get Wind Reader/Piercing Shot applied a second time on top of the
+     * velocity the fan already computed from the real throw.
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onThrowTrident(ProjectileLaunchEvent event) {
         if (!(event.getEntity() instanceof Trident trident)) return;
         if (!(trident.getShooter() instanceof Player player) || !ctx.active(player)) return;
+        if (Boolean.TRUE.equals(trident.getPersistentDataContainer().get(mobOnlyKey, PersistentDataType.BOOLEAN))) return;
         trident.getPersistentDataContainer().set(chargedKey, PersistentDataType.BOOLEAN, true);
         applyLaunchTalents(player, trident, true);
     }

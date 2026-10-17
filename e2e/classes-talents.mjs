@@ -243,7 +243,7 @@ try {
     await waitFor(() => (mob = Object.values(ranger.entities).find((e) => e.name === 'zombie'
       && e.position.distanceTo({ x: CX + 0.5, y: PY + 1, z: CZ - 4.5 }) < 8)), 'ranger sees the target', 10_000);
     await ranger.lookAt(mob.position.offset(0, 1, 0), true);
-    await say(ranger, '/class ability 2', /^Volley: the next bow shot or trident throw within 5 s fires 5 arrows in a fan$/);
+    await say(ranger, '/class ability 2', /^Volley: the next bow shot or trident throw within 5 s fires 5 projectiles in a fan$/);
     await ranger.lookAt(mob.position.offset(0, 1, 0), true);
     ranger.activateItem();
     await sleep(1200);

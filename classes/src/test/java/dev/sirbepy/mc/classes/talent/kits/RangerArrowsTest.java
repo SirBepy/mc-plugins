@@ -305,6 +305,23 @@ class RangerArrowsTest extends KitTestBase {
     }
 
     @Test
+    void volleyFanTridentsIgnoreTheirOwnProjectileLaunchEvent() {
+        // On a real server world.spawn(Trident.class, ...) fires ProjectileLaunchEvent for the fan
+        // tridents too; onThrowTrident must not re-apply Wind Reader/Piercing Shot to them on top of
+        // the velocity the fan already computed from the real throw.
+        PlayerMock p = ranger(10);
+        rank(p, "wind_reader", 2);
+        assertTrue(cast(p, Slot.TWO));
+        Trident real = throwTrident(p, 0);
+        Trident fan = world.getEntitiesByClass(Trident.class).stream()
+                .filter(t -> t != real).findFirst().orElseThrow();
+        double fanSpeedBefore = fan.getVelocity().length();
+        server.getPluginManager().callEvent(new ProjectileLaunchEvent(fan));
+        assertEquals(fanSpeedBefore, fan.getVelocity().length(), 0.0001,
+                "a fan trident's own launch event must not reapply Wind Reader again");
+    }
+
+    @Test
     void aThrownTridentNeverTriggersRecoveryArrows() {
         PlayerMock p = ranger(25);
         rank(p, "recovery", 2);
