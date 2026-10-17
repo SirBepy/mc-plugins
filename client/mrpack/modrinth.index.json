@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "game": "minecraft",
-  "versionId": "1.9.2",
+  "versionId": "1.9.3",
   "name": "The Claude SMP (26.3)",
   "summary": "Fabric 26.3 with Simple Voice Chat (proximity voice), Sodium + Lithium + FerriteCore + Entity Culling + ImmediatelyFast (FPS/memory), Continuity (connected textures), Iris + Complementary Reimagined (shaders, off by default), LambDynamicLights, Mod Menu, AppleSkin, Mouse Tweaks, Jade, Inventory Profiles Next (inventory auto-sort), Roughly Enough Items (recipe viewer), Controlify (controller support), the Claude SMP talent tree screen (/class tree, key J) and the textures for the server's More Foods, Dungeons and Taverns and Backpacks! datapacks.",
   "files": [
