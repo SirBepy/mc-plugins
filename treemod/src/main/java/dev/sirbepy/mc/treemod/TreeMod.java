@@ -27,9 +27,10 @@ public final class TreeMod implements ClientModInitializer {
 
     /**
      * What this mod understands, told to the server in "hello": 2 = the hub screen, 3 = the spell bar
-     * HUD (the server then stops sending its boss bar). 1.0.0/1.0.1 never said hello at all.
+     * HUD (the server then stops sending its boss bar), 4 = the "Browse classes" screen. 1.0.0/1.0.1
+     * never said hello at all.
      */
-    static final int CLIENT_VERSION = 3;
+    static final int CLIENT_VERSION = 4;
     /** The {@code guild:ui} channel's own hello version, independent of {@link #CLIENT_VERSION}
      * since it is a separate plugin's channel; there is no older shape to gate behind yet. */
     static final int GUILD_CLIENT_VERSION = 1;
@@ -124,6 +125,16 @@ public final class TreeMod implements ClientModInitializer {
                 screen.update(hub);
             } else if (hub.open()) {
                 client.gui.setScreen(new HubScreen(hub));
+            }
+            return;
+        }
+        if ("classlist".equals(type)) {
+            ClassListData list = ClassListData.parse(parsed);
+            if (list == null) return;
+            if (client.gui.screen() instanceof ClassBrowseScreen screen) {
+                screen.update(list);
+            } else if (list.open()) {
+                client.gui.setScreen(new ClassBrowseScreen(list));
             }
             return;
         }

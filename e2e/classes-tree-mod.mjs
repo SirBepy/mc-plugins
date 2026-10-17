@@ -106,6 +106,46 @@ try {
     assert(node(tree, 'bloodlust').rank === 0 && tree.free === 4, `bloodlust 0, 4 free (${node(tree, 'bloodlust').rank} ${tree.free})`);
   });
 
+  await step('hello v4 gets a "Browse classes" row on the hub; an older hello does not', async () => {
+    // This bot never said hello before now, so without it /class falls back to the chest the same
+    // as an unmodded client - say hello v2 (the hub's own minimum) first to get a baseline hub.
+    send(modded, { op: 'hello', v: 2 });
+    await sleep(200);
+    let since = modded.snapshots.length;
+    modded.chat('/class');
+    const hubOld = await nextSnapshot(modded, since, 'a hub snapshot');
+    assert(hubOld.type === 'hub', `a hub snapshot (${hubOld.type})`);
+    assert(!hubOld.entries.some((e) => e.id === 'browse'), 'hello v2: no browse row yet');
+
+    send(modded, { op: 'hello', v: 4 });
+    await sleep(200);
+    since = modded.snapshots.length;
+    modded.chat('/class');
+    const hub = await nextSnapshot(modded, since, 'a hub snapshot after hello v4');
+    assert(hub.entries.some((e) => e.id === 'browse'), 'a browse row once the client says hello v4');
+  });
+
+  await step('hub-browse sends every class with its own passive/ability/weakness at the player\'s level', async () => {
+    const since = modded.snapshots.length;
+    send(modded, { op: 'hub-browse' });
+    const list = await nextSnapshot(modded, since, 'a classlist snapshot');
+    assert(list.type === 'classlist' && list.v === 1 && list.open === true, `an opening classlist (${list.type} v${list.v})`);
+    assert(list.entries.length === 7, `all 7 classes (${list.entries.length})`);
+    const warrior = list.entries.find((e) => e.id === 'warrior');
+    assert(warrior.own === true && warrior.locked === false, `own Warrior, not locked (${warrior.own} ${warrior.locked})`);
+    const ranger = list.entries.find((e) => e.id === 'ranger');
+    assert(ranger.own === false && ranger.locked === true, `Ranger not own, locked by the Warrior pick (${ranger.own} ${ranger.locked})`);
+    assert(ranger.lines.some((l) => l.includes('You can change class in')), 'the lock duration rides along as a line');
+  });
+
+  await step('browse-pick on a locked class is refused, same as the chest\'s double click', async () => {
+    const since = modded.snapshots.length;
+    send(modded, { op: 'browse-pick', id: 'ranger' });
+    const list = await nextSnapshot(modded, since, 'a classlist refresh after the refused pick');
+    assert(list.open === false, 'a refresh, not a reopened screen');
+    assert(list.entries.find((e) => e.id === 'warrior').own === true, 'still Warrior: the pick was refused');
+  });
+
   await step('a client without the mod still gets the chest menu', async () => {
     const opened = new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('no chest window opened')), 5_000);

@@ -66,6 +66,7 @@ public final class ClassesPlugin extends JavaPlugin {
         // The channel only exists once start() registers it, so the hub's mod-screen entries wire up after.
         engine.treeMenu().channel().setChangeClassAction(menu::open);
         engine.treeMenu().channel().setInfoAction((player, rpg) -> ClassCommand.describe(player, rpg, classes.profile(player.getUniqueId())));
+        engine.treeMenu().channel().setPickClassAction(picker::pick);
         getServer().getOnlinePlayers().forEach(sessions::sync);
         scheduler.runTaskTimer(this, store::saveIfDirty, 1200L, 1200L);
 

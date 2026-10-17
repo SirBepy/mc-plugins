@@ -4,8 +4,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import dev.sirbepy.mc.classes.ClassProfile;
 import dev.sirbepy.mc.classes.Classes;
 import dev.sirbepy.mc.classes.RpgClass;
+import dev.sirbepy.mc.core.Durations;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
@@ -13,6 +15,7 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -47,6 +50,11 @@ public final class TreeChannel implements PluginMessageListener {
     static final int HUD_VERSION = 1;
     /** The lowest "hello" version that draws the HUD; older mods keep the boss bar. */
     static final int HUD_CLIENT_VERSION = 3;
+    /** The class-browse snapshot's shape, independent of the hub/tree snapshots. */
+    static final int BROWSE_VERSION = 1;
+    /** The lowest "hello" version that understands {@code classlist}; older mods never see the hub's
+     * "Browse classes" row and keep going straight to "Change class" -> the chest menu. */
+    static final int BROWSE_CLIENT_VERSION = 4;
 
     private static final Logger LOG = Logger.getLogger("classes.tree");
 
@@ -68,6 +76,10 @@ public final class TreeChannel implements PluginMessageListener {
     };
     /** {@code /class}'s "Class info" entry, wired to the same summary {@code /class info} prints. */
     private BiConsumer<Player, RpgClass> infoAction = (p, c) -> {
+    };
+    /** The browse screen's confirmed pick, wired to {@code ClassPicker#pick} by ClassesPlugin - the
+     * same lock/already/chosen messaging the chest menu's double-click uses. */
+    private BiConsumer<Player, RpgClass> pickClassAction = (p, c) -> {
     };
 
     /** {@code supports} and {@code sender} are the player's channel list and sendPluginMessage; tests pass fakes. */
@@ -110,6 +122,11 @@ public final class TreeChannel implements PluginMessageListener {
         this.infoAction = action;
     }
 
+    /** The browse screen's confirmed pick; same effect as a second click in the chest menu. */
+    public void setPickClassAction(BiConsumer<Player, RpgClass> action) {
+        this.pickClassAction = action;
+    }
+
     /**
      * Whether {@code player}'s client both registered the channel and sent a "hello" new enough to
      * understand the hub message; 1.0.0/1.0.1 clients register the channel but never send "hello",
@@ -122,6 +139,11 @@ public final class TreeChannel implements PluginMessageListener {
     /** Whether {@code player}'s mod draws the spell bar itself, so the boss bar stays off. */
     public boolean supportsHud(Player player) {
         return supports(player) && clientVersions.getOrDefault(player.getUniqueId(), 1) >= HUD_CLIENT_VERSION;
+    }
+
+    /** Whether {@code player}'s mod has the "Browse classes" screen, so the hub offers that row. */
+    public boolean supportsBrowse(Player player) {
+        return supports(player) && clientVersions.getOrDefault(player.getUniqueId(), 1) >= BROWSE_CLIENT_VERSION;
     }
 
     /** Sends the HUD snapshot if it changed since the last one; every 5 ticks and on every combo click. */
@@ -207,7 +229,50 @@ public final class TreeChannel implements PluginMessageListener {
         entries.add(hubEntry("hud", "Spell bar: " + (barOn ? "on" : "off"), "Your abilities, their combos and cooldowns; click to "
                 + (barOn ? "hide" : "show") + " it"));
         entries.add(hubEntry("info", "Class info", "Your passive, ability and weakness"));
+        if (supportsBrowse(player)) {
+            entries.add(hubEntry("browse", "Browse classes", "See every class's passive, ability and weakness before you decide"));
+        }
         entries.add(hubEntry("change", "Change class", "Pick a different class; the usual lock and confirm still apply"));
+        out.add("entries", entries);
+        return out;
+    }
+
+    /** Sends the {@code /class} browse screen: every class's numbers at the player's own level in it,
+     * so they can compare before picking. {@code open} asks the mod to open the screen; a refresh
+     * after a pick keeps whatever's already open instead of reopening it. */
+    public void sendClassList(Player player, boolean open) {
+        sender.accept(player, classListSnapshot(player, open).toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    JsonObject classListSnapshot(Player player, boolean open) {
+        UUID id = player.getUniqueId();
+        ClassProfile p = classes.profile(id);
+        long now = System.currentTimeMillis();
+        JsonObject out = new JsonObject();
+        out.addProperty("type", "classlist");
+        out.addProperty("v", BROWSE_VERSION);
+        out.addProperty("open", open);
+        JsonArray entries = new JsonArray();
+        for (RpgClass c : RpgClass.values()) {
+            boolean own = p.active() == c;
+            long locked = classes.lockedUntil(id, c);
+            int level = p.level(c);
+            JsonObject e = new JsonObject();
+            e.addProperty("id", c.id());
+            e.addProperty("name", c.displayName());
+            e.addProperty("color", c.color().value());
+            e.addProperty("own", own);
+            e.addProperty("locked", locked != 0);
+            JsonArray lines = new JsonArray();
+            lines.add(c.passiveLine(level));
+            lines.add(c.abilityLine(level));
+            lines.add(c.weaknessLine());
+            if (!own && locked != 0) {
+                lines.add("You can change class in " + Durations.format(Duration.ofMillis(locked - now)) + ".");
+            }
+            e.add("lines", lines);
+            entries.add(e);
+        }
         out.add("entries", entries);
         return out;
     }
@@ -361,7 +426,16 @@ public final class TreeChannel implements PluginMessageListener {
             // the hub never duplicates its rules.
             case "hub-tree" -> send(player, c, true);
             case "hub-info" -> infoAction.accept(player, c);
+            case "hub-browse" -> sendClassList(player, true);
             case "hub-change" -> changeClassAction.accept(player);
+            // The browse screen's own row click, after its client-side arm/confirm (same shape as the
+            // chest menu's two-click pick); the target is a class id, not a talent node id.
+            case "browse-pick" -> {
+                RpgClass target = RpgClass.parse(text(request, "id"));
+                if (target == null) return;
+                pickClassAction.accept(player, target);
+                sendClassList(player, false);
+            }
             default -> {
             }
         }

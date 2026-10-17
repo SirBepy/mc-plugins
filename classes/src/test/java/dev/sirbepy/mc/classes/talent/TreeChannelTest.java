@@ -301,6 +301,73 @@ class TreeChannelTest {
     }
 
     @Test
+    void theHubOffersBrowseOnlyToAClientNewEnoughToUnderstandIt() {
+        PlayerMock p = warrior(19, true);
+        request(p, "{\"op\":\"hub-hud\"}");
+        assertFalse(hasEntry(last(), "browse"), "no hello yet: an old mod never sees the row");
+        request(p, "{\"op\":\"hello\",\"v\":4}");
+        request(p, "{\"op\":\"hub-hud\"}");
+        assertTrue(hasEntry(last(), "browse"));
+        assertTrue(channel.supportsBrowse(p));
+    }
+
+    @Test
+    void hubBrowseSendsEveryClassAtThePlayersOwnLevelInIt() {
+        PlayerMock p = warrior(19, true);
+        request(p, "{\"op\":\"hub-browse\"}");
+        JsonObject list = last();
+        assertEquals("classlist", list.get("type").getAsString());
+        assertTrue(list.get("open").getAsBoolean());
+        JsonArray entries = list.getAsJsonArray("entries");
+        assertEquals(7, entries.size());
+        JsonObject warrior = entry(list, "warrior");
+        assertTrue(warrior.get("own").getAsBoolean());
+        assertFalse(warrior.get("locked").getAsBoolean());
+        JsonObject ranger = entry(list, "ranger");
+        assertFalse(ranger.get("own").getAsBoolean());
+        assertTrue(ranger.get("locked").getAsBoolean(), "picking Warrior just armed the 7-day lock");
+        assertTrue(ranger.getAsJsonArray("lines").get(3).getAsString().contains("You can change class in"));
+        // Level 0 in Ranger (never played), not the Warrior's level 19.
+        assertTrue(ranger.getAsJsonArray("lines").get(0).getAsString().contains("+2.0%"));
+    }
+
+    @Test
+    void browsePickRunsTheWiredPickActionAndResendsTheListWithoutReopening() {
+        PlayerMock p = warrior(19, true);
+        List<RpgClass> picked = new ArrayList<>();
+        channel.setPickClassAction((player, c) -> picked.add(c));
+        request(p, "{\"op\":\"browse-pick\",\"id\":\"ranger\"}");
+        assertEquals(List.of(RpgClass.RANGER), picked);
+        JsonObject list = last();
+        assertEquals("classlist", list.get("type").getAsString());
+        assertFalse(list.get("open").getAsBoolean(), "a refresh, not a new screen");
+    }
+
+    @Test
+    void browsePickIgnoresAnUnknownClassId() {
+        PlayerMock p = warrior(19, true);
+        List<RpgClass> picked = new ArrayList<>();
+        channel.setPickClassAction((player, c) -> picked.add(c));
+        request(p, "{\"op\":\"browse-pick\",\"id\":\"wizard\"}");
+        assertTrue(picked.isEmpty());
+        assertTrue(sent.isEmpty());
+    }
+
+    private static boolean hasEntry(JsonObject hub, String id) {
+        for (JsonElement e : hub.getAsJsonArray("entries")) {
+            if (id.equals(e.getAsJsonObject().get("id").getAsString())) return true;
+        }
+        return false;
+    }
+
+    private static JsonObject entry(JsonObject list, String id) {
+        for (JsonElement e : list.getAsJsonArray("entries")) {
+            if (id.equals(e.getAsJsonObject().get("id").getAsString())) return e.getAsJsonObject();
+        }
+        throw new AssertionError("no entry " + id);
+    }
+
+    @Test
     void malformedOrUnknownRequestsAreIgnored() {
         PlayerMock p = warrior(19, true);
         request(p, "not json");
