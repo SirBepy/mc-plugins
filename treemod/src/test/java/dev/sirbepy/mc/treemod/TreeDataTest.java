@@ -47,6 +47,20 @@ class TreeDataTest {
     }
 
     @Test
+    void keystoneLevelComesFromTheSnapshotWithAFallbackForAnOlderServer() {
+        // SNAPSHOT predates the "keystoneLevel" field: a new mod on an old server still works.
+        assertEquals(20, parse(SNAPSHOT).keystoneLevel());
+        TreeData withField = parse(SNAPSHOT.replace("\"free\":16,", "\"free\":16,\"keystoneLevel\":25,"));
+        assertEquals(25, withField.keystoneLevel());
+    }
+
+    @Test
+    void topTierIsTheHighestTierAmongTheNodesNotAHardcodedConstant() {
+        // SNAPSHOT only has tiers 1 and 2, so the keystone row sits at tier 2 here, not tier 5.
+        assertEquals(2, parse(SNAPSHOT).topTier());
+    }
+
+    @Test
     void aTierOpensWhenTheBranchHasItsGateInLowerTiers() {
         TreeData tree = parse(SNAPSHOT);
         assertEquals(2, tree.spentBelow(0, 2));
@@ -64,12 +78,14 @@ class TreeDataTest {
 
     @Test
     void tiersStackBottomToTopAndNodesCentreOnTheirColumn() {
-        assertTrue(TreeScreen.tierY(1) > TreeScreen.tierY(2), "tier 1 sits lowest");
-        assertEquals(TreeScreen.TOP_TIER_Y, TreeScreen.tierY(TreeData.KEYSTONE_TIER));
+        // topTier is a plain parameter now, no longer the TreeData.KEYSTONE_TIER constant; 5 is the
+        // usual full-height tree, same shape this test checked before.
+        assertTrue(TreeScreen.tierY(1, 5) > TreeScreen.tierY(2, 5), "tier 1 sits lowest");
+        assertEquals(TreeScreen.TOP_TIER_Y, TreeScreen.tierY(5, 5));
         int cx = TreeScreen.columnCenter(1);
         assertEquals(cx, TreeScreen.nodeX(1, 0, 1) + TreeScreen.FRAME / 2, "a lone keystone is centred");
         assertEquals(cx, TreeScreen.nodeX(1, 1, 3) + TreeScreen.FRAME / 2, "the middle of three is centred");
         // The bottom tier's pips stay inside the panel.
-        assertTrue(TreeScreen.tierY(1) + TreeScreen.FRAME + 5 < TreeScreen.H - 4);
+        assertTrue(TreeScreen.tierY(1, 5) + TreeScreen.FRAME + 5 < TreeScreen.H - 4);
     }
 }

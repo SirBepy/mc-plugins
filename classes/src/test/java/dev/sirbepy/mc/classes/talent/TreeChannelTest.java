@@ -108,6 +108,7 @@ class TreeChannelTest {
         engine.treeMenu().open(p);
         JsonObject tree = last();
         assertEquals("tree", tree.get("type").getAsString());
+        assertEquals(Talent.KEYSTONE_LEVEL, tree.get("keystoneLevel").getAsInt());
         assertTrue(tree.get("open").getAsBoolean());
         assertEquals("Warrior", tree.get("class").getAsString());
         assertEquals(18, tree.get("free").getAsInt());
@@ -168,6 +169,16 @@ class TreeChannelTest {
         // Viewing another class's tree is read-only on the screen too.
         engine.treeMenu().open(p, RpgClass.WARRIOR);
         assertFalse(last().get("own").getAsBoolean());
+    }
+
+    @Test
+    void bindsOpensTheKeyBindsChestEvenForAModdedClient() {
+        // The mod screen must close itself on this request, since the server's answer is a
+        // chest menu, not a tree snapshot; nothing here sends one.
+        PlayerMock p = warrior(19, true);
+        request(p, "{\"op\":\"binds\"}");
+        assertEquals(InventoryType.CHEST, p.getOpenInventory().getType(), "the binds chest opened");
+        assertTrue(sent.isEmpty(), "binds never answers with a tree snapshot");
     }
 
     @Test

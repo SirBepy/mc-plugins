@@ -12,13 +12,13 @@ import java.util.List;
  * The server already applied every rule; this only reads what to draw.
  */
 public record TreeData(boolean open, String className, int color, boolean own, int level, int points, int free,
-                       String resource, int resourceValue, List<Branch> branches, List<Ability> abilities,
-                       List<Node> nodes) {
+                       int keystoneLevel, String resource, int resourceValue, List<Branch> branches,
+                       List<Ability> abilities, List<Node> nodes) {
 
     /** The only snapshot shape this mod understands. */
     static final int VERSION = 1;
-    static final int KEYSTONE_TIER = 5;
-    static final int KEYSTONE_LEVEL = 20;
+    /** The server's level gate on keystones before v1 carried {@code keystoneLevel}; kept so a mod ahead of an old server still works. */
+    private static final int KEYSTONE_LEVEL_FALLBACK = 20;
 
     public record Branch(String name, int spent) {
     }
@@ -58,8 +58,18 @@ public record TreeData(boolean open, String className, int color, boolean own, i
                     bool(n, "locked"), strings(n, "lines"), str(n, "lock")));
         }
         return new TreeData(bool(o, "open"), str(o, "class"), num(o, "color"), bool(o, "own"), num(o, "level"),
-                num(o, "points"), num(o, "free"), str(o, "resource"), num(o, "resourceValue"),
+                num(o, "points"), num(o, "free"), numOr(o, "keystoneLevel", KEYSTONE_LEVEL_FALLBACK),
+                str(o, "resource"), num(o, "resourceValue"),
                 List.copyOf(branches), List.copyOf(abilities), List.copyOf(nodes));
+    }
+
+    /** The highest tier among this tree's nodes (the keystone row), read from the snapshot instead of a hardcoded constant. */
+    int topTier() {
+        int max = 1;
+        for (Node n : nodes) {
+            if (n.tier() > max) max = n.tier();
+        }
+        return max;
     }
 
     /** Ranks spent in {@code branch} below {@code tier}: what that tier's gate counts. */
@@ -102,8 +112,13 @@ public record TreeData(boolean open, String className, int color, boolean own, i
     }
 
     private static int num(JsonObject o, String key) {
+        return numOr(o, key, 0);
+    }
+
+    /** {@code fallback} for a field an older server's snapshot never sent. */
+    private static int numOr(JsonObject o, String key, int fallback) {
         JsonElement e = o.get(key);
-        return e != null && e.isJsonPrimitive() ? e.getAsInt() : 0;
+        return e != null && e.isJsonPrimitive() ? e.getAsInt() : fallback;
     }
 
     private static boolean bool(JsonObject o, String key) {

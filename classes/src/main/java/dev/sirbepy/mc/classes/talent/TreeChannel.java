@@ -94,6 +94,8 @@ public final class TreeChannel implements PluginMessageListener {
         out.addProperty("level", talents.level(id, c));
         out.addProperty("points", talents.points(id, c));
         out.addProperty("free", talents.available(id, c));
+        // So the mod derives its keystone row/gate from the server instead of a copy of the constant.
+        out.addProperty("keystoneLevel", Talent.KEYSTONE_LEVEL);
         if (kit != null) {
             out.addProperty("resource", kit.resourceName());
             out.addProperty("resourceValue", (int) resources.get(id));

@@ -22,8 +22,9 @@ import java.util.Map;
 /**
  * The talent tree: one fixed panel, three branch columns growing bottom to top (tier 1 at the
  * bottom, the keystone on top), each node in a vanilla advancement frame with its rank as pips.
- * Connector lines and the "N pts" gate marks light up in the class colour once a tier has its
- * points. Left click learns, right click refunds; the server decides and sends a fresh snapshot.
+ * Connector lines light up in the class colour once a tier has its points; a locked node's own
+ * tooltip explains what it still needs, rather than a per-column gate label. Left click learns,
+ * right click refunds; the server decides and sends a fresh snapshot.
  * Colours match the chest menu's painted background (server/resourcepacks/class_tree_art.py).
  */
 public final class TreeScreen extends Screen {
@@ -77,7 +78,7 @@ public final class TreeScreen extends Screen {
                 if (old != null && n.rank() > old.rank()) pulses.put(n.id(), now);
             }
             for (int b = 0; b < 3; b++) {
-                for (int t = 2; t <= TreeData.KEYSTONE_TIER; t++) {
+                for (int t = 2; t <= next.topTier(); t++) {
                     if (next.tierOpen(b, t) && !tree.tierOpen(b, t)) fills.put(b + ":" + t, now);
                 }
             }
@@ -99,8 +100,9 @@ public final class TreeScreen extends Screen {
         return COLUMN_X + COLUMN_W / 2 + branch * COLUMN_W;
     }
 
-    static int tierY(int tier) {
-        return TOP_TIER_Y + (TreeData.KEYSTONE_TIER - tier) * TIER_STEP;
+    /** {@code topTier} is the snapshot's highest node tier (the keystone row), not a fixed constant. */
+    static int tierY(int tier, int topTier) {
+        return TOP_TIER_Y + (topTier - tier) * TIER_STEP;
     }
 
     static int nodeX(int branch, int index, int count) {
@@ -108,11 +110,12 @@ public final class TreeScreen extends Screen {
     }
 
     private TreeData.Node nodeAt(double x, double y) {
+        int topTier = tree.topTier();
         for (int b = 0; b < 3; b++) {
-            for (int t = 1; t <= TreeData.KEYSTONE_TIER; t++) {
+            for (int t = 1; t <= topTier; t++) {
                 List<TreeData.Node> row = tree.row(b, t);
                 for (int i = 0; i < row.size(); i++) {
-                    int nx = nodeX(b, i, row.size()), ny = tierY(t);
+                    int nx = nodeX(b, i, row.size()), ny = tierY(t, topTier);
                     if (x >= nx && x < nx + FRAME && y >= ny && y < ny + FRAME) return row.get(i);
                 }
             }
@@ -194,16 +197,17 @@ public final class TreeScreen extends Screen {
     private void lines(GuiGraphicsExtractor g, int b, long now) {
         int cx = columnCenter(b);
         int color = 0xFF000000 | tree.color();
-        for (int t = 1; t <= TreeData.KEYSTONE_TIER; t++) {
+        int topTier = tree.topTier();
+        for (int t = 1; t <= topTier; t++) {
             List<TreeData.Node> row = tree.row(b, t);
             if (row.isEmpty()) continue;
-            int y = tierY(t) + FRAME / 2;
+            int y = tierY(t, topTier) + FRAME / 2;
             boolean open = tree.tierOpen(b, t);
             int x0 = nodeX(b, 0, row.size()) + FRAME / 2, x1 = nodeX(b, row.size() - 1, row.size()) + FRAME / 2;
             g.fill(x0, y - 1, x1 + 1, y + 1, open ? color : LINE_OFF);
-            if (t == TreeData.KEYSTONE_TIER) continue;
+            if (t == topTier) continue;
             // Trunk up to the next tier, filling bottom to top for FILL_MS when that tier just opened.
-            int upper = tierY(t + 1) + FRAME / 2;
+            int upper = tierY(t + 1, topTier) + FRAME / 2;
             g.fill(cx - 1, upper, cx + 1, y, LINE_OFF);
             if (tree.tierOpen(b, t + 1)) {
                 Long since = fills.get(b + ":" + (t + 1));
@@ -214,11 +218,12 @@ public final class TreeScreen extends Screen {
     }
 
     private void frames(GuiGraphicsExtractor g, int b) {
-        for (int t = 1; t <= TreeData.KEYSTONE_TIER; t++) {
+        int topTier = tree.topTier();
+        for (int t = 1; t <= topTier; t++) {
             List<TreeData.Node> row = tree.row(b, t);
             for (int i = 0; i < row.size(); i++) {
                 TreeData.Node n = row.get(i);
-                int x = nodeX(b, i, row.size()), y = tierY(t);
+                int x = nodeX(b, i, row.size()), y = tierY(t, topTier);
                 Identifier sprite = n.keystone() ? (n.maxed() ? KEY_ON : KEY_OFF) : (n.maxed() ? TASK_ON : TASK_OFF);
                 g.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, FRAME, FRAME, n.locked() ? 0xFF6A6A6A : 0xFFFFFFFF);
                 g.item(item(n.icon()), x + 5, y + 5);
@@ -226,15 +231,18 @@ public final class TreeScreen extends Screen {
         }
     }
 
-    /** Dimming on locked nodes, the learn pulse, the rank pips and the gate marks. */
+    /**
+     * Dimming on locked nodes, the learn pulse and the rank pips. A locked node's own tooltip (see
+     * {@link #tooltip}) explains what it needs; no per-column gate text here, it overflowed into the
+     * next branch's column once a gate's wording got long (e.g. the keystone's "14 pts · Lv 20").
+     */
     private void overlays(GuiGraphicsExtractor g, int b, long now) {
-        int cx = columnCenter(b);
-        int color = tree.color();
-        for (int t = 1; t <= TreeData.KEYSTONE_TIER; t++) {
+        int topTier = tree.topTier();
+        for (int t = 1; t <= topTier; t++) {
             List<TreeData.Node> row = tree.row(b, t);
             for (int i = 0; i < row.size(); i++) {
                 TreeData.Node n = row.get(i);
-                int x = nodeX(b, i, row.size()), y = tierY(t);
+                int x = nodeX(b, i, row.size()), y = tierY(t, topTier);
                 if (n.locked()) g.fill(x + 5, y + 5, x + 21, y + 21, 0xA0201A16);
                 Long since = pulses.get(n.id());
                 if (since != null && now - since < PULSE_MS) {
@@ -246,11 +254,6 @@ public final class TreeScreen extends Screen {
                 }
                 pips(g, n, x + FRAME / 2, y + FRAME + 2);
             }
-            if (t == 1 || row.isEmpty()) continue;
-            // The gate sits in the gap under its tier, beside the trunk that leads up to it.
-            String mark = row.get(0).gate() + " pts" + (t == TreeData.KEYSTONE_TIER ? " · Lv " + TreeData.KEYSTONE_LEVEL : "");
-            boolean open = tree.tierOpen(b, t) && (t < TreeData.KEYSTONE_TIER || tree.level() >= TreeData.KEYSTONE_LEVEL);
-            g.text(font, mark, cx + 4, tierY(t) + FRAME + 6, open ? 0xFF000000 | color : TEXT_DIM, false);
         }
     }
 
@@ -376,6 +379,9 @@ public final class TreeScreen extends Screen {
             return true;
         }
         if (event.button() == 0 && inside(mx, my, BUTTON_X, BINDS_Y, BUTTON_W, BUTTON_H)) {
+            // The server answers "binds" by opening a chest menu, not a tree snapshot; close this
+            // screen first like the ability cast above, so the chest isn't fighting this Screen for focus.
+            onClose();
             TreeMod.send(TreeMod.request("binds"));
             return true;
         }
