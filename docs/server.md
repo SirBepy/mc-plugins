@@ -168,7 +168,7 @@ from the Hetzner steps (no root shell, panel API instead) to need their own note
 - **Bedrock** (Geyser): `eu-de-p59-a6-cg.kineticpanel.net:25572` (SRV is Java-only; Bedrock ignores
   it, so this stays the plain host:port, no subdomain).
 - **Voice chat** (Simple Voice Chat): port `25604`, same host
-- **SFTP**: `eu-de-p59-a6-cg.kineticpanel.net:2022`, user `<panel-username>.dd499ae3`, key auth only
+- **SFTP**: `eu-de-p59-a6-cg.kineticpanel.net:2022`, user `<panel-username>.<server-id>` (`kinetic.mjs info` prints the id), key auth only
 - The whitelist is off (Joe's call, 2026-10-03: anyone with the address can join; online-mode stays
   on). SirBepy is op and LuckPerms admin. To lock it down later, from the panel's console tab:
   `whitelist on`, `whitelist add <name>`, Bedrock players `fwhitelist add <gamertag>`.

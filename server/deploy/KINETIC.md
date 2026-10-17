@@ -1,6 +1,6 @@
 # Kinetic Panel deploy notes (vs. the Hetzner VPS assumptions in docs/server.md)
 
-Panel: https://kineticpanel.net, Pterodactyl-compatible client API, server identifier `dd499ae3`.
+Panel: https://kineticpanel.net, Pterodactyl-compatible client API, server identifier looked up at runtime by `serverIdentifier()` (first server on the API key).
 Use `node server/deploy/kinetic.mjs <subcommand>` for everything below (reads the key from
 `server/secrets.properties`, never prints it).
 
@@ -20,7 +20,7 @@ key reachable, other than importing `kinetic.mjs` itself (which still reads
 invocation, not on this import, so importing it doesn't also run its own argv parsing against
 claude-reply.mjs's arguments.
 
-- **No root shell.** Kinetic exposes only SFTP (port 2022, user `<panel-username>.dd499ae3`) and
+- **No root shell.** Kinetic exposes only SFTP (port 2022, user `<panel-username>.<server-id>`) and
   the client API; `server/deploy/apply-bundle.sh` assumes SSH root and cannot run there. Upload
   `mc-server-bundle.tar.gz` via SFTP to the server root, then extract with
   `kinetic.mjs decompress . mc-server-bundle.tar.gz` - confirmed working on the real upload
