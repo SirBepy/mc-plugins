@@ -40,6 +40,7 @@ public final class OwnerState {
     private final List<ItemStack> lostAndFound = new ArrayList<>();
     private long closedUntil;
     private boolean rewardsUnbound;
+    private boolean questHudEnabled = true;
 
     public int petals() {
         return petals;
@@ -177,5 +178,14 @@ public final class OwnerState {
 
     public void setRewardsUnbound(boolean rewardsUnbound) {
         this.rewardsUnbound = rewardsUnbound;
+    }
+
+    /** Whether the always-on Spirit Requests brief (mod HUD or scoreboard sidebar) is shown. On by default. */
+    public boolean questHudEnabled() {
+        return questHudEnabled;
+    }
+
+    public void setQuestHudEnabled(boolean questHudEnabled) {
+        this.questHudEnabled = questHudEnabled;
     }
 }

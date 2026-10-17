@@ -11,6 +11,7 @@ import dev.sirbepy.mc.haru.item.HaruItems;
 import dev.sirbepy.mc.haru.npc.HaruLook;
 import dev.sirbepy.mc.haru.npc.HaruNpc;
 import dev.sirbepy.mc.haru.quest.QuestBoard;
+import dev.sirbepy.mc.haru.quest.QuestHud;
 import dev.sirbepy.mc.haru.rep.Progression;
 import dev.sirbepy.mc.haru.shop.Rewards;
 import dev.sirbepy.mc.haru.shop.Shop;
@@ -40,6 +41,7 @@ public final class HaruContext {
     private final QuestBoard board;
     private final MysteryCurios curios;
     private final HaruNpc npc;
+    private final QuestHud questHud;
     private final Random random = new Random();
 
     public HaruContext(Plugin plugin, Supplier<HaruConfig> config, HaruClock clock, HaruStore store,
@@ -58,6 +60,8 @@ public final class HaruContext {
         this.curios = new MysteryCurios(rewards);
         BedrockForms bedrock = BedrockForms.create(plugin);
         this.npc = new HaruNpc(plugin, store, bedrock::isBedrock, new HaruLook(config));
+        // Last: wires itself to the already-built board, so every mutation above never sees a half-built HUD.
+        this.questHud = new QuestHud(this);
     }
 
     public boolean isOwner(Player player) {
@@ -128,6 +132,10 @@ public final class HaruContext {
 
     public HaruNpc npc() {
         return npc;
+    }
+
+    public QuestHud questHud() {
+        return questHud;
     }
 
     public Random random() {

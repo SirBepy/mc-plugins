@@ -54,6 +54,10 @@ final class QuestMenu {
                 menus.refresh(player, shown, HaruMenus.Screen.QUESTS);
             });
         }
+        menu.set(40, toggleIcon(state), (shown, click) -> {
+            ctx.questHud().toggle(player);
+            menus.refresh(player, shown, HaruMenus.Screen.QUESTS);
+        });
         menus.addBack(menu, player);
         menu.frame(Material.PINK_STAINED_GLASS_PANE);
         return menu;
@@ -89,6 +93,16 @@ final class QuestMenu {
         }
         ItemStack item = Icons.button(new ItemStack(def.icon()), def.text(), color, lore);
         return ready && !active.claimed() ? Goods.glint(item) : item;
+    }
+
+    /** Toggles the always-on brief ({@code QuestHud}): a mod HUD panel, or a scoreboard sidebar without the mod. */
+    private ItemStack toggleIcon(OwnerState state) {
+        boolean on = state.questHudEnabled();
+        return Icons.button(on ? Material.ENDER_EYE : Material.ENDER_PEARL, "Quest Brief: " + (on ? "ON" : "OFF"),
+                on ? Goods.SAKURA : Goods.LORE,
+                "Always shows these three requests:",
+                "a HUD panel with the tree mod, or a scoreboard sidebar without it.",
+                "Click to turn it " + (on ? "off" : "on") + ".");
     }
 
     private void claim(Player player, OwnerState state, int index) {

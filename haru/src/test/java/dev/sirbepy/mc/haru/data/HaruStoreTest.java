@@ -9,6 +9,7 @@ import java.util.UUID;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -40,6 +41,7 @@ class HaruStoreTest {
         state.charms().put("ward", 987654321L);
         state.setClosedUntil(555L);
         state.setRewardsUnbound(true);
+        state.setQuestHudEnabled(false);
         store.save();
 
         HaruStore reloaded = new HaruStore(file, Logger.getLogger("test"));
@@ -62,6 +64,20 @@ class HaruStoreTest {
         assertEquals(987654321L, back.charms().get("ward"));
         assertEquals(555L, back.closedUntil());
         assertTrue(back.rewardsUnbound());
+        assertFalse(back.questHudEnabled());
+    }
+
+    @Test
+    void questHudEnabledDefaultsToTrueForAnOwnerWithNoSavedValueYet() {
+        File file = new File(dir.toFile(), "data.yml");
+        HaruStore store = new HaruStore(file, Logger.getLogger("test"));
+        UUID owner = UUID.randomUUID();
+        assertTrue(store.state(owner).questHudEnabled(), "a brand-new owner sees the brief by default");
+        store.state(owner).setQuestHudEnabled(false);
+        store.save();
+
+        HaruStore reloaded = new HaruStore(file, Logger.getLogger("test"));
+        assertFalse(reloaded.state(owner).questHudEnabled());
     }
 
     @Test

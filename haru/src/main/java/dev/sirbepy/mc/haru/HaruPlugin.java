@@ -52,6 +52,7 @@ public final class HaruPlugin extends JavaPlugin {
         pm.registerEvents(quests, this);
         pm.registerEvents(itemListener, this);
         pm.registerEvents(new OwnerEffectsListener(ctx), this);
+        pm.registerEvents(ctx.questHud(), this);
 
         var scheduler = getServer().getScheduler();
         scheduler.runTaskTimer(this, ctx.npc()::ensure, 40L, 100L);

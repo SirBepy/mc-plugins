@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -34,9 +35,17 @@ public final class QuestBoard {
     public enum RerollResult { REROLLED, NO_REROLLS_LEFT, NO_PETALS, NOT_REROLLABLE, NOTHING_ELSE }
 
     private final Progression progression;
+    /** Told about every change (new set, progress, claim, reroll) so a HUD/sidebar can stay live. */
+    private Consumer<OwnerState> onChange = state -> {
+    };
 
     public QuestBoard(Progression progression) {
         this.progression = progression;
+    }
+
+    /** Wired by {@code QuestHud} rather than passed through the constructor, so tests needing no HUD need no fake. */
+    public void setOnChange(Consumer<OwnerState> onChange) {
+        this.onChange = onChange;
     }
 
     /** Draws a new board when the request set changed since the last one. True if it did. */
@@ -52,12 +61,14 @@ public final class QuestBoard {
         }
         state.setBoardDate(setKey(set));
         state.setRerollsUsed(0);
+        onChange.accept(state);
         return true;
     }
 
     /** Adds progress to every matching open request; returns the ones this call just finished. */
     public List<QuestDef> progress(OwnerState state, QuestDef.Type type, String target, int amount) {
         List<QuestDef> finished = new ArrayList<>();
+        boolean changed = false;
         for (ActiveQuest active : state.board()) {
             QuestDef def = QuestPool.byId(active.questId());
             if (def == null || def.type() != type || active.claimed() || active.progress() >= def.amount()
@@ -65,9 +76,13 @@ public final class QuestBoard {
                 continue;
             }
             active.setProgress(Math.min(def.amount(), active.progress() + amount));
+            changed = true;
             if (active.progress() >= def.amount()) {
                 finished.add(def);
             }
+        }
+        if (changed) {
+            onChange.accept(state);
         }
         return finished;
     }
@@ -103,6 +118,7 @@ public final class QuestBoard {
             reputation += SET_BONUS_REPUTATION;
         }
         progression.addReputation(player, state, reputation);
+        onChange.accept(state);
         return ClaimResult.CLAIMED;
     }
 
@@ -132,6 +148,7 @@ public final class QuestBoard {
         Random random = Rotation.random("reroll-" + index + "-" + state.rerollsUsed(), set);
         state.board().set(index, new ActiveQuest(options.get(random.nextInt(options.size())).id(), 0, false));
         state.setRerollsUsed(state.rerollsUsed() + 1);
+        onChange.accept(state);
         return RerollResult.REROLLED;
     }
 

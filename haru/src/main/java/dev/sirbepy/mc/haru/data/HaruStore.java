@@ -147,6 +147,7 @@ public final class HaruStore {
         }
         state.setClosedUntil(s.getLong("closed-until"));
         state.setRewardsUnbound(s.getBoolean("rewards-unbound"));
+        state.setQuestHudEnabled(s.getBoolean("quest-hud-enabled", true));
         return state;
     }
 
@@ -220,6 +221,7 @@ public final class HaruStore {
         s.set("lost-and-found", new ArrayList<>(state.lostAndFound()));
         s.set("closed-until", state.closedUntil());
         s.set("rewards-unbound", state.rewardsUnbound());
+        s.set("quest-hud-enabled", state.questHudEnabled());
     }
 
     private static int asInt(Object value) {
