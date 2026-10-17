@@ -7,6 +7,13 @@
 # /changelog, so add each restart's entry there (kinetic.mjs) and mirror it here in the same session.
 entries:
   - date: 2026-10-17
+    title: Class hub browse
+    lines:
+      - "/class: Browse classes"
+      - See every class's numbers
+      - before you swap
+      - Change class fits the panel
+  - date: 2026-10-17
     title: Spell combos
     lines:
       - Click combos cast spells
