@@ -25,8 +25,9 @@ export const WITNESS = 'DBWitness';
 // small floor + sign(s) are carved out here, same spirit as market.mjs's "no spawn market" comment.
 export const SIGNS = {
   overworld: { x: 422, y: 116, z: -841, price: 1000 },
-  nether: { x: 422, y: 116, z: -839, price: 5000 },
-  end: { x: 422, y: 117, z: -840, price: 20000 },
+  // Must match dragonballs config.yml's radar-signs (eye-level row); a mismatch clicks no sign.
+  nether: { x: 422, y: 116, z: -840, price: 5000 },
+  end: { x: 422, y: 116, z: -839, price: 20000 },
 };
 // Back-compat name for dragonballs-summon.mjs, which only ever deals with the overworld sign.
 export const SIGN = SIGNS.overworld;

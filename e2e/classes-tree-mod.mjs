@@ -30,7 +30,10 @@ async function moddedBot(name) {
       b._client.on('custom_payload', (packet) => {
         if (packet.channel === CHANNEL) b.snapshots.push(JSON.parse(packet.data.toString('utf8')));
         if (packet.channel === 'minecraft:register') {
-          packet.data.toString('utf8').split('\0').forEach((c) => b.serverChannels.add(c));
+          // minecraft-protocol hands this payload over already parsed into an array of channel names;
+          // Array#toString comma-joins it, so the Buffer split only works for a lone channel.
+          const names = Array.isArray(packet.data) ? packet.data.map(String) : packet.data.toString('utf8').split('\0');
+          names.forEach((c) => b.serverChannels.add(c));
         }
       });
     },

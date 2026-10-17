@@ -269,7 +269,8 @@ try {
     // One block per stall: its name on a line of its own, then one line per item.
     await waitForLine(bot, /^Lumberjack$/, 5_000, since);
     await waitForLine(bot, /^ - 64 [a-z ]+ \$\d+\.\d\d$/, 5_000, since);
-    await waitForLine(bot, /^Heads$/, 5_000, since);
+    // The head stall's name comes from stalls.yml: "Mob Heads".
+    await waitForLine(bot, /^Mob Heads$/, 5_000, since);
     const opened = new Promise((resolve) => bot._client.once('open_book', resolve));
     bot.chat('/market prices');
     await Promise.race([opened, sleep(5_000).then(() => { throw new Error('/market prices opened no book'); })]);
@@ -332,8 +333,8 @@ try {
 
     let since = bot.lines.length;
     bot.chat('/market');
-    await waitForLine(bot, /^Heads$/, 5_000, since);
-    const heading = bot.lines.findIndex((l, i) => i >= since && /^Heads$/.test(l));
+    await waitForLine(bot, /^Mob Heads$/, 5_000, since);
+    const heading = bot.lines.findIndex((l, i) => i >= since && /^Mob Heads$/.test(l));
     const line = await waitForLine(bot, /^ - (.+) heads? \$/, 5_000, heading);
     const match = line.match(/^ - (.+?) heads? (\$[\d.]+(?: to \$[\d.]+)?)$/);
     assert(match, `/market's Heads block lists a mob (got ${line})`);
