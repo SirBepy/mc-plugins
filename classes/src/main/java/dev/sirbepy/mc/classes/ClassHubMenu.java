@@ -63,7 +63,7 @@ public final class ClassHubMenu {
                 (shown, click) -> engine.treeMenu().open(player, c));
         boolean barOn = classes.profile(id).spellBar();
         menu.set(SPELL_BAR_SLOT, named(new ItemStack(Material.ENDER_EYE), "Spell bar: " + (barOn ? "on" : "off"), NamedTextColor.WHITE,
-                List.of("Your abilities, their combos and cooldowns", "Click to " + (barOn ? "hide" : "show") + " it")),
+                List.of("Your abilities, their combos and cooldowns", "!Click to " + (barOn ? "hide" : "show") + " it")),
                 (shown, click) -> {
                     engine.bar().toggle(player);
                     shown.adopt(buildChest(player, c));

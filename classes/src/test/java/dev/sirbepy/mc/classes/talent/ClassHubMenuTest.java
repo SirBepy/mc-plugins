@@ -127,6 +127,20 @@ class ClassHubMenuTest {
     }
 
     @Test
+    void theChestHubsSpellBarButtonTogglesTheBarAndHighlightsItsClickLine() {
+        PlayerMock p = warrior(false, false);
+        hub.open(p);
+        dev.sirbepy.mc.core.gui.Menu shown = (dev.sirbepy.mc.core.gui.Menu) p.getOpenInventory().getTopInventory().getHolder();
+        var lore = shown.getInventory().getItem(ClassHubMenu.SPELL_BAR_SLOT).getItemMeta().lore();
+        assertEquals(net.kyori.adventure.text.format.NamedTextColor.GREEN, lore.getLast().color(), "the click line is highlighted");
+        shown.click(ClassHubMenu.SPELL_BAR_SLOT, org.bukkit.event.inventory.ClickType.LEFT);
+        assertFalse(classes.profile(p.getUniqueId()).spellBar());
+        String name = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                .serialize(shown.getInventory().getItem(ClassHubMenu.SPELL_BAR_SLOT).getItemMeta().displayName());
+        assertEquals("Spell bar: off", name);
+    }
+
+    @Test
     void changeClassStillReachesTheExistingList() {
         PlayerMock p = warrior(false, false);
         hub.open(p);
