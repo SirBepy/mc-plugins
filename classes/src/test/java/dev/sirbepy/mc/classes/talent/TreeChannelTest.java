@@ -192,11 +192,51 @@ class TreeChannelTest {
     }
 
     @Test
+    void castFiresTheAbilityBoundToThatSlot() {
+        // The same "cast" op the tree screen's ability buttons send, and now the mod's rebindable
+        // ability keys too: a request for slot "one" casts ability 1, putting it on cooldown.
+        PlayerMock p = warrior(19, true);
+        request(p, "{\"op\":\"cast\",\"slot\":\"one\"}");
+        assertTrue(classes.cooldownLeftMillis(p.getUniqueId()) > 0);
+    }
+
+    @Test
     void theOpenKeyOpensTheActiveClassesTree() {
         PlayerMock p = warrior(5, true);
         request(p, "{\"op\":\"open\"}");
         assertTrue(last().get("open").getAsBoolean());
         assertTrue(last().get("own").getAsBoolean());
+    }
+
+    @Test
+    void helloTracksTheClientVersionForHubSupport() {
+        PlayerMock p = warrior(19, true);
+        assertFalse(channel.supportsHub(p), "no hello yet: an old 1.0.1 mod never sends one");
+        request(p, "{\"op\":\"hello\",\"v\":2}");
+        assertTrue(channel.supportsHub(p));
+    }
+
+    @Test
+    void hubTreeAndHubBindsReuseTheRealOnes() {
+        PlayerMock p = warrior(19, true);
+        request(p, "{\"op\":\"hub-tree\"}");
+        assertEquals("tree", last().get("type").getAsString());
+        assertTrue(last().get("open").getAsBoolean());
+        request(p, "{\"op\":\"hub-binds\"}");
+        assertEquals(InventoryType.CHEST, p.getOpenInventory().getType(), "the binds chest opened");
+    }
+
+    @Test
+    void hubInfoAndHubChangeRunTheWiredActions() {
+        PlayerMock p = warrior(19, true);
+        List<RpgClass> infoed = new ArrayList<>();
+        List<Player> changed = new ArrayList<>();
+        channel.setInfoAction((player, c) -> infoed.add(c));
+        channel.setChangeClassAction(changed::add);
+        request(p, "{\"op\":\"hub-info\"}");
+        assertEquals(List.of(RpgClass.WARRIOR), infoed);
+        request(p, "{\"op\":\"hub-change\"}");
+        assertEquals(List.of(p), changed);
     }
 
     @Test

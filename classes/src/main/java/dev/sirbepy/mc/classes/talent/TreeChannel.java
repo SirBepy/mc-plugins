@@ -15,8 +15,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.logging.Logger;
 
 /**
  * The {@code classes:tree} plugin channel to the Claude SMP tree mod (treemod/). A player whose client
@@ -34,6 +37,12 @@ public final class TreeChannel implements PluginMessageListener {
     public static final String CHANNEL = "classes:tree";
     /** The snapshot's shape; the mod ignores versions it doesn't know, so a new shape needs a new number. */
     static final int VERSION = 1;
+    /** The hub snapshot's shape, independent of the tree snapshot's. */
+    static final int HUB_VERSION = 1;
+    /** The lowest "hello" client version that understands the hub message; 1.0.0/1.0.1 never send "hello" at all. */
+    static final int HUB_CLIENT_VERSION = 2;
+
+    private static final Logger LOG = Logger.getLogger("classes.tree");
 
     private final Classes classes;
     private final Talents talents;
@@ -44,6 +53,14 @@ public final class TreeChannel implements PluginMessageListener {
     private final TreeMenu menu;
     private final Predicate<Player> supports;
     private final BiConsumer<Player, byte[]> sender;
+    /** The "hello" version each connected client advertised; absent means an old mod that never sends one. */
+    private final Map<UUID, Integer> clientVersions = new ConcurrentHashMap<>();
+    /** {@code /class}'s "Change class" entry, wired to the full class list menu by ClassesPlugin. */
+    private Consumer<Player> changeClassAction = p -> {
+    };
+    /** {@code /class}'s "Class info" entry, wired to the same summary {@code /class info} prints. */
+    private BiConsumer<Player, RpgClass> infoAction = (p, c) -> {
+    };
 
     /** {@code supports} and {@code sender} are the player's channel list and sendPluginMessage; tests pass fakes. */
     TreeChannel(Classes classes, Talents talents, Map<RpgClass, ClassKit> kits, AbilitySlots slots, Binds binds,
@@ -75,9 +92,61 @@ public final class TreeChannel implements PluginMessageListener {
         return supports.test(player);
     }
 
+    /** {@code /class}'s "Change class" entry opens the full class list, same as /class for a classless player. */
+    public void setChangeClassAction(Consumer<Player> action) {
+        this.changeClassAction = action;
+    }
+
+    /** {@code /class}'s "Class info" entry prints the same lines as {@code /class info}. */
+    public void setInfoAction(BiConsumer<Player, RpgClass> action) {
+        this.infoAction = action;
+    }
+
+    /**
+     * Whether {@code player}'s client both registered the channel and sent a "hello" new enough to
+     * understand the hub message; 1.0.0/1.0.1 clients register the channel but never send "hello",
+     * so they fall back to the chest hub even though they have the tree mod.
+     */
+    public boolean supportsHub(Player player) {
+        return supports(player) && clientVersions.getOrDefault(player.getUniqueId(), 1) >= HUB_CLIENT_VERSION;
+    }
+
     /** Sends {@code c}'s tree; {@code open} asks the mod to open its screen, otherwise it only refreshes an open one. */
     public void send(Player player, RpgClass c, boolean open) {
         sender.accept(player, snapshot(player, c, open).toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    /** Sends the {@code /class} hub: skill tree, binds, class info, change class. */
+    public void sendHub(Player player, RpgClass c) {
+        sender.accept(player, hubSnapshot(player, c).toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    JsonObject hubSnapshot(Player player, RpgClass c) {
+        JsonObject out = new JsonObject();
+        out.addProperty("type", "hub");
+        out.addProperty("v", HUB_VERSION);
+        out.addProperty("open", true);
+        out.addProperty("class", c.displayName());
+        out.addProperty("color", c.color().value());
+        out.addProperty("level", talents.level(player.getUniqueId(), c));
+        out.addProperty("points", talents.available(player.getUniqueId(), c));
+        JsonArray entries = new JsonArray();
+        entries.add(hubEntry("tree", "Skill tree", "Spend your talent points, see every ability"));
+        entries.add(hubEntry("binds", "Binds", "Which sneak + key fires each ability"));
+        entries.add(hubEntry("info", "Class info", "Your passive, ability and weakness"));
+        entries.add(hubEntry("change", "Change class", "Pick a different class; the usual lock and confirm still apply"));
+        out.add("entries", entries);
+        return out;
+    }
+
+    private static JsonObject hubEntry(String id, String label, String line) {
+        JsonObject e = new JsonObject();
+        e.addProperty("id", id);
+        e.addProperty("label", label);
+        JsonArray lines = new JsonArray();
+        lines.add(line);
+        e.add("lines", lines);
+        return e;
     }
 
     JsonObject snapshot(Player player, RpgClass c, boolean open) {
@@ -176,6 +245,11 @@ public final class TreeChannel implements PluginMessageListener {
         String op = text(request, "op");
         if (op == null) return;
         UUID id = player.getUniqueId();
+        if (op.equals("hello")) {
+            // No class needed: the version handshake only tells us which snapshot shapes this client reads.
+            clientVersions.put(id, intOr(request, "v", 1));
+            return;
+        }
         if (op.equals("open")) {
             menu.open(player);
             return;
@@ -189,6 +263,7 @@ public final class TreeChannel implements PluginMessageListener {
                 if (t == null) return;
                 boolean refund = op.equals("refund");
                 Talents.Result r = refund ? talents.unlearn(id, c, t) : talents.learn(id, c, t);
+                LOG.info(() -> "tree " + player.getName() + " op=" + op + " node=" + t.id() + " result=" + r);
                 TreeMenu.feedback(player, t, r, refund);
                 send(player, c, false);
             }
@@ -204,6 +279,12 @@ public final class TreeChannel implements PluginMessageListener {
                 // The mod closes its screen first, the same as the chest's header buttons.
                 slots.cast(player, s);
             }
+            // The /class hub's four entries (TreeChannel#hubSnapshot); "tree" reuses the real tree send,
+            // "binds" the real binds chest, so the hub never duplicates their rules.
+            case "hub-tree" -> send(player, c, true);
+            case "hub-binds" -> menu.bindsMenu().open(player);
+            case "hub-info" -> infoAction.accept(player, c);
+            case "hub-change" -> changeClassAction.accept(player);
             default -> {
             }
         }
@@ -212,6 +293,11 @@ public final class TreeChannel implements PluginMessageListener {
     private static String text(JsonObject o, String key) {
         JsonElement e = o.get(key);
         return e != null && e.isJsonPrimitive() ? e.getAsString() : null;
+    }
+
+    private static int intOr(JsonObject o, String key, int fallback) {
+        JsonElement e = o.get(key);
+        return e != null && e.isJsonPrimitive() ? e.getAsInt() : fallback;
     }
 
     private static JsonArray strings(List<String> lines) {

@@ -5,7 +5,7 @@ plugins {
     id("net.fabricmc.fabric-loom") version "1.18.4"
 }
 
-version = "1.0.1"
+version = "1.0.2"
 
 base {
     archivesName = "classes-tree"

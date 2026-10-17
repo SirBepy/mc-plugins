@@ -33,12 +33,12 @@ final class ClassCommand {
 
     private final Classes classes;
     private final ClassPicker picker;
-    private final ClassMenu menu;
+    private final ClassHubMenu menu;
     private final TalentEngine engine;
     /** Re-applies Frail Body and the footer after an admin change to an online player. */
     private final Consumer<Player> resync;
 
-    ClassCommand(Classes classes, ClassPicker picker, ClassMenu menu, TalentEngine engine, Consumer<Player> resync) {
+    ClassCommand(Classes classes, ClassPicker picker, ClassHubMenu menu, TalentEngine engine, Consumer<Player> resync) {
         this.classes = classes;
         this.picker = picker;
         this.menu = menu;

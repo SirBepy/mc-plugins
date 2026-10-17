@@ -1,11 +1,13 @@
 package dev.sirbepy.mc.treemod;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.minecraft.client.KeyMapping;
@@ -14,40 +16,84 @@ import net.minecraft.resources.Identifier;
 
 /**
  * Registers the {@code classes:tree} channel (which also tells the server, through
- * minecraft:register, that this client has the screen) and the open key. Snapshots from the server
- * open the screen or refresh the one already open.
+ * minecraft:register, that this client has the screen), the open key and the three ability keys.
+ * Snapshots from the server open the matching screen (tree or hub) or refresh the one already open.
  */
 public final class TreeMod implements ClientModInitializer {
 
-    private static KeyMapping openKey;
+    /**
+     * Bumped past TreeChannel's old implicit "1.0.0/1.0.1 never say anything" baseline so the server
+     * can tell a hub-capable mod from one that only understands tree snapshots.
+     */
+    static final int CLIENT_VERSION = 2;
+
+    private static KeyMapping openKey, ability1Key, ability2Key, ultimateKey;
+    /** Resent on every (re)connect, since the server forgets a disconnected player's version. */
+    private static boolean helloSent = false;
 
     @Override
     public void onInitializeClient() {
         PayloadTypeRegistry.clientboundPlay().register(TreePayload.TYPE, TreePayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(TreePayload.TYPE, TreePayload.CODEC);
         ClientPlayNetworking.registerGlobalReceiver(TreePayload.TYPE, (payload, context) -> receive(context.client(), payload.json()));
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> helloSent = false);
 
         // J, not K: Iris (in the modpack) toggles shaders on K, and vanilla and the pack's other mods leave J free.
         KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath("classes_tree", "main"));
         openKey = KeyMappingHelper.registerKeyMapping(
                 new KeyMapping("key.classes_tree.open", InputConstants.Type.KEYBOARD, InputConstants.KEY_J, category));
+        // Unbound by default: nobody is forced off a key they already use, and a
+        // KeyMapping is rebindable to any input in vanilla Controls, mouse side buttons included.
+        ability1Key = KeyMappingHelper.registerKeyMapping(
+                new KeyMapping("key.classes_tree.ability1", InputConstants.UNKNOWN.getValue(), category));
+        ability2Key = KeyMappingHelper.registerKeyMapping(
+                new KeyMapping("key.classes_tree.ability2", InputConstants.UNKNOWN.getValue(), category));
+        ultimateKey = KeyMappingHelper.registerKeyMapping(
+                new KeyMapping("key.classes_tree.ultimate", InputConstants.UNKNOWN.getValue(), category));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (!helloSent && ClientPlayNetworking.canSend(TreePayload.TYPE)) {
+                helloSent = true;
+                send(hello());
+            }
             while (openKey.consumeClick()) {
                 // On a server without the Classes plugin nothing answers, so the key does nothing.
                 if (client.gui.screen() == null && ClientPlayNetworking.canSend(TreePayload.TYPE)) {
                     send(request("open"));
                 }
             }
+            // Sneak + number keeps working unchanged; these are the extra rebindable binds, same cast path.
+            while (ability1Key.consumeClick()) {
+                if (client.gui.screen() == null) send(cast("one"));
+            }
+            while (ability2Key.consumeClick()) {
+                if (client.gui.screen() == null) send(cast("two"));
+            }
+            while (ultimateKey.consumeClick()) {
+                if (client.gui.screen() == null) send(cast("ultimate"));
+            }
         });
     }
 
     private static void receive(Minecraft client, String json) {
-        TreeData tree;
+        JsonObject parsed;
         try {
-            tree = TreeData.parse(JsonParser.parseString(json).getAsJsonObject());
+            parsed = JsonParser.parseString(json).getAsJsonObject();
         } catch (RuntimeException e) {
             return;
         }
+        JsonElement typeField = parsed.get("type");
+        String type = typeField != null && typeField.isJsonPrimitive() ? typeField.getAsString() : null;
+        if ("hub".equals(type)) {
+            HubData hub = HubData.parse(parsed);
+            if (hub == null) return;
+            if (client.gui.screen() instanceof HubScreen screen) {
+                screen.update(hub);
+            } else if (hub.open()) {
+                client.gui.setScreen(new HubScreen(hub));
+            }
+            return;
+        }
+        TreeData tree = TreeData.parse(parsed);
         if (tree == null) return;
         if (client.gui.screen() instanceof TreeScreen screen) {
             screen.update(tree);
@@ -59,6 +105,19 @@ public final class TreeMod implements ClientModInitializer {
     static JsonObject request(String op) {
         JsonObject o = new JsonObject();
         o.addProperty("op", op);
+        return o;
+    }
+
+    /** The cast request the ability keys and the tree/hub screens' own ability buttons both send. */
+    static JsonObject cast(String slot) {
+        JsonObject o = request("cast");
+        o.addProperty("slot", slot);
+        return o;
+    }
+
+    private static JsonObject hello() {
+        JsonObject o = request("hello");
+        o.addProperty("v", CLIENT_VERSION);
         return o;
     }
 

@@ -57,6 +57,7 @@ public final class ClassesPlugin extends JavaPlugin {
                 defaultBinds(), getConfig().getBoolean("tree-background", false),
                 getConfig().getBoolean("ability-icons", false), BedrockForms.create(this));
         ClassMenu menu = new ClassMenu(classes, picker, engine.slots(), engine.treeMenu(), System::currentTimeMillis);
+        ClassHubMenu hub = new ClassHubMenu(classes, menu, engine);
         ClassSessions sessions = new ClassSessions(passives, xp, display);
 
         var plugins = getServer().getPluginManager();
@@ -66,11 +67,14 @@ public final class ClassesPlugin extends JavaPlugin {
         plugins.registerEvents(xp, this);
         plugins.registerEvents(sessions, this);
         engine.start();
+        // The channel only exists once start() registers it, so the hub's mod-screen entries wire up after.
+        engine.treeMenu().channel().setChangeClassAction(menu::open);
+        engine.treeMenu().channel().setInfoAction((player, rpg) -> ClassCommand.describe(player, rpg, classes.profile(player.getUniqueId())));
         getServer().getOnlinePlayers().forEach(sessions::sync);
         scheduler.runTaskTimer(this, store::saveIfDirty, 1200L, 1200L);
 
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
-                new ClassCommand(classes, picker, menu, engine, sessions::sync).registerInto(event.registrar()));
+                new ClassCommand(classes, picker, hub, engine, sessions::sync).registerInto(event.registrar()));
         getLogger().info("Classes ready: Warrior, Ranger, Arcanist, Artificer, Guardian, Rogue, Paladin; daily cap " + classes.dailyCap()
                 + " XP, change every " + classes.changeLock().toDays() + " days");
     }

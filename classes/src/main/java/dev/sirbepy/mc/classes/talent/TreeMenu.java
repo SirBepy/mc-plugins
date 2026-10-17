@@ -69,6 +69,11 @@ public final class TreeMenu {
         this.channel = channel;
     }
 
+    /** Null until {@link TalentEngine#start()} registers the real channel (or a test fakes one). */
+    public TreeChannel channel() {
+        return channel;
+    }
+
     public BindsMenu bindsMenu() {
         return bindsMenu;
     }

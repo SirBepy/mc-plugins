@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.treemod;
 
 import com.google.gson.JsonObject;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -13,6 +14,8 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Util;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -46,6 +49,14 @@ public final class TreeScreen extends Screen {
     static final int TEXT = 0xFFE8DCC0, TEXT_DIM = 0xFFA8977A, GREEN = 0xFF7CFC7C;
     static final int TOOLTIP_WIDTH = 200;
     static final long PULSE_MS = 600, FILL_MS = 400, CONFIRM_MS = 3000;
+
+    /**
+     * 26.3 runs input through SDL, so MouseButtonEvent#button() is 1-based (left 1, middle 2,
+     * right 3), not GLFW's 0/1/2: a literal 0 never matches and 1 is the LEFT button.
+     */
+    static final int LEFT_BUTTON = InputConstants.MOUSE_BUTTON_LEFT, RIGHT_BUTTON = InputConstants.MOUSE_BUTTON_RIGHT;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger("treemod");
 
     private static final Identifier TASK_ON = Identifier.withDefaultNamespace("advancements/task_frame_obtained");
     private static final Identifier TASK_OFF = Identifier.withDefaultNamespace("advancements/task_frame_unobtained");
@@ -174,11 +185,16 @@ public final class TreeScreen extends Screen {
         tooltip(g, mx, my, mouseX, mouseY);
     }
 
+    /** The walnut-and-gold border and background, shared with {@link HubScreen} ("use the new uis for everything"). */
+    static void frame(GuiGraphicsExtractor g, int w, int h) {
+        g.fill(0, 0, w, h, PANEL_EDGE);
+        g.fill(2, 2, w - 2, h - 2, GOLD_SHADE);
+        g.fill(3, 3, w - 3, h - 3, GOLD);
+        g.fill(4, 4, w - 4, h - 4, PANEL);
+    }
+
     private void panel(GuiGraphicsExtractor g) {
-        g.fill(0, 0, W, H, PANEL_EDGE);
-        g.fill(2, 2, W - 2, H - 2, GOLD_SHADE);
-        g.fill(3, 3, W - 3, H - 3, GOLD);
-        g.fill(4, 4, W - 4, H - 4, PANEL);
+        frame(g, W, H);
         g.fill(8, HEADER_H, W - 8, HEADER_H + 1, GOLD);
         g.fill(8, HEADER_H + 1, W - 8, HEADER_H + 2, GOLD_SHADE);
         for (int b = 1; b < 3; b++) {
@@ -363,29 +379,29 @@ public final class TreeScreen extends Screen {
         if (!tree.own()) return super.mouseClicked(event, doubleClick);
         TreeData.Node n = nodeAt(mx, my);
         if (n != null) {
-            JsonObject request = TreeMod.request(event.button() == 1 ? "refund" : "learn");
+            String op = event.button() == RIGHT_BUTTON ? "refund" : "learn";
+            LOGGER.info("[treemod] click button={} op={} node={}", event.button(), op, n.id());
+            JsonObject request = TreeMod.request(op);
             request.addProperty("id", n.id());
             TreeMod.send(request);
             return true;
         }
         int ability = abilityAt(mx, my);
-        if (ability >= 0 && event.button() == 0) {
+        if (ability >= 0 && event.button() == LEFT_BUTTON) {
             TreeData.Ability a = tree.abilities().get(ability);
             if (!a.unlocked()) return true;
-            JsonObject request = TreeMod.request("cast");
-            request.addProperty("slot", a.slot());
             onClose();
-            TreeMod.send(request);
+            TreeMod.send(TreeMod.cast(a.slot()));
             return true;
         }
-        if (event.button() == 0 && inside(mx, my, BUTTON_X, BINDS_Y, BUTTON_W, BUTTON_H)) {
+        if (event.button() == LEFT_BUTTON && inside(mx, my, BUTTON_X, BINDS_Y, BUTTON_W, BUTTON_H)) {
             // The server answers "binds" by opening a chest menu, not a tree snapshot; close this
             // screen first like the ability cast above, so the chest isn't fighting this Screen for focus.
             onClose();
             TreeMod.send(TreeMod.request("binds"));
             return true;
         }
-        if (event.button() == 0 && inside(mx, my, BUTTON_X, RESPEC_Y, BUTTON_W, BUTTON_H)) {
+        if (event.button() == LEFT_BUTTON && inside(mx, my, BUTTON_X, RESPEC_Y, BUTTON_W, BUTTON_H)) {
             long now = Util.getMillis();
             if (respecArmedAt >= 0 && now - respecArmedAt < CONFIRM_MS) {
                 respecArmedAt = -1;
