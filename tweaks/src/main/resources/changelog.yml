@@ -7,10 +7,23 @@
 # /changelog, so add each restart's entry there (kinetic.mjs) and mirror it here in the same session.
 entries:
   - date: 2026-10-17
+    title: Spell combos
+    lines:
+      - Click combos cast spells
+      - "Sword: R-L-R, R-R-L, R-L-L"
+      - "Bow: L-R-L, L-L-R, L-R-R"
+      - /class hud hides the bar
+      - Sneak + right click readies Lightning Blade and Treecapitator
+  - date: 2026-10-17
     title: Restart delays
     lines:
       - Restarts now warn you 120 seconds ahead
       - "/dont-restart pushes one back up to an hour"
+  - date: 2026-10-17
+    title: Fixes
+    lines:
+      - Backpack pages no longer overwrite each other
+      - Bedrock players get a newer Geyser
   - date: 2026-10-16
     title: Guardians are back
     lines:
