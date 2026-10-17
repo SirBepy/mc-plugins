@@ -36,6 +36,12 @@ try {
     await rcon.command(`minecraft:setblock ${SIGN.x} ${SIGN.y} ${SIGN.z} minecraft:oak_sign`);
     await sleep(300);
     await teleport(rcon, hunter, SIGN.x, SIGN.y, SIGN.z + 1);
+    // blockAt can still return null right after a teleport into a chunk the bot's own client hasn't
+    // finished syncing (seen under a loaded server: a bare null crashes deep inside mineflayer's
+    // activateBlock as an unhandled rejection, killing the whole suite process instead of failing
+    // this step cleanly - same bug class fixed in merfolk.mjs's villagerAt lookup).
+    await waitFor(() => hunter.blockAt(new Vec3(SIGN.x, SIGN.y, SIGN.z))?.name === 'oak_sign',
+      'DBHunter sees the radar sign', 5_000);
     const signBlock = hunter.blockAt(new Vec3(SIGN.x, SIGN.y, SIGN.z));
 
     await rcon.command(`eco set ${HUNTER} 2000`);

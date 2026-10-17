@@ -99,7 +99,14 @@ try {
     await teleport(rcon, owner, BX, PY + 5, BZ);
     await rcon.command(`minecraft:item replace entity ${OWNER} weapon.mainhand with minecraft:nautilus_shell 2`);
     await waitFor(() => owner.heldItem?.name === 'nautilus_shell', 'owner holds shells', 5_000);
-    await owner.activateEntity(villagerAt(owner, BX + 1.5, PY + 3, BZ + 0.5));
+    // villagerAt can race the entity sync right after the teleport+item-replace above (like the
+    // stranger's own lookup a few lines up); an undefined target would otherwise crash deep inside
+    // mineflayer's activateEntity (unhandled rejection, kills the whole suite process) instead of
+    // failing this step cleanly.
+    await waitFor(() => villagerAt(owner, BX + 1.5, PY + 3, BZ + 0.5), 'owner sees the villager', 5_000);
+    const ownerTarget = villagerAt(owner, BX + 1.5, PY + 3, BZ + 0.5);
+    assert(ownerTarget, 'owner sees the villager');
+    await owner.activateEntity(ownerTarget);
     await waitFor(async () => /merfolk:merfolk/.test(await get(one('mf_conv'), 'BukkitValues')), 'villager became a merfolk', 5_000);
     await waitFor(() => owner.heldItem?.count === 1, 'one shell spent', 5_000);
     const type = await get(one('mf_conv'), 'VillagerData.type');
