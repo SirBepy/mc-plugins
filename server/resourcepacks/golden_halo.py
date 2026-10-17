@@ -22,10 +22,10 @@ Placement: a worn head item's model point v (pixels) lands at head-bone point
 and the head's top (head-bone y = -8px) is model y = 14.4.
 """
 
-import json
 import math
 from pathlib import Path
 
+from pack_io import write_json
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent
@@ -165,11 +165,6 @@ def icon_texture():
     for f in range(ICON_FRAMES):
         sheet.paste(icon_frame(f), (0, 16 * f))
     return sheet
-
-
-def write_json(path, data):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8", newline="\n")
 
 
 def main():

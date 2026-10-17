@@ -18,9 +18,9 @@ Writes into claudesmp-items/assets/claudesmp/:
     python server/resourcepacks/golden_wings.py
 """
 
-import json
 from pathlib import Path
 
+from pack_io import write_json
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent
@@ -107,11 +107,6 @@ def gold_icon(vanilla):
         data.append(GOLD[min(len(GOLD) - 1, int(t * len(GOLD)))] + (a,))
     out.putdata(data)
     return out
-
-
-def write_json(path, data):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8", newline="\n")
 
 
 def main(vanilla_dir):

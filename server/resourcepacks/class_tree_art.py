@@ -28,10 +28,10 @@ Writes into claudesmp-items/assets/classes/:
     python server/resourcepacks/class_tree_art.py
 """
 
-import json
 import re
 from pathlib import Path
 
+from pack_io import write_json
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent
@@ -199,11 +199,6 @@ def icons_font():
     # Height 9 with ascent 8: one texel above the caps, so a 16 px texture reads at text size.
     return {"providers": [{"type": "bitmap", "file": f"minecraft:{texture}.png", "height": 9, "ascent": 8,
                            "chars": [char]} for _, char, texture in ability_icons()]}
-
-
-def write_json(path, data):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=True) + "\n", encoding="utf-8", newline="\n")
 
 
 def main():

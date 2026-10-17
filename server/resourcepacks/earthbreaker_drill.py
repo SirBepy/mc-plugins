@@ -22,11 +22,11 @@ rotations are rotationZYX(z, y, x) (CuboidRotation$EulerXYZRotation, javap'd 202
 tiers' Y twist turns them about the drill axis before the shared Z tilt.
 """
 
-import json
 import math
 import random
 from pathlib import Path
 
+from pack_io import write_json
 from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parent
@@ -384,11 +384,6 @@ def icon_texture():
     for f in range(ICON_FRAMES):
         img.paste(icon_frame(f), (0, 16 * f))
     return img
-
-
-def write_json(path, data):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8", newline="\n")
 
 
 def main():

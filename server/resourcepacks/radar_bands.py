@@ -24,6 +24,7 @@ import math
 from pathlib import Path
 
 import numpy as np
+from pack_io import write_json as _write_json
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -84,7 +85,9 @@ def frame_name(base, suffix, nn):
 
 
 def write_json(path, doc):
-    path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    # No mkdir (the compass/radar dirs already exist) and the default newline (None), unlike
+    # the other generator scripts: this file historically wrote OS-native line endings.
+    _write_json(path, doc, mkdir=False, newline=None)
 
 
 def band_case(base, suffix):
