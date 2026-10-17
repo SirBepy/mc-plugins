@@ -4,6 +4,15 @@ Panel: https://kineticpanel.net, Pterodactyl-compatible client API, server ident
 Use `node server/deploy/kinetic.mjs <subcommand>` for everything below (reads the key from
 `server/secrets.properties`, never prints it).
 
+## Scheduled backups
+
+Panel schedule "Twice-daily backup (04:00 + 16:00 Zagreb)" (created 2026-10-17 via
+`POST /api/client/servers/{id}/schedules`, cron `0 2,14 * * *` because the panel clock is UTC):
+task 1 `save-all flush`, task 2 a panel backup 15 s later. The plan allows 15 backups (borg, about
+7 GB and 18 minutes each on 2026-10-17), so that's roughly a week of history. Whether the panel
+deletes the oldest backup once all 15 slots are full is not verified yet. Check with
+`kinetic.mjs backup-list` after the slots fill (around 2026-10-23).
+
 ## claude-reply.mjs
 
 `node server/deploy/claude-reply.mjs <player> <message...>` sends one ClaudeBridge reply into
