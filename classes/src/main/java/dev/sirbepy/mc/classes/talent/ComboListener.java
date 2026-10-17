@@ -39,6 +39,8 @@ import java.util.function.Predicate;
  *   <li>The first click does what it always did (doors, chests); the second and third right clicks
  *       are cancelled so they don't draw, fire, throw or block. Left clicks are never cancelled, so a
  *       combo's swing still hits.</li>
+ *   <li>A right click on an interactable block (chest, door, button, lever...) never touches the
+ *       combo at all, so working the block can't accidentally open, continue or cast one.</li>
  * </ul>
  */
 public final class ComboListener implements Listener {
@@ -115,6 +117,12 @@ public final class ComboListener implements Listener {
             return;
         }
         if (event.getHand() != EquipmentSlot.HAND || a == Action.PHYSICAL) return;
+        // A right click aimed at a chest, door, button, etc. is the player working the block, not
+        // casting - skip combo tracking entirely so it can never open/continue/cast one.
+        if (a == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null
+                && event.getClickedBlock().getType().isInteractable()) {
+            return;
+        }
         Result r = click(event.getPlayer(), a.isLeftClick() ? Click.LEFT : Click.RIGHT);
         if (r.redraws) onProgress.accept(event.getPlayer());
         if (r.cancels && a.isRightClick()) cancel(event);

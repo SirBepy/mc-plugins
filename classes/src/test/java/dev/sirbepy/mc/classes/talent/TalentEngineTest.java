@@ -407,6 +407,23 @@ class TalentEngineTest {
     }
 
     @Test
+    void rightClickingAChestNeverStartsOrCastsACombo() {
+        PlayerMock p = warrior(10);
+        sword(p);
+        org.bukkit.block.Block chest = world.getBlockAt(0, 64, 0);
+        chest.setType(Material.CHEST);
+        for (int i = 0; i < 3; i++) {
+            now += 200;
+            var e = new org.bukkit.event.player.PlayerInteractEvent(p, Action.RIGHT_CLICK_BLOCK,
+                    p.getInventory().getItemInMainHand(), chest, BlockFace.UP, EquipmentSlot.HAND);
+            server.getPluginManager().callEvent(e);
+            assertFalse(e.useInteractedBlock() == Event.Result.DENY, "the chest still opens");
+        }
+        assertTrue(engine.combos().progress(p).isEmpty(), "working a chest never opens a combo");
+        assertTrue(fired.isEmpty());
+    }
+
+    @Test
     void plainSwingsSneakingClicksAndNonWeaponsNeverStartACombo() {
         PlayerMock p = warrior(10);
         sword(p);
