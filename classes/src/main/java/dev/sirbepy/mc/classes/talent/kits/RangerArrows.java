@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * The Sharpshooter branch's Volley, plus the arrow state the other two branches read too: which
@@ -76,7 +77,7 @@ final class RangerArrows implements Listener {
         this.cageShotKey = new NamespacedKey(ctx.plugin(), "ranger_cage_shot");
         this.caltropArrowKey = new NamespacedKey(ctx.plugin(), "ranger_caltrop_arrow");
         this.volley = SimpleAbility.of("Volley", 45,
-                p -> "the next bow shot or trident throw within 5 s fires 5 arrows in a fan",
+                p -> "the next bow shot or trident throw within 5 s fires 5 projectiles in a fan",
                 p -> {
                     volleyArmed.add(p.getUniqueId());
                     ctx.later(() -> volleyArmed.remove(p.getUniqueId()), CAGE_SHOT_WINDOW_TICKS);
@@ -165,22 +166,30 @@ final class RangerArrows implements Listener {
         applyLaunchTalents(player, trident, true);
     }
 
-    /** 4 extra arrows in a fan alongside the real one: mob-only, never picked up, tagged for Caltrops. */
+    /**
+     * 4 extra projectiles in a fan alongside the real one: mob-only, never picked up, tagged for
+     * Caltrops. Matches the real throw's entity type so a trident throw fans out tridents, not arrows.
+     */
     private void fireVolleyFan(Player player, AbstractArrow real) {
         Location at = real.getLocation();
         Vector base = real.getVelocity();
         int caltropsRank = ctx.rank(player, "caltrops");
+        boolean trident = real instanceof Trident;
+        Consumer<AbstractArrow> init = p -> {
+            p.setShooter(player);
+            p.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
+            p.getPersistentDataContainer().set(mobOnlyKey, PersistentDataType.BOOLEAN, true);
+            if (caltropsRank > 0) p.getPersistentDataContainer().set(caltropArrowKey, PersistentDataType.BOOLEAN, true);
+        };
         for (double degrees : new double[] {-6, -3, 3, 6}) {
             Vector v = base.clone().rotateAroundY(Math.toRadians(degrees));
-            at.getWorld().spawn(at, Arrow.class, a -> {
-                a.setShooter(player);
-                a.setVelocity(v);
-                a.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
-                a.getPersistentDataContainer().set(mobOnlyKey, PersistentDataType.BOOLEAN, true);
-                if (caltropsRank > 0) a.getPersistentDataContainer().set(caltropArrowKey, PersistentDataType.BOOLEAN, true);
-            });
+            if (trident) {
+                at.getWorld().spawn(at, Trident.class, (Consumer<Trident>) t -> { init.accept(t); t.setVelocity(v); });
+            } else {
+                at.getWorld().spawn(at, Arrow.class, (Consumer<Arrow>) a -> { init.accept(a); a.setVelocity(v); });
+            }
         }
-        ctx.fx().sound(at, Sound.ENTITY_ARROW_SHOOT, 0.6f, 1.6f);
+        ctx.fx().sound(at, trident ? Sound.ITEM_TRIDENT_THROW : Sound.ENTITY_ARROW_SHOOT, 0.6f, 1.6f);
     }
 
     // Landing: Caltrops and Cage Shot both trigger off where an arrow comes down.

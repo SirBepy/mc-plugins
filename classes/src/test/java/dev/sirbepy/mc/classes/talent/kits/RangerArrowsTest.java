@@ -295,9 +295,13 @@ class RangerArrowsTest extends KitTestBase {
     void volleyArmsTheNextTridentThrowToo() {
         PlayerMock p = ranger(10);
         assertTrue(cast(p, Slot.TWO));
-        int before = world.getEntitiesByClass(Arrow.class).size();
+        int beforeArrows = world.getEntitiesByClass(Arrow.class).size();
+        int beforeTridents = world.getEntitiesByClass(Trident.class).size();
         throwTrident(p, 0);
-        assertEquals(before + 4, world.getEntitiesByClass(Arrow.class).size(), "4 fan arrows beside the trident");
+        assertEquals(beforeArrows, world.getEntitiesByClass(Arrow.class).size(),
+                "a trident throw's fan must not spawn arrows");
+        assertEquals(beforeTridents + 1 + 4, world.getEntitiesByClass(Trident.class).size(),
+                "the real throw plus 4 fan tridents");
     }
 
     @Test
