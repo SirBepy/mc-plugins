@@ -58,6 +58,9 @@ public final class GuildMenus {
     private final CommissionMenus commissionMenus;
     private final TrialMenus trialMenus;
     private final HallDesk desk = new HallDesk();
+    /** Set once by {@code GuildPlugin} after the channel registers; null means no mod screen exists
+     * yet, so every player gets the chest (safe during startup, before the channel is wired). */
+    private GuildChannel channel;
 
     public GuildMenus(Guild guild) {
         this.guild = guild;
@@ -71,7 +74,17 @@ public final class GuildMenus {
         return desk;
     }
 
+    /** Lets {@link #open} and {@link #openHallOfFame} hand a modded player the {@code guild:ui} screen
+     * instead of the chest, same branch {@code classes:tree}'s TreeMenu takes for a tree-mod player. */
+    public void setChannel(GuildChannel channel) {
+        this.channel = channel;
+    }
+
     public void open(Player player, Screen screen) {
+        if (channel != null && channel.supports(player)) {
+            channel.send(player, screen);
+            return;
+        }
         player.openInventory(build(player, screen, 0).getInventory());
     }
 
@@ -103,6 +116,10 @@ public final class GuildMenus {
 
     /** Opens the Hall of Fame directly, for the archivist. */
     public void openHallOfFame(Player player) {
+        if (channel != null && channel.supports(player)) {
+            channel.send(player, Screen.HALL_OF_FAME);
+            return;
+        }
         player.openInventory(hallOfFame(player).getInventory());
     }
 

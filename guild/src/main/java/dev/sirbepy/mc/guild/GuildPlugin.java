@@ -8,6 +8,7 @@ import dev.sirbepy.mc.guild.config.GuildConfig;
 import dev.sirbepy.mc.guild.data.GuildStore;
 import dev.sirbepy.mc.guild.econ.VaultBank;
 import dev.sirbepy.mc.guild.events.FirstDragon;
+import dev.sirbepy.mc.guild.gui.GuildChannel;
 import dev.sirbepy.mc.guild.gui.GuildMenus;
 import dev.sirbepy.mc.guild.hall.HallGuard;
 import dev.sirbepy.mc.guild.staff.Dialogue;
@@ -43,6 +44,10 @@ public final class GuildPlugin extends JavaPlugin {
         ZoneClock clock = new ZoneClock(config::get);
         Guild guild = new Guild(config::get, clock, store, new VaultBank(getServer()), new Random());
         GuildMenus menus = new GuildMenus(guild);
+        // Players with the Claude SMP tree mod get every Guild menu as its walnut-and-gold screen
+        // instead of the chest; everyone else is unaffected since the channel only fires once a
+        // client registers it.
+        menus.setChannel(GuildChannel.register(this, guild, menus));
         BossCredit bosses = new BossCredit(clock::nowMillis);
         FarmGuard farms = new FarmGuard(config::get, clock::nowMillis);
         ExploreTracker explore = new ExploreTracker(guild);
