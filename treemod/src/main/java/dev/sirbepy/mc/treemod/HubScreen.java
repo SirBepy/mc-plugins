@@ -17,12 +17,12 @@ import java.util.List;
  */
 public final class HubScreen extends Screen {
 
-    static final int W = 220, H = 150;
+    static final int W = 220;
     static final int ROW_X = 12, ROW_W = W - 24, ROW_Y = 50, ROW_H = 26, ROW_GAP = 6;
 
     private HubData hub;
     private float scale = 1;
-    private int left, top;
+    private int left, top, panelHeight;
 
     public HubScreen(HubData hub) {
         super(Component.literal(hub.className() + " menu"));
@@ -39,10 +39,17 @@ public final class HubScreen extends Screen {
         return false;
     }
 
+    /** The panel's height follows the entry count, same as {@link GuildScreen#computeHeight()} - a
+     * fixed constant here is what let "Change class" render past the panel's own bottom edge. */
+    private int computeHeight() {
+        return ROW_Y + hub.entries().size() * (ROW_H + ROW_GAP) - ROW_GAP + 8;
+    }
+
     private void place() {
-        scale = Math.min(1f, Math.min((width - 8) / (float) W, (height - 8) / (float) H));
+        panelHeight = computeHeight();
+        scale = Math.min(1f, Math.min((width - 8) / (float) W, (height - 8) / (float) panelHeight));
         left = Math.round((width - W * scale) / 2);
-        top = Math.round((height - H * scale) / 2);
+        top = Math.round((height - panelHeight * scale) / 2);
     }
 
     private double localX(double screenX) {
@@ -75,7 +82,7 @@ public final class HubScreen extends Screen {
         g.pose().translate(left, top);
         g.pose().scale(scale, scale);
 
-        TreeScreen.frame(g, W, H);
+        TreeScreen.frame(g, W, panelHeight);
         g.text(font, hub.className(), 12, 10, 0xFF000000 | hub.color(), true);
         g.text(font, "Level " + hub.level() + " · " + hub.points() + (hub.points() == 1 ? " point left" : " points left"),
                 12, 24, TreeScreen.TEXT_DIM, false);
