@@ -81,6 +81,8 @@ nether-wishes:
 # "adminbypass" mode (TownyAdminOffListener), so town build/destroy/switch rules apply to them like to
 # anyone; Towny forgets modes on quit. `/resident toggle adminbypass` switches it back off for the session.
 # To drop everyone, put `towny-admin-off: []` in the server's file: a missing key reads this list.
+# Joe confirmed 2026-10-15 he doesn't need this permanently removed - `/resident toggle adminbypass`
+# per-session is enough; the restriction stays on by default.
 towny-admin-off:
   - a6f30e22-f8d5-4ae8-a69c-2f81662b1950
 
@@ -113,3 +115,22 @@ messages:
   changelog-line: "- <line>"
   changelog-empty: "Nothing in the changelog yet."
   changelog-players-only: "Only players can open the changelog book."
+  # Restart-ASAP countdown (/dont-restart, console-only /restartcountdown). The 120s and 60s
+  # warnings mention /dont-restart so players know it exists; later ones stay short.
+  restart-countdown-started: "<gold>Restarting ASAP: <reason>.</gold>"
+  restart-countdown-warning-120: "<gold>[Server] Restarting in 120 seconds: <reason>. Run /dont-restart to push it back up to an hour.</gold>"
+  restart-countdown-warning-60: "<gold>[Server] Restarting in 60 seconds: <reason>. /dont-restart pushes it back up to an hour.</gold>"
+  restart-countdown-warning-30: "<gold>[Server] Restarting in 30 seconds: <reason>.</gold>"
+  restart-countdown-warning-10: "<gold>[Server] Restarting in 10 seconds. Rejoin in about a minute and accept the resource pack.</gold>"
+  restart-countdown-warning-5: "<gold>[Server] Restarting in 5 seconds.</gold>"
+  restart-countdown-warning-1: "<gold>[Server] Restarting in 1 second.</gold>"
+  restart-countdown-title: "<gold><bold>Restarting in <seconds></bold></gold>"
+  restart-countdown-subtitle: "<yellow>Rejoin in about a minute</yellow>"
+  restart-countdown-delayed: "<yellow>[Server] The restart is holding: someone used /dont-restart.</yellow>"
+  restart-countdown-rearmed: "<gold>[Server] All restart delays cleared; the countdown is starting again.</gold>"
+  restart-countdown-cancelled: "<yellow>[Server] The pending restart was cancelled.</yellow>"
+  restart-countdown-not-pending: "No restart is pending."
+  dont-restart-delayed: "<aqua>You pushed the restart back by up to an hour, or until you disconnect.</aqua>"
+  dont-restart-renewed: "<aqua>Your restart delay was reset to another hour (or until you disconnect).</aqua>"
+  dont-restart-broadcast: "<yellow><player> delayed the restart by up to 1 hour.</yellow>"
+  dont-restart-no-pending: "<yellow>No restart is pending right now.</yellow>"

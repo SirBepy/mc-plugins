@@ -75,6 +75,13 @@ The hub keeps `agents.json` in the state dir: `{ "<uuid>": { "player", "agentId"
 Player agents talk and look things up. Anything that changes live or needs a decision comes back to the hub as `NEEDS HUB`:
 
 - Live restarts, uploads, config edits, console commands that change anything, and commits.
+  - Restart-ASAP policy (Joe, 2026-10-16): once a jar/config/datapack change is staged and ready to
+    take effect, restart as soon as it's staged with `node server/deploy/kinetic.mjs restart
+    "<reason>"` - don't hold off for an empty server and don't ask Joe about timing, that older
+    pattern no longer applies. The Tweaks plugin's own 120s countdown (warnings at
+    120/60/30/10/5/1s) warns players, and any online player can run `/dont-restart` to push it back
+    up to an hour or until they disconnect - see `tweaks/src/main/java/dev/sirbepy/mc/tweaks/restart/`
+    and `server/deploy/KINETIC.md`'s `restart` subcommand section for the full mechanics.
 - After every live restart, a `/changelog` entry: add the restart's player-safe lines (short, about
   19 characters a book line) as the newest entry in live `/plugins/Tweaks/changelog.yml` (read fresh
   on every `/changelog`, no restart needed), then mirror it in `tweaks/src/main/resources/changelog.yml`

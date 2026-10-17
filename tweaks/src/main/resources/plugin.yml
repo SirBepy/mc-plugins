@@ -14,3 +14,6 @@ permissions:
   tweaks.netherwishes.admin:
     description: Move CoffiebagSupreme's Nether wishes (/netherwishes owner) to another player.
     default: op
+  tweaks.dontrestart:
+    description: Push a pending server restart back up to an hour (/dont-restart). On for everyone by default; revoke via LuckPerms if it's abused.
+    default: true

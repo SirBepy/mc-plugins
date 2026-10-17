@@ -3,7 +3,7 @@
 // machine with the secrets file; nothing here calls the panel.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isFreshBootLog, parseBootLog } from "./kinetic.mjs";
+import { commandWasUnknown, hasRestartGo, isFreshBootLog, makeRestartToken, parseBootLog } from "./kinetic.mjs";
 
 const oldLog = [
   "[11:58:01] [bootstrap/INFO]: Running Java 25 (OpenJDK 64-Bit Server VM 25+36-LTS; Eclipse Adoptium Temurin-25+36) on Linux",
@@ -45,4 +45,33 @@ test("a finished boot reports its plugins and ERROR lines", () => {
   assert.equal(done, true);
   assert.deepEqual(enabled, ["LuckPerms", "DragonBalls"]);
   assert.deepEqual(errors, ["[12:30:31] [DiscordSRV - Initialization/ERROR]: No bot token is set"]);
+});
+
+test("an unrecognised console command is detected from the lines appended after it", () => {
+  const before = oldLog;
+  const after = `${oldLog}\n[12:30:01] [Server thread/INFO]: Unknown command. Type "/help" for help.`;
+  assert.equal(commandWasUnknown(before, after), true);
+});
+
+test("ordinary log growth after a command is not mistaken for an unknown command", () => {
+  const before = oldLog;
+  const after = `${oldLog}\n[12:30:01] [Server thread/INFO]: Saving worlds`;
+  assert.equal(commandWasUnknown(before, after), false);
+});
+
+test("an unrelated earlier Unknown command line does not count, only lines appended after this call", () => {
+  const before = `[11:00:00] [Server thread/INFO]: Unknown command. Type "/help" for help.\n${oldLog}`;
+  const after = `${before}\n[12:30:01] [Server thread/INFO]: Saving worlds`;
+  assert.equal(commandWasUnknown(before, after), false);
+});
+
+test("the go marker is matched only for its own token", () => {
+  const log = `${oldLog}\n[12:30:40] [Server thread/INFO]: [Tweaks] RESTART-GO abc123`;
+  assert.equal(hasRestartGo(log, "abc123"), true);
+  assert.equal(hasRestartGo(log, "def456"), false, "a stale marker from a different run never matches");
+});
+
+test("restart tokens are short and url/log-safe", () => {
+  const token = makeRestartToken();
+  assert.match(token, /^[a-z0-9]{4,}$/);
 });

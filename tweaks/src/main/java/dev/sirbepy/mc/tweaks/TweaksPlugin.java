@@ -21,6 +21,8 @@ import dev.sirbepy.mc.tweaks.netherwishes.AutoReplant;
 import dev.sirbepy.mc.tweaks.netherwishes.HeartyFood;
 import dev.sirbepy.mc.tweaks.netherwishes.NetherWishesCommand;
 import dev.sirbepy.mc.tweaks.netherwishes.ZombieTruce;
+import dev.sirbepy.mc.tweaks.restart.RestartCommand;
+import dev.sirbepy.mc.tweaks.restart.RestartCountdownManager;
 import dev.sirbepy.mc.tweaks.seagifts.SeaGifts;
 import dev.sirbepy.mc.tweaks.seagifts.SeaGiftsCommand;
 import dev.sirbepy.mc.tweaks.seagifts.SeaGiftsStore;
@@ -134,6 +136,12 @@ public final class TweaksPlugin extends JavaPlugin {
             getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
                     new NetherWishesCommand(owner -> setOwnerAt("nether-wishes.owner", owner), messages).registerInto(event.registrar()));
         }
+        RestartCountdownManager restartCountdown = new RestartCountdownManager(getServer(), messages, getLogger(),
+                System::currentTimeMillis, () -> getServer().dispatchCommand(getServer().getConsoleSender(), "save-all flush"));
+        getServer().getPluginManager().registerEvents(restartCountdown, this);
+        getServer().getScheduler().runTaskTimer(this, restartCountdown::tick, 20L, 20L);
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
+                new RestartCommand(restartCountdown).registerInto(event.registrar()));
     }
 
     @Override

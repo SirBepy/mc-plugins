@@ -10,9 +10,13 @@
 //   alloc-note <allocation-id> <note> set a note on an allocation
 //   var <ENV_NAME> <value>            set a startup variable
 //   power <start|stop|restart|kill>   send a power action
-//   restart "<reason>"                full live restart: 60/30/10s chat countdown, save-all
-//                                      flush, power restart, then waits for the new boot's
-//                                      "Done (" and prints which plugins enabled
+//   restart "<reason>"                full live restart: restart-ASAP policy, no waiting for an
+//                                      empty server. Tells Tweaks' /restartcountdown to run its
+//                                      120s warned countdown (players can push it back with
+//                                      /dont-restart), waits for its go marker, save-all flush,
+//                                      power restart, then waits for the new boot's "Done (" and
+//                                      prints which plugins enabled. Falls back to a hand-rolled
+//                                      60/30/10s countdown if Tweaks isn't loaded on the server.
 //   cmd "<console command>"           send a console command
 //   log [n]                           last n lines of logs/latest.log (default 100)
 //   ls <dir>                          list files in a server directory
@@ -181,25 +185,80 @@ export function parseBootLog(logText) {
   return { done, enabled, errors };
 }
 
+// Exported for offline testing. A console command Paper doesn't recognise (e.g. Tweaks' own
+// restartcountdown command when that plugin isn't loaded) logs "Unknown command..." on the line(s)
+// appended after it; comparing line counts rather than full text means log lines the server itself
+// appended in between (chat, autosave) don't cause a false negative.
+export function commandWasUnknown(preText, postText) {
+  const beforeLines = preText.split(/\r?\n/).length;
+  const afterLines = postText.split(/\r?\n/);
+  return afterLines.slice(beforeLines).some((line) => line.includes("Unknown command"));
+}
+
+// Exported for offline testing. Matches the exact marker RestartCountdownManager.fire() logs
+// (dev.sirbepy.mc.tweaks.restart), scoped to this run's token so a marker left by an earlier
+// restart (or a stale log line) can never be mistaken for this one's go signal.
+export function hasRestartGo(logText, token) {
+  return logText.includes(`RESTART-GO ${token}`);
+}
+
+// A short random token, not a secret: just unique enough per restart run that kinetic.mjs's poll
+// loop can't confuse this run's go marker with an older one still sitting in the log.
+export function makeRestartToken() {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+async function waitForRestartGo(id, token) {
+  const start = Date.now();
+  for (;;) {
+    await wait(10_000);
+    let text;
+    try {
+      text = await filesContents(id, "/logs/latest.log");
+    } catch {
+      continue; // panel/daemon briefly unreachable; keep polling
+    }
+    if (hasRestartGo(text, token)) {
+      console.log(`restartcountdown signaled go after ${Math.round((Date.now() - start) / 1000)}s`);
+      return;
+    }
+    console.log(`waiting on the restart countdown/delays (${Math.round((Date.now() - start) / 1000)}s elapsed)...`);
+  }
+}
+
 async function cmdRestart(reason) {
   if (!reason) throw new Error('restart requires a reason, e.g. `restart "cartel phone fix"`');
   const id = await serverIdentifier();
   const say = (text) => cmdConsole(`minecraft:tellraw @a ${JSON.stringify({ text, color: "gold" })}`);
 
-  // Read before the countdown so a panel error aborts before players are warned, and so the poll
+  // Read before anything else so a panel error aborts before players are warned, and so the poll
   // loop below can tell a freshly booted log apart from the one the server was still writing.
   const preRestartLog = await filesContents(id, "/logs/latest.log");
   const preRestartFirstLine = preRestartLog.split(/\r?\n/, 1)[0];
 
-  await say(`[Server] Restarting in 60 seconds: ${reason}.`);
-  await wait(30_000);
-  await say(`[Server] Restarting in 30 seconds: ${reason}.`);
-  await wait(20_000);
-  await say(`[Server] Restarting in 10 seconds. Rejoin in about a minute and accept the resource pack.`);
-  await wait(10_000);
-
-  await cmdConsole("save-all flush");
+  // Restart-ASAP policy (no more waiting for an empty server, no asking Joe about timing): tell
+  // Tweaks to run its own 120s warned countdown with /dont-restart support, then wait for its go
+  // marker. If Tweaks isn't loaded, fall back to the old hand-rolled countdown so a restart is
+  // never blocked on the plugin existing.
+  const token = makeRestartToken();
+  await cmdConsole(`restartcountdown start ${token} ${reason}`);
   await wait(2_000);
+  const afterStartLog = await filesContents(id, "/logs/latest.log");
+  if (commandWasUnknown(preRestartLog, afterStartLog)) {
+    console.log("Tweaks' restartcountdown command isn't loaded; falling back to the old hand-rolled countdown.");
+    await say(`[Server] Restarting in 60 seconds: ${reason}.`);
+    await wait(30_000);
+    await say(`[Server] Restarting in 30 seconds: ${reason}.`);
+    await wait(20_000);
+    await say(`[Server] Restarting in 10 seconds. Rejoin in about a minute and accept the resource pack.`);
+    await wait(10_000);
+    await cmdConsole("save-all flush");
+    await wait(2_000);
+  } else {
+    console.log(`restartcountdown started (token ${token}); waiting for its go signal...`);
+    await waitForRestartGo(id, token);
+  }
+
   await cmdPower("restart");
   console.log("restart sent, waiting for the server to come back up...");
 

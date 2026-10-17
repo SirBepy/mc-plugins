@@ -59,14 +59,26 @@ claude-reply.mjs's arguments.
   swaps one exact piece of text and refuses unless it occurs exactly once. From Git Bash, prefix
   `MSYS_NO_PATHCONV=1` so a `/plugins/...` path isn't rewritten to the Git install folder. First
   used 2026-10-06 for Towny's `town_mob_removal_ignored_spawn_causes` (cartel phone).
-- **`restart` subcommand** does the whole live-restart dance in one call:
-  `kinetic.mjs restart "<reason>"` sends an in-chat gold `tellraw` countdown at 60/30/10 seconds
-  (the reason text appears in the 60s and 30s warnings; the 10s warning adds the "rejoin in about a
-  minute, accept the resource pack" reminder), then `save-all flush`, then `power restart`, then
-  polls `/logs/latest.log` every 5 seconds (5-minute timeout) until it sees a fresh boot that
-  reached the ready line, printing which plugins enabled and any ERROR lines from that boot. Folds
-  in four sessions' hand-rolled countdown scripts from 2026-10-06 (`.for_bepy/restart-countdown.mjs`
-  and siblings), so nobody needs to write a new one-off `wait()`-chain script again.
+- **`restart` subcommand** does the whole live-restart dance in one call, under the restart-ASAP
+  policy (2026-10-17): whenever a jar/config/datapack change is staged and ready, restart as soon
+  as it's staged - don't hold off for an empty server or ask Joe about timing, that older pattern no
+  longer applies. `kinetic.mjs restart "<reason>"` sends `restartcountdown start <token> <reason>`
+  to the Tweaks plugin's console-only command, which runs a 120s countdown broadcast to players
+  (warnings at 120/60/30/10/5/1s; the 120s and 60s warnings mention `/dont-restart`, which any
+  online player can run to push the restart back up to an hour or until they disconnect - see
+  `tweaks/src/main/java/dev/sirbepy/mc/tweaks/restart/`). kinetic.mjs then polls `/logs/latest.log`
+  every 10 seconds, with no hard timeout while the plugin reports an active delay, for that
+  countdown's `RESTART-GO <token>` marker (the plugin runs `save-all flush` itself once the
+  countdown reaches zero with no delays active). Once that marker appears, kinetic.mjs sends
+  `power restart`, then polls `/logs/latest.log` every 5 seconds (5-minute timeout) until it sees a
+  fresh boot that reached the ready line, printing which plugins enabled and any ERROR lines from
+  that boot.
+  - **Fallback**: if `restartcountdown start` comes back as an unrecognised console command (Tweaks
+    not loaded on the server), kinetic.mjs falls back to the old hand-rolled 60/30/10s `tellraw`
+    countdown and its own `save-all flush`, so a restart is never blocked on the plugin existing.
+    Folds in four sessions' hand-rolled countdown scripts from 2026-10-06
+    (`.for_bepy/restart-countdown.mjs` and siblings), so nobody needs to write a new one-off
+    `wait()`-chain script again.
   - **Fresh-boot detection**: Paper rotates `logs/latest.log` to a timestamped `.log.gz` on every
     boot and starts a new file, so the subcommand captures the pre-restart log's *first line*
     before sending `power restart`; any later poll whose first line differs is a fresh file. This
@@ -85,8 +97,9 @@ claude-reply.mjs's arguments.
     exercised offline against real and synthetic log text without touching the live server.
   - **The Player Claude heads-up stays a manual step.** This subcommand only talks to the Kinetic
     panel API; it cannot post into Conductor, so whoever runs a restart still posts the
-    heads-up there first, same as before. **Restarts happen only on Joe's go** - this subcommand
-    makes the restart itself one command, it does not make restarting an autonomous decision.
+    heads-up there first, same as before. **Restarting itself no longer needs Joe's go**: the
+    120s warned countdown plus `/dont-restart` is the safety net, so run `restart "<reason>"` as
+    soon as a staged change is ready.
 - **`upload` subcommand** puts one local file into a server directory through the panel's signed
   upload URL, no SFTP key needed: `kinetic.mjs upload server/local/plugins/carry-0.1.0.jar plugins`
   (overwrites a same-named file). Take plugin jars from `server/local/plugins/` after
