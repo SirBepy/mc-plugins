@@ -260,18 +260,15 @@ class PassivesAndAbilitiesTest extends MockClassesTest {
     }
 
     @Test
-    void sneakSwapUsesTheAbilityAndKeepsTheItems() {
+    void sneakSwapIsAPlainSwapAgain() {
+        // Casting moved to click combos (docs/classes.md, Casting); sneak + F only swaps hands.
         PlayerMock warrior = server.addPlayer("Warrior");
         pick(warrior, RpgClass.WARRIOR, 1);
         warrior.setSneaking(true);
         PlayerSwapHandItemsEvent swap = new PlayerSwapHandItemsEvent(warrior, new ItemStack(Material.SHIELD), new ItemStack(Material.IRON_SWORD));
         server.getPluginManager().callEvent(swap);
-        assertTrue(swap.isCancelled());
-        assertTrue(classes.battleCryActive(warrior.getUniqueId()));
-        warrior.setSneaking(false);
-        PlayerSwapHandItemsEvent plainSwap = new PlayerSwapHandItemsEvent(warrior, new ItemStack(Material.SHIELD), new ItemStack(Material.IRON_SWORD));
-        server.getPluginManager().callEvent(plainSwap);
-        assertFalse(plainSwap.isCancelled());
+        assertFalse(swap.isCancelled());
+        assertFalse(classes.battleCryActive(warrior.getUniqueId()));
     }
 
     @Test

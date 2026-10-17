@@ -1,8 +1,5 @@
 package dev.sirbepy.mc.classes;
 
-import dev.sirbepy.mc.classes.talent.Bind;
-import dev.sirbepy.mc.classes.talent.Slot;
-
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,17 +21,19 @@ public final class ClassProfile {
     boolean capNoticeSent;
     /** Spent talent ranks per class, talent id to rank; every class keeps its own tree. */
     final Map<RpgClass, Map<String, Integer>> tree = new EnumMap<>(RpgClass.class);
-    /** The player's own key binds; a slot missing here uses the server default. Shared by every class. */
-    final Map<Slot, Bind> binds = new EnumMap<>(Slot.class);
+    /**
+     * Whether the spell bar shows (the mod's HUD or the boss bar). Saved, so a player who hid it
+     * doesn't get it back on every join.
+     */
+    boolean spellBar = true;
 
     /** {@code c}'s spent ranks, live: the talent engine edits it in place, then marks the store dirty. */
     public Map<String, Integer> tree(RpgClass c) {
         return tree.computeIfAbsent(c, k -> new HashMap<>());
     }
 
-    /** The player's own binds, live, like {@link #tree}. */
-    public Map<Slot, Bind> binds() {
-        return binds;
+    public boolean spellBar() {
+        return spellBar;
     }
 
     public RpgClass active() {

@@ -1,13 +1,13 @@
 import { Vec3 } from 'vec3';
 import {
-  Rcon, assert, buildPlatform, createBot, nbtText, quit, randomOrigin, releasePlatform, sleep, teleport, waitFor, waitForLine,
+  Rcon, assert, buildPlatform, clickCombo, createBot, nbtText, quit, randomOrigin, releasePlatform, sleep, teleport, waitFor, waitForLine,
 } from './lib.mjs';
 
 // RPG classes (GutGr1nder's wish, classes plugin): with no class a player hits exactly as before and
 // earns no class XP; the first pick is free and another class then waits 7 days; a Warrior earns class
 // XP for a hostile mob killed in melee and sees it in the tab footer; Weapon Master at level 25 adds 10%
-// melee damage; sneak + swap hands fires Battle Cry (less damage taken), which then waits out its
-// cooldown; the menu picks a class in two clicks and the Arcanist's Frail Body takes a heart that
+// melee damage; the R-L-R click combo with a sword fires Battle Cry (less damage taken), which then
+// waits out its cooldown; the menu picks a class in two clicks and the Arcanist's Frail Body takes a heart that
 // leaving gives back; Mend heals; going back to the class you left is free; Fleet Foot gives Speed I,
 // Overclock Haste I, and an ore mined without Silk Touch earns Artificer XP.
 const PY = 180;
@@ -144,15 +144,27 @@ try {
     assert(Math.abs(ratio - 1.1) < 0.02, `level-25 punch is 10% harder (${baseline} -> ${boosted}, x${ratio.toFixed(3)})`);
   });
 
-  await step('sneak + swap hands fires Battle Cry, which cuts mob damage and then waits out its cooldown', async () => {
+  await step('the R-L-R combo with a sword fires Battle Cry, which cuts mob damage and then waits out its cooldown', async () => {
     const plainHit = await mobHit(c);
     await admin(`ready ${A}`);
-    const since = a.lines.length;
+    await rcon.command(`minecraft:item replace entity ${A} weapon.mainhand with minecraft:iron_sword`);
+    await waitFor(() => a.heldItem?.name === 'iron_sword', 'A holds the sword');
+    // Sneak + swap hands used to cast; now it must be a plain swap.
     a.setControlState('sneak', true);
     await sleep(300);
+    const swapSince = a.lines.length;
     a._client.write('block_dig', { status: 6, location: { x: 0, y: 0, z: 0 }, face: 0, sequence: 0 });
-    await waitForLine(a, /Battle Cry: take 20\.0% less damage for 10 s \(every 60 s\)/, 5_000, since);
+    await sleep(1_000);
+    assert(!a.lines.slice(swapSince).some((l) => /^Battle Cry:/.test(l)), 'sneak + F no longer casts');
     a.setControlState('sneak', false);
+    await rcon.command(`minecraft:item replace entity ${A} weapon.offhand with minecraft:air`);
+    await rcon.command(`minecraft:item replace entity ${A} weapon.mainhand with minecraft:iron_sword`);
+    await waitFor(() => a.heldItem?.name === 'iron_sword', 'A holds the sword again');
+    await sleep(1_200); // past the combo gap, so nothing above counts
+    const since = a.lines.length;
+    await clickCombo(a, 'RLR');
+    await waitForLine(a, /Battle Cry: take 20\.0% less damage for 10 s \(every 60 s\)/, 5_000, since);
+    await rcon.command(`minecraft:item replace entity ${A} weapon.mainhand with minecraft:air`);
     const cut = await mobHit(a);
     assert(plainHit > 0, `a mob hit hurts a classless player (${plainHit})`);
     assert(Math.abs(cut / plainHit - 0.8) < 0.06, `Battle Cry takes 20% off (${plainHit} -> ${cut})`);

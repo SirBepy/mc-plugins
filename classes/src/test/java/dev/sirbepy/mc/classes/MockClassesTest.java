@@ -62,7 +62,7 @@ abstract class MockClassesTest {
         plugins.registerEvents(passives, plugin);
         plugins.registerEvents(xp, plugin);
         plugins.registerEvents(new ClassSessions(passives, xp, display), plugin);
-        engine = new TalentEngine(plugin, classes, abilities, () -> roll, Map.of(), false, false, BedrockForms.create(plugin));
+        engine = new TalentEngine(plugin, classes, abilities, () -> roll, false, false, BedrockForms.create(plugin));
         engine.start();
     }
 

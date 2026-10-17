@@ -25,7 +25,7 @@ import java.util.function.Consumer;
 
 /**
  * {@code /class}: the menu, {@code choose <class>}, {@code info [class]}, {@code levels},
- * {@code ability [1-3]}, {@code tree [class]}, {@code binds} and {@code leave}; {@code admin ...} for ops and the console (Player Claude).
+ * {@code ability [1-3]}, {@code tree [class]}, {@code hud} and {@code leave}; {@code admin ...} for ops and the console (Player Claude).
  */
 final class ClassCommand {
 
@@ -81,7 +81,7 @@ final class ClassCommand {
                             if (rpg == null) unknown(p, c);
                             else engine.treeMenu().open(p, rpg);
                         }))))
-                .then(Commands.literal("binds").executes(c -> player(c, p -> engine.treeMenu().bindsMenu().open(p))))
+                .then(Commands.literal("hud").executes(c -> player(c, p -> engine.bar().toggle(p))))
                 .then(Commands.literal("leave").executes(c -> player(c, picker::leave)))
                 .then(admin());
         registrar.register(root.build(), "RPG classes: Warrior, Ranger, Arcanist, Artificer, Guardian, Rogue, Paladin");

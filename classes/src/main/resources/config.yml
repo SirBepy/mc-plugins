@@ -19,18 +19,10 @@ change-days: 7
 dual-class-grants:
   - "9366f4f8-b61e-4612-8644-f626a9a378bb"
 
-# Talent trees (docs/classes.md): which sneak + key fires each ability slot for players who never
-# rebound them in /class binds. Inputs: hotbar_1 .. hotbar_9, swap (F), drop (Q), left_air,
-# right_air. Sneak + F also fires ability 1 unless a player bound F to another slot.
-default-binds:
-  one: hotbar_1
-  two: hotbar_2
-  ultimate: hotbar_3
-
 # Paint the tree menu's background with the server resource pack's classes:tree font (Java only).
 # Leave off until the pack with the tree glyphs is live, or players see boxes in the title.
 tree-background: false
 
-# Show each ability as its icon in the held-sneak key legend, drawn by the server resource pack's
+# Show each ability as its icon in the boss-bar spell bar, drawn by the server resource pack's
 # classes:icons font (Java only). Same rule: leave off until that pack is live.
 ability-icons: false

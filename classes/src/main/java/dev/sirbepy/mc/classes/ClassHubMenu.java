@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * {@code /class} for a player who already has a class: a short menu (skill tree, binds, class info,
+ * {@code /class} for a player who already has a class: a short menu (skill tree, spell bar, class info,
  * change class) instead of the full seven-class list, since Joe doesn't want to see the other six
  * classes every time ("i already chose mine"). A classless player still gets the full list
  * ({@link ClassMenu}) unchanged.
@@ -28,7 +28,7 @@ import java.util.UUID;
  */
 public final class ClassHubMenu {
 
-    public static final int TREE_SLOT = 1, BINDS_SLOT = 3, INFO_SLOT = 5, CHANGE_SLOT = 7;
+    public static final int TREE_SLOT = 1, SPELL_BAR_SLOT = 3, INFO_SLOT = 5, CHANGE_SLOT = 7;
 
     private final Classes classes;
     private final ClassMenu classMenu;
@@ -61,9 +61,13 @@ public final class ClassHubMenu {
         menu.set(TREE_SLOT, named(new ItemStack(Material.OAK_SAPLING), "Skill tree", c.color(),
                 List.of("Spend your talent points, see every ability")),
                 (shown, click) -> engine.treeMenu().open(player, c));
-        menu.set(BINDS_SLOT, named(new ItemStack(Material.TRIPWIRE_HOOK), "Binds", NamedTextColor.WHITE,
-                List.of("Which sneak + key fires each ability")),
-                (shown, click) -> engine.treeMenu().bindsMenu().open(player));
+        boolean barOn = classes.profile(id).spellBar();
+        menu.set(SPELL_BAR_SLOT, named(new ItemStack(Material.ENDER_EYE), "Spell bar: " + (barOn ? "on" : "off"), NamedTextColor.WHITE,
+                List.of("Your abilities, their combos and cooldowns", "Click to " + (barOn ? "hide" : "show") + " it")),
+                (shown, click) -> {
+                    engine.bar().toggle(player);
+                    shown.adopt(buildChest(player, c));
+                });
         menu.set(INFO_SLOT, named(new ItemStack(c.icon()), "Class info", c.color(), List.of(
                         c.passiveLine(classes.level(id)), c.abilityLine(classes.level(id)), c.weaknessLine())),
                 (shown, click) -> {

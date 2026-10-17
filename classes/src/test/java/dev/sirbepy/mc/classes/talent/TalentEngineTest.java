@@ -18,8 +18,11 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.inventory.ClickType;
-import org.bukkit.event.player.PlayerItemHeldEvent;
-import org.bukkit.event.player.PlayerToggleSneakEvent;
+import org.bukkit.block.BlockFace;
+import org.bukkit.event.Event;
+import org.bukkit.event.block.Action;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
 import org.junit.jupiter.api.AfterEach;
@@ -46,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** The engine with a fake Warrior kit: points, gates, resource, slots, binds, summons, the menu. */
+/** The engine with a fake Warrior kit: points, gates, resource, slots, combos, summons, the menu. */
 class TalentEngineTest {
 
     @TempDir
@@ -70,7 +73,7 @@ class TalentEngineTest {
         classes = new Classes(store, () -> now,
                 ZoneId.of("Europe/Zagreb"), 300, Duration.ofDays(7));
         Abilities abilities = new Abilities(classes, (task, ticks) -> server.getScheduler().runTaskLater(plugin, task, ticks));
-        engine = new TalentEngine(plugin, classes, abilities, () -> 0.5, Map.of(), false, false, BedrockForms.create(plugin),
+        engine = new TalentEngine(plugin, classes, abilities, () -> 0.5, false, false, BedrockForms.create(plugin),
                 (c, ctx) -> c == RpgClass.WARRIOR ? (kit = new FakeKit(ctx)) : Kits.create(c, ctx));
         engine.start();
         server.getPluginManager().registerEvents(new Listener() {
@@ -160,13 +163,13 @@ class TalentEngineTest {
         PlayerMock p = warrior(10);
         UUID id = p.getUniqueId();
         learn(p, "a1", 2);
-        engine.binds().set(id, Slot.TWO, Bind.DROP);
+        classes.toggleSpellBar(id);
         store.save();
         ClassStore fresh = new ClassStore(new File(dir, "players.yml"), Logger.getLogger("test"));
         fresh.load();
         Classes again = new Classes(fresh, () -> now, ZoneId.of("Europe/Zagreb"), 300, Duration.ofDays(7));
         assertEquals(2, again.profile(id).tree(RpgClass.WARRIOR).get("a1"));
-        assertEquals(Bind.DROP, again.profile(id).binds().get(Slot.TWO));
+        assertFalse(again.profile(id).spellBar(), "a hidden spell bar stays hidden");
         engine.talents().respec(id, RpgClass.WARRIOR);
         assertEquals(0, engine.talents().spent(id, RpgClass.WARRIOR));
     }
@@ -208,20 +211,35 @@ class TalentEngineTest {
     }
 
     @Test
-    void theBarShowsTheResourceAndSneakingShowsTheLegend() {
+    void theSpellBarIsAlwaysUpWithEveryCombo() {
         PlayerMock p = warrior(25);
-        engine.resources().gain(p, 40);
         server.getScheduler().performTicks(5);
-        assertEquals(1, count(p));
-        p.setSneaking(true);
-        server.getPluginManager().callEvent(new PlayerToggleSneakEvent(p, true));
-        assertFalse(engine.bindListener().showLegend(p));
-        now += 500;
-        assertTrue(engine.bindListener().showLegend(p));
+        assertEquals(1, count(p), "up with an empty resource and no fight");
         String legend = plain(engine.bar().legend(p, RpgClass.WARRIOR, kit));
-        assertTrue(legend.contains("[1] Battle Cry"), legend);
-        assertTrue(legend.contains("[2] Fake Two"), legend);
-        assertTrue(legend.contains("[3] Fake Ult (needs 100 Fury)"), legend);
+        assertEquals("Fury 0   [R-L-R] Battle Cry   [R-R-L] Fake Two   [R-L-L] Fake Ult (needs 100 Fury)", legend);
+    }
+
+    @Test
+    void classHudHidesTheSpellBarUntilToggledAgain() {
+        PlayerMock p = warrior(25);
+        server.getScheduler().performTicks(5);
+        engine.bar().toggle(p);
+        assertEquals(0, count(p));
+        server.getScheduler().performTicks(5);
+        assertEquals(0, count(p), "stays hidden");
+        engine.bar().toggle(p);
+        assertEquals(1, count(p));
+    }
+
+    @Test
+    void aComboInProgressShowsItsClicksInTheBar() {
+        PlayerMock p = warrior(25);
+        sword(p);
+        engine.combos().click(p, Combo.Click.RIGHT);
+        assertEquals(List.of(Combo.Click.RIGHT), engine.combos().progress(p));
+        assertEquals("R - ? - ?", plain(ResourceBar.casting(engine.combos().progress(p), RpgClass.WARRIOR)));
+        now += 1_100;
+        assertTrue(engine.combos().progress(p).isEmpty(), "a combo left alone runs out");
     }
 
     @Test
@@ -232,12 +250,15 @@ class TalentEngineTest {
         net.kyori.adventure.text.Component legend = icons.bar().legend(p, RpgClass.WARRIOR, warrior);
         String text = plain(legend);
         String rage = warrior.resourceName();
-        assertEquals(" 1    2    3 (needs 100 " + rage + ")", text);
-        net.kyori.adventure.text.Component glyph = legend.children().getFirst();
+        assertTrue(text.startsWith(rage + " 0   "), text);
+        for (String combo : List.of(" R-L-R", " R-R-L", " R-L-L (needs 100 " + rage + ")")) assertTrue(text.contains(combo), text);
+        assertFalse(text.contains("Battle Cry"), "the icon stands in for the name");
+        // Children: the gap, then each slot's glyph and its text.
+        net.kyori.adventure.text.Component glyph = legend.children().get(1);
         assertEquals(AbilityIcons.FONT, glyph.font());
         // The fake kit's made-up names have no icon, so they fall back to the text form.
         String fallback = plain(engine.bar().legend(p, RpgClass.WARRIOR, kit));
-        assertTrue(fallback.contains("[2] Fake Two"), fallback);
+        assertTrue(fallback.contains("[R-R-L] Fake Two"), fallback);
     }
 
     @Test
@@ -262,7 +283,7 @@ class TalentEngineTest {
     /** Real kits, ability icons on, never started. */
     private TalentEngine iconEngine() {
         return new TalentEngine(plugin, classes, new Abilities(classes, (task, ticks) -> { }), () -> 0.5,
-                Map.of(), false, true, BedrockForms.create(plugin));
+                false, true, BedrockForms.create(plugin));
     }
 
     private static int count(PlayerMock p) {
@@ -338,34 +359,137 @@ class TalentEngineTest {
         assertTrue(fired.isEmpty());
     }
 
-    // Binds
+    // Combos
 
-    @Test
-    void sneakPlusAHotbarKeyCastsAndKeepsTheHeldSlot() {
-        PlayerMock p = warrior(10);
-        p.setSneaking(true);
-        PlayerItemHeldEvent held = new PlayerItemHeldEvent(p, 4, 1);
-        server.getPluginManager().callEvent(held);
-        assertTrue(held.isCancelled());
-        assertEquals(1, kit.twoCasts);
-        p.setSneaking(false);
-        PlayerItemHeldEvent normal = new PlayerItemHeldEvent(p, 4, 1);
-        server.getPluginManager().callEvent(normal);
-        assertFalse(normal.isCancelled());
+    static final Combo.Click L = Combo.Click.LEFT, R = Combo.Click.RIGHT;
+
+    void sword(PlayerMock p) {
+        p.getInventory().setItemInMainHand(new ItemStack(Material.IRON_SWORD));
+    }
+
+    /** Clicks 200 ms apart: past the duplicate window, inside the combo gap. */
+    List<ComboListener.Result> clicks(ComboListener combos, PlayerMock p, Combo.Click... clicks) {
+        List<ComboListener.Result> out = new ArrayList<>();
+        for (Combo.Click c : clicks) {
+            now += 200;
+            out.add(combos.click(p, c));
+        }
+        return out;
     }
 
     @Test
-    void takingAnotherSlotsKeySwapsTheTwo() {
+    void withASwordRightLeftRightCastsAbilityOneAndRightRightLeftAbilityTwo() {
         PlayerMock p = warrior(10);
-        UUID id = p.getUniqueId();
-        engine.binds().set(id, Slot.ONE, Bind.HOTBAR_2);
-        assertEquals(Bind.HOTBAR_2, engine.binds().bind(id, Slot.ONE));
-        assertEquals(Bind.HOTBAR_1, engine.binds().bind(id, Slot.TWO));
-        assertEquals(Slot.ONE, engine.binds().slotFor(id, Bind.SWAP), "F still fires ability 1");
-        engine.binds().set(id, Slot.ULTIMATE, Bind.SWAP);
-        assertEquals(Slot.ULTIMATE, engine.binds().slotFor(id, Bind.SWAP));
-        engine.binds().reset(id);
-        assertEquals(Bind.HOTBAR_1, engine.binds().bind(id, Slot.ONE));
+        sword(p);
+        assertEquals(List.of(ComboListener.Result.STARTED, ComboListener.Result.CONTINUED, ComboListener.Result.CAST),
+                clicks(engine.combos(), p, R, L, R));
+        assertTrue(classes.battleCryActive(p.getUniqueId()));
+        clicks(engine.combos(), p, R, R, L);
+        assertEquals(1, kit.twoCasts);
+        assertEquals(List.of(Slot.ONE, Slot.TWO), fired.stream().map(ClassAbilityEvent::slot).toList());
+    }
+
+    @Test
+    void theOpeningClickPassesThroughAndTheRestAreCancelled() {
+        PlayerMock p = warrior(10);
+        sword(p);
+        List<org.bukkit.event.player.PlayerInteractEvent> events = new ArrayList<>();
+        for (Action a : List.of(Action.RIGHT_CLICK_AIR, Action.LEFT_CLICK_AIR, Action.RIGHT_CLICK_AIR)) {
+            now += 200;
+            var e = new org.bukkit.event.player.PlayerInteractEvent(p, a, p.getInventory().getItemInMainHand(), null,
+                    BlockFace.SELF, EquipmentSlot.HAND);
+            server.getPluginManager().callEvent(e);
+            events.add(e);
+        }
+        assertEquals(Event.Result.DEFAULT, events.get(0).useItemInHand(), "the first right click still uses the item");
+        assertEquals(Event.Result.DENY, events.get(2).useItemInHand(), "the last one doesn't");
+        assertTrue(classes.battleCryActive(p.getUniqueId()));
+    }
+
+    @Test
+    void plainSwingsSneakingClicksAndNonWeaponsNeverStartACombo() {
+        PlayerMock p = warrior(10);
+        sword(p);
+        assertEquals(ComboListener.Result.IGNORED, engine.combos().click(p, L), "a sword's combos open with a right click");
+        p.setSneaking(true);
+        assertEquals(ComboListener.Result.IGNORED, engine.combos().click(p, R), "sneak + click stays AuraSkills'");
+        p.setSneaking(false);
+        p.getInventory().setItemInMainHand(new ItemStack(Material.IRON_PICKAXE));
+        clicks(engine.combos(), p, R, L, R);
+        p.getInventory().setItemInMainHand(new ItemStack(Material.BOW));
+        clicks(engine.combos(), p, L, R, L);
+        assertTrue(fired.isEmpty(), "a pickaxe and a bow are no Warrior weapons");
+    }
+
+    @Test
+    void aRangersBowCombosOpenWithALeftClick() {
+        PlayerMock p = server.addPlayer();
+        classes.choose(p.getUniqueId(), RpgClass.RANGER);
+        p.getInventory().setItemInMainHand(new ItemStack(Material.BOW));
+        assertEquals(ComboListener.Result.IGNORED, engine.combos().click(p, R), "a right click draws the bow");
+        clicks(engine.combos(), p, L, R, L);
+        assertEquals(List.of(Slot.ONE), fired.stream().map(ClassAbilityEvent::slot).toList());
+        p.getInventory().setItemInMainHand(new ItemStack(Material.TRIDENT));
+        assertEquals("R-L-R", Combo.label(Slot.ONE, engine.combos().first(p, RpgClass.RANGER)), "a trident opens with a right click");
+    }
+
+    @Test
+    void oneClickArrivingTwiceCountsOnceAndTooLongAGapStartsOver() {
+        PlayerMock p = warrior(10);
+        sword(p);
+        now += 200;
+        engine.combos().click(p, R);
+        now += 10;
+        assertEquals(ComboListener.Result.DUPLICATE, engine.combos().click(p, R));
+        clicks(engine.combos(), p, L, R);
+        assertEquals(1, fired.size(), "R (R) L R is still R-L-R");
+        now += 200;
+        engine.combos().click(p, R);
+        now += 1_200;
+        engine.combos().click(p, L);
+        now += 200;
+        engine.combos().click(p, R);
+        assertEquals(1, fired.size(), "a 1.2 s gap broke that one");
+    }
+
+    @Test
+    void anOpeningRightClickThatIsHeldDropsTheCombo() {
+        PlayerMock p = warrior(10);
+        sword(p);
+        boolean[] held = {true};
+        ComboListener combos = new ComboListener(plugin, classes, engine.slots(), () -> now, pl -> held[0]);
+        clicks(combos, p, R);
+        server.getScheduler().performTicks(ComboListener.HOLD_CHECK_TICKS);
+        assertTrue(combos.progress(p).isEmpty(), "a raised shield or drawn bow is no tap");
+        held[0] = false;
+        clicks(combos, p, R);
+        server.getScheduler().performTicks(ComboListener.HOLD_CHECK_TICKS);
+        clicks(combos, p, L, R);
+        assertTrue(classes.battleCryActive(p.getUniqueId()));
+    }
+
+    @Test
+    void threeOfTheOpeningClickCastNothing() {
+        PlayerMock p = warrior(10);
+        sword(p);
+        assertEquals(ComboListener.Result.FIZZLED, clicks(engine.combos(), p, R, R, R).get(2));
+        assertTrue(fired.isEmpty());
+    }
+
+    @Test
+    void everyClassCastsWithItsOwnWeaponsOnly() {
+        assertTrue(Combo.weapon(RpgClass.WARRIOR, Material.NETHERITE_AXE));
+        assertTrue(Combo.weapon(RpgClass.WARRIOR, Material.MACE));
+        assertFalse(Combo.weapon(RpgClass.WARRIOR, Material.DIAMOND_PICKAXE), "a pickaxe isn't an axe");
+        assertFalse(Combo.weapon(RpgClass.PALADIN, Material.IRON_AXE));
+        assertFalse(Combo.weapon(RpgClass.ROGUE, Material.MACE));
+        assertTrue(Combo.weapon(RpgClass.RANGER, Material.CROSSBOW));
+        assertTrue(Combo.weapon(RpgClass.ARCANIST, Material.BLAZE_ROD));
+        assertFalse(Combo.weapon(RpgClass.ARCANIST, Material.STICK));
+        assertTrue(Combo.weapon(RpgClass.ARTIFICER, Material.CROSSBOW));
+        assertFalse(Combo.weapon(RpgClass.ARTIFICER, Material.IRON_PICKAXE));
+        assertEquals(List.of(L, R, R), Combo.pattern(Slot.ULTIMATE, L));
+        assertEquals(Slot.TWO, Combo.match(List.of(L, L, R)));
     }
 
     // Damage, summons, allies

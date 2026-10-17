@@ -20,7 +20,7 @@ import java.util.UUID;
 import java.util.function.BiConsumer;
 
 /**
- * The active abilities, used by {@code /class ability}, the menu button or sneak + swap hands.
+ * The active abilities, used by {@code /class ability}, the menu button or a click combo.
  * Each is a self-buff, so none of them reaches another player directly; Battle Cry's damage cut
  * counts half against player hits ({@link ClassCombat}).
  */

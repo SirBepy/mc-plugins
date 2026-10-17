@@ -30,13 +30,19 @@ async function lumberjack(x, z) {
   return bot;
 }
 
-/** Readies Treecapitator with a right-click, then breaks the log at +1 x from the bot's feet. */
+/**
+ * Readies Treecapitator with sneak + right-click (require_sneak, so a plain right click stays free
+ * for Classes combos), then breaks the log at +1 x from the bot's feet.
+ */
 async function swing(bot) {
   const log = () => bot.blockAt(bot.entity.position.offset(1, 0, 0).floored());
   await waitFor(() => log()?.name === 'oak_log', 'the log to cut loaded client-side');
+  bot.setControlState('sneak', true);
+  await sleep(200);
   bot.activateItem();
   await sleep(300);
   bot.deactivateItem();
+  bot.setControlState('sneak', false);
   await sleep(500);
   await bot.dig(log(), true);
 }

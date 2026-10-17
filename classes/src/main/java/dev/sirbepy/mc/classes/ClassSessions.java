@@ -6,7 +6,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-/** Join: Frail Body, footer and the greeting. Ability keys live in the talent engine's BindListener. */
+/** Join: Frail Body, footer and the greeting. Ability casting lives in the talent engine's ComboListener. */
 public final class ClassSessions implements Listener {
 
     private final ClassPassives passives;

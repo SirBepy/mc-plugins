@@ -37,9 +37,9 @@ JEDNU KLASU SADA"
 
 Every value grows in even steps from level 1 to level 25. "Half against players" means the
 percentage is halved when the other side of the hit is a player (Weapon Master +10% is +5% on a
-player). Abilities fire with `/class ability [1|2|3]`, the buttons in `/class` and `/class tree`, or sneak +
-their bound key (`/class binds`); sneak + swap hands (F) also fires ability 1 unless F is bound to
-another slot. The key's normal action is cancelled, so items stay where they are.
+player). Abilities fire with a three-click combo while holding a class weapon (docs/classes-revamp.md,
+Casting), `/class ability [1|2|3]`, the buttons in `/class` and `/class tree`, or the talent-tree
+mod's optional ability keys.
 
 | Class | Passive | Ability (cooldown) | Weakness | Class XP from |
 | --- | --- | --- | --- | --- |
@@ -153,9 +153,9 @@ when they hit the cap, and a title and chat line on every level-up. XP past leve
 ## Showing the class
 
 AuraSkills redraws its HP/mana action bar every 5 ticks, so the plugin never uses the action bar. The
-class resource is a boss bar instead, up while it has something in it or the player is fighting;
-holding sneak for 0.4 s swaps its text for the key legend (each ability's icon and key with
-`ability-icons` on, Java only). Java
+spell bar (the resource and every ability's combo and cooldown) is a boss bar instead, always up for a
+player with a class; `/class hud` hides and shows it. Players with the talent-tree mod get it drawn
+next to the hotbar instead and no boss bar (docs/classes-revamp.md, Spell bar). Java
 players see `Warrior · Level 7 (30/110 XP) · today 45/300 XP` as the tab list footer (none of our other
 plugins sets one); everyone gets a chat line on join, a title on level-up, and the ability's message and a
 "ready again" line in chat. The plugin adds nothing to names or nametags.
@@ -170,7 +170,7 @@ plugins sets one); everyone gets a chat line on join, a title on level-up, and t
 | `/class levels` | players | All seven classes' levels |
 | `/class ability [1\|2\|3]` | players | Use ability 1 (default), ability 2 or the ultimate |
 | `/class tree [class]` | players | The talent tree (another class's is view only) |
-| `/class binds` | players | Which sneak + key fires each ability |
+| `/class hud` | players | Hide or show the spell bar (saved) |
 | `/class leave` | players | Back to no class |
 | `/class secondary <class>` | players with a dual-class grant | Pick the permanent secondary class (once, ever) |
 | `/class admin info <player>` | `classes.admin` (ops, console) | Active class, today's XP, every class's XP and lock |
@@ -189,9 +189,9 @@ Admin commands take a name (online or seen before) or a UUID.
 ## Files
 
 - `plugins/Classes/config.yml`: `daily-xp-cap`, `zone`, `change-days`, `dual-class-grants`,
-  `default-binds`, `tree-background`, `ability-icons`.
+  `tree-background`, `ability-icons`.
 - `plugins/Classes/players.yml`: per UUID, the active class, the secondary class (if granted and
-  picked), the last pick and when, each class's XP, today's earnings, every class's talent ranks and the player's key binds. Saved every minute when
+  picked), the last pick and when, each class's XP, today's earnings, every class's talent ranks and `spell-bar: false` for a player who hid the spell bar. Saved every minute when
   something changed, and on shutdown.
 
 ## Tests
@@ -200,11 +200,11 @@ Admin commands take a name (online or seen before) or a UUID.
   back, the daily cap at Zagreb midnight, every damage modifier and its half-against-players rule,
   Battle Cry and Last Stand, each class's XP source (including Guardian's survived hits and Paladin's
   healed points), Insight, Careful Hands, Blessed Vigor, Frail Body and Heavy Plate, the abilities and
-  cooldowns (Shadow Step's dash, Smite's mob-only damage and cleanse), sneak + swap, the footer, and
+  cooldowns (Shadow Step's dash, Smite's mob-only damage and cleanse), sneak + swap no longer casting, the footer, and
   the menu's two-click pick and lock display.
 - `e2e/classes.mjs` (bots on the 26.2 e2e server): no class hits as before and earns nothing, the first
   pick and the lock, a melee kill's Warrior XP and the tab footer, a level-25 punch 10% harder, Battle
-  Cry by sneak + swap cutting a mob hit by 20% and then on cooldown, the menu's two-click Arcanist pick
+  Cry by the R-L-R sword combo (and not by sneak + swap) cutting a mob hit by 20% and then on cooldown, the menu's two-click Arcanist pick
   and its 9 hearts, Mend, leaving and going back free, Fleet Foot and Overclock effects, and Artificer
   ore XP. Not yet extended to Guardian, Rogue or Paladin (repo-only dispatch, 2026-10-11); covered by
   `:classes:test` for now.

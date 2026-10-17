@@ -64,7 +64,7 @@ class ClassHubMenuTest {
         classes = new Classes(new ClassStore(new File(dir, "players.yml"), Logger.getLogger("test")), () -> now,
                 ZoneId.of("Europe/Zagreb"), 300, Duration.ofDays(7));
         Abilities abilities = new Abilities(classes, (task, ticks) -> server.getScheduler().runTaskLater(plugin, task, ticks));
-        engine = new TalentEngine(plugin, classes, abilities, () -> 0.5, Map.of(), false, false, BedrockForms.create(plugin),
+        engine = new TalentEngine(plugin, classes, abilities, () -> 0.5, false, false, BedrockForms.create(plugin),
                 Kits::create);
         engine.start();
         channel = engine.fakeTreeChannel(p -> modded.contains(p.getUniqueId()),

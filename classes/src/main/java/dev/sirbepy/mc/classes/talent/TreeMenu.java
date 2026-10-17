@@ -34,31 +34,31 @@ public final class TreeMenu {
     static final int VIEW_ROWS = 5;
     /** Canvas row of each tier, index = tier. */
     static final int[] TIER_ROW = {-1, 2, 5, 8, 11, 14};
-    static final int BACK = 45, UP = 47, DOWN = 48, POINTS = 49, BINDS = 51, RESPEC = 52, CLOSE = 53;
+    static final int BACK = 45, UP = 47, DOWN = 48, POINTS = 49, SPELL_BAR = 51, RESPEC = 52, CLOSE = 53;
 
     private final Classes classes;
     private final Talents talents;
     private final Map<RpgClass, ClassKit> kits;
     private final AbilitySlots slots;
-    private final Binds binds;
+    private final ComboListener combos;
+    private final ResourceBar bar;
     private final Resources resources;
     private final TreeLook look;
-    private final BindsMenu bindsMenu;
     /** Back to the class list ({@code /class}). */
     private Consumer<Player> back = p -> p.closeInventory();
     /** Players with the tree mod get its screen instead of the chest; null until the engine wires it. */
     private TreeChannel channel;
 
-    public TreeMenu(Classes classes, Talents talents, Map<RpgClass, ClassKit> kits, AbilitySlots slots, Binds binds,
-                    Resources resources, TreeLook look) {
+    public TreeMenu(Classes classes, Talents talents, Map<RpgClass, ClassKit> kits, AbilitySlots slots, ComboListener combos,
+                    ResourceBar bar, Resources resources, TreeLook look) {
         this.classes = classes;
         this.talents = talents;
         this.kits = kits;
         this.slots = slots;
-        this.binds = binds;
+        this.combos = combos;
+        this.bar = bar;
         this.resources = resources;
         this.look = look;
-        this.bindsMenu = new BindsMenu(classes, binds, slots, this);
     }
 
     public void setBack(Consumer<Player> back) {
@@ -74,8 +74,14 @@ public final class TreeMenu {
         return channel;
     }
 
-    public BindsMenu bindsMenu() {
-        return bindsMenu;
+    /** The spell bar, which the tree's toggle button and the mod's hud request show or hide. */
+    public ResourceBar bar() {
+        return bar;
+    }
+
+    /** "Ability 1 · R-L-R with a sword, axe or mace": a slot's combo for the player's held weapon. */
+    String comboLine(Player player, RpgClass c, Slot s) {
+        return s.label() + " · " + Combo.label(s, combos.first(player, c)) + " with " + Combo.weapons(c);
     }
 
     /** The player's active class's tree, or a message with no class. */
@@ -185,7 +191,7 @@ public final class TreeMenu {
         if (s != null) {
             int level = classes.level(id);
             List<String> lore = new ArrayList<>();
-            lore.add(s.label() + " · " + binds.bind(id, s).label());
+            lore.add(comboLine(player, c, s));
             lore.add(abilityLine(player, c, s));
             if (s == Slot.ULTIMATE) lore.add("Needs a full " + kit.resourceName() + " bar");
             boolean own = classes.active(id) == c;
@@ -297,9 +303,13 @@ public final class TreeMenu {
                 c.color(), List.of(talents.spent(id, c) + " spent of " + talents.points(id, c),
                         "One point per level after the first")));
         if (!own) return;
-        menu.set(BINDS, named(new ItemStack(Material.TRIPWIRE_HOOK), "Key binds", NamedTextColor.WHITE,
-                        List.of("Which sneak + key fires each ability")),
-                (shown, click) -> bindsMenu.open(player));
+        boolean barOn = classes.profile(id).spellBar();
+        menu.set(SPELL_BAR, named(new ItemStack(Material.ENDER_EYE), "Spell bar: " + (barOn ? "on" : "off"), NamedTextColor.WHITE,
+                        List.of("Your abilities, their combos and cooldowns", "!Click to " + (barOn ? "hide" : "show") + " it")),
+                (shown, click) -> {
+                    bar.toggle(player);
+                    shown.adopt(build(player, c, top, false));
+                });
         menu.set(RESPEC, named(new ItemStack(Material.WRITABLE_BOOK), "Respec", NamedTextColor.WHITE,
                         List.of(confirmRespec ? "!Click again to refund every point" : "Refund every point in this tree, free")),
                 (shown, click) -> {

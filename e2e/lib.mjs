@@ -216,6 +216,32 @@ export async function tryOpen(bot, block, timeoutMs = 3_000) {
   });
 }
 
+/**
+ * Clicks a Classes spell combo ("RLR") with whatever the bot holds: R is a right-click tap
+ * (use_item then release). L is what a real client sends for a left click: a swing, plus a
+ * start-and-abort dig on the block under the cursor. Paper turns a bare swing at a block into no
+ * interact at all (only the dig counts there), and a swing at the sky into LEFT_CLICK_AIR.
+ * 250 ms apart: past the plugin's 80 ms same-click window, well inside its 1 s combo gap.
+ */
+export async function clickCombo(bot, letters) {
+  for (const letter of letters) {
+    if (letter === 'R') {
+      bot.activateItem();
+      await sleep(50);
+      bot.deactivateItem();
+    } else {
+      bot.swingArm('right');
+      const block = bot.blockAtCursor(4.5);
+      if (block) {
+        for (const status of [0, 1]) {
+          bot._client.write('block_dig', { status, location: block.position, face: 1, sequence: 0 });
+        }
+      }
+    }
+    await sleep(250);
+  }
+}
+
 export async function waitForLine(bot, pattern, timeoutMs = 10_000, since = 0) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {

@@ -213,9 +213,17 @@ public final class Classes {
         if (until != null) cooldownUntil.put(player, until - millis);
     }
 
-    /** For the talent engine, which keeps ranks and binds in the profile but has no store of its own. */
+    /** For the talent engine, which keeps ranks in the profile but has no store of its own. */
     public void markDirty() {
         store.markDirty();
+    }
+
+    /** Shows or hides the player's spell bar ({@code /class hud}); returns the new state. */
+    public boolean toggleSpellBar(UUID player) {
+        ClassProfile p = profile(player);
+        p.spellBar = !p.spellBar;
+        store.markDirty();
+        return p.spellBar;
     }
 
     public long now() {

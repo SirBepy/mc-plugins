@@ -27,7 +27,9 @@ mana_abilities:
     unlock: 6
     level_up: 6
     max_level: 0
-    require_sneak: false
+    # Sneak + right click readies it: a plain right click with an axe is the first click of a Classes
+    # spell combo (docs/classes.md, Casting), and Classes ignores clicks while sneaking.
+    require_sneak: true
     check_offhand: true
     sneak_offhand_bypass: true
     # The per-wood-type base cap left big jungle, dark oak and cherry trees half standing.
@@ -97,7 +99,9 @@ mana_abilities:
     max_level: 0
     enable_message: true
     enable_sound: true
-    always_enabled: false
+    # Always on, so a left click with a bow no longer toggles it: bow and crossbow Classes spell
+    # combos start with a left click (docs/classes.md, Casting).
+    always_enabled: true
   auraskills/absorption:
     enabled: true
     base_value: 2.0
@@ -123,7 +127,9 @@ mana_abilities:
     unlock: 6
     level_up: 6
     max_level: 0
-    require_sneak: false
+    # Sneak + right click readies it, same reason as Treecapitator: a plain right click with a sword
+    # starts a Classes spell combo.
+    require_sneak: true
     check_offhand: true
     sneak_offhand_bypass: true
 file_version: 4

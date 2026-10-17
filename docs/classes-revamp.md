@@ -12,11 +12,12 @@ Decisions (Joe, 2026-10-15):
 - **Size:** 33 nodes per class, shown as a scrolling canvas, not a single 9x6 screen.
 - **Extras:** a class resource on a boss bar, a 2nd ability at level 10, an ultimate at level 25,
   particles and sounds on every proc.
-- **Keys:** sneak + a key, rebindable in `/class binds`, with a legend after holding sneak for 0.4 s.
+- **Casting:** three-click combos with a class weapon (Joe, 2026-10-17, replacing sneak + key binds
+  and `/class binds`), and an always-on spell bar: the mod's HUD by the hotbar, or a boss bar.
 - **Respec:** always free.
 - **Look:** Java can get a painted tree background from the server resource pack (`tree-background`
   in config.yml, off until the pack carries the glyphs); Bedrock always gets the plain chest. The
-  held-sneak legend can show each ability as its icon (`ability-icons`, same rule); Joe's ask,
+  boss-bar spell bar can show each ability as its icon (`ability-icons`, same rule); Joe's ask,
   2026-10-16.
 
 Unchanged: the 7 classes, levels 1-25 per class, the class XP sources, the 300 XP daily cap, the 7-day
@@ -62,33 +63,69 @@ half its passive and its full weakness, but no tree, abilities or resource).
 - **Respec is free and unlimited:** a button in the tree menu refunds every point in that class.
   Keystones are refunded too, and the replaced ability comes back.
 
-## Abilities, keys and the legend
+## Casting
 
-| Slot | Unlocks | Default key | Notes |
-| --- | --- | --- | --- |
-| Ability 1 | Level 1 | Sneak + 1 | Today's ability (Battle Cry, Fleet Foot...). The old Sneak + F stays as an extra bind for it |
-| Ability 2 | Level 10 | Sneak + 2 | New per class, see below |
-| Ultimate | Level 25 | Sneak + 3 | Needs a full resource bar (100) and is off cooldown (5 min) |
+| Slot | Unlocks | Sword, axe, mace, trident, blaze rod | Bow, crossbow | Notes |
+| --- | --- | --- | --- | --- |
+| Ability 1 | Level 1 | R-L-R | L-R-L | Today's ability (Battle Cry, Fleet Foot...) |
+| Ability 2 | Level 10 | R-R-L | L-L-R | New per class, see below |
+| Ultimate | Level 25 | R-L-L | L-R-R | Needs a full resource bar (100) and is off cooldown (5 min) |
 
-- Sneak + a hotbar key fires the ability and cancels the slot change, so the held item stays put.
-  Switching slots with the scroll wheel while sneaking still works.
-- **Legend:** after holding sneak for 0.4 s the resource boss bar's text changes to the key legend,
-  for example `[1] Battle Cry  [2] Charge (12s)  [3] Ground Slam (needs 100 Rage)`. Letting go of
-  sneak puts the resource text back. Quick crouches while building never show it. With
-  `ability-icons` on, Java players see each ability's icon followed by its key instead, for example
-  `<goat horn> 1   <sword> 2 (12s)   <mace> 3 (needs 100 Rage)`; Bedrock keeps the text form.
-- **`/class binds`:** a menu where each of the 3 slots can be rebound to any input the server can
-  see while sneaking: left click air, right click air, F (swap hands), Q (drop), or a hotbar key
-  1-9. Left and right click are marked "may clash" (missed swings, shields, bows, food). Binds are
-  saved per player and shared by all classes.
-- Bedrock players: the same sneak + hotbar slot binds work through Geyser where the client sends a
-  slot change; the tree menu also has a button per ability, and `/class ability 1|2|3` works for
-  everyone.
+Joe, 2026-10-17: no sneak trigger and no extra keybinds, click combos like Wynncraft's instead
+(`Combo.java`, `ComboListener.java`).
+
+- **Class weapons only:** Warrior and Guardian swords, axes and the mace; Paladin swords and the
+  mace; Rogue swords; Ranger bows, crossbows and tridents; Arcanist the blaze rod; Artificer the
+  crossbow. Any other item never starts a combo.
+- **The first click is the weapon's free one:** bows and crossbows open with a left click (their
+  right click draws or fires), everything else with a right click (its left click swings). Plain
+  melee is all left clicks and plain archery all right clicks, so neither ever starts a combo. A
+  quick right-click tap doesn't throw a trident (that needs a held charge).
+- **Rules against accidental casts:** clicks while sneaking never count; an opening right click
+  that turns into a hold (raised shield, drawn bow, trident charge, eating), checked 6 ticks later,
+  drops the combo; the clicks must come within 1 s of each other; one physical click that reaches
+  the server twice within 80 ms (swing plus attack, block click plus air click) counts once;
+  changing the held slot drops the combo. Three opening clicks in a row cast nothing.
+- **What gets cancelled:** the opening click does what it always did (doors, chests). The second
+  and third right clicks are cancelled, with the off-hand use that would follow them, so they don't
+  draw, fire, throw or block. Left clicks are never cancelled, so a combo's swing still hits.
+- **AuraSkills:** Lightning Blade (sword) and Treecapitator (axe) got ready on a plain right click,
+  which is now a combo's first click, so both have `require_sneak: true`
+  (`server/config/plugins/AuraSkills/mana_abilities.yml`): sneak + right click readies them.
+  Charged Shot toggled on a left click with a bow, which is now a bow combo's first click, so it is
+  `always_enabled: true`. Both checked in the AuraSkills 2.4.0 jar (`ReadiedManaAbility` returns
+  early without sneak when `require_sneak` is set; `ChargedShot.onToggle` returns early when
+  `always_enabled` is set). Applied with console `skills reload`.
+- Each click plays a quiet button click rising in pitch; a combo that matches nothing plays a low
+  note.
+- The talent-tree mod also has Ability 1, Ability 2 and Ultimate keys in Controls, unbound by
+  default; `/class ability 1|2|3` and the tree's ability buttons work for everyone, Bedrock
+  included.
+- Players' old `binds` in `players.yml` are never read again and drop out on the next save.
+
+## Spell bar
+
+Always up for a player with a class; `/class hud`, the tree's Spell bar button and the `/class`
+hub's Spell bar entry hide and show it (saved as `spell-bar: false`).
+
+- **Talent-tree mod 1.0.3+** (says hello with v3): drawn right of the hotbar (Joe picked layout A,
+  "Right wing", from three mockups), `HudOverlay.java`: three hotbar-sized slots with each ability's
+  icon, a dark sweep and the seconds left while it cools down, the slot edge lit in the class colour
+  when it's castable (the ultimate pulses), the combo letters above each slot (the clicks made so
+  far light up, a combo that went another way greys out), the resource as a thin bar with its name
+  and value, and the combo so far (`R-L-?`) at its right end. Dimmed while no class weapon is held.
+  The U key toggles it (H is taken in the modpack). The server sends `{"type":"hud","v":1,...}`
+  only when something changed (every 5 ticks at most, and at once on each combo click), with
+  cooldowns in whole seconds; the mod counts down between snapshots. No boss bar for these players.
+- **Everyone else:** a boss bar filled to the resource with the resource and every combo, for
+  example `Rage 40   [R-L-R] Battle Cry   [R-R-L] Charge (12s)   [R-L-L] Ground Slam (needs 100 Rage)`;
+  while a combo is in progress its text is the clicks so far, `R - L - ?`. With `ability-icons` on,
+  Java players see each ability's icon followed by its combo instead; Bedrock keeps the text form.
 
 ## Resource bar
 
-Each class has a resource from 0 to 100 shown as a boss bar while it is above 0 or the player is in
-combat (hit or was hit by a mob in the last 8 s). It fills from playing the class's style, drains
+Each class has a resource from 0 to 100, shown on the spell bar. Combat means the player hit or was
+hit by a mob in the last 8 s. It fills from playing the class's style, drains
 5 per second after 10 s out of combat, and resets to 0 on death, class change and restart. The
 ultimate spends the full 100. A few nodes spend part of it, which then delays the ultimate: that
 trade is deliberate.
@@ -111,7 +148,8 @@ Unlike the out-of-combat drain, the Artificer's Charge does not drain while mini
 - `/class tree` (and a button in `/class`) opens the active class's tree; `/class tree <class>` shows
   any class's tree read-only.
 - A double chest (9x6). The top 5 rows show a window onto a 9-column by 15-row canvas; the bottom
-  row holds the controls: scroll up, scroll down, points left, respec, binds, back to `/class`.
+  row holds the controls: scroll up, scroll down, points left, the spell bar toggle, respec, back to
+  `/class`.
 - Canvas layout: row 0 holds the 3 ability icons and the resource icon. Each branch owns 3 columns
   (Branch A columns 0-2, B 3-5, C 6-8). Tiers sit on rows 2, 5, 8, 11 and 14, with connector rows
   between them. The window starts at the top and scrolls by 5 rows (3 positions).
@@ -131,14 +169,14 @@ Unlike the out-of-combat drain, the Artificer's Charge does not drain while mini
   around the node's item (grey when locked, gold when maxed, the spiky challenge frame for
   keystones), ranks as pips under each node, connector lines and "N pts" gate marks lit in the class
   colour once a tier has its points, the walnut-and-gold colours of the painted chest, a header with
-  the level, points left, the three abilities with their keys (click to use), Binds and Respec
+  the level, points left, the three abilities with their combos (click to use), Spell bar and Respec
   (click twice), and a glow pulse plus the trunk filling up when a rank is learned. Left click
   learns, right click refunds.
 - **The channel:** `classes:tree` (`TreeChannel.java`). Both directions carry one UTF-8 JSON object
   with no length prefix. The server sends `{"type":"tree","v":1,...}` snapshots holding everything
   the screen draws, every tooltip line included, so the mod holds no game rules; the mod sends
-  `{"op":"learn"|"refund","id":...}`, `respec`, `binds` (opens the chest binds menu), `cast` with a
-  `slot`, and `open`. The server picks the screen by whether the client registered the channel
+  `{"op":"learn"|"refund","id":...}`, `respec`, `hud` (hide or show the spell bar), `cast` with a
+  `slot`, and `open` (`binds`, from 1.0.2 mods, lists the combos in chat). The server picks the screen by whether the client registered the channel
   (`minecraft:register`, which Fabric sends for every receiver), validates every request through
   `Talents` exactly like a chest click and answers with a fresh snapshot. Learn/refund/respec only
   ever act on the player's active class. Vanilla Java and Bedrock never register it and keep the
@@ -554,8 +592,8 @@ reviewed in the bot screenshots, not this spec.
 
 ## Data
 
-- `players.yml` keeps per class the spent ranks (`tree.<class>.<talent>: <rank>`) and per player the
-  key binds (`binds.<slot>: <input>`). Resource, cooldowns and summons stay in memory only.
+- `players.yml` keeps per class the spent ranks (`tree.<class>.<talent>: <rank>`) and per player
+  `spell-bar: false` when they hid the spell bar. Resource, cooldowns and summons stay in memory only.
 - Existing class levels carried over: every class started the trees with 0 spent and N-1 points.
 - A class whose XP an admin lowers below its spent points is refunded on the player's next join.
 
@@ -602,15 +640,19 @@ Where the code differs from the tables above, and why:
 
 ## Tests
 
-- `:classes:test` (MockBukkit): the engine (points, gates, respec, resource, slots, binds, summons,
+- `:classes:test` (MockBukkit): the engine (points, gates, respec, resource, slots, combos, the spell bar, summons,
   allies, the tree menu) and every node, ability and keystone of all 7 kits.
 - `TreeChannelTest` (MockBukkit) and `:treemod:test`: the mod channel's snapshot, routing (modded
   client gets a snapshot, others the chest), learn/refund/respec through `Talents`, refusals, the
-  active-class rule, malformed requests; the mod's snapshot parsing and bottom-to-top layout.
+  active-class rule, malformed requests, the HUD snapshot (only for v3 mods, only on change, no boss
+  bar for them); the mod's snapshot parsing, bottom-to-top layout, and the HUD's combo matching and
+  cooldown countdown. The HUD itself can't be rendered by a bot or by Claude (no 26.3 client), so its
+  look is checked in a real client.
 - `e2e/classes-tree-mod.mjs`: a bot that registers `classes:tree` like the mod does gets snapshots
   instead of the chest, learns and refunds through the channel, is refused a tier-locked node, and a
   bot without the channel still gets the chest. The mod's screen itself can't be rendered by a bot,
   so its look is checked in a real client.
 - `e2e/classes-talents.mjs` (bots on the 26.2 e2e server): the tree menu learns a node and scrolls,
-  `/class binds`, sneak + hotbar 2 fires ability 2 without moving the held slot, the Rage boss bar, and
+  R-R-L with a sword fires ability 2 (bare-handed or sneaking it doesn't), the boss-bar spell bar
+  lists every combo and `/class hud` hides and shows it, the Rage boss bar, and
   every class's ability 2 and ultimate hitting mobs but never a bystander bot.

@@ -62,7 +62,7 @@ class TreeChannelTest {
         classes = new Classes(new ClassStore(new File(dir, "players.yml"), Logger.getLogger("test")), () -> now,
                 ZoneId.of("Europe/Zagreb"), 300, Duration.ofDays(7));
         Abilities abilities = new Abilities(classes, (task, ticks) -> server.getScheduler().runTaskLater(plugin, task, ticks));
-        engine = new TalentEngine(plugin, classes, abilities, () -> 0.5, Map.of(), false, false, BedrockForms.create(plugin),
+        engine = new TalentEngine(plugin, classes, abilities, () -> 0.5, false, false, BedrockForms.create(plugin),
                 Kits::create);
         engine.start();
         channel = engine.fakeTreeChannel(p -> modded.contains(p.getUniqueId()),
@@ -92,6 +92,10 @@ class TreeChannelTest {
             if (e.getAsJsonObject().get("id").getAsString().equals(id)) return e.getAsJsonObject();
         }
         throw new AssertionError("no node " + id);
+    }
+
+    static String plain(net.kyori.adventure.text.Component c) {
+        return net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(c);
     }
 
     void request(Player p, String json) {
@@ -172,13 +176,68 @@ class TreeChannelTest {
     }
 
     @Test
-    void bindsOpensTheKeyBindsChestEvenForAModdedClient() {
-        // The mod screen must close itself on this request, since the server's answer is a
-        // chest menu, not a tree snapshot; nothing here sends one.
+    void anOldModsBindsButtonExplainsTheCombos() {
+        // 1.0.2 still has a Binds button; with no binds left, it gets the combos in chat.
         PlayerMock p = warrior(19, true);
         request(p, "{\"op\":\"binds\"}");
-        assertEquals(InventoryType.CHEST, p.getOpenInventory().getType(), "the binds chest opened");
+        String first = plain(p.nextComponentMessage());
+        assertTrue(first.startsWith("Abilities are click combos with a sword, axe or mace"), first);
+        String one = plain(p.nextComponentMessage());
+        assertTrue(one.contains("Ability 1 · R-L-R"), one);
         assertTrue(sent.isEmpty(), "binds never answers with a tree snapshot");
+    }
+
+    @Test
+    void theTreeSnapshotShowsEachSlotsCombo() {
+        PlayerMock p = warrior(19, true);
+        engine.treeMenu().open(p, RpgClass.WARRIOR);
+        JsonArray abilities = last().getAsJsonArray("abilities");
+        assertEquals("R-L-R", abilities.get(0).getAsJsonObject().get("keyShort").getAsString());
+        assertEquals("R-R-L", abilities.get(1).getAsJsonObject().get("keyShort").getAsString());
+        assertEquals("R-L-L", abilities.get(2).getAsJsonObject().get("keyShort").getAsString());
+    }
+
+    @Test
+    void onlyAHudModGetsHudSnapshotsAndOnlyWhenSomethingChanged() {
+        PlayerMock p = warrior(19, true);
+        p.getInventory().setItemInMainHand(new org.bukkit.inventory.ItemStack(org.bukkit.Material.IRON_SWORD));
+        request(p, "{\"op\":\"hello\",\"v\":2}");
+        channel.sendHud(p);
+        assertTrue(sent.isEmpty(), "a v2 mod has no HUD");
+        request(p, "{\"op\":\"hello\",\"v\":3}");
+        assertTrue(channel.supportsHud(p));
+        channel.sendHud(p);
+        channel.sendHud(p);
+        assertEquals(1, sent.size(), "an unchanged HUD isn't resent");
+        JsonObject hud = last();
+        assertEquals("hud", hud.get("type").getAsString());
+        assertTrue(hud.get("show").getAsBoolean());
+        assertTrue(hud.get("armed").getAsBoolean());
+        assertEquals("", hud.get("combo").getAsString());
+        JsonObject one = hud.getAsJsonArray("abilities").get(0).getAsJsonObject();
+        assertEquals("R-L-R", one.get("combo").getAsString());
+        assertTrue(one.get("ready").getAsBoolean());
+        assertFalse(hud.getAsJsonArray("abilities").get(2).getAsJsonObject().get("unlocked").getAsBoolean(), "ultimate is level 25");
+
+        request(p, "{\"op\":\"cast\",\"slot\":\"one\"}");
+        channel.sendHud(p);
+        JsonObject after = last().getAsJsonArray("abilities").get(0).getAsJsonObject();
+        assertFalse(after.get("ready").getAsBoolean());
+        assertTrue(after.get("cd").getAsInt() > 0, "the cooldown is counted in seconds");
+
+        request(p, "{\"op\":\"hud\"}");
+        channel.sendHud(p);
+        assertFalse(last().get("show").getAsBoolean(), "hidden after the toggle");
+    }
+
+    @Test
+    void aHudModGetsNoBossBar() {
+        PlayerMock plain = warrior(19, false);
+        PlayerMock modded = warrior(19, true);
+        request(modded, "{\"op\":\"hello\",\"v\":3}");
+        server.getScheduler().performTicks(5);
+        assertTrue(plain.activeBossBars().iterator().hasNext(), "no mod: the boss bar spell bar");
+        assertFalse(modded.activeBossBars().iterator().hasNext(), "the mod draws it instead");
     }
 
     @Test
@@ -217,13 +276,15 @@ class TreeChannelTest {
     }
 
     @Test
-    void hubTreeAndHubBindsReuseTheRealOnes() {
+    void hubTreeReusesTheRealTreeAndHubHudTogglesTheSpellBar() {
         PlayerMock p = warrior(19, true);
         request(p, "{\"op\":\"hub-tree\"}");
         assertEquals("tree", last().get("type").getAsString());
         assertTrue(last().get("open").getAsBoolean());
-        request(p, "{\"op\":\"hub-binds\"}");
-        assertEquals(InventoryType.CHEST, p.getOpenInventory().getType(), "the binds chest opened");
+        request(p, "{\"op\":\"hub-hud\"}");
+        assertFalse(classes.profile(p.getUniqueId()).spellBar());
+        assertEquals("hub", last().get("type").getAsString(), "the hub redraws with the new state");
+        assertEquals("Spell bar: off", last().getAsJsonArray("entries").get(1).getAsJsonObject().get("label").getAsString());
     }
 
     @Test

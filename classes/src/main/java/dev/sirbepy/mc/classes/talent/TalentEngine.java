@@ -27,7 +27,7 @@ import java.util.function.Predicate;
 
 /**
  * The talent trees (docs/classes.md, Talent trees): builds every service and the seven kits, wires
- * them to the plugin, and runs the two timers (the resource bar every 5 ticks, the resource drain
+ * them to the plugin, and runs the two timers (the spell bar or the mod's HUD every 5 ticks, the resource drain
  * every second). Resources, kit cooldowns and summons reset when a player dies, logs out or
  * changes class.
  */
@@ -41,9 +41,8 @@ public final class TalentEngine implements Listener {
     private final CombatTracker combat;
     private final Summons summons;
     private final Fx fx = new Fx();
-    private final Binds binds;
     private final AbilitySlots slots;
-    private final BindListener bindListener;
+    private final ComboListener combos;
     private final ResourceBar bar;
     private final TreeMenu treeMenu;
     private final Map<RpgClass, ClassKit> kits = new EnumMap<>(RpgClass.class);
@@ -51,13 +50,13 @@ public final class TalentEngine implements Listener {
     private final Map<UUID, RpgClass> lastSeen = new HashMap<>();
 
     public TalentEngine(Plugin plugin, Classes classes, Abilities abilities, DoubleSupplier random,
-                        Map<Slot, Bind> defaultBinds, boolean treeBackground, boolean abilityIcons, BedrockForms bedrock) {
-        this(plugin, classes, abilities, random, defaultBinds, treeBackground, abilityIcons, bedrock, Kits::create);
+                        boolean treeBackground, boolean abilityIcons, BedrockForms bedrock) {
+        this(plugin, classes, abilities, random, treeBackground, abilityIcons, bedrock, Kits::create);
     }
 
     /** {@code kitFactory} builds each class's kit; tests pass fakes. */
     public TalentEngine(Plugin plugin, Classes classes, Abilities abilities, DoubleSupplier random,
-                        Map<Slot, Bind> defaultBinds, boolean treeBackground, boolean abilityIcons, BedrockForms bedrock,
+                        boolean treeBackground, boolean abilityIcons, BedrockForms bedrock,
                         BiFunction<RpgClass, KitContext, ClassKit> kitFactory) {
         this.plugin = plugin;
         this.classes = classes;
@@ -67,11 +66,12 @@ public final class TalentEngine implements Listener {
         this.combat = new CombatTracker(resources, classes::now);
         this.summons = new Summons(plugin);
         Map<RpgClass, ClassKit> view = Collections.unmodifiableMap(kits);
-        this.binds = new Binds(classes, defaultBinds);
         this.slots = new AbilitySlots(plugin, classes, abilities, talents, resources, cooldowns, view);
-        this.bindListener = new BindListener(classes, binds, slots, classes::now);
-        this.bar = new ResourceBar(classes, resources, view, slots, binds, bindListener, fx, new AbilityIcons(abilityIcons, bedrock));
-        this.treeMenu = new TreeMenu(classes, talents, view, slots, binds, resources, new TreeLook(treeBackground, bedrock));
+        this.combos = new ComboListener(plugin, classes, slots, classes::now, p -> p.hasActiveItem() || p.isBlocking());
+        this.bar = new ResourceBar(classes, resources, view, slots, combos, fx, new AbilityIcons(abilityIcons, bedrock));
+        this.treeMenu = new TreeMenu(classes, talents, view, slots, combos, bar, resources, new TreeLook(treeBackground, bedrock));
+        // A click redraws at once rather than at the next 5-tick update, so the combo so far keeps up with the clicks.
+        combos.setOnProgress(this::update);
         abilities.setCooldownAdjuster((player, c, base) -> cooldowns.adjust(player, Slot.ONE, base));
         for (RpgClass c : RpgClass.values()) {
             KitContext ctx = new KitContext(c, plugin, classes, talents, resources, cooldowns, summons, combat, fx, random);
@@ -86,9 +86,11 @@ public final class TalentEngine implements Listener {
         var events = plugin.getServer().getPluginManager();
         events.registerEvents(combat, plugin);
         events.registerEvents(summons, plugin);
-        events.registerEvents(bindListener, plugin);
+        events.registerEvents(combos, plugin);
         events.registerEvents(this, plugin);
-        treeMenu.setChannel(TreeChannel.register(plugin, classes, talents, kits, slots, binds, resources, treeMenu));
+        TreeChannel channel = TreeChannel.register(plugin, classes, talents, kits, slots, combos, resources, treeMenu);
+        treeMenu.setChannel(channel);
+        bar.setDrawnByMod(channel::supportsHud);
         kits.values().forEach(ClassKit::enable);
         var scheduler = plugin.getServer().getScheduler();
         scheduler.runTaskTimer(plugin, () -> plugin.getServer().getOnlinePlayers().forEach(this::update), 5L, 5L);
@@ -111,6 +113,8 @@ public final class TalentEngine implements Listener {
         if (lastSeen.containsKey(id) && lastSeen.get(id) != now) reset(id);
         lastSeen.put(id, now);
         bar.update(player);
+        TreeChannel channel = treeMenu.channel();
+        if (channel != null) channel.sendHud(player);
     }
 
     private void reset(UUID player) {
@@ -140,6 +144,7 @@ public final class TalentEngine implements Listener {
         combat.forget(id);
         lastSeen.remove(id);
         bar.hide(event.getPlayer());
+        if (treeMenu.channel() != null) treeMenu.channel().forget(id);
     }
 
     public Talents talents() {
@@ -158,18 +163,15 @@ public final class TalentEngine implements Listener {
         return slots;
     }
 
-    public Binds binds() {
-        return binds;
-    }
-
     public TreeMenu treeMenu() {
         return treeMenu;
     }
 
     /** Replaces the tree mod channel with one whose player check and sender are fakes (tests). */
     TreeChannel fakeTreeChannel(Predicate<Player> supports, BiConsumer<Player, byte[]> sender) {
-        TreeChannel channel = new TreeChannel(classes, talents, kits, slots, binds, resources, treeMenu, supports, sender);
+        TreeChannel channel = new TreeChannel(classes, talents, kits, slots, combos, resources, treeMenu, supports, sender);
         treeMenu.setChannel(channel);
+        bar.setDrawnByMod(channel::supportsHud);
         return channel;
     }
 
@@ -189,7 +191,7 @@ public final class TalentEngine implements Listener {
         return bar;
     }
 
-    public BindListener bindListener() {
-        return bindListener;
+    public ComboListener combos() {
+        return combos;
     }
 }

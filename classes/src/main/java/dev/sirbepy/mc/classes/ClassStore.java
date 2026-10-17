@@ -1,7 +1,5 @@
 package dev.sirbepy.mc.classes;
 
-import dev.sirbepy.mc.classes.talent.Bind;
-import dev.sirbepy.mc.classes.talent.Slot;
 import dev.sirbepy.mc.core.YamlFiles;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -80,14 +78,8 @@ public final class ClassStore {
                     }
                 }
             }
-            ConfigurationSection binds = s.getConfigurationSection("binds");
-            if (binds != null) {
-                for (String slot : binds.getKeys(false)) {
-                    Slot sl = Slot.parse(slot);
-                    Bind b = Bind.parse(binds.getString(slot, ""));
-                    if (sl != null && b != null) p.binds.put(sl, b);
-                }
-            }
+            // Old files also hold "binds" (sneak + key binds, replaced by click combos); never read again, dropped on save.
+            p.spellBar = s.getBoolean("spell-bar", true);
         }
     }
 
@@ -99,7 +91,7 @@ public final class ClassStore {
         YamlConfiguration yaml = new YamlConfiguration();
         for (Map.Entry<UUID, ClassProfile> e : profiles.entrySet()) {
             ClassProfile p = e.getValue();
-            if (p.lastPickAt == 0 && p.active == null && p.secondary == null && p.xp.isEmpty() && p.binds.isEmpty()) continue;
+            if (p.lastPickAt == 0 && p.active == null && p.secondary == null && p.xp.isEmpty() && p.spellBar) continue;
             String k = e.getKey().toString();
             yaml.set(k + ".active", p.active == null ? null : p.active.id());
             yaml.set(k + ".secondary", p.secondary == null ? null : p.secondary.id());
@@ -112,7 +104,7 @@ public final class ClassStore {
             p.tree.forEach((c, ranks) -> ranks.forEach((talent, rank) -> {
                 if (rank > 0) yaml.set(k + ".tree." + c.id() + "." + talent, rank);
             }));
-            p.binds.forEach((slot, bind) -> yaml.set(k + ".binds." + slot.id(), bind.id()));
+            if (!p.spellBar) yaml.set(k + ".spell-bar", false);
         }
         try {
             YamlFiles.saveAtomically(yaml, file);

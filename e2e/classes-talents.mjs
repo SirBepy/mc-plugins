@@ -1,10 +1,10 @@
 import {
-  Rcon, assert, buildPlatform, createBot, nbtText, quit, randomOrigin, releasePlatform, sleep, teleport, waitFor, waitForLine,
+  Rcon, assert, buildPlatform, clickCombo, createBot, nbtText, quit, randomOrigin, releasePlatform, sleep, teleport, waitFor, waitForLine,
 } from './lib.mjs';
 
 // classes talent trees (talent-tree revamp, docs/classes-revamp.md): /class tree opens a scrollable
-// talent chest, /class binds remaps sneak + key to a slot, a boss bar shows the resource while
-// fighting, and at level 25 with a full resource bar every class's ability 2 and ultimate do
+// talent chest, click combos with a class weapon cast (R-R-L with a sword is ability 2), a boss bar
+// spell bar shows the resource and every combo and /class hud hides it, and at level 25 with a full resource bar every class's ability 2 and ultimate do
 // something a real server proves MockBukkit can't: real damage ticks, real potion effects, real
 // boss bars, and the hostile-mob-only filter that is supposed to leave a second player untouched.
 const PY = 180;
@@ -131,28 +131,43 @@ try {
     warrior.closeWindow(scrolled);
   });
 
-  // --- Binds -----------------------------------------------------------------------------------
-  await step('/class binds opens a window titled "Key binds"', async () => {
-    const opened = nextWindow(warrior);
-    warrior.chat('/class binds');
-    const menu = await opened;
-    assert(/^Key binds/.test(titleOf(menu)), `binds menu title (${titleOf(menu)})`);
-    warrior.closeWindow(menu);
-  });
-
-  await step('sneak + hotbar slot 2 fires ability 2 by default, and the held slot does not change', async () => {
+  // --- Combos ----------------------------------------------------------------------------------
+  await step('R-R-L with a sword fires ability 2; the same clicks bare-handed or sneaking do nothing', async () => {
     await admin(`setxp ${warrior.username} warrior 3960`); // level 25: ability 2 unlocked
     await admin(`ready ${warrior.username}`);
     warrior.setQuickBarSlot(0);
-    await sleep(200);
-    const before = warrior.quickBarSlot;
-    warrior.setControlState('sneak', true);
+    await rcon.command(`minecraft:item replace entity ${warrior.username} weapon.mainhand with minecraft:air`);
     await sleep(300);
-    const since = warrior.lines.length;
-    warrior.setQuickBarSlot(1); // key "2"
-    await waitForLine(warrior, /^Charge: dash 6 blocks forward, knock back and slow the first mob hit$/, 5_000, since);
+    const charge = /^Charge: dash 6 blocks forward, knock back and slow the first mob hit$/;
+    let since = warrior.lines.length;
+    await clickCombo(warrior, 'RRL');
+    await sleep(800);
+    assert(!warrior.lines.slice(since).some((l) => charge.test(l)), 'no weapon, no cast');
+    await rcon.command(`minecraft:item replace entity ${warrior.username} weapon.mainhand with minecraft:iron_sword`);
+    await waitFor(() => warrior.heldItem?.name === 'iron_sword', 'the warrior holds the sword');
+    warrior.setControlState('sneak', true);
+    await sleep(1_200);
+    since = warrior.lines.length;
+    await clickCombo(warrior, 'RRL');
+    await sleep(800);
+    assert(!warrior.lines.slice(since).some((l) => charge.test(l)), 'sneaking clicks never count');
     warrior.setControlState('sneak', false);
-    assert(warrior.quickBarSlot === before, `held slot unchanged (${before} -> ${warrior.quickBarSlot})`);
+    await sleep(1_200);
+    since = warrior.lines.length;
+    await clickCombo(warrior, 'RRL');
+    await waitForLine(warrior, charge, 5_000, since);
+  });
+
+  await step('the spell bar is a boss bar with every combo, and /class hud hides and shows it', async () => {
+    let bar;
+    await waitFor(() => (bar = warrior.bossBars.find((b) => /\[R-L-R\] Battle Cry/.test(nbtText(b.title)))),
+      'a boss bar listing [R-L-R] Battle Cry', 5_000);
+    const title = nbtText(bar.title);
+    assert(/\[R-R-L\] Charge/.test(title) && /\[R-L-L\] /.test(title), `every slot's combo in the bar (${title})`);
+    await say(warrior, '/class hud', /^Spell bar hidden/);
+    await waitFor(() => !warrior.bossBars.some((b) => /Battle Cry/.test(nbtText(b.title))), 'the spell bar is gone', 5_000);
+    await say(warrior, '/class hud', /^Spell bar shown/);
+    await waitFor(() => warrior.bossBars.some((b) => /Battle Cry/.test(nbtText(b.title))), 'the spell bar is back', 5_000);
   });
 
   // --- Resource bar ---------------------------------------------------------------------------
@@ -160,9 +175,8 @@ try {
     await admin(`resource ${warrior.username} 0`);
     await rcon.command(`minecraft:tp ${warrior.username} ${BX} ${PY + 1} ${BZ} 180 0`);
     await spawnMob('zombie', BX, PY + 1, BZ - 2, 'tal_rage', 100);
-    // The resource bar reuses one BossBar object per player (also used for the sneak key legend
-    // shown earlier in this run), so Bukkit's showBossBar only resends the "add" packet the first
-    // time it's shown to a client: a later refresh is a plain "update" packet, with no
+    // The spell bar reuses one BossBar object per player (already up since the class was picked),
+    // so Bukkit's showBossBar only resends the "add" packet the first time it's shown to a client: a later refresh is a plain "update" packet, with no
     // 'bossBarCreated' event. Poll bot.bossBars (every boss bar currently known to the client)
     // instead of relying on 'created' alone.
     for (let i = 0; i < 4; i++) {
@@ -229,7 +243,7 @@ try {
     await waitFor(() => (mob = Object.values(ranger.entities).find((e) => e.name === 'zombie'
       && e.position.distanceTo({ x: CX + 0.5, y: PY + 1, z: CZ - 4.5 }) < 8)), 'ranger sees the target', 10_000);
     await ranger.lookAt(mob.position.offset(0, 1, 0), true);
-    await say(ranger, '/class ability 2', /^Volley: the next bow shot within 5 s fires 5 arrows in a fan$/);
+    await say(ranger, '/class ability 2', /^Volley: the next bow shot or trident throw within 5 s fires 5 arrows in a fan$/);
     await ranger.lookAt(mob.position.offset(0, 1, 0), true);
     ranger.activateItem();
     await sleep(1200);

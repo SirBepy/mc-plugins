@@ -1,7 +1,5 @@
 package dev.sirbepy.mc.classes;
 
-import dev.sirbepy.mc.classes.talent.Bind;
-import dev.sirbepy.mc.classes.talent.Slot;
 import dev.sirbepy.mc.classes.talent.TalentEngine;
 import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.core.gui.MenuListener;
@@ -17,9 +15,7 @@ import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -54,7 +50,7 @@ public final class ClassesPlugin extends JavaPlugin {
         ClassXp xp = new ClassXp(classes);
         ClassPicker picker = new ClassPicker(classes, passives, System::currentTimeMillis);
         engine = new TalentEngine(this, classes, abilities, () -> ThreadLocalRandom.current().nextDouble(),
-                defaultBinds(), getConfig().getBoolean("tree-background", false),
+                getConfig().getBoolean("tree-background", false),
                 getConfig().getBoolean("ability-icons", false), BedrockForms.create(this));
         ClassMenu menu = new ClassMenu(classes, picker, engine.slots(), engine.treeMenu(), System::currentTimeMillis);
         ClassHubMenu hub = new ClassHubMenu(classes, menu, engine);
@@ -93,20 +89,6 @@ public final class ClassesPlugin extends JavaPlugin {
             }
         }
         return ids;
-    }
-
-    /** {@code default-binds} in config.yml; a slot left out or misspelled keeps the built-in default. */
-    private Map<Slot, Bind> defaultBinds() {
-        Map<Slot, Bind> binds = new EnumMap<>(Slot.class);
-        var section = getConfig().getConfigurationSection("default-binds");
-        if (section == null) return binds;
-        for (String key : section.getKeys(false)) {
-            Slot slot = Slot.parse(key);
-            Bind bind = Bind.parse(section.getString(key, ""));
-            if (slot == null || bind == null) getLogger().warning("Bad default-binds entry: " + key);
-            else binds.put(slot, bind);
-        }
-        return binds;
     }
 
     @Override
