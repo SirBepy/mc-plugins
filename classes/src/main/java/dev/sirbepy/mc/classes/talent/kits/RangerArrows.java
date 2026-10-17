@@ -22,7 +22,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
@@ -43,11 +42,10 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * The Sharpshooter branch, Volley, Arrow Rain and Railshot, plus the arrow state the other two
- * branches read too: which arrows are fully charged, which are temporary extras (Volley's fan,
- * Ricochet) that may never hit a player, and which mobs are currently rooted (for Netting).
- * Arrow Rain lands on the first solid block you look at ({@link #lookedAt}); Railshot's beam passes
- * through blocks and goes through ctx.damage, so armour still applies to it.
+ * The Sharpshooter branch's Volley, plus the arrow state the other two branches read too: which
+ * arrows are fully charged, which are temporary extras (Volley's fan, Ricochet) that may never hit
+ * a player, and which mobs are currently rooted (for Netting). The ultimate and keystone, Arrow
+ * Rain and Railshot, live in {@link RangerShots}, which reuses {@link #nearbyHostiles}.
  */
 final class RangerArrows implements Listener {
 
@@ -70,8 +68,6 @@ final class RangerArrows implements Listener {
     private final Map<UUID, Long> stillSince = new HashMap<>();
 
     private final Ability volley;
-    private final Ability arrowRain;
-    private final Ability railshot;
 
     RangerArrows(KitContext ctx) {
         this.ctx = ctx;
@@ -86,24 +82,10 @@ final class RangerArrows implements Listener {
                     ctx.later(() -> volleyArmed.remove(p.getUniqueId()), CAGE_SHOT_WINDOW_TICKS);
                     return true;
                 });
-        this.arrowRain = SimpleAbility.ultimate("Arrow Rain",
-                p -> "arrows fall on a 5-block circle where you look for 6 s, 1.5 hearts per arrow to mobs",
-                this::castArrowRain);
-        this.railshot = SimpleAbility.of("Railshot", 45,
-                p -> "a beam along a 40-block line, 6 hearts to every mob on it",
-                this::castRailshot);
     }
 
     Ability volley() {
         return volley;
-    }
-
-    Ability arrowRain() {
-        return arrowRain;
-    }
-
-    Ability railshot() {
-        return railshot;
     }
 
     /** Arms the next bow shot or trident throw to carry a Cage Shot root, see {@link #consumeArmedShot}. Called by RangerSnares. */
@@ -116,6 +98,11 @@ final class RangerArrows implements Listener {
     boolean isRooted(UUID mobId) {
         Long until = rootedUntil.get(mobId);
         return until != null && until > ctx.now();
+    }
+
+    /** The tag a mob-only arrow (Volley's fan, Ricochet) carries, read by {@link RangerKills} too. */
+    NamespacedKey mobOnlyKey() {
+        return mobOnlyKey;
     }
 
     /** Roots {@code mob} for {@code ticks} (never a boss), zeroing its velocity like every root. */
@@ -234,7 +221,8 @@ final class RangerArrows implements Listener {
         }, 5, 5);
     }
 
-    private Iterable<LivingEntity> nearbyHostiles(Location at, double radius) {
+    /** Package-visible: {@link RangerShots} reuses this for Arrow Rain's circle. */
+    static Iterable<LivingEntity> nearbyHostiles(Location at, double radius) {
         List<LivingEntity> out = new ArrayList<>();
         for (Entity e : at.getNearbyEntities(radius, radius, radius)) {
             if (e instanceof LivingEntity living && Mobs.hostile(living)) out.add(living);
@@ -332,67 +320,6 @@ final class RangerArrows implements Listener {
         return stack - 1;
     }
 
-    // Ricochet: a kill fires a new arrow at the nearest mob within range.
-
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onKill(EntityDeathEvent event) {
-        LivingEntity dead = event.getEntity();
-        if (!(dead.getLastDamageCause() instanceof EntityDamageByEntityEvent last)) return;
-        if (!(last.getDamager() instanceof AbstractArrow arrow) || !(arrow.getShooter() instanceof Player player)) return;
-        if (!ctx.active(player)) return;
-        int rank = ctx.rank(player, "ricochet");
-        if (rank == 0) return;
-        double radius = rank == 1 ? 6 : 10;
-        LivingEntity target = nearest(dead.getLocation(), radius);
-        if (target == null) return;
-        Vector dir = target.getLocation().toVector().subtract(dead.getLocation().toVector()).normalize();
-        dead.getWorld().spawn(dead.getLocation(), Arrow.class, a -> {
-            a.setShooter(player);
-            a.setVelocity(dir.multiply(2));
-            a.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
-            a.getPersistentDataContainer().set(mobOnlyKey, PersistentDataType.BOOLEAN, true);
-        });
-        ctx.fx().line(dead.getLocation(), target.getLocation(), Particle.CRIT);
-    }
-
-    /**
-     * Homecoming: a ranged kill's drops go into the shooter's inventory (overflow at their feet) and
-     * its XP straight onto their bar, instead of landing where the mob died. HIGHEST, not MONITOR,
-     * because it edits the drop list; other plugins' drop changes at HIGH and below are kept.
-     */
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onHomecoming(EntityDeathEvent event) {
-        LivingEntity dead = event.getEntity();
-        if (dead instanceof Player) return;
-        if (!(dead.getLastDamageCause() instanceof EntityDamageByEntityEvent last)) return;
-        if (!(last.getDamager() instanceof AbstractArrow arrow) || !(arrow.getShooter() instanceof Player player)) return;
-        if (ctx.rank(player, "homecoming") == 0 || !player.isOnline()) return;
-        for (ItemStack drop : event.getDrops()) {
-            if (drop == null || drop.getType().isAir()) continue;
-            dev.sirbepy.mc.core.Inventories.giveOrDrop(player, drop);
-        }
-        event.getDrops().clear();
-        if (event.getDroppedExp() > 0) {
-            player.giveExp(event.getDroppedExp());
-            event.setDroppedExp(0);
-        }
-    }
-
-    private LivingEntity nearest(Location at, double radius) {
-        LivingEntity best = null;
-        double bestDist = Double.MAX_VALUE;
-        for (Entity e : at.getNearbyEntities(radius, radius, radius)) {
-            if (e instanceof LivingEntity living && Mobs.hostile(living)) {
-                double d = living.getLocation().distanceSquared(at);
-                if (d < bestDist) {
-                    bestDist = d;
-                    best = living;
-                }
-            }
-        }
-        return best;
-    }
-
     // Mob-only tagged arrows (Volley extras, Ricochet) must never hurt a player.
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -418,55 +345,4 @@ final class RangerArrows implements Listener {
         }
     }
 
-    // Ultimate and keystone.
-
-    private boolean castArrowRain(Player player) {
-        Location center = lookedAt(player, 40);
-        var task = new org.bukkit.scheduler.BukkitTask[1];
-        task[0] = ctx.repeat(() -> {
-            double angle = ctx.random() * Math.PI * 2;
-            double dist = ctx.random() * 5;
-            Location drop = center.clone().add(Math.cos(angle) * dist, 0, Math.sin(angle) * dist);
-            for (LivingEntity mob : nearbyHostiles(drop, 1.5)) ctx.damage(mob, 3, player);
-            ctx.fx().burst(drop.clone().add(0, 3, 0), Particle.ITEM_SNOWBALL, 6, 0.2);
-            ctx.fx().sound(drop, Sound.ENTITY_ARROW_HIT, 0.5f, 1.2f);
-        }, 10, 10);
-        ctx.later(() -> task[0].cancel(), 6L * 20);
-        return true;
-    }
-
-    /**
-     * The first solid block along the look direction within {@code range}, or the point at full
-     * range. A manual walk instead of rayTraceBlocks, which MockBukkit doesn't implement.
-     */
-    static Location lookedAt(Player player, double range) {
-        Location eye = player.getEyeLocation();
-        Vector dir = eye.getDirection().normalize();
-        for (double d = 1; d <= range; d += 0.5) {
-            Location at = eye.clone().add(dir.clone().multiply(d));
-            if (at.getBlock().getType().isSolid()) return at.add(0, 1, 0);
-        }
-        return eye.add(dir.multiply(range));
-    }
-
-    private boolean castRailshot(Player player) {
-        Location from = player.getEyeLocation();
-        Vector dir = from.getDirection().normalize();
-        boolean hitAny = false;
-        for (Entity e : from.getNearbyEntities(40, 40, 40)) {
-            if (!(e instanceof LivingEntity mob) || !Mobs.hostile(mob)) continue;
-            Vector toMob = mob.getLocation().toVector().subtract(from.toVector());
-            double along = toMob.dot(dir);
-            if (along < 0 || along > 40) continue;
-            double perpendicular = toMob.subtract(dir.clone().multiply(along)).length();
-            if (perpendicular > 1.5) continue;
-            // Through ctx.damage, not setHealth: the kill is credited and the dragon's death sequence
-            // still runs, at the cost of armour applying.
-            ctx.damage(mob, 12, player);
-            hitAny = true;
-        }
-        ctx.fx().line(from, from.clone().add(dir.multiply(40)), Particle.END_ROD);
-        ctx.fx().sound(from, Sound.ENTITY_ARROW_SHOOT, 1f, 0.6f);
-        return hitAny;
-    }
 }

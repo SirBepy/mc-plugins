@@ -12,18 +12,23 @@ import java.util.List;
 
 /**
  * The Ranger's tree, Focus resource and its two new abilities (docs/classes-revamp.md, Ranger).
- * The talent logic lives in three helpers, one per branch: {@link RangerArrows} (Sharpshooter,
- * plus Volley/Arrow Rain and the arrow tagging every branch shares), {@link RangerSnares}
- * (Trapper) and {@link RangerPack} (Beastmaster).
+ * The talent logic lives in helpers, one per branch plus two pieces split off Sharpshooter:
+ * {@link RangerArrows} (Sharpshooter's nodes, Volley and the arrow tagging every branch shares),
+ * {@link RangerShots} (Arrow Rain, Railshot), {@link RangerKills} (Ricochet, Homecoming),
+ * {@link RangerSnares} (Trapper) and {@link RangerPack} (Beastmaster).
  */
 final class RangerKit implements ClassKit {
 
     private final RangerArrows arrows;
+    private final RangerShots shots;
+    private final RangerKills kills;
     private final RangerSnares snares;
     private final RangerPack pack;
 
     RangerKit(KitContext ctx) {
         this.arrows = new RangerArrows(ctx);
+        this.shots = new RangerShots(ctx);
+        this.kills = new RangerKills(ctx, arrows);
         this.snares = new RangerSnares(ctx, arrows);
         this.pack = new RangerPack(ctx);
     }
@@ -141,13 +146,13 @@ final class RangerKit implements ClassKit {
 
     @Override
     public Ability ultimate() {
-        return arrows.arrowRain();
+        return shots.arrowRain();
     }
 
     @Override
     public Ability keystoneAbility(Talent keystone) {
         return switch (keystone.id()) {
-            case "railshot" -> arrows.railshot();
+            case "railshot" -> shots.railshot();
             case "cage_shot" -> snares.cageShot();
             case "spirit_bear" -> pack.spiritBear();
             default -> throw new IllegalArgumentException("Ranger has no keystone ability for " + keystone.id());
@@ -157,6 +162,7 @@ final class RangerKit implements ClassKit {
     @Override
     public void enable() {
         arrows.enable();
+        kills.enable();
         snares.enable();
         pack.enable();
     }
