@@ -19,6 +19,7 @@ Run from anywhere: python client/mrpack/build.py
 
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -38,9 +39,10 @@ RESOURCEPACKS = [
      "Eclipse-Backpacks-textures-26.3.zip"),
 ]
 REPO = HERE.parent.parent
-# (Gradle project, jar it builds under <project>/build/libs/)
+# (Gradle project, its archivesName). The jar's version suffix is read from the project's own
+# build.gradle.kts, so a mod version bump can't ship a stale jar left behind in build/libs/.
 OWN_MODS = [
-    ("treemod", "classes-tree-1.0.0.jar"),
+    ("treemod", "classes-tree"),
 ]
 # Modrinth asks API/CDN clients for a descriptive User-Agent.
 USER_AGENT = "SirBepy/mc-plugins client-kit"
@@ -65,12 +67,24 @@ def build_resourcepack_zips():
         print(f"built {out} from {src}")
 
 
+def gradle_version(build_script):
+    match = re.search(r'^version\s*=\s*"([^"]+)"', build_script.read_text(encoding="utf-8"), re.M)
+    if not match:
+        sys.exit(f"no version = \"...\" line in {build_script}")
+    return match.group(1)
+
+
 def build_own_mods():
     gradlew = REPO / ("gradlew.bat" if sys.platform == "win32" else "gradlew")
     mods = OVERRIDES / "mods"
     mods.mkdir(parents=True, exist_ok=True)
-    for project, jar in OWN_MODS:
+    for project, archive in OWN_MODS:
+        jar = f"{archive}-{gradle_version(REPO / project / 'build.gradle.kts')}.jar"
         subprocess.run([str(gradlew), f":{project}:build", "-q"], cwd=REPO, check=True)
+        # overrides/mods is zipped whole, so an older version's jar left there would ship two
+        # copies of the same mod.
+        for old in mods.glob(f"{archive}-*.jar"):
+            old.unlink()
         shutil.copyfile(REPO / project / "build" / "libs" / jar, mods / jar)
         print(f"built {mods / jar} from {project}/")
 
