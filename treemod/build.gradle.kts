@@ -5,7 +5,7 @@ plugins {
     id("net.fabricmc.fabric-loom") version "1.18.4"
 }
 
-version = "1.0.2"
+version = "1.0.3"
 
 base {
     archivesName = "classes-tree"
@@ -20,6 +20,8 @@ dependencies {
     implementation(fabricApi.module("fabric-networking-api-v1", fabricApiVersion))
     implementation(fabricApi.module("fabric-key-mapping-api-v1", fabricApiVersion))
     implementation(fabricApi.module("fabric-lifecycle-events-v1", fabricApiVersion))
+    // The Spirit Requests HUD overlay (QuestHudOverlay/HaruQuestMod): an always-on panel, not a Screen.
+    implementation(fabricApi.module("fabric-rendering-v1", fabricApiVersion))
 
     testImplementation(platform("org.junit:junit-bom:5.13.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")

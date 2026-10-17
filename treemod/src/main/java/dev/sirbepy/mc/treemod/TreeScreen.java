@@ -41,7 +41,7 @@ public final class TreeScreen extends Screen {
     static final int FRAME = 26, NODE_SPACING = 32;
     static final int ABILITY_X = 150, ABILITY_STEP = 46, ABILITY_Y = 8, ABILITY_BOX = 22;
     static final int BUTTON_X = W - 62, BUTTON_W = 52, BUTTON_H = 14;
-    static final int BINDS_Y = 7, RESPEC_Y = 24;
+    static final int SPELL_BAR_Y = 7, RESPEC_Y = 24;
 
     static final int PANEL = 0xFF2C241E, PANEL_EDGE = 0xFF18130F, DIVIDER = 0xFF1F1915;
     static final int GOLD = 0xFFC99C48, GOLD_SHADE = 0xFF684E26, BRIGHT_GOLD = 0xFFF6CC62;
@@ -314,7 +314,7 @@ public final class TreeScreen extends Screen {
             g.centeredText(font, label, x + ABILITY_BOX / 2, ABILITY_Y + ABILITY_BOX + 3, a.unlocked() ? TEXT : TEXT_DIM);
         }
         if (!tree.own()) return;
-        button(g, "Binds", BUTTON_X, BINDS_Y, inside(mx, my, BUTTON_X, BINDS_Y, BUTTON_W, BUTTON_H));
+        button(g, "Spell bar", BUTTON_X, SPELL_BAR_Y, inside(mx, my, BUTTON_X, SPELL_BAR_Y, BUTTON_W, BUTTON_H));
         boolean armed = respecArmedAt >= 0 && now - respecArmedAt < CONFIRM_MS;
         button(g, armed ? "Sure?" : "Respec", BUTTON_X, RESPEC_Y, inside(mx, my, BUTTON_X, RESPEC_Y, BUTTON_W, BUTTON_H));
     }
@@ -344,14 +344,14 @@ public final class TreeScreen extends Screen {
         } else if (ability >= 0) {
             TreeData.Ability a = tree.abilities().get(ability);
             lines.add(colored(a.name(), 0xFF000000 | tree.color()));
-            lines.add(colored(a.label() + " · " + a.key(), 0xFFAAAAAA));
+            lines.add(colored(a.key(), 0xFFAAAAAA));
             for (String line : a.lines()) lines.add(colored(line, 0xFFAAAAAA));
             if (!a.unlocked()) lines.add(colored("Unlocks at level " + a.unlockLevel(), 0xFFFF6B6B));
             else if (tree.own()) lines.add(colored("Click to use", 0xFFFFFF55));
         } else if (tree.own() && inside(mx, my, BUTTON_X, RESPEC_Y, BUTTON_W, BUTTON_H)) {
             lines.add(colored("Refund every point in this tree, free", 0xFFAAAAAA));
-        } else if (tree.own() && inside(mx, my, BUTTON_X, BINDS_Y, BUTTON_W, BUTTON_H)) {
-            lines.add(colored("Which sneak + key fires each ability", 0xFFAAAAAA));
+        } else if (tree.own() && inside(mx, my, BUTTON_X, SPELL_BAR_Y, BUTTON_W, BUTTON_H)) {
+            lines.add(colored("Show or hide the spell bar next to your hotbar", 0xFFAAAAAA));
         }
         if (lines.isEmpty()) return;
         List<FormattedCharSequence> wrapped = new ArrayList<>();
@@ -394,11 +394,9 @@ public final class TreeScreen extends Screen {
             TreeMod.send(TreeMod.cast(a.slot()));
             return true;
         }
-        if (event.button() == LEFT_BUTTON && inside(mx, my, BUTTON_X, BINDS_Y, BUTTON_W, BUTTON_H)) {
-            // The server answers "binds" by opening a chest menu, not a tree snapshot; close this
-            // screen first like the ability cast above, so the chest isn't fighting this Screen for focus.
-            onClose();
-            TreeMod.send(TreeMod.request("binds"));
+        if (event.button() == LEFT_BUTTON && inside(mx, my, BUTTON_X, SPELL_BAR_Y, BUTTON_W, BUTTON_H)) {
+            // The server answers in chat ("Spell bar hidden."), so this screen stays open.
+            TreeMod.send(TreeMod.request("hud"));
             return true;
         }
         if (event.button() == LEFT_BUTTON && inside(mx, my, BUTTON_X, RESPEC_Y, BUTTON_W, BUTTON_H)) {

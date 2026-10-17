@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * {@code /class}'s short hub for a player who already has a class: skill tree, binds, class info,
+ * {@code /class}'s short hub for a player who already has a class: skill tree, spell bar, class info,
  * change class. Shares {@link TreeScreen}'s walnut-and-gold panel ({@link TreeScreen#frame}) since
  * Joe asked for one consistent look across every screen this mod draws.
  */

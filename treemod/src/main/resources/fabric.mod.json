@@ -8,7 +8,7 @@
   "license": "MIT",
   "environment": "client",
   "entrypoints": {
-    "client": ["dev.sirbepy.mc.treemod.TreeMod"]
+    "client": ["dev.sirbepy.mc.treemod.TreeMod", "dev.sirbepy.mc.treemod.HaruQuestMod"]
   },
   "depends": {
     "fabricloader": ">=0.19.5",
