@@ -188,12 +188,12 @@ export function parseBootLog(logText) {
 // Exported for offline testing. A console command Paper doesn't recognise (e.g. Tweaks' own
 // restartcountdown command when that plugin isn't loaded) logs "Unknown command..." (older/plain
 // console form) or "Unknown or incomplete command..." (the form actually seen on live, 2026-10-17)
-// on the line(s) appended after it; comparing line counts rather than full text means log lines the
-// server itself appended in between (chat, autosave) don't cause a false negative.
+// in the text appended after it. Only the appended text is searched, so an older unknown-command
+// line can't count. It is cut by character offset, not line count: latest.log ends in a newline, so
+// a line-count slice skipped the first appended line, which is exactly where Paper's message sits.
 export function commandWasUnknown(preText, postText) {
-  const beforeLines = preText.split(/\r?\n/).length;
-  const afterLines = postText.split(/\r?\n/);
-  return afterLines.slice(beforeLines).some((line) => line.includes("Unknown command") || line.includes("Unknown or incomplete command"));
+  const appended = postText.startsWith(preText) ? postText.slice(preText.length) : postText;
+  return appended.includes("Unknown command") || appended.includes("Unknown or incomplete command");
 }
 
 // Exported for offline testing. Matches the exact marker RestartCountdownManager.fire() logs

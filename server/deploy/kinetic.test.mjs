@@ -59,6 +59,13 @@ test("the 'Unknown or incomplete command' form Paper actually logs on live is al
   assert.equal(commandWasUnknown(before, after), true);
 });
 
+test("the unknown-command line right after a log that ends in a newline is detected", () => {
+  // latest.log always ends with "\n"; the first appended line is where Paper puts its message.
+  const before = `${oldLog}\n`;
+  const after = `${before}[02:52:25] [Server thread/INFO]: System chat: Unknown or incomplete command. See below for error\nrestartcountdown start cx3baa4j reason<--[HERE]\n`;
+  assert.equal(commandWasUnknown(before, after), true);
+});
+
 test("ordinary log growth after a command is not mistaken for an unknown command", () => {
   const before = oldLog;
   const after = `${oldLog}\n[12:30:01] [Server thread/INFO]: Saving worlds`;
