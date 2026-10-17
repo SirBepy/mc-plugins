@@ -11,6 +11,9 @@ execute store result storage backpacks:temp item.id int 1 run scoreboard players
 # Items are actually replaced from a stored page (summon/summon, update/update), so a save
 # always lands on the page that's really on screen, even if a command-chain-length cutoff left
 # the navigation score (backpacks.pages) ahead of a display that never caught up.
+# A menu summoned before backpacks.displayed_page existed has no such score, and a failed `get`
+# skips the store below (item.page would keep another menu's value), so it takes pages once.
+execute unless score @s backpacks.displayed_page = @s backpacks.displayed_page run scoreboard players operation @s backpacks.displayed_page = @s backpacks.pages
 execute store result storage backpacks:temp item.page int 1 run scoreboard players get @s backpacks.displayed_page
 
 # Search:
