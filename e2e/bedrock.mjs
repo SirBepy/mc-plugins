@@ -33,9 +33,14 @@ const FLOODGATE_NAME = `.${USERNAME}`;
 // one and can trip vanilla's "moved too quickly"/flying checks for reasons that have nothing to do
 // with Geyser - wiping it keeps each run equivalent to a brand-new player's first join.
 const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
+// Paper 26.3 moved per-player data from world/playerdata/ to world/players/data/ (confirmed by
+// listing server/local/world/players/data/ this session); the old path silently matched nothing,
+// so this wipe was a no-op and every repeated run inherited the previous run's end-of-test
+// position, which is what actually tripped vanilla's floating-too-long/flying kick on a second
+// run, not a Geyser regression.
 for (const p of [
-  path.join(localDir, 'world', 'playerdata', `${ZERO_UUID}.dat`),
-  path.join(localDir, 'world', 'playerdata', `${ZERO_UUID}.dat_old`),
+  path.join(localDir, 'world', 'players', 'data', `${ZERO_UUID}.dat`),
+  path.join(localDir, 'world', 'players', 'data', `${ZERO_UUID}.dat_old`),
   path.join(localDir, 'plugins', 'Essentials', 'userdata', `${ZERO_UUID}.yml`),
 ]) {
   fs.rmSync(p, { force: true });

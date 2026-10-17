@@ -193,27 +193,6 @@ plain membrane's green Herbs icon is the client side of the same clash, fixed in
 When Reg's More Foods is updated, re-diff its `bg/replace/herbs.mcfunction` and phantom loot table
 against this override.
 
-## dragonkind-geyser-fix/, written 2026-10-10
-
-Overrides Dragonkind Evolved's `data/dke/enchantment/deterioration_curse.json` and `wingspan.json`
-(the files, not the zip - same rule as mastercutter-fixes). Upstream gives each an `exclusive_set`
-of one enchantment id (`minecraft:mending`, `minecraft:sweeping_edge`). Vanilla accepts that, but
-the Geyser preview live runs (geyserpreview pr.6712, builds 3090 and 3091, tested) resolves the id against the
-enchantment registry while still building that same registry, throws, and leaves the registry
-unusable for the whole Bedrock session: every enchanted item then fails to translate ("Registry
-must be frozen to access its entries" in `Item.remapEnchantment`) and Bedrock inventories break.
-The override points each at a one-entry tag (`#dke:exclusive_set/<name>`) holding the same id, which
-Geyser reads without a lookup; which enchantments can combine is unchanged.
-
-Like the other fix packs, `file/dragonkind-geyser-fix` sorts after `file/dragonkind-evolved-v1.15`,
-and on a world that already has the zip it is appended last. `python -m unittest discover -s
-server/dragonkind-geyser-fix` checks every effective Dragonkind `exclusive_set` is a tag and each
-override is otherwise upstream's file. Reproduced and verified on a private Paper 26.3 server with
-Geyser 3090, a headless Bedrock client and an RCON-given Sharpness V sword: with only the zip, 18
-"Registry must be frozen" errors and no item reached the client; with this pack, both enchanted
-items arrived with their enchantments. Delete this pack once the pinned Geyser handles id
-`exclusive_set`s, or when Dragonkind is bumped and its enchantments already use tags.
-
 ## spawn-market/, generated 2026-10-05
 
 A custom folder datapack holding the spawn square build: a timber-and-tuff taiga market at world

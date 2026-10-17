@@ -65,24 +65,21 @@ object ServerArtifacts {
             filename = "voicechat-bukkit-2.6.24.jar",
             sha256 = "af3d4e2ad318d3065959248c1370ae32a619752cb4d2a4fec2f7a79b10067769",
         ),
-        // Build 1247 (the then-latest release) fails to enable on Paper 26.3 beta: its shaded cloud
-        // command parser calls the removed CraftItemStack#asBukkitCopy/#asCraftMirror methods (see
-        // docs/server.md "Known issue"). Pinned instead to GeyserMC's own official preview build of
-        // GeyserMC/Geyser#6712 ("Update to Java 26.3", open/unmerged as of 2026-10-10), published on
-        // GeyserMC's own download API under the "geyserpreview" project (pr.6712, build 3090,
-        // resolved 2026-10-10 from https://download.geysermc.org/v2/projects/geyserpreview/versions/pr.6712/builds/3090).
-        // Build 3090 rather than the earlier 3057: 3057 accepts Bedrock 26.30-26.51 only, so players
-        // on Bedrock 26.52 couldn't join; 3090 adds 26.52. It rewrites the Geyser config to
-        // config-version 9 on first boot, and it fails to start at all while DragonBalls'
-        // bedrock-dragon-models is true ("Registry has not been loaded yet" from its entity define
-        // events), so that switch has to stay false on this build.
-        // Swap this back to a normal "geyser" release build once 26.3 support ships there.
+        // Release build 1255 (2026-10-14, "Version bumps for Java 26.3") shipped GeyserMC/Geyser#6712
+        // as a real release, replacing the earlier "geyserpreview" pr.6712 pin; build 1262
+        // (2026-10-16, resolved from https://download.geysermc.org/v2/projects/geyser/versions/latest/builds)
+        // also carries GeyserMC/Geyser#6786, which fixes the registry-freeze bug filed upstream as
+        // GeyserMC/Geyser#6764 (confirmed via `gh api repos/GeyserMC/Geyser/issues/6764`: closed,
+        // completed, by merged PR #6786) - see docs/server.md "Geyser is now on a release build".
+        // That bug's now-deleted workaround was server/datapacks/dragonkind-geyser-fix.
         PinnedJar(
-            url = "https://download.geysermc.org/v2/projects/geyserpreview/versions/pr.6712/builds/3090/downloads/spigot",
+            url = "https://download.geysermc.org/v2/projects/geyser/versions/2.12.0/builds/1262/downloads/spigot",
             filename = "Geyser-Spigot.jar",
-            sha256 = "085eb80780a4248e8e348c71abef61a47c05dd4f4c8f390bc7c15f58c1bdac7c",
+            sha256 = "9f0efc83d1ece6f77552c573930431f08a760fa5c3eb02528c584fc291d44f92",
         ),
-        // Pinned to 2.2.5 / build 141, resolved the same way and on the same date as Geyser above.
+        // Pinned to 2.2.5 / build 141 ("Update to 26.3 (#686)"); re-checked 2026-10-17 against
+        // https://download.geysermc.org/v2/projects/floodgate/versions/latest/builds, still the
+        // newest build, so no bump needed alongside the Geyser release pin above.
         PinnedJar(
             url = "https://download.geysermc.org/v2/projects/floodgate/versions/2.2.5/builds/141/downloads/spigot",
             filename = "floodgate-spigot.jar",

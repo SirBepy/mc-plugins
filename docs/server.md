@@ -55,30 +55,25 @@ powershell -File sv.ps1 ensure -Project mc-plugins-tag -Kind ephemeral -Root ser
 
 Watch with `sv.ps1 logs -Id local:java`, stop with an RCON `stop`, then `sv.ps1 rm -Id local:java`.
 
-## Known issue: Geyser release builds don't enable yet (worked around with an official preview build)
+## Geyser is now on a release build
 
-Geyser-Spigot's release build (2.11.3 build 1247) fails to enable on Paper 26.3 build 143 beta:
-`IllegalArgumentException: Couldn't find asBukkitCopy or asCraftMirror method on CraftItemStack`,
-inside its shaded command-parser reflection (Paper 26.3 removed
-`CraftItemStack#asBukkitCopy`/`#asCraftMirror`, and Geyser's shaded `cloud` command library hadn't
-picked up the replacement `asBukkitMirror` method yet). This was an upstream Geyser/Paper-beta
-compatibility gap, not a config problem here. The fix shipped as GeyserMC/Geyser#6712 ("Update to
-Java 26.3"); as of 2026-10-02 it is still open/unmerged, but GeyserMC publishes official preview
-builds of open PRs on its own download API under the `geyserpreview` project
-(`https://download.geysermc.org/v2/projects/geyserpreview/versions/pr.6712/builds`). `ServerArtifacts.kt`
-is pinned to that preview's build 3090 (resolved 2026-10-10; the earlier 3057 stopped at Bedrock
-26.51, 3090 adds 26.52) instead of a release build, so Geyser enables on server/local. Build 3090
-fails to start at all while DragonBalls' `bedrock-dragon-models` is true, so keep that off. Builds
-3090 and 3091 (both tested) also can't read an enchantment whose `exclusive_set` is a single id instead of a #tag
-(two Dragonkind Evolved ones): the whole enchantment registry is then unusable for the session and
-every enchanted item fails to reach Bedrock ("Registry must be frozen"), which broke Bedrock
-inventories on live 2026-10-10. `server/datapacks/dragonkind-geyser-fix` rewrites those two as tags
-(see `server/datapacks/README.md`); keep every datapack enchantment's `exclusive_set` a tag while on
-this preview. Reg's More Foods' cookbook dialogs, which link to each other by id, fail the same way
-for the dialog registry, so Bedrock players can't open that cookbook; nothing else is affected. Swap the pin back to a normal `geyser` release build once 26.3 support
-ships there (check `https://download.geysermc.org/v2/projects/geyser/versions/latest/builds`
-periodically), and once it does, let Geyser generate its own `plugins/Geyser-Spigot/config.yml`
-(replacing the reconstructed one in `server/config/`, see that file's header).
+Geyser-Spigot's earlier release (2.11.3 build 1247) failed to enable on Paper 26.3 beta
+(`IllegalArgumentException: Couldn't find asBukkitCopy or asCraftMirror method on CraftItemStack`,
+an upstream Geyser/Paper-beta gap, not a config problem here), so this project ran GeyserMC's own
+unmerged preview build of GeyserMC/Geyser#6712 ("Update to Java 26.3") for a while. That PR shipped
+as a real release in build 1255 (2026-10-14); `ServerArtifacts.kt` is now pinned to build 1262
+(2026-10-17), which also carries GeyserMC/Geyser#6786, fixing the registry-freeze bug filed
+upstream as GeyserMC/Geyser#6764 (a registry entry referencing another entry of the same registry
+by id - enchantment `exclusive_set`, dialog `show_dialog` - used to leave that registry unfrozen
+for the session, breaking every enchanted item and the More Foods cookbook dialog on Bedrock).
+Verified this session on server/local: Geyser 2.12.0-b1262 enables cleanly, `e2e/bedrock.mjs`
+passes all steps (join, chat, movement) twice in a row, `.for_bepy/geyser-enchant/repro.mjs`
+reports 0 "Registry must be frozen" errors with the dke + Reg's More Foods zips and no override
+pack, and DragonBalls' `bedrock-dragon-models: true` (which build 3090 couldn't start under) now
+boots clean too. The former `server/datapacks/dragonkind-geyser-fix` workaround for #6764 is
+deleted (no longer needed); let Geyser generate its own `plugins/Geyser-Spigot/config.yml` the
+next time it's regenerated from scratch (replacing the reconstructed one in `server/config/`, see
+that file's header).
 
 ## Secrets
 
@@ -96,8 +91,8 @@ works normally.
    `*` but some vanilla checks still look at op status).
 3. Whitelist Java players: `whitelist add <name>` per player, then `whitelist reload`.
 4. Bedrock players: `fwhitelist add <bedrockname>` per Floodgate player, after confirming Geyser
-   bound its Bedrock port (log line `Started Geyser on 0.0.0.0:19132`). Geyser is currently running
-   off an official GeyserMC preview build, not a release build, see "Known issue" above.
+   bound its Bedrock port (log line `Started Geyser on 0.0.0.0:19132`). Geyser now runs an official
+   release build, see "Geyser is now on a release build" above.
    Bedrock checks only a real Bedrock client can do (the bots can't render forms or Geyser's GUI
    translation), once, with one of the Bedrock players:
    - `/nick` opens a "Nickname" text form; submitting a name changes chat, tab and the floating label.
