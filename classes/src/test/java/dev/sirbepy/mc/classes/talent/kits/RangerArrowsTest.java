@@ -5,6 +5,7 @@ import dev.sirbepy.mc.classes.RpgClass;
 import dev.sirbepy.mc.classes.talent.Slot;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Trident;
@@ -16,6 +17,7 @@ import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.potion.PotionEffectType;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
@@ -402,6 +404,29 @@ class RangerArrowsTest extends KitTestBase {
         assertTrue(death.getDrops().isEmpty(), "Homecoming claims the final drop list, not the original one");
         assertTrue(p.getInventory().containsAtLeast(new ItemStack(Material.BONE), 3), "the other plugin's bones, not the rotten flesh it replaced");
         assertFalse(p.getInventory().contains(Material.ROTTEN_FLESH), "original drop was already replaced before Homecoming ran");
+    }
+
+    /**
+     * giveExp() alone never triggers Mending (vanilla only fires it on physical orb pickup), so
+     * Homecoming has to repair equipped Mending gear itself before handing over the leftover XP.
+     */
+    @Test
+    void homecomingMendsAnEquippedMendingItemBeforeGivingLeftoverXp() {
+        PlayerMock p = ranger(25);
+        rank(p, "homecoming", 1);
+        ItemStack bow = new ItemStack(Material.BOW);
+        bow.addUnsafeEnchantment(Enchantment.MENDING, 1);
+        Damageable meta = (Damageable) bow.getItemMeta();
+        meta.setDamage(10);
+        bow.setItemMeta(meta);
+        p.getInventory().setItemInMainHand(bow);
+        int expBefore = p.getTotalExperience();
+
+        killWith(throwTrident(p, 0), zombie(30), List.of(), 20);
+
+        Damageable after = (Damageable) p.getInventory().getItemInMainHand().getItemMeta();
+        assertEquals(0, after.getDamage(), "10 damage needs only 5 XP at 2 durability repaired per point");
+        assertEquals(expBefore + 15, p.getTotalExperience(), "20 XP in, 5 consumed by Mending, 15 left for the bar");
     }
 
     @Test

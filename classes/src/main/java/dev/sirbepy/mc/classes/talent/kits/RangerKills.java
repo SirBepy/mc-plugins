@@ -4,6 +4,7 @@ import dev.sirbepy.mc.classes.talent.KitContext;
 import dev.sirbepy.mc.classes.talent.Mobs;
 import org.bukkit.Location;
 import org.bukkit.Particle;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
@@ -15,8 +16,13 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * What a ranged kill does next: Ricochet (a new arrow at the nearest mob) and Homecoming (the
@@ -78,8 +84,43 @@ final class RangerKills implements Listener {
         }
         event.getDrops().clear();
         if (event.getDroppedExp() > 0) {
-            player.giveExp(event.getDroppedExp());
+            mendThenGiveExp(player, event.getDroppedExp());
             event.setDroppedExp(0);
+        }
+    }
+
+    /**
+     * giveExp() alone skips Mending, which vanilla triggers only on physical orb pickup. Mirrors
+     * vanilla's own repair math (ExperienceOrb#repairPlayerItems): pick one random equipped item
+     * with Mending that's damaged, repair it at 2 durability per XP point, and only hand the
+     * leftover XP to the player's bar.
+     */
+    private void mendThenGiveExp(Player player, int exp) {
+        List<ItemStack> candidates = new ArrayList<>();
+        for (ItemStack item : new ItemStack[] {
+                player.getInventory().getItemInMainHand(),
+                player.getInventory().getItemInOffHand(),
+                player.getInventory().getHelmet(),
+                player.getInventory().getChestplate(),
+                player.getInventory().getLeggings(),
+                player.getInventory().getBoots()
+        }) {
+            if (item != null && !item.getType().isAir() && item.containsEnchantment(Enchantment.MENDING)
+                    && item.getItemMeta() instanceof Damageable damageable && damageable.getDamage() > 0) {
+                candidates.add(item);
+            }
+        }
+        if (!candidates.isEmpty()) {
+            ItemStack item = candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
+            Damageable meta = (Damageable) item.getItemMeta();
+            int damage = meta.getDamage();
+            int repaired = Math.min(exp * 2, damage);
+            meta.setDamage(damage - repaired);
+            item.setItemMeta(meta);
+            exp -= (int) Math.ceil(repaired / 2.0);
+        }
+        if (exp > 0) {
+            player.giveExp(exp);
         }
     }
 
