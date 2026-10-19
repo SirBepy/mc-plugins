@@ -2,7 +2,6 @@ package dev.sirbepy.mc.treemod;
 
 import com.google.gson.JsonObject;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
@@ -15,14 +14,12 @@ import java.util.List;
  * change class. Shares {@link TreeScreen}'s walnut-and-gold panel ({@link TreeScreen#frame}) since
  * Joe asked for one consistent look across every screen this mod draws.
  */
-public final class HubScreen extends Screen {
+public final class HubScreen extends ScaledRowScreen {
 
     static final int W = 220;
     static final int ROW_X = 12, ROW_W = W - 24, ROW_Y = 50, ROW_H = 26, ROW_GAP = 6;
 
     private HubData hub;
-    private float scale = 1;
-    private int left, top, panelHeight;
 
     public HubScreen(HubData hub) {
         super(Component.literal(hub.className() + " menu"));
@@ -39,38 +36,46 @@ public final class HubScreen extends Screen {
         return false;
     }
 
+    @Override
+    protected int panelWidth() {
+        return W;
+    }
+
+    @Override
+    protected int rowsTop() {
+        return ROW_Y;
+    }
+
     /** The panel's height follows the entry count, same as {@link GuildScreen#computeHeight()} - a
      * fixed constant here is what let "Change class" render past the panel's own bottom edge. */
-    private int computeHeight() {
+    @Override
+    protected int computeHeight() {
         return ROW_Y + hub.entries().size() * (ROW_H + ROW_GAP) - ROW_GAP + 8;
     }
 
-    private void place() {
-        panelHeight = computeHeight();
-        scale = Math.min(1f, Math.min((width - 8) / (float) W, (height - 8) / (float) panelHeight));
-        left = Math.round((width - W * scale) / 2);
-        top = Math.round((height - panelHeight * scale) / 2);
+    @Override
+    protected int rowCount() {
+        return hub.entries().size();
     }
 
-    private double localX(double screenX) {
-        return (screenX - left) / scale;
+    @Override
+    protected int rowX() {
+        return ROW_X;
     }
 
-    private double localY(double screenY) {
-        return (screenY - top) / scale;
+    @Override
+    protected int rowWidth() {
+        return ROW_W;
     }
 
-    private static int rowY(int index) {
-        return ROW_Y + index * (ROW_H + ROW_GAP);
+    @Override
+    protected int rowHeight() {
+        return ROW_H;
     }
 
-    private int rowAt(double x, double y) {
-        if (x < ROW_X || x >= ROW_X + ROW_W) return -1;
-        for (int i = 0; i < hub.entries().size(); i++) {
-            int ry = rowY(i);
-            if (y >= ry && y < ry + ROW_H) return i;
-        }
-        return -1;
+    @Override
+    protected int rowGap() {
+        return ROW_GAP;
     }
 
     @Override

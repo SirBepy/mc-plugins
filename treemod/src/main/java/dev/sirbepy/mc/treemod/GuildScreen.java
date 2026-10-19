@@ -2,7 +2,6 @@ package dev.sirbepy.mc.treemod;
 
 import com.google.gson.JsonObject;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
@@ -18,15 +17,13 @@ import java.util.List;
  * count and {@link #place()} shrinks the whole thing to fit, same as every other screen this mod draws,
  * so a long screen (the Hall of Fame) simply renders smaller rather than scrolling.
  */
-public final class GuildScreen extends Screen {
+public final class GuildScreen extends ScaledRowScreen {
 
     static final int W = 260;
     static final int ROW_X = 12, ROW_W = W - 24, ROW_H = 20, ROW_GAP = 4;
     static final int SUBTITLE_LINE_H = 10;
 
     private final GuildData data;
-    private float scale = 1;
-    private int left, top, panelHeight;
 
     public GuildScreen(GuildData data) {
         super(Component.literal(data.title()));
@@ -38,41 +35,44 @@ public final class GuildScreen extends Screen {
         return false;
     }
 
-    private int rowsTop() {
+    @Override
+    protected int panelWidth() {
+        return W;
+    }
+
+    @Override
+    protected int rowsTop() {
         return 24 + data.subtitle().size() * SUBTITLE_LINE_H + 8;
     }
 
-    private int computeHeight() {
+    @Override
+    protected int computeHeight() {
         return rowsTop() + data.rows().size() * (ROW_H + ROW_GAP) + 8;
     }
 
-    private static int rowY(int top, int index) {
-        return top + index * (ROW_H + ROW_GAP);
+    @Override
+    protected int rowCount() {
+        return data.rows().size();
     }
 
-    private void place() {
-        panelHeight = computeHeight();
-        scale = Math.min(1f, Math.min((width - 8) / (float) W, (height - 8) / (float) panelHeight));
-        left = Math.round((width - W * scale) / 2);
-        top = Math.round((height - panelHeight * scale) / 2);
+    @Override
+    protected int rowX() {
+        return ROW_X;
     }
 
-    private double localX(double screenX) {
-        return (screenX - left) / scale;
+    @Override
+    protected int rowWidth() {
+        return ROW_W;
     }
 
-    private double localY(double screenY) {
-        return (screenY - top) / scale;
+    @Override
+    protected int rowHeight() {
+        return ROW_H;
     }
 
-    private int rowAt(double x, double y) {
-        if (x < ROW_X || x >= ROW_X + ROW_W) return -1;
-        int rowsTop = rowsTop();
-        for (int i = 0; i < data.rows().size(); i++) {
-            int ry = rowY(rowsTop, i);
-            if (y >= ry && y < ry + ROW_H) return i;
-        }
-        return -1;
+    @Override
+    protected int rowGap() {
+        return ROW_GAP;
     }
 
     @Override
@@ -90,11 +90,10 @@ public final class GuildScreen extends Screen {
         for (int i = 0; i < subtitle.size(); i++) {
             g.text(font, subtitle.get(i), 12, 24 + i * SUBTITLE_LINE_H, TreeScreen.TEXT_DIM, false);
         }
-        int rowsTop = rowsTop();
         int hovered = rowAt(mx, my);
         for (int i = 0; i < data.rows().size(); i++) {
             GuildData.Row row = data.rows().get(i);
-            int ry = rowY(rowsTop, i);
+            int ry = rowY(i);
             g.fill(ROW_X, ry, ROW_X + ROW_W, ry + ROW_H, row.clickable() ? TreeScreen.GOLD : TreeScreen.GOLD_SHADE);
             g.fill(ROW_X + 1, ry + 1, ROW_X + ROW_W - 1, ry + ROW_H - 1,
                     row.clickable() && i == hovered ? 0xFF5D4936 : 0xFF4A3A2C);
