@@ -124,6 +124,35 @@ claude-reply.mjs's arguments.
   Kinetic equivalent yet. Not an issue for this first deploy (empty server); revisit before the
   first update that removes a plugin.
 
+## redeploy-spawn-market.mjs
+
+`node server/deploy/redeploy-spawn-market.mjs [--dry-run] [x0 z0 x1 z1]` replays the spawn-market
+live-redeploy choreography in one scripted sequence instead of hand-typing it every
+time a stall/sign layout changes: uploads every generated `.mcfunction` file in
+`server/datapacks/spawn-market/data/spawn_market/function/` to
+`world/datapacks/spawn-market/data/spawn_market/function/` on the live server (via `kinetic.mjs`'s
+exported `cmdUpload`), sends `reload confirm` and waits for Paper's `Reloading!` line, then
+`forceload add`s the market bounds, runs `function spawn_market:build`, waits for the datapack's own
+`[spawn-market] done` tellraw (`build_run.mcfunction`'s last line - the same completion signal
+`spawn_market:build`/`build_run` already emit), and `forceload remove`s the same bounds. The bounds
+default to whatever `build.mcfunction`'s own `forceload add` line says (emitted by
+`server/spawn-market/generate.mjs`/`emit.mjs`), so they can't drift from the generated pack; pass
+four coordinates to override. `--dry-run` prints every step (uploads and console commands) instead
+of sending anything - no panel call, no live server needed, just the local datapack files - useful
+for checking the plan after a layout regen before actually running it.
+
+- **`reload`/`reload confirm` needs Joe's explicit go-ahead every time the auto-mode classifier
+  blocks it.** This script sends `reload confirm` unconditionally once invoked without `--dry-run`;
+  get that go-ahead first, same as any other live-affecting console command the classifier flags.
+- **A coordinate change to any DragonBalls display entity** (station balls, radar signs) **needs its
+  decor entities killed by tag before the next chunk load, or duplicates appear**: run
+  `minecraft:kill @e[tag=dragonballs.decor_ball]` (never a bare `/kill`, which a Tweaks/other plugin
+  override can shadow - see `console-command-gotchas-26-3.md`) before the station's chunk next
+  loads. Moving a display-head coordinate spawns a new ball entity without despawning the old one
+  (`StationDisplay.placeIfNeeded`, `dragonballs/src/main/java/dev/sirbepy/mc/dragonballs/station/StationDisplay.java`),
+  because it only checks whether *a* ball is already tracked for that head, not whether one already
+  exists at the new location.
+
 ## Allocations on this server
 
 | id    | port  | note               |

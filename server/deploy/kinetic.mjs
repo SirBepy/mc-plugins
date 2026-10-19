@@ -378,7 +378,10 @@ async function cmdReplace(file, oldText, newText) {
 
 // Pterodactyl uploads go to a short-lived signed Wings URL as multipart field "files", not
 // through the panel API itself.
-async function cmdUpload(localPath, dir) {
+//
+// Exported so redeploy-spawn-market.mjs can upload each datapack function file through the same
+// signed-URL dance as the CLI's own `upload` subcommand, without reimplementing it.
+export async function cmdUpload(localPath, dir) {
   if (!localPath || !dir) throw new Error("upload requires <local-file> <remote-dir>, e.g. `upload x.jar plugins`");
   const id = await serverIdentifier();
   const signed = await api(`/servers/${id}/files/upload`);
