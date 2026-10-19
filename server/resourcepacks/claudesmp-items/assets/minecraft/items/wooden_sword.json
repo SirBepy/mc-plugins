@@ -5,17 +5,10 @@
     "index": 0,
     "cases": [
       {
-        "when": "druid_scythe_1",
+        "when": "cosmetic_4",
         "model": {
           "type": "minecraft:model",
-          "model": "claudesmp:item/druid_scythe_1"
-        }
-      },
-      {
-        "when": "druid_scythe_2",
-        "model": {
-          "type": "minecraft:model",
-          "model": "claudesmp:item/druid_scythe_2"
+          "model": "claudesmp:item/blood_scythe_green"
         }
       }
     ],
