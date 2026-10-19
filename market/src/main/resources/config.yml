@@ -173,6 +173,10 @@ messages:
   watch-list-line: " <dark_gray>-</dark_gray> <white><item></white>"
   watch-rotated: "<gold>Market watch:</gold> <white><item></white> is on sale today at the <white><stall></white> stall (<price>)."
   watch-join: "<gold>Market watch:</gold> <white><item></white> is still on today's market at the <white><stall></white> stall (<price>)."
+  # /market linkdiscord <id> (Joe, 2026-10-19): a player's own Discord numeric user id, so a great
+  # deal on something they're watching @-mentions them for real on Discord.
+  linkdiscord-success: "<green>Linked. You'll be @-pinged on Discord when a watched item is a great deal."
+  linkdiscord-invalid: "<red>That doesn't look like a Discord user id. In Discord: User Settings > Advanced > turn on Developer Mode, then right-click yourself and Copy User ID."
   # /market price [item] (Joe, 2026-10-11): the most, usual and least a stall pays for an item.
   # <spread> the daily swing, <stall>/<amount> who buys it and how many at a time, <price> a bundle
   # price, <each> the price-range-each part (left out when the stall buys one at a time).

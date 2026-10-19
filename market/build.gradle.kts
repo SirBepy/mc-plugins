@@ -12,6 +12,7 @@ dependencies {
     compileOnly(project(":discordbot"))
     // compileOnly isn't inherited by the test source set (same fix as tweaks/build.gradle.kts).
     testImplementation("io.papermc.paper:paper-api:26.2.build.+")
+    testImplementation(project(":discordbot"))
 
     // Same coordinates dragonballs and guild already use: VaultUnlocked on the server serves the
     // classic Vault Economy API the Heads stall and Wanted board pay through.

@@ -40,6 +40,7 @@ public final class MarketPlugin extends JavaPlugin {
     private CosmeticShop cosmeticShop;
     private CosmeticRequests cosmeticRequests;
     private MarketWatches watches;
+    private MarketDiscordLinks discordLinks;
     private DealAnnouncer dealAnnouncer;
 
     @Override
@@ -66,7 +67,8 @@ public final class MarketPlugin extends JavaPlugin {
                 new File(getDataFolder(), "state.yml"), getLogger());
         watches = new MarketWatches(market, layout, heads, config::get, new File(getDataFolder(), "watches.yml"), getLogger());
         getServer().getPluginManager().registerEvents(watches, this);
-        dealAnnouncer = new DealAnnouncer(market, watches, config::get, getServer());
+        discordLinks = new MarketDiscordLinks(new File(getDataFolder(), "discord-links.yml"), getLogger());
+        dealAnnouncer = new DealAnnouncer(market, watches, discordLinks, config::get, getServer());
         starterBoost = new StarterBoost(market, config::get, this::balance, this::pay,
                 new File(getDataFolder(), "starter-boost.yml"), getLogger());
         getServer().getPluginManager().registerEvents(starterBoost, this);
@@ -91,6 +93,7 @@ public final class MarketPlugin extends JavaPlugin {
         }
         CosmeticCommand cosmeticCommand = new CosmeticCommand(cosmeticRequests);
         MarketWatchCommand watchCommand = new MarketWatchCommand(watches, config::get);
+        MarketLinkDiscordCommand linkDiscordCommand = new MarketLinkDiscordCommand(discordLinks, config::get);
         PriceCommand price;
         try (InputStream stream = Objects.requireNonNull(getResource("prices.yml"), "prices.yml missing from the jar")) {
             price = new PriceCommand(PriceBook.load(stream), config::get, ItemStack::effectiveName, Enchantment::displayName);
@@ -155,6 +158,7 @@ public final class MarketPlugin extends JavaPlugin {
                                 }))
                         .then(watchCommand.watchNode())
                         .then(watchCommand.unwatchNode())
+                        .then(linkDiscordCommand.node())
                         .then(new MarketPriceCommand(market, config::get).node())
                         .then(Commands.literal("rotate")
                                 .requires(src -> src.getSender().hasPermission("market.admin"))

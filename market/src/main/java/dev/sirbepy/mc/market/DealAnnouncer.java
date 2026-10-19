@@ -11,18 +11,22 @@ import java.util.function.Supplier;
  * Posts a Discord alert when an item someone is {@code /market watch}-ing lands in the top slice of
  * its spread, right after a rotate (Joe, 2026-10-19: only for watched items, pinging the watcher(s),
  * not every item every rotate - the earlier "announce everything" version was too noisy). DiscordBot
- * is a softdepend: silently does nothing when it's absent or has no market channel configured.
+ * is a softdepend: silently does nothing when it's absent or has no market channel configured. A
+ * watcher who hasn't run {@code /market linkdiscord} yet gets no mention (and no `@Name` placeholder
+ * either, Joe 2026-10-19: a plain name never actually notified anyone, so it's not worth posting).
  */
 final class DealAnnouncer {
 
     private final Market market;
     private final MarketWatches watches;
+    private final MarketDiscordLinks discordLinks;
     private final Supplier<MarketConfig> config;
     private final Server server;
 
-    DealAnnouncer(Market market, MarketWatches watches, Supplier<MarketConfig> config, Server server) {
+    DealAnnouncer(Market market, MarketWatches watches, MarketDiscordLinks discordLinks, Supplier<MarketConfig> config, Server server) {
         this.market = market;
         this.watches = watches;
+        this.discordLinks = discordLinks;
         this.config = config;
         this.server = server;
     }
@@ -51,21 +55,21 @@ final class DealAnnouncer {
         }
     }
 
-    /** {@code ||@Name1 @Name2||} for every watcher who still has a known name, or null when nobody
-     * (or nobody resolvable) is watching - a deal with no watcher is not worth posting at all. */
+    /** {@code <@id1> <@id2>} for every watcher who has linked a Discord id, or null when none of
+     * them have (or nobody is watching at all) - a deal that pings nobody is not worth posting. */
     private String mentions(List<UUID> watcherIds) {
-        StringBuilder names = new StringBuilder();
+        StringBuilder mentions = new StringBuilder();
         for (UUID id : watcherIds) {
-            String name = server.getOfflinePlayer(id).getName();
-            if (name == null) {
+            String discordId = discordLinks.idOf(id);
+            if (discordId == null) {
                 continue;
             }
-            if (!names.isEmpty()) {
-                names.append(' ');
+            if (!mentions.isEmpty()) {
+                mentions.append(' ');
             }
-            names.append('@').append(name);
+            mentions.append("<@").append(discordId).append('>');
         }
-        return names.isEmpty() ? null : "||" + names + "||";
+        return mentions.isEmpty() ? null : mentions.toString();
     }
 
     private String message(Offer today, String mentions) {
