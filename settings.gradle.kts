@@ -12,4 +12,4 @@ plugins {
 
 rootProject.name = "mc-plugins"
 
-include("core", "names", "safechests", "tag", "claudebridge", "tweaks", "carry", "market", "dragonballs", "haru", "cartel", "guild", "endfight", "merfolk", "minibosses", "classes", "treemod", "testserver", "server")
+include("core", "names", "safechests", "tag", "claudebridge", "tweaks", "carry", "market", "dragonballs", "haru", "cartel", "guild", "endfight", "merfolk", "minibosses", "classes", "treemod", "discordbot", "testserver", "server")

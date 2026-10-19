@@ -5,7 +5,7 @@
  */
 object ServerArtifacts {
     // Our own plugin modules, shared so a new one only needs adding here, not in both build files.
-    val ourPluginProjects = listOf(":names", ":safechests", ":tag", ":claudebridge", ":tweaks", ":carry", ":market", ":dragonballs", ":haru", ":cartel", ":guild", ":endfight", ":merfolk", ":minibosses", ":classes")
+    val ourPluginProjects = listOf(":names", ":safechests", ":tag", ":claudebridge", ":tweaks", ":carry", ":market", ":dragonballs", ":haru", ":cartel", ":guild", ":endfight", ":merfolk", ":minibosses", ":classes", ":discordbot")
 
     // Modrinth CDN links, pinned. Bump a version by replacing its URL. Same list for both
     // testserver's run/ and run-e2e/, so they behave identically to each other.
@@ -15,7 +15,6 @@ object ServerArtifacts {
         "https://cdn.modrinth.com/data/1Ffl2uIq/versions/rE8pwOLY/PvPManager.jar",
         "https://cdn.modrinth.com/data/YqbUofZE/versions/j3QcPcdy/Bolt-1.2.22.jar",
         "https://cdn.modrinth.com/data/HYKaKraK/versions/m78nFxYg/packetevents-spigot-2.14.0.jar",
-        "https://cdn.modrinth.com/data/UmLGoGij/versions/ATlquwiT/DiscordSRV-Build-1.30.5.jar",
         "https://cdn.modrinth.com/data/ijC5dDkD/versions/OxlW1jL5/QuickShop-Hikari-6.3.0.3.jar",
         "https://cdn.modrinth.com/data/ayRaM8J7/versions/qZgRzoYs/VaultUnlocked-2.20.3.jar",
         "https://cdn.modrinth.com/data/hXiIvTyT/versions/nY6VN1XH/EssentialsX-2.22.0.jar",

@@ -122,15 +122,15 @@ fun injectSecrets(distDir: File) {
     val secretsFile = layout.projectDirectory.file("secrets.properties").asFile
     if (!secretsFile.exists()) return
     val props = java.util.Properties().apply { secretsFile.inputStream().use { load(it) } }
-    val discordToken = props.getProperty("discordsrv.token") ?: return
-    val configFile = distDir.resolve("plugins/DiscordSRV/config.yml")
+    val discordToken = props.getProperty("discordbot.token") ?: return
+    val configFile = distDir.resolve("plugins/DiscordBot/config.yml")
     if (!configFile.exists()) return
     val lines = configFile.readLines().toMutableList()
     // Overwrite unconditionally regardless of the line's current value (committed source ships an
-    // empty token so the secret scanner never flags a placeholder that looks real, e.g. "BOTTOKEN").
-    val idx = lines.indexOfFirst { it.startsWith("BotToken:") }
+    // empty token so the secret scanner never flags a placeholder that looks real).
+    val idx = lines.indexOfFirst { it.startsWith("bot-token:") }
     if (idx >= 0) {
-        lines[idx] = "BotToken: \"$discordToken\""
+        lines[idx] = "bot-token: \"$discordToken\""
         configFile.writeText(lines.joinToString("\n") + "\n")
     }
 }

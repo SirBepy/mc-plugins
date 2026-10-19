@@ -1,0 +1,5 @@
+name: DiscordBot
+version: ${version}
+main: dev.sirbepy.mc.discordbot.DiscordBotPlugin
+api-version: "26.2"
+author: sirbepy

@@ -1,0 +1,6 @@
+# Bot token injected at assemble time from server/secrets.properties (see injectSecrets in
+# server/build.gradle.kts); left blank here so the real token never lands in git.
+bot-token: ""
+
+# Discord channel ID join/leave messages post to.
+channel-id: "660224270529593365"
