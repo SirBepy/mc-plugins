@@ -19,10 +19,28 @@
 # bedrock.port is 25572 (Kinetic Panel allocation [42267], noted "geyser-bedrock"), not Geyser's
 # default 19132: Kinetic only opens the allocations it assigns, so Bedrock clients must connect on
 # the assigned port, not the UDP default (see server/deploy/KINETIC.md).
+#
+# NetherNet (https://geysermc.org/blog/preparing-for-nethernet): Bedrock 26.60 (shipping
+# 2026-10-27) requires NetherNet transport; a RakNet-only Geyser stops being reachable from that
+# client version onward. transport: both keeps RakNet (today's clients, and this repo's
+# e2e/bedrock.mjs, which uses the "bedrock-protocol" npm lib - RakNet only, no NetherNet support)
+# working side by side with NetherNet. webrtc-port must be a distinct, nonzero UDP port from
+# "port" in "both" mode (Geyser docs: "both" needs its own UDP port per transport; 0 would make
+# NetherNet reuse "port", colliding with RakNet's own UDP use of that same port). signaling stays
+# at its "builtin" default: Geyser runs its own TCP signaling server on bedrock.port, which is
+# fine here since clone-remote-port is false (Java and Bedrock aren't sharing a port).
+#
+# LIVE DEPLOY NOT DONE YET: the live server still needs (1) a new Kinetic Panel UDP allocation for
+# webrtc-port (25573 below is a placeholder, not yet allocated - see server/deploy/KINETIC.md's
+# allocation table, pick the next free one with Joe before deploy), and (2) TCP opened on the
+# existing 25572 allocation for builtin signaling (today it's presumably UDP-only for RakNet) -
+# verify with Joe/Kinetic before relying on it. Needs Joe's explicit go-ahead; do not apply to live
+# from this change alone.
 bedrock:
   address: 0.0.0.0
   port: 25572
-  webrtc-port: 0
+  webrtc-port: 25573
+  transport: both
   clone-remote-port: false
   enable-proxy-protocol: false
   proxy-protocol-whitelisted-ips: []
