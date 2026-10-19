@@ -1,12 +1,12 @@
 {
-  "credit": "druid field scythe, cosmetic token #4 for CoffiebagSupreme (2026-10-14)",
+  "credit": "Jade Hook - jade/vine scythe variant for CoffiebagSupreme cosmetic token #4",
   "texture_size": [
     32,
     32
   ],
   "textures": {
-    "2": "claudesmp:item/druid_scythe_2",
-    "particle": "claudesmp:item/druid_scythe_2"
+    "2": "claudesmp:item/jade_scythe_1",
+    "particle": "claudesmp:item/jade_scythe_1"
   },
   "elements": [
     {
@@ -802,6 +802,213 @@
             0,
             12,
             6
+          ],
+          "texture": "#2"
+        }
+      }
+    },
+    {
+      "from": [
+        8.9,
+        0.0,
+        7.2
+      ],
+      "to": [
+        9.9,
+        1.0,
+        8.2
+      ],
+      "light_emission": 1,
+      "faces": {
+        "north": {
+          "uv": [
+            12,
+            0,
+            16,
+            3
+          ],
+          "texture": "#2"
+        },
+        "south": {
+          "uv": [
+            12,
+            0,
+            16,
+            3
+          ],
+          "texture": "#2"
+        },
+        "east": {
+          "uv": [
+            12,
+            0,
+            16,
+            3
+          ],
+          "texture": "#2"
+        },
+        "west": {
+          "uv": [
+            12,
+            0,
+            16,
+            3
+          ],
+          "texture": "#2"
+        },
+        "up": {
+          "uv": [
+            12,
+            0,
+            16,
+            3
+          ],
+          "texture": "#2"
+        },
+        "down": {
+          "uv": [
+            12,
+            0,
+            16,
+            3
+          ],
+          "texture": "#2"
+        }
+      }
+    },
+    {
+      "from": [
+        8.9,
+        9.4,
+        7.0
+      ],
+      "to": [
+        9.9,
+        10.4,
+        8.0
+      ],
+      "light_emission": 1,
+      "faces": {
+        "north": {
+          "uv": [
+            12,
+            0,
+            16,
+            3
+          ],
+          "texture": "#2"
+        },
+        "south": {
+          "uv": [
+            12,
+            0,
+            16,
+            3
+          ],
+          "texture": "#2"
+        },
+        "east": {
+          "uv": [
+            12,
+            0,
+            16,
+            3
+          ],
+          "texture": "#2"
+        },
+        "west": {
+          "uv": [
+            12,
+            0,
+            16,
+            3
+          ],
+          "texture": "#2"
+        },
+        "up": {
+          "uv": [
+            12,
+            0,
+            16,
+            3
+          ],
+          "texture": "#2"
+        },
+        "down": {
+          "uv": [
+            12,
+            0,
+            16,
+            3
+          ],
+          "texture": "#2"
+        }
+      }
+    },
+    {
+      "from": [
+        9.3,
+        19.3,
+        7.4
+      ],
+      "to": [
+        10.1,
+        20.1,
+        8.2
+      ],
+      "light_emission": 1,
+      "faces": {
+        "north": {
+          "uv": [
+            12,
+            0,
+            16,
+            3
+          ],
+          "texture": "#2"
+        },
+        "south": {
+          "uv": [
+            12,
+            0,
+            16,
+            3
+          ],
+          "texture": "#2"
+        },
+        "east": {
+          "uv": [
+            12,
+            0,
+            16,
+            3
+          ],
+          "texture": "#2"
+        },
+        "west": {
+          "uv": [
+            12,
+            0,
+            16,
+            3
+          ],
+          "texture": "#2"
+        },
+        "up": {
+          "uv": [
+            12,
+            0,
+            16,
+            3
+          ],
+          "texture": "#2"
+        },
+        "down": {
+          "uv": [
+            12,
+            0,
+            16,
+            3
           ],
           "texture": "#2"
         }
