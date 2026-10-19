@@ -79,11 +79,34 @@ const blocks = new Map();
 // Each block lives in exactly one phase: a later write moves it, so phase order can't resurrect
 // an overwritten block (a garden fern placed in 'attach' would otherwise replace a tree trunk).
 const phases = { terrain: new Map(), build: new Map(), attach: new Map() };
+
+// Sub-division of the 'build' phase only, one bucket per stall/station/shared-structure module
+// (emit.mjs writes one .mcfunction per bucket instead of one flat structure.mcfunction). Same
+// "a block lives in exactly one place" rule as `phases` above: a later write in a different group
+// deletes the key from its old group's bucket, so regrouping can never resurrect a stale block.
+let currentGroup = 'shared';
+const groupOrder = [];
+const groupMaps = new Map();
+const groupFor = (name) => {
+  if (!groupMaps.has(name)) { groupMaps.set(name, new Map()); groupOrder.push(name); }
+  return groupMaps.get(name);
+};
+const withGroup = (name, fn) => {
+  const prev = currentGroup;
+  currentGroup = name;
+  try { return fn(); } finally { currentGroup = prev; }
+};
+const structureGroups = () => groupOrder.map((name) => [name, groupMaps.get(name)]);
+
 const set = (u, y, v, state, phase = 'build') => {
   const key = `${u},${y},${v}`;
   blocks.set(key, state);
   for (const p of Object.values(phases)) p.delete(key);
   phases[phase].set(key, state);
+  if (phase === 'build') {
+    for (const g of groupMaps.values()) g.delete(key);
+    groupFor(currentGroup).set(key, state);
+  }
 };
 const fill = (u0, y0, v0, u1, y1, v1, state, phase = 'build') => {
   for (let u = Math.min(u0, u1); u <= Math.max(u0, u1); u++)
@@ -146,6 +169,7 @@ export const model = {
   STREET_V0, STREET_HALF, STREET_LEN, STREET_BLEND,
   rand, pick, streetRand, streetPick, groundAt,
   blocks, phases, set, fill,
+  withGroup, structureGroups,
   OPPOSITE, ROTATION, side,
   P, sign,
   surfaceY,

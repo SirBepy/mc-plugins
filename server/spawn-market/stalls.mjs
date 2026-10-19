@@ -32,8 +32,12 @@ const SHOP_SPOT = {
   cosmetics: { side: 'streetWest', a0: 10 },
 };
 
+// Group name for a stall's own .mcfunction (emit.mjs): its `id` when it has one, else its name
+// lowercased/slugged, so every stall still gets a stable, readable file name.
+const slug = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+
 export function buildStalls(model, { GUIDES, lecternState }) {
-  const { set, fill, sign, side, OPPOSITE, ROTATION, P, Y, CX, CZ, here } = model;
+  const { set, fill, sign, side, OPPOSITE, ROTATION, P, Y, CX, CZ, here, withGroup } = model;
 
   // The 3 Dragon Radar signs, sold only at the Radars shop-street stall (Joe retired the
   // DragonBall station's own duplicate copy of these on 2026-10-13 - see the Radars stall below).
@@ -357,7 +361,7 @@ export function buildStalls(model, { GUIDES, lecternState }) {
     }
     for (const [state, a, d, dy = 0] of props) at(a, d, Y + 1 + dy, resolve(state), dy ? 'attach' : 'build');
   }
-  STALLS.forEach(stall);
+  STALLS.forEach((s) => withGroup(s.id ?? slug(s.name), () => stall(s)));
 
   // Dragon Balls station: export the 7 head-pedestal spots for the dragonballs plugin, which
   // places decorative heads on them. Mirrors the (a, d) pairs used in the stall above, following

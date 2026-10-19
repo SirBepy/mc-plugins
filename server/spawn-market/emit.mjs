@@ -5,7 +5,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 export function emit(model, { MARKET, WANTED }) {
-  const { here, CX, CZ, OUTER, CORE, CLEAR_TOP, Y, groundAt, surfaceY, blocks, phases } = model;
+  const { here, CX, CZ, OUTER, CORE, CLEAR_TOP, Y, groundAt, surfaceY, blocks, phases, structureGroups } = model;
   const PACK = join(here, '..', 'datapacks', 'spawn-market');
   const FN = join(PACK, 'data', 'spawn_market', 'function');
 
@@ -80,19 +80,27 @@ export function emit(model, { MARKET, WANTED }) {
     'tellraw @a {"text":"[spawn-market] building in 2s...","color":"gray"}',
     'schedule function spawn_market:build_run 40t',
   ]);
+  write('clear', [...header('Clears trees and cuts the hill.'), ...clear]);
+  write('terrain', [...header('Fills, paving, paths.'), ...emitPhase(phases.terrain)]);
+  // One .mcfunction per stall/station/shared-structure module (core.mjs's withGroup), instead of
+  // one flat structure.mcfunction: build_run calls each in the same order the generator built it
+  // in. A group with no build-phase blocks (none currently) writes no file and gets no call.
+  const structureCalls = [];
+  for (const [name, groupBlocks] of structureGroups()) {
+    if (groupBlocks.size === 0) continue;
+    write(name, [...header(`Stall/station: ${name}.`), ...emitPhase(groupBlocks)]);
+    structureCalls.push(`function spawn_market:${name}`);
+  }
   write('build_run', [
     ...header('Runs the phases in order.'),
     'function spawn_market:clear',
     'function spawn_market:terrain',
-    'function spawn_market:structure',
+    ...structureCalls,
     'function spawn_market:attach',
     'kill @e[type=item,x=' + x0 + ',y=' + (Y - 10) + ',z=' + z0 + ',dx=' + (2 * OUTER) + ',dy=60,dz=' + (2 * OUTER) + ']',
     `forceload remove ${x0} ${z0} ${x1} ${z1}`,
     'tellraw @a {"text":"[spawn-market] done","color":"gray"}',
   ]);
-  write('clear', [...header('Clears trees and cuts the hill.'), ...clear]);
-  write('terrain', [...header('Fills, paving, paths.'), ...emitPhase(phases.terrain)]);
-  write('structure', [...header('Stalls, well, bell frame, posts.'), ...emitPhase(phases.build)]);
   write('attach', [...header('Blocks that need support: signs, lanterns, bell, plants.'), ...emitPhase(phases.attach)]);
 
   // Item names are Essentials' (its items.json); a sign line fits 15 characters.
@@ -143,5 +151,6 @@ export function emit(model, { MARKET, WANTED }) {
   }
   writeFileSync(join(here, 'model.json'), JSON.stringify(modelOut));
   const count = (n) => readFileSync(join(FN, `${n}.mcfunction`), 'utf8').split('\n').length - 2;
-  console.log(`clear ${count('clear')}, terrain ${count('terrain')}, structure ${count('structure')}, attach ${count('attach')} commands; ${blocks.size} blocks`);
+  const structureTotal = structureCalls.reduce((sum, call) => sum + count(call.split(':')[1]), 0);
+  console.log(`clear ${count('clear')}, terrain ${count('terrain')}, structure ${structureTotal} across ${structureCalls.length} files, attach ${count('attach')} commands; ${blocks.size} blocks`);
 }

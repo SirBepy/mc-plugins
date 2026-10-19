@@ -27,14 +27,19 @@ import { buildWantedBoard } from './wanted-board.mjs';
 import { buildLanternPostsPathsGardens } from './lantern-paths-gardens.mjs';
 import { emit } from './emit.mjs';
 
+const { withGroup } = model;
+
 buildTerrain(model);
 // Must run before buildStalls so the street stalls' own floor/footing blocks (later writes) win
 // over this corridor's paving underneath them.
-buildStreetTerrain(model);
-buildCentre(model);
-buildRulesBoard(model, { SERVER_NAME });
+// Each withGroup() name becomes that module's own .mcfunction under the datapack's structure/
+// sub-namespace (emit.mjs); stalls.mjs groups its own stalls individually instead of taking one
+// name here.
+withGroup('street', () => buildStreetTerrain(model));
+withGroup('centre', () => buildCentre(model));
+withGroup('rules_board', () => buildRulesBoard(model, { SERVER_NAME }));
 const MARKET = buildStalls(model, { GUIDES, lecternState });
 // Calls no rand()/pick(), so it can run anywhere in this order without touching the seeded RNG.
-const WANTED = buildWantedBoard(model);
-buildLanternPostsPathsGardens(model);
+const WANTED = withGroup('wanted_board', () => buildWantedBoard(model));
+withGroup('gardens', () => buildLanternPostsPathsGardens(model));
 emit(model, { MARKET, WANTED });

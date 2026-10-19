@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -11,7 +11,14 @@ const here = dirname(fileURLToPath(import.meta.url));
 const FN = join(here, '..', 'datapacks', 'spawn-market', 'data', 'spawn_market', 'function');
 execFileSync(process.execPath, [join(here, 'generate.mjs')]);
 const lines = (name) => readFileSync(join(FN, `${name}.mcfunction`), 'utf8').split('\n').filter((l) => l && !l.startsWith('#'));
-const all = ['clear', 'terrain', 'structure', 'attach'].flatMap(lines);
+// One .mcfunction per stall/station/shared-structure module replaced the single flat
+// structure.mcfunction; every name build_run calls besides the fixed phase files below is one of
+// those, discovered from the function dir rather than hardcoded so this doesn't drift from
+// stalls.mjs's own stall list.
+const FIXED = new Set(['build', 'build_run', 'clear', 'terrain', 'attach']);
+const structureNames = readdirSync(FN).filter((f) => f.endsWith('.mcfunction'))
+  .map((f) => f.slice(0, -'.mcfunction'.length)).filter((n) => !FIXED.has(n)).sort();
+const all = ['clear', 'terrain', ...structureNames, 'attach'].flatMap(lines);
 
 test('every fill stays under the 32768-block command limit', () => {
   for (const l of all.filter((l) => l.startsWith('fill '))) {
@@ -109,7 +116,7 @@ test('every sign line fits on the sign', () => {
 
 test('a block is written by exactly one phase', () => {
   const seen = new Map();
-  for (const phase of ['terrain', 'structure', 'attach']) {
+  for (const phase of ['terrain', ...structureNames, 'attach']) {
     for (const l of lines(phase).filter((l) => l.startsWith('setblock '))) {
       const at = l.split(' ').slice(1, 4).join(' ');
       assert.ok(!seen.has(at), `${at} set in ${seen.get(at)} and ${phase}`);
