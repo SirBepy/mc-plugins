@@ -127,6 +127,34 @@ class ClassHubMenuTest {
     }
 
     @Test
+    void theChestsItemNamesMatchTheHubSnapshotsLabels() {
+        // ClassHubMenu#hubEntries is the one source both builders read from (code-check 2026-10-17);
+        // this would fail if either side stopped reading it and hardcoded its own text again.
+        PlayerMock modded = warrior(true, true);
+        hub.open(modded);
+        JsonObject out = sent.get(sent.size() - 1);
+
+        PlayerMock plain = warrior(false, false);
+        hub.open(plain);
+        dev.sirbepy.mc.core.gui.Menu chest = (dev.sirbepy.mc.core.gui.Menu) plain.getOpenInventory().getTopInventory().getHolder();
+
+        for (com.google.gson.JsonElement e : out.getAsJsonArray("entries")) {
+            JsonObject entry = e.getAsJsonObject();
+            int slot = switch (entry.get("id").getAsString()) {
+                case "tree" -> ClassHubMenu.TREE_SLOT;
+                case "hud" -> ClassHubMenu.SPELL_BAR_SLOT;
+                case "info" -> ClassHubMenu.INFO_SLOT;
+                case "change" -> ClassHubMenu.CHANGE_SLOT;
+                default -> -1;
+            };
+            if (slot < 0) continue; // "browse" has no chest equivalent
+            String name = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                    .serialize(chest.getInventory().getItem(slot).getItemMeta().displayName());
+            assertEquals(entry.get("label").getAsString(), name);
+        }
+    }
+
+    @Test
     void theChestHubsSpellBarButtonTogglesTheBarAndHighlightsItsClickLine() {
         PlayerMock p = warrior(false, false);
         hub.open(p);
