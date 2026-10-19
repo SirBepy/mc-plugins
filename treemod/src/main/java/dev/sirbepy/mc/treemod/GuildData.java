@@ -1,6 +1,5 @@
 package dev.sirbepy.mc.treemod;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -22,38 +21,14 @@ public record GuildData(String screen, String title, List<String> subtitle, List
 
     /** Null for anything that isn't a version-1 guild snapshot. */
     static GuildData parse(JsonObject o) {
-        if (!"guild".equals(str(o, "type")) || num(o, "v") != VERSION) return null;
+        if (!"guild".equals(JsonParse.str(o, "type")) || JsonParse.num(o, "v") != VERSION) return null;
         List<Row> rows = new ArrayList<>();
-        for (JsonElement e : arr(o, "rows")) {
+        for (JsonElement e : JsonParse.arr(o, "rows")) {
             JsonObject r = e.getAsJsonObject();
-            rows.add(new Row(str(r, "id"), str(r, "label"), bool(r, "clickable"), strings(r, "lines")));
+            rows.add(new Row(JsonParse.str(r, "id"), JsonParse.str(r, "label"), JsonParse.bool(r, "clickable"),
+                    JsonParse.strings(r, "lines")));
         }
-        return new GuildData(str(o, "screen"), str(o, "title"), strings(o, "subtitle"), List.copyOf(rows));
-    }
-
-    private static String str(JsonObject o, String key) {
-        JsonElement e = o.get(key);
-        return e != null && e.isJsonPrimitive() ? e.getAsString() : null;
-    }
-
-    private static int num(JsonObject o, String key) {
-        JsonElement e = o.get(key);
-        return e != null && e.isJsonPrimitive() ? e.getAsInt() : 0;
-    }
-
-    private static boolean bool(JsonObject o, String key) {
-        JsonElement e = o.get(key);
-        return e != null && e.isJsonPrimitive() && e.getAsBoolean();
-    }
-
-    private static JsonArray arr(JsonObject o, String key) {
-        JsonElement e = o.get(key);
-        return e != null && e.isJsonArray() ? e.getAsJsonArray() : new JsonArray();
-    }
-
-    private static List<String> strings(JsonObject o, String key) {
-        List<String> out = new ArrayList<>();
-        for (JsonElement e : arr(o, key)) out.add(e.getAsString());
-        return List.copyOf(out);
+        return new GuildData(JsonParse.str(o, "screen"), JsonParse.str(o, "title"), JsonParse.strings(o, "subtitle"),
+                List.copyOf(rows));
     }
 }

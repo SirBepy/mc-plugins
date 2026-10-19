@@ -1,6 +1,5 @@
 package dev.sirbepy.mc.treemod;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -24,41 +23,23 @@ public record HudData(boolean show, int color, String resource, int value, int m
 
     /** Null for anything that isn't a version-1 HUD snapshot. */
     static HudData parse(JsonObject o) {
-        if (!"hud".equals(str(o, "type")) || num(o, "v") != VERSION) return null;
+        if (!"hud".equals(JsonParse.str(o, "type")) || JsonParse.num(o, "v") != VERSION) return null;
         List<Ability> abilities = new ArrayList<>();
-        for (JsonElement e : arr(o, "abilities")) {
+        for (JsonElement e : JsonParse.arr(o, "abilities")) {
             JsonObject a = e.getAsJsonObject();
-            abilities.add(new Ability(str(a, "slot"), str(a, "name"), str(a, "combo"), str(a, "texture"),
-                    bool(a, "unlocked"), num(a, "unlockLevel"), num(a, "cd"), bool(a, "ready")));
+            abilities.add(new Ability(JsonParse.str(a, "slot"), JsonParse.str(a, "name"), JsonParse.str(a, "combo"),
+                    JsonParse.str(a, "texture"), JsonParse.bool(a, "unlocked"), JsonParse.num(a, "unlockLevel"),
+                    JsonParse.num(a, "cd"), JsonParse.bool(a, "ready")));
         }
-        String combo = str(o, "combo");
-        return new HudData(bool(o, "show"), num(o, "color"), str(o, "resource"), num(o, "value"), Math.max(1, num(o, "max")),
-                bool(o, "armed"), combo == null ? "" : combo, List.copyOf(abilities));
+        String combo = JsonParse.str(o, "combo");
+        return new HudData(JsonParse.bool(o, "show"), JsonParse.num(o, "color"), JsonParse.str(o, "resource"),
+                JsonParse.num(o, "value"), Math.max(1, JsonParse.num(o, "max")), JsonParse.bool(o, "armed"),
+                combo == null ? "" : combo, List.copyOf(abilities));
     }
 
     /** How many of {@code ability}'s combo clicks the combo so far already matches; -1 once it went another way. */
     int matched(Ability ability) {
         if (combo.isEmpty() || ability.combo() == null) return 0;
         return ability.combo().startsWith(combo) ? (combo.length() + 1) / 2 : -1;
-    }
-
-    private static String str(JsonObject o, String key) {
-        JsonElement e = o.get(key);
-        return e != null && e.isJsonPrimitive() ? e.getAsString() : null;
-    }
-
-    private static int num(JsonObject o, String key) {
-        JsonElement e = o.get(key);
-        return e != null && e.isJsonPrimitive() ? e.getAsInt() : 0;
-    }
-
-    private static boolean bool(JsonObject o, String key) {
-        JsonElement e = o.get(key);
-        return e != null && e.isJsonPrimitive() && e.getAsBoolean();
-    }
-
-    private static JsonArray arr(JsonObject o, String key) {
-        JsonElement e = o.get(key);
-        return e != null && e.isJsonArray() ? e.getAsJsonArray() : new JsonArray();
     }
 }

@@ -1,6 +1,5 @@
 package dev.sirbepy.mc.treemod;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -21,39 +20,13 @@ public record ClassListData(boolean open, List<Entry> entries) {
 
     /** Null for anything that isn't a version-1 classlist snapshot. */
     static ClassListData parse(JsonObject o) {
-        if (!"classlist".equals(str(o, "type")) || num(o, "v") != VERSION) return null;
+        if (!"classlist".equals(JsonParse.str(o, "type")) || JsonParse.num(o, "v") != VERSION) return null;
         List<Entry> entries = new ArrayList<>();
-        for (JsonElement e : arr(o, "entries")) {
+        for (JsonElement e : JsonParse.arr(o, "entries")) {
             JsonObject en = e.getAsJsonObject();
-            entries.add(new Entry(str(en, "id"), str(en, "name"), num(en, "color"), bool(en, "own"),
-                    bool(en, "locked"), strings(en, "lines")));
+            entries.add(new Entry(JsonParse.str(en, "id"), JsonParse.str(en, "name"), JsonParse.num(en, "color"),
+                    JsonParse.bool(en, "own"), JsonParse.bool(en, "locked"), JsonParse.strings(en, "lines")));
         }
-        return new ClassListData(bool(o, "open"), List.copyOf(entries));
-    }
-
-    private static String str(JsonObject o, String key) {
-        JsonElement e = o.get(key);
-        return e != null && e.isJsonPrimitive() ? e.getAsString() : null;
-    }
-
-    private static int num(JsonObject o, String key) {
-        JsonElement e = o.get(key);
-        return e != null && e.isJsonPrimitive() ? e.getAsInt() : 0;
-    }
-
-    private static boolean bool(JsonObject o, String key) {
-        JsonElement e = o.get(key);
-        return e != null && e.isJsonPrimitive() && e.getAsBoolean();
-    }
-
-    private static JsonArray arr(JsonObject o, String key) {
-        JsonElement e = o.get(key);
-        return e != null && e.isJsonArray() ? e.getAsJsonArray() : new JsonArray();
-    }
-
-    private static List<String> strings(JsonObject o, String key) {
-        List<String> out = new ArrayList<>();
-        for (JsonElement e : arr(o, key)) out.add(e.getAsString());
-        return List.copyOf(out);
+        return new ClassListData(JsonParse.bool(o, "open"), List.copyOf(entries));
     }
 }

@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import dev.sirbepy.mc.core.gui.JsonSnapshot;
 import dev.sirbepy.mc.haru.data.ActiveQuest;
 import dev.sirbepy.mc.haru.data.OwnerState;
 import org.bukkit.entity.Player;
@@ -114,25 +115,15 @@ public final class QuestChannel implements PluginMessageListener {
 
     /** One request from the mod. Anything malformed or unknown is ignored, never trusted. */
     void handle(Player player, JsonObject request) {
-        String op = text(request, "op");
+        String op = JsonSnapshot.text(request, "op");
         if (op == null) {
             return;
         }
         switch (op) {
-            case "hello" -> clientVersions.put(player.getUniqueId(), intOr(request, "v", 1));
+            case "hello" -> clientVersions.put(player.getUniqueId(), JsonSnapshot.intOr(request, "v", 1));
             case "toggle" -> toggleAction.accept(player);
             default -> {
             }
         }
-    }
-
-    private static String text(JsonObject o, String key) {
-        JsonElement e = o.get(key);
-        return e != null && e.isJsonPrimitive() ? e.getAsString() : null;
-    }
-
-    private static int intOr(JsonObject o, String key, int fallback) {
-        JsonElement e = o.get(key);
-        return e != null && e.isJsonPrimitive() ? e.getAsInt() : fallback;
     }
 }

@@ -1,6 +1,5 @@
 package dev.sirbepy.mc.treemod;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -38,29 +37,31 @@ public record TreeData(boolean open, String className, int color, boolean own, i
 
     /** Null for anything that isn't a version-1 tree snapshot. */
     static TreeData parse(JsonObject o) {
-        if (!"tree".equals(str(o, "type")) || num(o, "v") != VERSION) return null;
+        if (!"tree".equals(JsonParse.str(o, "type")) || JsonParse.num(o, "v") != VERSION) return null;
         List<Branch> branches = new ArrayList<>();
-        for (JsonElement e : arr(o, "branches")) {
+        for (JsonElement e : JsonParse.arr(o, "branches")) {
             JsonObject b = e.getAsJsonObject();
-            branches.add(new Branch(str(b, "name"), num(b, "spent")));
+            branches.add(new Branch(JsonParse.str(b, "name"), JsonParse.num(b, "spent")));
         }
         List<Ability> abilities = new ArrayList<>();
-        for (JsonElement e : arr(o, "abilities")) {
+        for (JsonElement e : JsonParse.arr(o, "abilities")) {
             JsonObject a = e.getAsJsonObject();
-            abilities.add(new Ability(str(a, "slot"), str(a, "label"), str(a, "name"), str(a, "key"), str(a, "keyShort"),
-                    num(a, "unlockLevel"), bool(a, "unlocked"), str(a, "texture"), strings(a, "lines")));
+            abilities.add(new Ability(JsonParse.str(a, "slot"), JsonParse.str(a, "label"), JsonParse.str(a, "name"),
+                    JsonParse.str(a, "key"), JsonParse.str(a, "keyShort"), JsonParse.num(a, "unlockLevel"),
+                    JsonParse.bool(a, "unlocked"), JsonParse.str(a, "texture"), JsonParse.strings(a, "lines")));
         }
         List<Node> nodes = new ArrayList<>();
-        for (JsonElement e : arr(o, "nodes")) {
+        for (JsonElement e : JsonParse.arr(o, "nodes")) {
             JsonObject n = e.getAsJsonObject();
-            nodes.add(new Node(str(n, "id"), str(n, "name"), num(n, "branch"), num(n, "tier"), num(n, "gate"),
-                    num(n, "rank"), num(n, "max"), bool(n, "keystone"), str(n, "icon"), str(n, "state"),
-                    bool(n, "locked"), strings(n, "lines"), str(n, "lock")));
+            nodes.add(new Node(JsonParse.str(n, "id"), JsonParse.str(n, "name"), JsonParse.num(n, "branch"),
+                    JsonParse.num(n, "tier"), JsonParse.num(n, "gate"), JsonParse.num(n, "rank"), JsonParse.num(n, "max"),
+                    JsonParse.bool(n, "keystone"), JsonParse.str(n, "icon"), JsonParse.str(n, "state"),
+                    JsonParse.bool(n, "locked"), JsonParse.strings(n, "lines"), JsonParse.str(n, "lock")));
         }
-        return new TreeData(bool(o, "open"), str(o, "class"), num(o, "color"), bool(o, "own"), num(o, "level"),
-                num(o, "points"), num(o, "free"), numOr(o, "keystoneLevel", KEYSTONE_LEVEL_FALLBACK),
-                str(o, "resource"), num(o, "resourceValue"),
-                List.copyOf(branches), List.copyOf(abilities), List.copyOf(nodes));
+        return new TreeData(JsonParse.bool(o, "open"), JsonParse.str(o, "class"), JsonParse.num(o, "color"),
+                JsonParse.bool(o, "own"), JsonParse.num(o, "level"), JsonParse.num(o, "points"), JsonParse.num(o, "free"),
+                JsonParse.numOr(o, "keystoneLevel", KEYSTONE_LEVEL_FALLBACK), JsonParse.str(o, "resource"),
+                JsonParse.num(o, "resourceValue"), List.copyOf(branches), List.copyOf(abilities), List.copyOf(nodes));
     }
 
     /** The highest tier among this tree's nodes (the keystone row), read from the snapshot instead of a hardcoded constant. */
@@ -104,36 +105,5 @@ public record TreeData(boolean open, String className, int color, boolean own, i
             if (n.id().equals(id)) return n;
         }
         return null;
-    }
-
-    private static String str(JsonObject o, String key) {
-        JsonElement e = o.get(key);
-        return e != null && e.isJsonPrimitive() ? e.getAsString() : null;
-    }
-
-    private static int num(JsonObject o, String key) {
-        return numOr(o, key, 0);
-    }
-
-    /** {@code fallback} for a field an older server's snapshot never sent. */
-    private static int numOr(JsonObject o, String key, int fallback) {
-        JsonElement e = o.get(key);
-        return e != null && e.isJsonPrimitive() ? e.getAsInt() : fallback;
-    }
-
-    private static boolean bool(JsonObject o, String key) {
-        JsonElement e = o.get(key);
-        return e != null && e.isJsonPrimitive() && e.getAsBoolean();
-    }
-
-    private static JsonArray arr(JsonObject o, String key) {
-        JsonElement e = o.get(key);
-        return e != null && e.isJsonArray() ? e.getAsJsonArray() : new JsonArray();
-    }
-
-    private static List<String> strings(JsonObject o, String key) {
-        List<String> out = new ArrayList<>();
-        for (JsonElement e : arr(o, key)) out.add(e.getAsString());
-        return List.copyOf(out);
     }
 }
