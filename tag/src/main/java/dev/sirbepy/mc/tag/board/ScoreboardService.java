@@ -32,26 +32,47 @@ public final class ScoreboardService {
         this.names = names;
     }
 
+    /** Outcome of a `/tag board` toggle, so the command can tell the player apart from a silent no-op. */
+    public enum ToggleResult {
+        ENABLED,
+        DISABLED,
+        /** Some other plugin's sidebar already owns the player's slot; left untouched. */
+        BLOCKED
+    }
+
     public boolean isActive(UUID player) {
         return active.containsKey(player);
     }
 
-    public boolean toggle(Player player) {
+    public ToggleResult toggle(Player player) {
         if (active.containsKey(player.getUniqueId())) {
             disable(player);
-            return false;
+            return ToggleResult.DISABLED;
         }
-        enable(player);
-        return true;
+        return enable(player) ? ToggleResult.ENABLED : ToggleResult.BLOCKED;
     }
 
-    public void enable(Player player) {
+    /** True if the player's sidebar slot is either untouched or already ours. */
+    private boolean freeToUse(Player player) {
+        Scoreboard current = player.getScoreboard();
+        if (current == Bukkit.getScoreboardManager().getMainScoreboard()) {
+            return true;
+        }
+        return current.getObjective(OBJECTIVE) != null;
+    }
+
+    /** Applies the board, unless some other plugin (e.g. Haru's quest sidebar) already owns the slot. */
+    public boolean enable(Player player) {
+        if (!freeToUse(player)) {
+            return false;
+        }
         Scoreboard board = Bukkit.getScoreboardManager().getNewScoreboard();
         Objective objective = board.registerNewObjective(OBJECTIVE, Criteria.DUMMY, Component.text("Tag", NamedTextColor.GREEN));
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         names.registerScoreboard(board);
         active.put(player.getUniqueId(), board);
         player.setScoreboard(board);
+        return true;
     }
 
     public void disable(Player player) {

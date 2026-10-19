@@ -23,12 +23,13 @@ import java.util.UUID;
  * per active Spirit Request. Lines use {@code Objective#getScore("line-N").customName(...)} the same
  * way {@code tag}'s {@code ScoreboardService} does, so a line isn't limited to a 16-character entry id.
  *
- * <p>{@code tag}'s {@code /tag board} already owns {@code DisplaySlot.SIDEBAR} for any player who turns
- * it on, by replacing their whole {@link Scoreboard} with its own. This class never takes the slot away
- * from a scoreboard it didn't hand out itself, so it loses that fight silently rather than flicker the
- * two against each other; see the per-session report for why that's a real, still-open conflict instead
- * of something this guard fully resolves (Tag has no idea Haru's board exists, so {@code /tag board}
- * can still clobber Haru's sidebar outright).
+ * <p>{@code tag}'s {@code /tag board} owns {@code DisplaySlot.SIDEBAR} for any player who turns it on, by
+ * replacing their whole {@link Scoreboard} with its own. This class never takes the slot away from a
+ * scoreboard it didn't hand out itself, so it loses that fight silently rather than flicker the two
+ * against each other. {@code ScoreboardService#enable} mirrors this same check (same "main scoreboard or
+ * my own objective, else back off" shape) so {@code /tag board} no longer clobbers this sidebar either;
+ * whichever one was already showing wins, and the player gets a {@code board-blocked} message when Tag
+ * is the one that backs off.
  */
 final class QuestSidebar {
 

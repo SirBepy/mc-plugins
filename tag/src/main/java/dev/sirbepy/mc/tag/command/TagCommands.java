@@ -3,6 +3,7 @@ package dev.sirbepy.mc.tag.command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import dev.sirbepy.mc.core.Messages;
+import dev.sirbepy.mc.tag.board.ScoreboardService;
 import dev.sirbepy.mc.tag.TagDisplay;
 import dev.sirbepy.mc.tag.TagPlugin;
 import dev.sirbepy.mc.tag.TagService;
@@ -213,11 +214,16 @@ public final class TagCommands {
         if (!(sender instanceof Player player)) {
             return 0;
         }
-        boolean enabled = plugin.boards().toggle(player);
-        if (enabled) {
+        ScoreboardService.ToggleResult result = plugin.boards().toggle(player);
+        if (result == ScoreboardService.ToggleResult.ENABLED) {
             plugin.boards().refreshAll(plugin.service().state());
         }
-        plugin.service().config().messages.send(player, enabled ? "board-enabled" : "board-disabled");
+        String key = switch (result) {
+            case ENABLED -> "board-enabled";
+            case DISABLED -> "board-disabled";
+            case BLOCKED -> "board-blocked";
+        };
+        plugin.service().config().messages.send(player, key);
         return com.mojang.brigadier.Command.SINGLE_SUCCESS;
     }
 

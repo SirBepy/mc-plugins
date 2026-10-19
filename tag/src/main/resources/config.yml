@@ -114,6 +114,7 @@ messages:
   already-opted-in: "<gray>You are already opted in.</gray>"
   board-enabled: "<green>Tag sidebar enabled.</green>"
   board-disabled: "<gray>Tag sidebar disabled.</gray>"
+  board-blocked: "<red>Another sidebar is already showing. Close it first, then try /tag board again.</red>"
   nobody-it: "<gray>Nobody is IT right now.</gray>"
   who-is-it: "<yellow><it> is IT.</yellow>"
   reloaded: "<green>Tag config reloaded.</green>"
