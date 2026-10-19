@@ -20,8 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * `/tag board` used to replace a player's whole {@link Scoreboard} unconditionally, so it would silently
  * clobber Haru's quest sidebar (which owns its own foreign objective on the slot) if that was already
- * showing. {@link ScoreboardService#enable} now mirrors {@code QuestSidebar#freeToUse}'s own guard: back
- * off from a scoreboard it doesn't recognize instead of stealing the slot.
+ * showing. {@link ScoreboardService#enable} now shares {@code SidebarSlot#freeToUse} with Haru's own
+ * guard: back off from a scoreboard it doesn't recognize instead of stealing the slot.
  */
 class ScoreboardServiceTest {
 
