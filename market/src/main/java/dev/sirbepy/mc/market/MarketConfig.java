@@ -32,6 +32,8 @@ public final class MarketConfig {
     private final int minItems;
     private final int maxItems;
     private final double priceSpread;
+    private final boolean dealAlertsEnabled;
+    private final double dealAlertsThreshold;
     private final int headsPerDay;
     private final boolean wantedEnabled;
     private final double wantedBase;
@@ -58,6 +60,8 @@ public final class MarketConfig {
         this.minItems = Math.max(0, config.getInt("items-per-stall.min", 2));
         this.maxItems = Math.max(minItems, config.getInt("items-per-stall.max", 3));
         this.priceSpread = Math.clamp(config.getDouble("price-spread", 0.2), 0.0, 0.9);
+        this.dealAlertsEnabled = config.getBoolean("deal-alerts.enabled", true);
+        this.dealAlertsThreshold = Math.clamp(config.getDouble("deal-alerts.threshold", 0.95), 0.0, 1.0);
         this.headsPerDay = Math.max(0, config.getInt("heads-per-day", 5));
         // Joe, 2026-10-11: pulled temporarily. /market reload picks this up with no restart, so it
         // can come back the same way.
@@ -159,6 +163,16 @@ public final class MarketConfig {
 
     public double priceSpread() {
         return priceSpread;
+    }
+
+    /** Whether a Discord deal alert fires at all (Joe, 2026-10-19). */
+    public boolean dealAlertsEnabled() {
+        return dealAlertsEnabled;
+    }
+
+    /** The roll percentile within its spread band that counts as a "great deal" (0.95 = top 5%). */
+    public double dealAlertsThreshold() {
+        return dealAlertsThreshold;
     }
 
     /** How many mobs' heads the Heads stall wants each market day. */

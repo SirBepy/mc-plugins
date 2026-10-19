@@ -167,6 +167,19 @@ class MarketWatchesTest {
     }
 
     @Test
+    void watchersOfListsEveryWatcherOfThatItemAndNothingElse() {
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        watches.add(first, "birch_log");
+        watches.add(second, "birch_log");
+        watches.add(second, "diamond");
+
+        assertEquals(List.of(first, second), watches.watchersOf("birch_log"));
+        assertEquals(List.of(second), watches.watchersOf("diamond"));
+        assertTrue(watches.watchersOf("raw_iron").isEmpty());
+    }
+
+    @Test
     void rotateNotifiesAnOnlineWatcherOnceForAPickedStallItemButNotForOneLeftOutOfTodaysPicks() {
         PlayerMock player = server.addPlayer();
         String unpicked = unpickedStallItem();

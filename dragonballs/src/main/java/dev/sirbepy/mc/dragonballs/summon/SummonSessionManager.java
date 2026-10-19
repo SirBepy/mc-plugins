@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
@@ -50,6 +51,7 @@ public final class SummonSessionManager {
     private final SummonEffects effects;
     private final CurseStore curses;
     private final File wishesFile;
+    private final Consumer<String> discordAnnounce;
     private final LongSupplier clock;
     private final Random idRandom;
 
@@ -57,14 +59,15 @@ public final class SummonSessionManager {
 
     public SummonSessionManager(Logger logger, BallSets sets, Supplier<DragonBallsConfig> config,
                                  Supplier<SummonConfig> summonConfig, SummonEffects effects, CurseStore curses,
-                                 File wishesFile) {
-        this(logger, sets, config, summonConfig, effects, curses, wishesFile, System::currentTimeMillis, new Random());
+                                 File wishesFile, Consumer<String> discordAnnounce) {
+        this(logger, sets, config, summonConfig, effects, curses, wishesFile, discordAnnounce,
+                System::currentTimeMillis, new Random());
     }
 
     /** Test-only constructor: injects the clock (idle/offline timeouts) and the session-id RNG. */
     SummonSessionManager(Logger logger, BallSets sets, Supplier<DragonBallsConfig> config,
                           Supplier<SummonConfig> summonConfig, SummonEffects effects, CurseStore curses,
-                          File wishesFile, LongSupplier clock, Random idRandom) {
+                          File wishesFile, Consumer<String> discordAnnounce, LongSupplier clock, Random idRandom) {
         this.logger = logger;
         this.sets = sets;
         this.config = config;
@@ -72,6 +75,7 @@ public final class SummonSessionManager {
         this.effects = effects;
         this.curses = curses;
         this.wishesFile = wishesFile;
+        this.discordAnnounce = discordAnnounce;
         this.clock = clock;
         this.idRandom = idRandom;
     }
@@ -149,6 +153,8 @@ public final class SummonSessionManager {
         registry.glowPlaced(true);
         Bukkit.broadcast(Component.text(summoner.getName() + " has summoned " + dragon.displayName(set) + "!", NamedTextColor.GOLD)
                 .decorate(TextDecoration.BOLD));
+        discordAnnounce.accept("🐉 " + summoner.getName() + " summoned " + dragon.displayName(set)
+                + "! Shenron is watching, make your wish.");
         String opening = dragon == DragonType.SHENRON
                 ? "I am the Eternal Dragon. State your wish. I shall grant one."
                 : "I am the Eternal Dragon. State your wish. I shall grant three.";

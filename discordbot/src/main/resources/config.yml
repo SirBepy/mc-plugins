@@ -3,4 +3,7 @@
 bot-token: ""
 
 # Discord channel ID join/leave messages post to.
-channel-id: "660224270529593365"
+channel-id: "1182866864825716806"
+
+# Discord channel ID market deal alerts post to (the market plugin, a softdepend).
+market-channel-id: "1561724885741346816"

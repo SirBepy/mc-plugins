@@ -73,7 +73,7 @@ class SummonChatListenerTest {
         sessions = new SummonSessionManager(plugin.getLogger(), sets, () -> new DragonBallsConfig(new YamlConfiguration()),
                 () -> new SummonConfig(2, 600, 180), SummonEffects.NONE,
                 new dev.sirbepy.mc.dragonballs.summon.curse.CurseStore(new File(tempDir.toFile(), "curses.yml"), plugin.getLogger()),
-                new File(tempDir.toFile(), "wishes.jsonl"), System::currentTimeMillis, new Random(1));
+                new File(tempDir.toFile(), "wishes.jsonl"), message -> {}, System::currentTimeMillis, new Random(1));
         summoner = server.addPlayer("Goku");
         bystander = server.addPlayer("Krillin");
         sessions.tryStart(summoner, DragonType.SHENRON, new Location(world, 100, 64, 100), BallSet.OVERWORLD);

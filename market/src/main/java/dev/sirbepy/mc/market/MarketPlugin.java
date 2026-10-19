@@ -40,6 +40,7 @@ public final class MarketPlugin extends JavaPlugin {
     private CosmeticShop cosmeticShop;
     private CosmeticRequests cosmeticRequests;
     private MarketWatches watches;
+    private DealAnnouncer dealAnnouncer;
 
     @Override
     public void onEnable() {
@@ -65,6 +66,7 @@ public final class MarketPlugin extends JavaPlugin {
                 new File(getDataFolder(), "state.yml"), getLogger());
         watches = new MarketWatches(market, layout, heads, config::get, new File(getDataFolder(), "watches.yml"), getLogger());
         getServer().getPluginManager().registerEvents(watches, this);
+        dealAnnouncer = new DealAnnouncer(market, watches, config::get, getServer());
         starterBoost = new StarterBoost(market, config::get, this::balance, this::pay,
                 new File(getDataFolder(), "starter-boost.yml"), getLogger());
         getServer().getPluginManager().registerEvents(starterBoost, this);
@@ -101,6 +103,7 @@ public final class MarketPlugin extends JavaPlugin {
         applyIfWorldLoaded();
         if (rotatedOnStart) {
             watches.notifyRotate(List.copyOf(getServer().getOnlinePlayers()));
+            dealAnnouncer.announce();
         }
         wantedBoard.refresh();
         wantedBoard.applyIfWorldLoaded();
@@ -115,6 +118,7 @@ public final class MarketPlugin extends JavaPlugin {
                 applyIfWorldLoaded();
                 config.get().messages().send(getServer(), "rotated");
                 watches.notifyRotate(List.copyOf(getServer().getOnlinePlayers()));
+                dealAnnouncer.announce();
             }
             if (wantedBoard.refresh()) {
                 wantedBoard.applyIfWorldLoaded();
@@ -160,6 +164,7 @@ public final class MarketPlugin extends JavaPlugin {
                                     wantedBoard.rotate();
                                     wantedBoard.applyIfWorldLoaded();
                                     watches.notifyRotate(List.copyOf(getServer().getOnlinePlayers()));
+                                    dealAnnouncer.announce();
                                     config.get().messages().send(ctx.getSource().getSender(), "rotate-success");
                                     return Command.SINGLE_SUCCESS;
                                 }))

@@ -8,6 +8,8 @@ repositories {
 }
 
 dependencies {
+    // Deal alerts post through DiscordBot's API when it's present; a softdepend, not shaded.
+    compileOnly(project(":discordbot"))
     // compileOnly isn't inherited by the test source set (same fix as tweaks/build.gradle.kts).
     testImplementation("io.papermc.paper:paper-api:26.2.build.+")
 

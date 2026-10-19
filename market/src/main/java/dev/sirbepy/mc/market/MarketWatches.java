@@ -101,6 +101,17 @@ public final class MarketWatches implements Listener {
         return mine == null ? List.of() : List.copyOf(mine);
     }
 
+    /** Every player currently watching {@code item}, insertion order. */
+    public List<UUID> watchersOf(String item) {
+        List<UUID> result = new ArrayList<>();
+        for (Map.Entry<UUID, LinkedHashSet<String>> entry : watches.entrySet()) {
+            if (entry.getValue().contains(item)) {
+                result.add(entry.getKey());
+            }
+        }
+        return List.copyOf(result);
+    }
+
     /** Adds a watch, or says why not: unknown to either catalogue, already watching it, or at the cap. */
     public AddResult add(UUID playerId, String item) {
         if (!catalogue.contains(item)) {

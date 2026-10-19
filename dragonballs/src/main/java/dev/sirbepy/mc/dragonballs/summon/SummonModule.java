@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.dragonballs.summon;
 
 import dev.sirbepy.mc.core.bedrock.BedrockForms;
+import dev.sirbepy.mc.discordbot.api.DiscordBotApi;
 import dev.sirbepy.mc.dragonballs.config.DragonBallsConfig;
 import dev.sirbepy.mc.dragonballs.effects.SummonEffects;
 import dev.sirbepy.mc.dragonballs.placed.FloatingBalls;
@@ -14,6 +15,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -38,9 +40,12 @@ public final class SummonModule {
         File dataFolder = plugin.getDataFolder();
         CurseStore curses = new CurseStore(new File(dataFolder, "curses.yml"), plugin.getLogger());
         File wishesFile = new File(dataFolder, "wishes.jsonl");
+        // DiscordBot is a softdepend: a no-op consumer whenever it isn't installed/enabled.
+        DiscordBotApi discord = plugin.getServer().getServicesManager().load(DiscordBotApi.class);
+        Consumer<String> discordAnnounce = discord == null ? message -> {} : discord::sendPresenceUpdate;
 
         SummonSessionManager sessions = new SummonSessionManager(plugin.getLogger(), sets, config, summonConfig,
-                effects, curses, wishesFile);
+                effects, curses, wishesFile, discordAnnounce);
 
         BedrockForms bedrockForms = BedrockForms.create(plugin);
         CurseListener curseListener = new CurseListener(curses, System::currentTimeMillis);

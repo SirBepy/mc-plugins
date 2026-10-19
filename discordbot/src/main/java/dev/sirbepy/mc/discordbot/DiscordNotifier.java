@@ -9,16 +9,14 @@ import java.util.logging.Logger;
 final class DiscordNotifier {
 
     private final JDA jda;
-    private final String channelId;
     private final Logger logger;
 
-    DiscordNotifier(JDA jda, String channelId, Logger logger) {
+    DiscordNotifier(JDA jda, Logger logger) {
         this.jda = jda;
-        this.channelId = channelId;
         this.logger = logger;
     }
 
-    void send(String message) {
+    void send(String channelId, String message) {
         TextChannel channel = jda.getTextChannelById(channelId);
         if (channel == null) {
             logger.warning("Discord channel " + channelId + " not found (bot not invited, or wrong id); dropping message.");

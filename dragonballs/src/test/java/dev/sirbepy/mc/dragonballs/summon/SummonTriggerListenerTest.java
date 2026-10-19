@@ -104,7 +104,7 @@ class SummonTriggerListenerTest {
         sessions = new SummonSessionManager(plugin.getLogger(), sets, () -> new DragonBallsConfig(configYaml),
                 () -> new SummonConfig(2, 600, 180), dev.sirbepy.mc.dragonballs.effects.SummonEffects.NONE,
                 new CurseStore(new File(tempDir.toFile(), "curses.yml"), plugin.getLogger()),
-                new File(tempDir.toFile(), "wishes.jsonl"), System::currentTimeMillis, new Random(1));
+                new File(tempDir.toFile(), "wishes.jsonl"), message -> {}, System::currentTimeMillis, new Random(1));
         BedrockForms bedrockForms = BedrockForms.create(plugin);
         radars = new RadarItems(plugin);
         listener = new SummonTriggerListener(plugin, sets, balls, sessions, bedrockForms, radars,

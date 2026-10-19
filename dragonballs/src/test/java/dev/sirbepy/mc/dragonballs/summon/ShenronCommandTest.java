@@ -89,7 +89,7 @@ class ShenronCommandTest {
         sessions = new SummonSessionManager(plugin.getLogger(), sets, () -> new DragonBallsConfig(new YamlConfiguration()),
                 () -> new SummonConfig(2, 600, 180), SummonEffects.NONE,
                 new CurseStore(new File(tempDir.toFile(), "curses.yml"), plugin.getLogger()),
-                wishesFile, System::currentTimeMillis, new Random(1));
+                wishesFile, message -> {}, System::currentTimeMillis, new Random(1));
         CurseStore curses = new CurseStore(new File(tempDir.toFile(), "curses2.yml"), plugin.getLogger());
         CurseListener curseListener = new CurseListener(curses, System::currentTimeMillis);
         command = new ShenronCommand(sessions, curses, curseListener, sets);

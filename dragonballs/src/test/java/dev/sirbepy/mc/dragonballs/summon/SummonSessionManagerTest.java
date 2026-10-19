@@ -87,7 +87,7 @@ class SummonSessionManagerTest {
 
     private SummonSessionManager newManager() {
         return new SummonSessionManager(plugin.getLogger(), sets, () -> new DragonBallsConfig(new YamlConfiguration()),
-                () -> new SummonConfig(2, 600, 180), effects, curses, wishesFile, () -> clockBox[0], new Random(1));
+                () -> new SummonConfig(2, 600, 180), effects, curses, wishesFile, message -> {}, () -> clockBox[0], new Random(1));
     }
 
     /** Places all 7 together, PLACED, non-stone, within radius 2 of {@code (100,64,100)}. */
@@ -146,6 +146,22 @@ class SummonSessionManagerTest {
         assertEquals(DragonType.PORUNGA, sessions.activeDragon());
         assertEquals(player.getUniqueId(), sessions.activeSummoner());
         assertNotNull(effects.lastSummonScene);
+    }
+
+    @Test
+    void tryStartAnnouncesToDiscord() {
+        placeAllSevenTogether();
+        List<String> announced = new java.util.ArrayList<>();
+        SummonSessionManager sessions = new SummonSessionManager(plugin.getLogger(), sets,
+                () -> new DragonBallsConfig(new YamlConfiguration()), () -> new SummonConfig(2, 600, 180), effects,
+                curses, wishesFile, announced::add, () -> clockBox[0], new Random(1));
+        PlayerMock player = server.addPlayer("Goku");
+
+        sessions.tryStart(player, DragonType.SHENRON, new Location(world, 100, 64, 100), BallSet.OVERWORLD);
+
+        assertEquals(1, announced.size());
+        assertTrue(announced.get(0).contains("Goku"));
+        assertTrue(announced.get(0).contains("watching"));
     }
 
     @Test

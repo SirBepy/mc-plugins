@@ -9,16 +9,18 @@ import org.bukkit.event.player.PlayerQuitEvent;
 final class PresenceListener implements Listener {
 
     private final DiscordNotifier notifier;
+    private final String channelId;
 
-    PresenceListener(DiscordNotifier notifier) {
+    PresenceListener(DiscordNotifier notifier, String channelId) {
         this.notifier = notifier;
+        this.channelId = channelId;
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         // The joining player is already in getOnlinePlayers() by the time this event fires.
         int online = event.getPlayer().getServer().getOnlinePlayers().size();
-        notifier.send(PresenceMessages.join(event.getPlayer().getName(), online));
+        notifier.send(channelId, PresenceMessages.join(event.getPlayer().getName(), online));
     }
 
     @EventHandler
@@ -26,6 +28,6 @@ final class PresenceListener implements Listener {
         // PlayerQuitEvent fires while the leaving player is still in getOnlinePlayers(), so the
         // post-leave count is one less than what the server reports here.
         int online = Math.max(0, event.getPlayer().getServer().getOnlinePlayers().size() - 1);
-        notifier.send(PresenceMessages.leave(event.getPlayer().getName(), online));
+        notifier.send(channelId, PresenceMessages.leave(event.getPlayer().getName(), online));
     }
 }

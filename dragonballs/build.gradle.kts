@@ -16,6 +16,10 @@ dependencies {
     // compileOnly isn't inherited by the test source set (same fix as tweaks/market/carry's build.gradle.kts).
     testImplementation("io.papermc.paper:paper-api:26.2.build.+")
 
+    // A Shenron summon posts a Discord notification through DiscordBot's API when it's present; a
+    // softdepend, not shaded (same pattern market/build.gradle.kts uses).
+    compileOnly(project(":discordbot"))
+
     // VaultUnlocked (installed on the server) still serves the classic Vault Economy API; verified
     // 2026-10-06 against OSV (no advisories) and the real MilkBowl/VaultAPI GitHub org/tags.
     compileOnly("com.github.MilkBowl:VaultAPI:1.7.1") {
