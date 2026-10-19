@@ -124,7 +124,18 @@ fun injectSecrets(distDir: File) {
     val props = java.util.Properties().apply { secretsFile.inputStream().use { load(it) } }
     val discordToken = props.getProperty("discordbot.token") ?: return
     val configFile = distDir.resolve("plugins/DiscordBot/config.yml")
-    if (!configFile.exists()) return
+    // A brand-new plugin's data folder doesn't exist yet on a fresh dist (only created by the
+    // plugin's own saveDefaultConfig() at runtime); extract its bundled default here instead of
+    // skipping the injection, so the uploaded copy already has the real token on first boot.
+    if (!configFile.exists()) {
+        val jar = distDir.resolve("plugins").listFiles { f -> f.name.startsWith("discordbot-") }?.firstOrNull()
+        if (jar == null) return
+        java.util.zip.ZipFile(jar).use { zip ->
+            val entry = zip.getEntry("config.yml") ?: return
+            configFile.parentFile.mkdirs()
+            zip.getInputStream(entry).use { input -> configFile.outputStream().use { input.copyTo(it) } }
+        }
+    }
     val lines = configFile.readLines().toMutableList()
     // Overwrite unconditionally regardless of the line's current value (committed source ships an
     // empty token so the secret scanner never flags a placeholder that looks real).
