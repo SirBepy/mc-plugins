@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.haru.quest;
 
+import dev.sirbepy.mc.core.gui.SidebarSlot;
 import dev.sirbepy.mc.haru.data.ActiveQuest;
 import dev.sirbepy.mc.haru.data.OwnerState;
 import dev.sirbepy.mc.haru.dialogue.Speech;
@@ -39,7 +40,7 @@ final class QuestSidebar {
 
     /** Applies (or refreshes) the sidebar, unless some other plugin already owns the player's slot. */
     void show(Player player, OwnerState state) {
-        if (!freeToUse(player)) {
+        if (!SidebarSlot.freeToUse(player, OBJECTIVE)) {
             return;
         }
         Scoreboard board = active.computeIfAbsent(player.getUniqueId(),
@@ -60,15 +61,6 @@ final class QuestSidebar {
 
     void forget(Player player) {
         active.remove(player.getUniqueId());
-    }
-
-    /** True if the player's sidebar slot is either untouched or already ours. */
-    private boolean freeToUse(Player player) {
-        Scoreboard current = player.getScoreboard();
-        if (current == Bukkit.getScoreboardManager().getMainScoreboard()) {
-            return true;
-        }
-        return current.getObjective(OBJECTIVE) != null;
     }
 
     private void render(Scoreboard board, OwnerState state) {

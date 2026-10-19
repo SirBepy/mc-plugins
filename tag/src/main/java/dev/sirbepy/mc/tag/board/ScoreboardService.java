@@ -1,5 +1,6 @@
 package dev.sirbepy.mc.tag.board;
 
+import dev.sirbepy.mc.core.gui.SidebarSlot;
 import dev.sirbepy.mc.names.api.NamesApi;
 import dev.sirbepy.mc.tag.logic.LeaderboardRanking;
 import dev.sirbepy.mc.tag.state.PlayerStats;
@@ -52,18 +53,9 @@ public final class ScoreboardService {
         return enable(player) ? ToggleResult.ENABLED : ToggleResult.BLOCKED;
     }
 
-    /** True if the player's sidebar slot is either untouched or already ours. */
-    private boolean freeToUse(Player player) {
-        Scoreboard current = player.getScoreboard();
-        if (current == Bukkit.getScoreboardManager().getMainScoreboard()) {
-            return true;
-        }
-        return current.getObjective(OBJECTIVE) != null;
-    }
-
     /** Applies the board, unless some other plugin (e.g. Haru's quest sidebar) already owns the slot. */
     public boolean enable(Player player) {
-        if (!freeToUse(player)) {
+        if (!SidebarSlot.freeToUse(player, OBJECTIVE)) {
             return false;
         }
         Scoreboard board = Bukkit.getScoreboardManager().getNewScoreboard();
