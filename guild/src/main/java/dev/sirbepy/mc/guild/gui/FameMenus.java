@@ -75,7 +75,8 @@ final class FameMenus {
         return Icons.icon(bounty.icon(), bounty.title(), NamedTextColor.GOLD, lore);
     }
 
-    void claimBounty(Player player) {
+    /** Shared by the board's bounty icon and {@link GuildChannel}'s mod-screen click. */
+    static void claimBounty(Player player, Guild guild) {
         Guild.Claim claim = guild.events().claimBounty(player);
         switch (claim.result()) {
             case CLAIMED -> {
@@ -117,7 +118,8 @@ final class FameMenus {
         return claimable ? Icons.glint(icon) : icon;
     }
 
-    void claimGrand(Player player) {
+    /** Shared by the board's Grand Quest icon and {@link GuildChannel}'s mod-screen click. */
+    static void claimGrand(Player player, Guild guild) {
         Guild.Claim claim = guild.events().claimGrand(player);
         switch (claim.result()) {
             case CLAIMED -> {

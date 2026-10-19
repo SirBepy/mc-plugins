@@ -50,7 +50,7 @@ final class OfficeMenus {
             menu.set(20 + i, Icons.icon(Material.GOLD_NUGGET, "Withdraw " + Text.coins(amount), NamedTextColor.YELLOW,
                     withdrawable > 0 ? "!Click to take it" : "Nothing left to draw today"),
                     (shown, click) -> {
-                        withdraw(player, amount);
+                        withdraw(player, guild, amount);
                         go.accept(shown, GuildMenus.Screen.OFFICE);
                     });
         }
@@ -58,7 +58,7 @@ final class OfficeMenus {
                 "That is " + Text.coins(withdrawable) + " now.",
                 withdrawable > 0 ? "!Click to take it" : "Nothing left to draw today"),
                 (shown, click) -> {
-                    withdraw(player, withdrawable);
+                    withdraw(player, guild, withdrawable);
                     go.accept(shown, GuildMenus.Screen.OFFICE);
                 });
         menu.set(24, Icons.icon(Material.WRITTEN_BOOK, "Ledger", Chat.BRONZE,
@@ -97,7 +97,8 @@ final class OfficeMenus {
         return menu;
     }
 
-    private void withdraw(Player player, long amount) {
+    /** Shared by the Office screen's withdraw buttons and {@link GuildChannel}'s mod-screen click. */
+    static void withdraw(Player player, Guild guild, long amount) {
         long paid = guild.office().withdraw(player, amount);
         if (paid > 0) {
             Chat.send(player, "You draw " + Text.coins(paid) + " from the Treasury.", NamedTextColor.GOLD);

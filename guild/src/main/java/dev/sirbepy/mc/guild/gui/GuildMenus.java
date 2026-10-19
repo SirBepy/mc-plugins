@@ -81,11 +81,14 @@ public final class GuildMenus {
     }
 
     public void open(Player player, Screen screen) {
-        if (channel != null && channel.supports(player)) {
-            channel.send(player, screen);
-            return;
-        }
+        if (toChannel(player, screen)) return;
         player.openInventory(build(player, screen, 0).getInventory());
+    }
+
+    private boolean toChannel(Player player, Screen screen) {
+        if (channel == null || !channel.supports(player)) return false;
+        channel.send(player, screen);
+        return true;
     }
 
     Menu build(Player player, Screen screen, int page) {
@@ -116,10 +119,7 @@ public final class GuildMenus {
 
     /** Opens the Hall of Fame directly, for the archivist. */
     public void openHallOfFame(Player player) {
-        if (channel != null && channel.supports(player)) {
-            channel.send(player, Screen.HALL_OF_FAME);
-            return;
-        }
+        if (toChannel(player, Screen.HALL_OF_FAME)) return;
         player.openInventory(hallOfFame(player).getInventory());
     }
 
@@ -178,11 +178,11 @@ public final class GuildMenus {
         Menu menu = new Menu(6, Component.text("Adventurer's Guild: " + member.rank().title(), Chat.BRONZE));
         menu.set(PROFILE_SLOT, profile(player, member), (shown, click) -> refresh(player, shown, Screen.TITLES, 0));
         menu.set(FameMenus.BOUNTY_SLOT, fame.bountyIcon(member), (shown, click) -> {
-            desk.require(player, () -> fame.claimBounty(player));
+            desk.require(player, () -> FameMenus.claimBounty(player, guild));
             refresh(player, shown, Screen.MAIN, 0);
         });
         menu.set(FameMenus.GRAND_SLOT, fame.grandIcon(member), (shown, click) -> {
-            desk.require(player, () -> fame.claimGrand(player));
+            desk.require(player, () -> FameMenus.claimGrand(player, guild));
             refresh(player, shown, Screen.MAIN, 0);
         });
         ItemStack activity = fame.activityIcon(member);
@@ -194,7 +194,7 @@ public final class GuildMenus {
             int slot = i;
             menu.set(DAILY_SLOTS[i], contractIcon(player, member, daily, slot, atDesk), (shown, click) -> {
                 if (click == ClickType.RIGHT || click == ClickType.SHIFT_RIGHT) {
-                    desk.require(player, () -> reroll(player, member, slot));
+                    desk.require(player, () -> reroll(player, guild, member, slot));
                 } else {
                     desk.require(player, () -> claim(player, guild, daily));
                 }
@@ -401,7 +401,8 @@ public final class GuildMenus {
         }
     }
 
-    private void reroll(Player player, Member member, int slot) {
+    /** Shared by the daily contract's right-click reroll and {@link GuildChannel}'s mod-screen click. */
+    static void reroll(Player player, Guild guild, Member member, int slot) {
         switch (guild.board().reroll(member, slot)) {
             case REROLLED -> {
                 guild.store().save();
