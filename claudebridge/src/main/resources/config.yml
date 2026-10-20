@@ -4,6 +4,11 @@
 # valid message (see CooldownTracker), so a rejected empty/too-long attempt doesn't burn it.
 cooldown-seconds: 20
 
+# How stale the daemon's last console heartbeat (server/deploy/player-claude.mjs, pushed roughly
+# every 15s) can be before /shenron tells a player Shenron is offline. Comfortably above 3x the
+# push interval so one missed beat doesn't flip the reply.
+shenron-online-threshold-seconds: 45
+
 messages:
   no-permission: "<red>You don't have permission to do that.</red>"
   player-only: "<red>Only a player can run that command.</red>"
@@ -11,3 +16,4 @@ messages:
   message-too-long: "<red>That message is too long (max 256 characters).</red>"
   cooldown: "<red>Please wait <seconds>s before messaging Claude again.</red>"
   sent: "<gray>Sent to Claude. The answer will show up in chat (usually within a minute).</gray>"
+  shenron-offline: "<gray>Shenron is napping right now - I've got your message, he'll reply once he's back.</gray>"

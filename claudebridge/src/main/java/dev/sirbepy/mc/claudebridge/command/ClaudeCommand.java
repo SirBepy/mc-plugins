@@ -4,6 +4,7 @@ import dev.sirbepy.mc.claudebridge.config.ClaudeBridgeConfig;
 import dev.sirbepy.mc.claudebridge.cooldown.CooldownTracker;
 import dev.sirbepy.mc.claudebridge.data.ClaudeMessageValidation;
 import dev.sirbepy.mc.claudebridge.data.ClaudeMessageValidator;
+import dev.sirbepy.mc.claudebridge.heartbeat.HeartbeatTracker;
 import dev.sirbepy.mc.claudebridge.inbox.InboxWriter;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -26,12 +27,15 @@ public final class ClaudeCommand implements BasicCommand {
     private final ClaudeBridgeConfig config;
     private final CooldownTracker cooldown;
     private final File inboxFile;
+    private final HeartbeatTracker heartbeat;
 
-    public ClaudeCommand(JavaPlugin plugin, ClaudeBridgeConfig config, CooldownTracker cooldown, File inboxFile) {
+    public ClaudeCommand(JavaPlugin plugin, ClaudeBridgeConfig config, CooldownTracker cooldown, File inboxFile,
+            HeartbeatTracker heartbeat) {
         this.plugin = plugin;
         this.config = config;
         this.cooldown = cooldown;
         this.inboxFile = inboxFile;
+        this.heartbeat = heartbeat;
     }
 
     @Override
@@ -77,7 +81,9 @@ public final class ClaudeCommand implements BasicCommand {
         } catch (IOException e) {
             plugin.getLogger().warning("Failed to append to inbox.jsonl: " + e.getMessage());
         }
-        config.messages().send(player, "sent");
+        // Written to the inbox and logged either way, so Shenron answers it whenever he's back;
+        // only the player-facing reply differs on whether anyone's actually listening right now.
+        config.messages().send(player, heartbeat.isOnline(config.onlineThresholdSeconds()) ? "sent" : "shenron-offline");
     }
 
     /**

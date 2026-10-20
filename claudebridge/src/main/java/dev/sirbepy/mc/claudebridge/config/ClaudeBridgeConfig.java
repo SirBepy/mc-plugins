@@ -9,6 +9,7 @@ public final class ClaudeBridgeConfig {
 
     private final JavaPlugin plugin;
     private volatile long cooldownSeconds;
+    private volatile long onlineThresholdSeconds;
     private volatile Messages messages;
 
     public ClaudeBridgeConfig(JavaPlugin plugin) {
@@ -20,11 +21,16 @@ public final class ClaudeBridgeConfig {
         plugin.reloadConfig();
         FileConfiguration config = plugin.getConfig();
         cooldownSeconds = config.getLong("cooldown-seconds", 20);
+        onlineThresholdSeconds = config.getLong("shenron-online-threshold-seconds", 45);
         messages = new Messages(config.getConfigurationSection("messages"));
     }
 
     public long cooldownSeconds() {
         return cooldownSeconds;
+    }
+
+    public long onlineThresholdSeconds() {
+        return onlineThresholdSeconds;
     }
 
     public Messages messages() {

@@ -2,6 +2,8 @@ package dev.sirbepy.mc.claudebridge.command;
 
 import dev.sirbepy.mc.claudebridge.config.ClaudeBridgeConfig;
 import dev.sirbepy.mc.claudebridge.cooldown.CooldownTracker;
+import dev.sirbepy.mc.claudebridge.heartbeat.HeartbeatTracker;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,10 +78,21 @@ class ClaudeCommandTest {
     // with no backing jar/file) discards any plugin.getConfig().set(...) seeded beforehand and
     // falls back to the hardcoded default - 20s, same as the spec and config.yml's own default -
     // so no seeding is needed here.
+    //
+    // Heartbeat defaults to "just received" here so these accept-path tests keep exercising the
+    // "sent" reply they were written against; the online/offline branch gets its own tests below.
     private ClaudeCommand commandWithDefaultCooldown() {
         ClaudeBridgeConfig config = new ClaudeBridgeConfig(plugin);
         CooldownTracker cooldown = new CooldownTracker(clock::get);
-        return new ClaudeCommand(plugin, config, cooldown, inboxFile);
+        HeartbeatTracker heartbeat = new HeartbeatTracker(clock::get);
+        heartbeat.recordHeartbeat();
+        return new ClaudeCommand(plugin, config, cooldown, inboxFile, heartbeat);
+    }
+
+    private ClaudeCommand commandWithHeartbeat(HeartbeatTracker heartbeat) {
+        ClaudeBridgeConfig config = new ClaudeBridgeConfig(plugin);
+        CooldownTracker cooldown = new CooldownTracker(clock::get);
+        return new ClaudeCommand(plugin, config, cooldown, inboxFile, heartbeat);
     }
 
     private List<String> inboxLines() throws Exception {
@@ -184,5 +197,54 @@ class ClaudeCommandTest {
 
         assertEquals(2, logMessages.size());
         assertEquals(2, inboxLines().size());
+    }
+
+    // ClaudeBridgeConfig(plugin) on this mock plugin has no backing jar, so its "messages" config
+    // section is empty and Messages.render falls back to "[missing message: <key>]" (see
+    // Messages#render) - same fallback NamesReloadCommandTest documents for a missing key. That
+    // fallback still proves which key got picked, which is exactly what these tests check: the
+    // online/offline branch in ClaudeCommand#handle, not the configured wording (covered by
+    // config.yml itself + the live text chosen in this feature's commit).
+
+    @Test
+    void recentHeartbeatGetsTheSentReply() throws Exception {
+        HeartbeatTracker heartbeat = new HeartbeatTracker(clock::get);
+        heartbeat.recordHeartbeat();
+        ClaudeCommand command = commandWithHeartbeat(heartbeat);
+
+        command.handle(player, "hello");
+
+        String text = PlainTextComponentSerializer.plainText().serialize(player.nextComponentMessage());
+        assertEquals("[missing message: sent]", text);
+        // Still written through either way: the offline branch only changes the reply, never
+        // whether the message reaches Shenron.
+        assertEquals(1, inboxLines().size());
+    }
+
+    @Test
+    void staleHeartbeatGetsTheOfflineReply() throws Exception {
+        HeartbeatTracker heartbeat = new HeartbeatTracker(clock::get);
+        heartbeat.recordHeartbeat();
+        clock.set(46_000L); // past the 45s default threshold
+        ClaudeCommand command = commandWithHeartbeat(heartbeat);
+
+        command.handle(player, "hello");
+
+        String text = PlainTextComponentSerializer.plainText().serialize(player.nextComponentMessage());
+        assertEquals("[missing message: shenron-offline]", text);
+        assertEquals(1, inboxLines().size());
+    }
+
+    @Test
+    void noHeartbeatEverReceivedDefaultsToOfflineReply() throws Exception {
+        // A fresh plugin boot (e.g. right after a live restart) must not assume Shenron is awake
+        // just because nothing has proven otherwise yet.
+        HeartbeatTracker heartbeat = new HeartbeatTracker(clock::get);
+        ClaudeCommand command = commandWithHeartbeat(heartbeat);
+
+        command.handle(player, "hello");
+
+        String text = PlainTextComponentSerializer.plainText().serialize(player.nextComponentMessage());
+        assertEquals("[missing message: shenron-offline]", text);
     }
 }

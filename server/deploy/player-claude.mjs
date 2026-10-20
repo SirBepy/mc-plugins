@@ -15,7 +15,7 @@
 
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { PANEL, api, serverIdentifier, filesContents, wait as sleep } from "./kinetic.mjs";
+import { PANEL, api, serverIdentifier, filesContents, cmdConsole, wait as sleep } from "./kinetic.mjs";
 import {
   appendEvents, cosmeticFromConsole, cosmeticFromLogLine, daemonHealth, ensureStateDir, formatEvent,
   freshWishes, isClaudeDoorbell, newInboxEntries, parseConsoleLine, readJsonOrNull, takeNewEvents,
@@ -205,6 +205,10 @@ async function daemon() {
 
   setInterval(() => {
     heartbeat();
+    // Player-invisible console heartbeat (claudebridge's new HeartbeatCommand, console-only) so
+    // /shenron on live can tell a player up front whether this daemon (and so Joe's PC) is
+    // actually running, instead of a blind "sent!" that might land nowhere for hours.
+    cmdConsole("claudebridge heartbeat").catch((err) => log(`heartbeat push failed: ${err.message}`));
     if (ws && Date.now() - state.lastFrameAt > SILENT_SOCKET_MS) {
       log("no frame for 90 s; dropping the socket");
       ws.close();
