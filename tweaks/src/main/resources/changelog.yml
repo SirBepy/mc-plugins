@@ -6,6 +6,12 @@
 # The live server's plugins/Tweaks/changelog.yml is the copy players see, read fresh on every
 # /changelog, so add each restart's entry there (kinetic.mjs) and mirror it here in the same session.
 entries:
+  - date: 2026-10-20
+    title: Shenron online check
+    lines:
+      - /shenron now tells you
+      - if Shenron's napping
+      - Either way he gets your message
   - date: 2026-10-18
     title: Ranger kills mend gear
     lines:
