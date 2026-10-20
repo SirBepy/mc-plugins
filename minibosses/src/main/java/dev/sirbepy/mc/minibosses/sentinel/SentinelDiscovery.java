@@ -1,10 +1,12 @@
 package dev.sirbepy.mc.minibosses.sentinel;
 
+import dev.sirbepy.mc.minibosses.arena.SummonGate;
 import dev.sirbepy.mc.minibosses.registry.Tier;
 import dev.sirbepy.mc.minibosses.summon.TierPicker;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -20,14 +22,15 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 /**
  * The Overgrown Sentinel's discovery/summon hook, the {@code overgrown_sentinel_discovery}
  * {@code summon-hook} its YAML names: breaking a Moss Block has a small chance to drop a Sentinel
  * Seed, and right-clicking with the seed in the main hand opens the {@link TierPicker}; picking a
- * tier spends the seed to summon the Sentinel at the player's own feet - no built arena exists yet (ImMijo is building one himself,
- * a separate follow-up concern), so this never references a fixed location. {@link SummonCooldown}
+ * tier spends the seed to summon the Sentinel where the {@link SummonGate} allows: the center of its
+ * arena once one is set, or the player's own feet until then. {@link SummonCooldown}
  * mirrors {@code guild.listener.FarmGuard}'s "refuse and keep tracking" shape so the seed can't be
  * chain-farmed into repeat summons.
  */
@@ -44,10 +47,12 @@ public final class SentinelDiscovery implements Listener {
     private final SummonCooldown cooldown;
     private final Random random;
     private final TierPicker picker;
+    private final SummonGate gate;
 
     public SentinelDiscovery(JavaPlugin plugin, SentinelFight fight, SummonCooldown cooldown, Random random,
-            TierPicker picker) {
+            TierPicker picker, SummonGate gate) {
         this.picker = picker;
+        this.gate = gate;
         this.seedKey = new NamespacedKey(plugin, "sentinel_seed");
         this.fight = fight;
         this.cooldown = cooldown;
@@ -95,7 +100,7 @@ public final class SentinelDiscovery implements Listener {
         }
         event.setCancelled(true);
         Player player = event.getPlayer();
-        if (refuseOnCooldown(player)) {
+        if (refuseOnCooldown(player) || where(player).isEmpty()) {
             return;
         }
         picker.open(player, SentinelFight.GUARDIAN_ID, NamedTextColor.DARK_GREEN, tier -> summon(player, tier));
@@ -110,12 +115,21 @@ public final class SentinelDiscovery implements Listener {
                 || refuseOnCooldown(player)) {
             return false;
         }
+        Optional<Location> at = where(player);
+        if (at.isEmpty()) {
+            return false;
+        }
         cooldown.tryConsume(player.getUniqueId());
         item.subtract();
-        fight.spawn(player.getLocation(), tier);
+        fight.spawn(at.get(), tier).ifPresent(boss -> gate.risen(SentinelFight.GUARDIAN_ID, boss));
         player.sendMessage(Component.text("The ground trembles - the Overgrown Sentinel rises!",
                 NamedTextColor.DARK_GREEN));
         return true;
+    }
+
+    private Optional<Location> where(Player player) {
+        return gate.where(player, SentinelFight.GUARDIAN_ID, "The seed will not take root here. Its ground lies elsewhere.",
+                "The seed stays dormant. Its ground has not been prepared yet.");
     }
 
     private boolean refuseOnCooldown(Player player) {

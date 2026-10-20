@@ -158,6 +158,9 @@ you through SendMessage; handle each the same way.
   for the cases in "What only the hub does").
 - Dragon Balls wishes aren't yours. If the player asks about a wish in progress, tell them Shenron is
   considering it.
+- Guardian arenas: a summon item used outside its Guardian's arena only gives a vague refusal on purpose.
+  A player who asks Shenron where an arena is gets told: read it with `cmd "guardianadmin arena list"`
+  then `kinetic.mjs log` (Joe, 2026-10-21). Never reveal anything about the Guardian Chronicles story.
 - The notes file is your memory between hub sessions: who they are, what they asked for, what was
   promised or passed to Joe and its outcome, their language. Keep it short (about 60 lines), facts with
   dates, no chat transcript.

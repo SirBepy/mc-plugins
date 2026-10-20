@@ -8,6 +8,10 @@ import dev.sirbepy.mc.minibosses.hof.HallOfFame;
 import dev.sirbepy.mc.minibosses.progress.GuardianKills;
 import dev.sirbepy.mc.minibosses.progress.KillRecorder;
 import dev.sirbepy.mc.minibosses.summon.TierPicker;
+import dev.sirbepy.mc.minibosses.arena.Arena;
+import dev.sirbepy.mc.minibosses.arena.ArenaFights;
+import dev.sirbepy.mc.minibosses.arena.ArenaRegistry;
+import dev.sirbepy.mc.minibosses.arena.SummonGate;
 import dev.sirbepy.mc.minibosses.registry.GuardianDef;
 import dev.sirbepy.mc.minibosses.registry.GuardianRegistry;
 import dev.sirbepy.mc.minibosses.registry.Tier;
@@ -86,6 +90,8 @@ class SentinelFightTest {
     private HallOfFame hallOfFame;
     private GuardianKills kills;
     private TierPicker picker;
+    private ArenaRegistry arenas;
+    private SummonGate gate;
     private Path tempDir;
     private final AtomicLong clock = new AtomicLong(0);
 
@@ -114,6 +120,8 @@ class SentinelFightTest {
         hallOfFame = new HallOfFame(tempDir.toFile(), Logger.getLogger("minibosses-test"));
         kills = new GuardianKills(tempDir.toFile(), Logger.getLogger("minibosses-test"));
         picker = new TierPicker(guardians, kills);
+        arenas = new ArenaRegistry(tempDir.toFile(), Logger.getLogger("minibosses-test"), guardians);
+        gate = new SummonGate(arenas, new ArenaFights(plugin, arenas, clock::get));
         fight = new SentinelFight(plugin, guardians, abilities, fighters, loot, hallOfFame, Logger.getLogger("minibosses-test"));
     }
 
@@ -373,7 +381,7 @@ class SentinelFightTest {
     @Test
     void discoveryCooldownBlocksARepeatSummonWithinTheWindow() {
         SummonCooldown cooldown = new SummonCooldown(SentinelDiscovery.COOLDOWN_MILLIS, clock::get);
-        SentinelDiscovery discovery = new SentinelDiscovery(plugin, fight, cooldown, new Random(0), picker);
+        SentinelDiscovery discovery = new SentinelDiscovery(plugin, fight, cooldown, new Random(0), picker, gate);
 
         ItemStack seed = discovery.createSeed();
         alice.getInventory().setItemInMainHand(seed);
@@ -407,7 +415,7 @@ class SentinelFightTest {
             public double nextDouble() {
                 return 0.0;
             }
-        }, picker);
+        }, picker, gate);
         var block = world.getBlockAt(1, 64, 1);
         block.setType(Material.MOSS_BLOCK);
 
@@ -423,7 +431,7 @@ class SentinelFightTest {
     @Test
     void rightClickingASeedOpensTheTierPickerWithoutSpendingIt() {
         SentinelDiscovery discovery = new SentinelDiscovery(plugin, fight,
-                new SummonCooldown(SentinelDiscovery.COOLDOWN_MILLIS, clock::get), new Random(0), picker);
+                new SummonCooldown(SentinelDiscovery.COOLDOWN_MILLIS, clock::get), new Random(0), picker, gate);
         ItemStack seed = discovery.createSeed();
         alice.getInventory().setItemInMainHand(seed);
 
@@ -438,7 +446,7 @@ class SentinelFightTest {
     @Test
     void pickingNormalInThePickerSummonsANormalSentinel() {
         SentinelDiscovery discovery = new SentinelDiscovery(plugin, fight,
-                new SummonCooldown(SentinelDiscovery.COOLDOWN_MILLIS, clock::get), new Random(0), picker);
+                new SummonCooldown(SentinelDiscovery.COOLDOWN_MILLIS, clock::get), new Random(0), picker, gate);
         alice.getInventory().setItemInMainHand(discovery.createSeed());
         alice.teleport(new Location(world, 0, 64, 0));
 
@@ -454,7 +462,7 @@ class SentinelFightTest {
     @Test
     void heroicStaysLockedUntilTheirFirstNormalKill() {
         SentinelDiscovery discovery = new SentinelDiscovery(plugin, fight,
-                new SummonCooldown(SentinelDiscovery.COOLDOWN_MILLIS, clock::get), new Random(0), picker);
+                new SummonCooldown(SentinelDiscovery.COOLDOWN_MILLIS, clock::get), new Random(0), picker, gate);
         ItemStack seed = discovery.createSeed();
         alice.getInventory().setItemInMainHand(seed);
         alice.teleport(new Location(world, 0, 64, 0));

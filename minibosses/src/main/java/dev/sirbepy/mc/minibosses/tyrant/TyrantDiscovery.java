@@ -1,10 +1,12 @@
 package dev.sirbepy.mc.minibosses.tyrant;
 
+import dev.sirbepy.mc.minibosses.arena.SummonGate;
 import dev.sirbepy.mc.minibosses.registry.Tier;
 import dev.sirbepy.mc.minibosses.summon.TierPicker;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -21,6 +23,7 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 /**
@@ -28,8 +31,8 @@ import java.util.Random;
  * names ({@code ashen_tyrant_discovery}): killing a wild (ordinary, non-boss) Wither Skeleton -
  * the mob that actually spawns inside a real Nether Fortress - has a small chance to drop an Ashen
  * Ember, and right-clicking with the Ember in the main hand opens the {@link TierPicker}; picking a
- * tier spends it to summon the Tyrant at the player's own feet, no built arena required yet (ImMijo is building one himself, a
- * separate follow-up concern). {@link TyrantFight#isOurs} tells a wild Wither
+ * tier spends it to summon the Tyrant at the center of its arena, and not at all until one is set
+ * (the {@link SummonGate} decides). {@link TyrantFight#isOurs} tells a wild Wither
  * Skeleton's death apart from a real Tyrant fight ending (both are the same entity type), so a kill
  * credited to the fight itself never also rolls a seed. {@link SummonCooldown} mirrors
  * {@code sentinel.SummonCooldown}'s "refuse and keep tracking" shape so the Ember can't be
@@ -49,10 +52,12 @@ public final class TyrantDiscovery implements Listener {
     private final SummonCooldown cooldown;
     private final Random random;
     private final TierPicker picker;
+    private final SummonGate gate;
 
     public TyrantDiscovery(JavaPlugin plugin, TyrantFight fight, SummonCooldown cooldown, Random random,
-            TierPicker picker) {
+            TierPicker picker, SummonGate gate) {
         this.picker = picker;
+        this.gate = gate;
         this.emberKey = new NamespacedKey(plugin, "ashen_ember");
         this.fight = fight;
         this.cooldown = cooldown;
@@ -104,7 +109,7 @@ public final class TyrantDiscovery implements Listener {
         }
         event.setCancelled(true);
         Player player = event.getPlayer();
-        if (refuseOnCooldown(player)) {
+        if (refuseOnCooldown(player) || where(player).isEmpty()) {
             return;
         }
         picker.open(player, TyrantFight.GUARDIAN_ID, NamedTextColor.RED, tier -> summon(player, tier));
@@ -119,12 +124,21 @@ public final class TyrantDiscovery implements Listener {
                 || refuseOnCooldown(player)) {
             return false;
         }
+        Optional<Location> at = where(player);
+        if (at.isEmpty()) {
+            return false;
+        }
         cooldown.tryConsume(player.getUniqueId());
         item.subtract();
-        fight.spawn(player.getLocation(), tier);
+        fight.spawn(at.get(), tier).ifPresent(boss -> gate.risen(TyrantFight.GUARDIAN_ID, boss));
         player.sendMessage(Component.text("The ashes rise - the Ashen Tyrant awakens!",
                 NamedTextColor.RED));
         return true;
+    }
+
+    private Optional<Location> where(Player player) {
+        return gate.where(player, TyrantFight.GUARDIAN_ID, "The ember gutters out. This is not his ground.",
+                "The ember stays cold. His ground has not been prepared yet.");
     }
 
     private boolean refuseOnCooldown(Player player) {

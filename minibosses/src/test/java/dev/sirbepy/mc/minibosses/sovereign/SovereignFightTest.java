@@ -6,6 +6,10 @@ import dev.sirbepy.mc.minibosses.ability.GuardianAbilityRegistry;
 import dev.sirbepy.mc.minibosses.hof.HallOfFame;
 import dev.sirbepy.mc.minibosses.progress.GuardianKills;
 import dev.sirbepy.mc.minibosses.summon.TierPicker;
+import dev.sirbepy.mc.minibosses.arena.Arena;
+import dev.sirbepy.mc.minibosses.arena.ArenaFights;
+import dev.sirbepy.mc.minibosses.arena.ArenaRegistry;
+import dev.sirbepy.mc.minibosses.arena.SummonGate;
 import dev.sirbepy.mc.minibosses.registry.GuardianDef;
 import dev.sirbepy.mc.minibosses.registry.GuardianRegistry;
 import dev.sirbepy.mc.minibosses.registry.Tier;
@@ -79,6 +83,9 @@ class SovereignFightTest {
     private HallOfFame hallOfFame;
     private GuardianKills kills;
     private TierPicker picker;
+    private ArenaRegistry arenas;
+    private SummonGate gate;
+    private ArenaFights arenaFights;
     private final AtomicLong clock = new AtomicLong(0);
 
     @BeforeEach
@@ -105,6 +112,9 @@ class SovereignFightTest {
         hallOfFame = new HallOfFame(tempDir.toFile(), Logger.getLogger("minibosses-test"));
         kills = new GuardianKills(tempDir.toFile(), Logger.getLogger("minibosses-test"));
         picker = new TierPicker(guardians, kills);
+        arenas = new ArenaRegistry(tempDir.toFile(), Logger.getLogger("minibosses-test"), guardians);
+        arenaFights = new ArenaFights(plugin, arenas, clock::get);
+        gate = new SummonGate(arenas, arenaFights);
         fight = new SovereignFight(plugin, guardians, abilities, fighters, loot, hallOfFame, Logger.getLogger("minibosses-test"));
     }
 
@@ -352,11 +362,13 @@ class SovereignFightTest {
     @Test
     void discoveryCooldownBlocksARepeatSummonWithinTheWindow() {
         SummonCooldown cooldown = new SummonCooldown(SovereignDiscovery.COOLDOWN_MILLIS, clock::get);
-        SovereignDiscovery discovery = new SovereignDiscovery(plugin, fight, cooldown, new Random(0), picker);
+        SovereignDiscovery discovery = new SovereignDiscovery(plugin, fight, cooldown, new Random(0), picker, gate);
 
         ItemStack shard = discovery.createShard();
         alice.getInventory().setItemInMainHand(shard);
         alice.teleport(new Location(world, 5, 64, 5));
+        // Nether and End Guardians only rise in their arena.
+        arenas.set(Arena.ofCorners(SovereignFight.GUARDIAN_ID, world, -10, 60, -10, 20, 80, 20));
 
         discovery.summon(alice, Tier.NORMAL);
         assertEquals(1, world.getEntitiesByClass(Enderman.class).size(),
@@ -370,11 +382,16 @@ class SovereignFightTest {
                 "a repeat summon inside the cooldown window must not spawn a second Sovereign");
         assertEquals(1, secondShard.getAmount(), "a refused summon must not consume the shard");
 
-        // Advance past the cooldown window: the third attempt must succeed again.
+        // Past the cooldown, the arena still refuses while its first Sovereign lives; once it is gone the
+        // fight ends on the next tick and a new summon works again.
         clock.addAndGet(SovereignDiscovery.COOLDOWN_MILLIS + 1);
         discovery.summon(alice, Tier.NORMAL);
-        assertEquals(2, world.getEntitiesByClass(Enderman.class).size(),
-                "once the cooldown has elapsed, the summon must work again");
+        assertEquals(1, world.getEntitiesByClass(Enderman.class).size(), "a busy arena refuses a second Sovereign");
+        world.getEntitiesByClass(Enderman.class).forEach(org.bukkit.entity.Entity::remove);
+        arenaFights.tick();
+        discovery.summon(alice, Tier.NORMAL);
+        assertEquals(1, world.getEntitiesByClass(Enderman.class).size(),
+                "once the cooldown has elapsed and the arena is free, the summon must work again");
     }
 
     @Test
@@ -386,7 +403,7 @@ class SovereignFightTest {
             public double nextDouble() {
                 return 0.0;
             }
-        }, picker);
+        }, picker, gate);
 
         alice.teleport(new Location(world, 0, 64, 0));
         EndermanMock wild = (EndermanMock) world.spawnEntity(new Location(world, 1, 64, 1),
