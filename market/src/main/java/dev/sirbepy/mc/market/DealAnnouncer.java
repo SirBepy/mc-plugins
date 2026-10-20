@@ -73,7 +73,7 @@ final class DealAnnouncer {
     }
 
     private String message(Offer today, String mentions) {
-        return "💰 **" + PriceList.name(today.item()) + "**: " + PriceList.money(today.price())
+        return ItemEmojis.of(today.item()) + " **" + PriceList.name(today.item()) + "**: " + PriceList.money(today.price())
                 + " today! " + mentions;
     }
 }
