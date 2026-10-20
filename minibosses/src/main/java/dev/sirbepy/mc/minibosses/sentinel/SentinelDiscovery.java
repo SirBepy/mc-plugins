@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.minibosses.sentinel;
 
 import dev.sirbepy.mc.minibosses.registry.Tier;
+import dev.sirbepy.mc.minibosses.summon.TierPicker;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -24,8 +25,8 @@ import java.util.Random;
 /**
  * The Overgrown Sentinel's discovery/summon hook, the {@code overgrown_sentinel_discovery}
  * {@code summon-hook} its YAML names: breaking a Moss Block has a small chance to drop a Sentinel
- * Seed, and right-clicking with the seed in the main hand spends it to summon a Normal-tier
- * Sentinel at the player's own feet - no built arena exists yet (ImMijo is building one himself,
+ * Seed, and right-clicking with the seed in the main hand opens the {@link TierPicker}; picking a
+ * tier spends the seed to summon the Sentinel at the player's own feet - no built arena exists yet (ImMijo is building one himself,
  * a separate follow-up concern), so this never references a fixed location. {@link SummonCooldown}
  * mirrors {@code guild.listener.FarmGuard}'s "refuse and keep tracking" shape so the seed can't be
  * chain-farmed into repeat summons.
@@ -42,8 +43,11 @@ public final class SentinelDiscovery implements Listener {
     private final SentinelFight fight;
     private final SummonCooldown cooldown;
     private final Random random;
+    private final TierPicker picker;
 
-    public SentinelDiscovery(JavaPlugin plugin, SentinelFight fight, SummonCooldown cooldown, Random random) {
+    public SentinelDiscovery(JavaPlugin plugin, SentinelFight fight, SummonCooldown cooldown, Random random,
+            TierPicker picker) {
+        this.picker = picker;
         this.seedKey = new NamespacedKey(plugin, "sentinel_seed");
         this.fight = fight;
         this.cooldown = cooldown;
@@ -91,15 +95,36 @@ public final class SentinelDiscovery implements Listener {
         }
         event.setCancelled(true);
         Player player = event.getPlayer();
-        if (!cooldown.tryConsume(player.getUniqueId())) {
-            long minutesLeft = (cooldown.remainingMillis(player.getUniqueId()) / 60_000L) + 1;
-            player.sendMessage(Component.text("The Sentinel is still resting. Try again in about "
-                    + minutesLeft + " minute(s).", NamedTextColor.GRAY));
+        if (refuseOnCooldown(player)) {
             return;
         }
+        picker.open(player, SentinelFight.GUARDIAN_ID, NamedTextColor.DARK_GREEN, tier -> summon(player, tier));
+    }
+
+    /** Spends the seed in the main hand and summons at {@code tier}. Everything is checked again
+     * here because the tier picker was open in between: the seed may have moved, another summon
+     * may have started the cooldown, and a forged click must not reach a locked tier. */
+    public boolean summon(Player player, Tier tier) {
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (!isSeed(item) || !picker.unlocked(player.getUniqueId(), SentinelFight.GUARDIAN_ID, tier)
+                || refuseOnCooldown(player)) {
+            return false;
+        }
+        cooldown.tryConsume(player.getUniqueId());
         item.subtract();
-        fight.spawn(player.getLocation(), Tier.NORMAL);
+        fight.spawn(player.getLocation(), tier);
         player.sendMessage(Component.text("The ground trembles - the Overgrown Sentinel rises!",
                 NamedTextColor.DARK_GREEN));
+        return true;
+    }
+
+    private boolean refuseOnCooldown(Player player) {
+        long left = cooldown.remainingMillis(player.getUniqueId());
+        if (left <= 0) {
+            return false;
+        }
+        player.sendMessage(Component.text("The Sentinel is still resting. Try again in about "
+                + (left / 60_000L + 1) + " minute(s).", NamedTextColor.GRAY));
+        return true;
     }
 }

@@ -1,12 +1,17 @@
 package dev.sirbepy.mc.minibosses.sentinel;
 
 import dev.sirbepy.mc.core.dragon.DragonFighters;
+import dev.sirbepy.mc.core.gui.Menu;
 import dev.sirbepy.mc.guild.events.GuardianDefeatedEvent;
 import dev.sirbepy.mc.minibosses.ability.GuardianAbilityRegistry;
 import dev.sirbepy.mc.minibosses.hof.HallOfFame;
+import dev.sirbepy.mc.minibosses.progress.GuardianKills;
+import dev.sirbepy.mc.minibosses.progress.KillRecorder;
+import dev.sirbepy.mc.minibosses.summon.TierPicker;
 import dev.sirbepy.mc.minibosses.registry.GuardianDef;
 import dev.sirbepy.mc.minibosses.registry.GuardianRegistry;
 import dev.sirbepy.mc.minibosses.registry.Tier;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -21,6 +26,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -78,10 +84,14 @@ class SentinelFightTest {
     private SentinelFight fight;
     private HeartOfTheWild heartOfTheWild;
     private HallOfFame hallOfFame;
+    private GuardianKills kills;
+    private TierPicker picker;
+    private Path tempDir;
     private final AtomicLong clock = new AtomicLong(0);
 
     @BeforeEach
     void setUp(@TempDir Path tempDir) throws IOException {
+        this.tempDir = tempDir;
         server = MockBukkit.mock();
         plugin = MockBukkit.createMockPlugin();
         world = server.addSimpleWorld("world");
@@ -102,6 +112,8 @@ class SentinelFightTest {
         SentinelLoot loot = new SentinelLoot(heartOfTheWild);
         DragonFighters fighters = new DragonFighters(KEY, clock::get);
         hallOfFame = new HallOfFame(tempDir.toFile(), Logger.getLogger("minibosses-test"));
+        kills = new GuardianKills(tempDir.toFile(), Logger.getLogger("minibosses-test"));
+        picker = new TierPicker(guardians, kills);
         fight = new SentinelFight(plugin, guardians, abilities, fighters, loot, hallOfFame, Logger.getLogger("minibosses-test"));
     }
 
@@ -361,27 +373,27 @@ class SentinelFightTest {
     @Test
     void discoveryCooldownBlocksARepeatSummonWithinTheWindow() {
         SummonCooldown cooldown = new SummonCooldown(SentinelDiscovery.COOLDOWN_MILLIS, clock::get);
-        SentinelDiscovery discovery = new SentinelDiscovery(plugin, fight, cooldown, new Random(0));
+        SentinelDiscovery discovery = new SentinelDiscovery(plugin, fight, cooldown, new Random(0), picker);
 
         ItemStack seed = discovery.createSeed();
         alice.getInventory().setItemInMainHand(seed);
         alice.teleport(new Location(world, 5, 64, 5));
 
-        discovery.onSeedUsed(interactWith(seed));
+        discovery.summon(alice, Tier.NORMAL);
         long afterFirst = world.getEntitiesByClass(org.bukkit.entity.Ravager.class).size();
         assertEquals(1, afterFirst, "the first summon within cooldown must spawn a Sentinel");
 
         // Give Alice a second seed and try again immediately: must be refused by the cooldown.
         ItemStack secondSeed = discovery.createSeed();
         alice.getInventory().setItemInMainHand(secondSeed);
-        discovery.onSeedUsed(interactWith(secondSeed));
+        discovery.summon(alice, Tier.NORMAL);
         assertEquals(1, world.getEntitiesByClass(org.bukkit.entity.Ravager.class).size(),
                 "a repeat summon inside the cooldown window must not spawn a second Sentinel");
         assertEquals(1, secondSeed.getAmount(), "a refused summon must not consume the seed");
 
         // Advance past the cooldown window: the third attempt must succeed again.
         clock.addAndGet(SentinelDiscovery.COOLDOWN_MILLIS + 1);
-        discovery.onSeedUsed(interactWith(secondSeed));
+        discovery.summon(alice, Tier.NORMAL);
         assertEquals(2, world.getEntitiesByClass(org.bukkit.entity.Ravager.class).size(),
                 "once the cooldown has elapsed, the summon must work again");
     }
@@ -395,7 +407,7 @@ class SentinelFightTest {
             public double nextDouble() {
                 return 0.0;
             }
-        });
+        }, picker);
         var block = world.getBlockAt(1, 64, 1);
         block.setType(Material.MOSS_BLOCK);
 
@@ -404,6 +416,75 @@ class SentinelFightTest {
         assertTrue(alice.getInventory().contains(Material.OAK_SAPLING), "the roll inside the drop chance must grant a seed");
         ItemStack found = alice.getInventory().all(Material.OAK_SAPLING).values().iterator().next();
         assertTrue(discovery.isSeed(found));
+    }
+
+    // --- Tier picker + per-player kill record ---
+
+    @Test
+    void rightClickingASeedOpensTheTierPickerWithoutSpendingIt() {
+        SentinelDiscovery discovery = new SentinelDiscovery(plugin, fight,
+                new SummonCooldown(SentinelDiscovery.COOLDOWN_MILLIS, clock::get), new Random(0), picker);
+        ItemStack seed = discovery.createSeed();
+        alice.getInventory().setItemInMainHand(seed);
+
+        discovery.onSeedUsed(interactWith(seed));
+
+        assertTrue(alice.getOpenInventory().getTopInventory().getHolder() instanceof Menu,
+                "right-clicking the seed must open the tier picker");
+        assertEquals(0, world.getEntitiesByClass(org.bukkit.entity.Ravager.class).size());
+        assertEquals(1, seed.getAmount(), "opening the picker must not spend the seed");
+    }
+
+    @Test
+    void pickingNormalInThePickerSummonsANormalSentinel() {
+        SentinelDiscovery discovery = new SentinelDiscovery(plugin, fight,
+                new SummonCooldown(SentinelDiscovery.COOLDOWN_MILLIS, clock::get), new Random(0), picker);
+        alice.getInventory().setItemInMainHand(discovery.createSeed());
+        alice.teleport(new Location(world, 0, 64, 0));
+
+        Menu menu = picker.build(alice, SentinelFight.GUARDIAN_ID, NamedTextColor.DARK_GREEN,
+                tier -> discovery.summon(alice, tier));
+        assertTrue(menu.click(11, ClickType.LEFT));
+
+        var spawned = world.getEntitiesByClass(org.bukkit.entity.Ravager.class);
+        assertEquals(1, spawned.size());
+        assertEquals(120.0, spawned.iterator().next().getHealth());
+    }
+
+    @Test
+    void heroicStaysLockedUntilTheirFirstNormalKill() {
+        SentinelDiscovery discovery = new SentinelDiscovery(plugin, fight,
+                new SummonCooldown(SentinelDiscovery.COOLDOWN_MILLIS, clock::get), new Random(0), picker);
+        ItemStack seed = discovery.createSeed();
+        alice.getInventory().setItemInMainHand(seed);
+        alice.teleport(new Location(world, 0, 64, 0));
+
+        assertFalse(discovery.summon(alice, Tier.HEROIC), "Heroic must be locked before any Normal kill");
+        assertFalse(picker.build(alice, SentinelFight.GUARDIAN_ID, NamedTextColor.DARK_GREEN, tier -> { })
+                .click(13, ClickType.LEFT), "the locked Heroic icon must have no action");
+        assertEquals(1, seed.getAmount());
+
+        kills.record(SentinelFight.GUARDIAN_ID, Tier.NORMAL, java.util.Set.of(alice.getUniqueId()));
+
+        assertFalse(picker.unlocked(alice.getUniqueId(), SentinelFight.GUARDIAN_ID, Tier.MYTHIC),
+                "Mythic needs a Heroic kill, not just a Normal one");
+        assertTrue(discovery.summon(alice, Tier.HEROIC));
+        assertEquals(260.0, world.getEntitiesByClass(org.bukkit.entity.Ravager.class).iterator().next().getHealth());
+    }
+
+    @Test
+    void aKillIsRecordedForEveryFighterThroughTheDefeatedEvent() {
+        server.getPluginManager().registerEvents(new KillRecorder(kills), plugin);
+        LivingEntity boss = spawnNormal();
+        melee(boss, 1);
+
+        fight.onDeath(new EntityDeathEvent(boss,
+                DamageSource.builder(DamageType.PLAYER_ATTACK).withDirectEntity(alice).build(), new java.util.ArrayList<>()));
+
+        assertEquals(1, kills.count(alice.getUniqueId(), SentinelFight.GUARDIAN_ID, Tier.NORMAL));
+        assertTrue(picker.unlocked(alice.getUniqueId(), SentinelFight.GUARDIAN_ID, Tier.HEROIC));
+        assertEquals(1, new GuardianKills(tempDir.toFile(), Logger.getLogger("minibosses-test"))
+                .count(alice.getUniqueId(), SentinelFight.GUARDIAN_ID, Tier.NORMAL), "kills must survive a reload");
     }
 
     private PlayerInteractEvent interactWith(ItemStack item) {

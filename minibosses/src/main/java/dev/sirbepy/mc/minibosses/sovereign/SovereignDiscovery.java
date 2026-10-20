@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.minibosses.sovereign;
 
 import dev.sirbepy.mc.minibosses.registry.Tier;
+import dev.sirbepy.mc.minibosses.summon.TierPicker;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -25,8 +26,8 @@ import java.util.Random;
 /**
  * The Void Sovereign's discovery/summon hook, the {@code void_sovereign.yml} {@code summon-hook}
  * names ({@code void_sovereign_discovery}): killing a wild (ordinary, non-boss) Enderman has a
- * small chance to drop a Void Shard, and right-clicking with the Shard in the main hand spends it
- * to summon a Normal-tier Sovereign at the player's own feet, no built arena required yet (ImMijo
+ * small chance to drop a Void Shard, and right-clicking with the Shard in the main hand opens the
+ * {@link TierPicker}; picking a tier spends it to summon the Sovereign at the player's own feet, no built arena required yet (ImMijo
  * is building one himself, a separate follow-up concern per the todo). {@link
  * SovereignFight#isOurs} tells a wild Enderman's death apart from a real Sovereign fight ending
  * (both are the same entity type), so a kill credited to the fight itself never also rolls a
@@ -46,8 +47,11 @@ public final class SovereignDiscovery implements Listener {
     private final SovereignFight fight;
     private final SummonCooldown cooldown;
     private final Random random;
+    private final TierPicker picker;
 
-    public SovereignDiscovery(JavaPlugin plugin, SovereignFight fight, SummonCooldown cooldown, Random random) {
+    public SovereignDiscovery(JavaPlugin plugin, SovereignFight fight, SummonCooldown cooldown, Random random,
+            TierPicker picker) {
+        this.picker = picker;
         this.shardKey = new NamespacedKey(plugin, "void_shard");
         this.fight = fight;
         this.cooldown = cooldown;
@@ -99,15 +103,36 @@ public final class SovereignDiscovery implements Listener {
         }
         event.setCancelled(true);
         Player player = event.getPlayer();
-        if (!cooldown.tryConsume(player.getUniqueId())) {
-            long minutesLeft = (cooldown.remainingMillis(player.getUniqueId()) / 60_000L) + 1;
-            player.sendMessage(Component.text("The void is not yet still. Try again in about "
-                    + minutesLeft + " minute(s).", NamedTextColor.GRAY));
+        if (refuseOnCooldown(player)) {
             return;
         }
+        picker.open(player, SovereignFight.GUARDIAN_ID, NamedTextColor.DARK_PURPLE, tier -> summon(player, tier));
+    }
+
+    /** Spends the shard in the main hand and summons at {@code tier}. Everything is checked again
+     * here because the tier picker was open in between: the shard may have moved, another summon
+     * may have started the cooldown, and a forged click must not reach a locked tier. */
+    public boolean summon(Player player, Tier tier) {
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (!isShard(item) || !picker.unlocked(player.getUniqueId(), SovereignFight.GUARDIAN_ID, tier)
+                || refuseOnCooldown(player)) {
+            return false;
+        }
+        cooldown.tryConsume(player.getUniqueId());
         item.subtract();
-        fight.spawn(player.getLocation(), Tier.NORMAL);
+        fight.spawn(player.getLocation(), tier);
         player.sendMessage(Component.text("The void folds inward - the Void Sovereign emerges!",
                 NamedTextColor.DARK_PURPLE));
+        return true;
+    }
+
+    private boolean refuseOnCooldown(Player player) {
+        long left = cooldown.remainingMillis(player.getUniqueId());
+        if (left <= 0) {
+            return false;
+        }
+        player.sendMessage(Component.text("The void is not yet still. Try again in about "
+                + (left / 60_000L + 1) + " minute(s).", NamedTextColor.GRAY));
+        return true;
     }
 }

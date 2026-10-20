@@ -4,6 +4,8 @@ import dev.sirbepy.mc.core.dragon.DragonFighters;
 import dev.sirbepy.mc.guild.events.GuardianDefeatedEvent;
 import dev.sirbepy.mc.minibosses.ability.GuardianAbilityRegistry;
 import dev.sirbepy.mc.minibosses.hof.HallOfFame;
+import dev.sirbepy.mc.minibosses.progress.GuardianKills;
+import dev.sirbepy.mc.minibosses.summon.TierPicker;
 import dev.sirbepy.mc.minibosses.registry.GuardianDef;
 import dev.sirbepy.mc.minibosses.registry.GuardianRegistry;
 import dev.sirbepy.mc.minibosses.registry.Tier;
@@ -70,6 +72,8 @@ class TyrantFightTest {
     private TyrantFight fight;
     private AshenCore ashenCore;
     private HallOfFame hallOfFame;
+    private GuardianKills kills;
+    private TierPicker picker;
     private final AtomicLong clock = new AtomicLong(0);
 
     @BeforeEach
@@ -94,6 +98,8 @@ class TyrantFightTest {
         TyrantLoot loot = new TyrantLoot(ashenCore);
         DragonFighters fighters = new DragonFighters(KEY, clock::get);
         hallOfFame = new HallOfFame(tempDir.toFile(), Logger.getLogger("minibosses-test"));
+        kills = new GuardianKills(tempDir.toFile(), Logger.getLogger("minibosses-test"));
+        picker = new TierPicker(guardians, kills);
         fight = new TyrantFight(plugin, guardians, abilities, fighters, loot, hallOfFame, Logger.getLogger("minibosses-test"));
     }
 
@@ -350,27 +356,27 @@ class TyrantFightTest {
     @Test
     void discoveryCooldownBlocksARepeatSummonWithinTheWindow() {
         SummonCooldown cooldown = new SummonCooldown(TyrantDiscovery.COOLDOWN_MILLIS, clock::get);
-        TyrantDiscovery discovery = new TyrantDiscovery(plugin, fight, cooldown, new Random(0));
+        TyrantDiscovery discovery = new TyrantDiscovery(plugin, fight, cooldown, new Random(0), picker);
 
         ItemStack ember = discovery.createEmber();
         alice.getInventory().setItemInMainHand(ember);
         alice.teleport(new Location(world, 5, 64, 5));
 
-        discovery.onEmberUsed(interactWith(ember));
+        discovery.summon(alice, Tier.NORMAL);
         assertEquals(1, world.getEntitiesByClass(WitherSkeleton.class).size(),
                 "the first summon within cooldown must spawn a Tyrant");
 
         // Give Alice a second ember and try again immediately: must be refused by the cooldown.
         ItemStack secondEmber = discovery.createEmber();
         alice.getInventory().setItemInMainHand(secondEmber);
-        discovery.onEmberUsed(interactWith(secondEmber));
+        discovery.summon(alice, Tier.NORMAL);
         assertEquals(1, world.getEntitiesByClass(WitherSkeleton.class).size(),
                 "a repeat summon inside the cooldown window must not spawn a second Tyrant");
         assertEquals(1, secondEmber.getAmount(), "a refused summon must not consume the ember");
 
         // Advance past the cooldown window: the third attempt must succeed again.
         clock.addAndGet(TyrantDiscovery.COOLDOWN_MILLIS + 1);
-        discovery.onEmberUsed(interactWith(secondEmber));
+        discovery.summon(alice, Tier.NORMAL);
         assertEquals(2, world.getEntitiesByClass(WitherSkeleton.class).size(),
                 "once the cooldown has elapsed, the summon must work again");
     }
@@ -384,7 +390,7 @@ class TyrantFightTest {
             public double nextDouble() {
                 return 0.0;
             }
-        });
+        }, picker);
 
         alice.teleport(new Location(world, 0, 64, 0));
         WitherSkeletonMock wild = (WitherSkeletonMock) world.spawnEntity(new Location(world, 1, 64, 1),

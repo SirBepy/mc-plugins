@@ -1,8 +1,11 @@
 package dev.sirbepy.mc.minibosses;
 
 import dev.sirbepy.mc.core.dragon.DragonFighters;
+import dev.sirbepy.mc.core.gui.MenuListener;
 import dev.sirbepy.mc.minibosses.ability.GuardianAbilityRegistry;
 import dev.sirbepy.mc.minibosses.hof.HallOfFame;
+import dev.sirbepy.mc.minibosses.progress.GuardianKills;
+import dev.sirbepy.mc.minibosses.progress.KillRecorder;
 import dev.sirbepy.mc.minibosses.registry.GuardianRegistry;
 import dev.sirbepy.mc.minibosses.sentinel.HeartOfTheWild;
 import dev.sirbepy.mc.minibosses.sentinel.RegrowthAbility;
@@ -19,6 +22,7 @@ import dev.sirbepy.mc.minibosses.sovereign.SovereignFight;
 import dev.sirbepy.mc.minibosses.sovereign.SovereignLoot;
 import dev.sirbepy.mc.minibosses.sovereign.VoidPullAbility;
 import dev.sirbepy.mc.minibosses.sovereign.VoidStepAbility;
+import dev.sirbepy.mc.minibosses.summon.TierPicker;
 import dev.sirbepy.mc.minibosses.tyrant.AshenCore;
 import dev.sirbepy.mc.minibosses.tyrant.AshenStormAbility;
 import dev.sirbepy.mc.minibosses.tyrant.BlazeSummonAbility;
@@ -82,6 +86,8 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
         abilities.register(new RiftZonesAbility(this, new Random()));
         abilities.register(new VoidPullAbility(this));
         hallOfFame = new HallOfFame(getDataFolder(), getLogger());
+        GuardianKills kills = new GuardianKills(getDataFolder(), getLogger());
+        TierPicker picker = new TierPicker(guardians, kills);
 
         DragonFighters sentinelFighters = new DragonFighters(new NamespacedKey(this, "sentinel-fighters"),
                 System::currentTimeMillis);
@@ -89,7 +95,7 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
         SentinelLoot loot = new SentinelLoot(heartOfTheWild);
         sentinelFight = new SentinelFight(this, guardians, abilities, sentinelFighters, loot, hallOfFame, getLogger());
         SummonCooldown cooldown = new SummonCooldown(SentinelDiscovery.COOLDOWN_MILLIS, System::currentTimeMillis);
-        sentinelDiscovery = new SentinelDiscovery(this, sentinelFight, cooldown, new Random());
+        sentinelDiscovery = new SentinelDiscovery(this, sentinelFight, cooldown, new Random(), picker);
 
         // Ashen Tyrant: all 3 tiers now real (Phase B), wired into Hall of Fame/Guild the same way
         // the Sentinel's own follow-up dispatch did.
@@ -100,7 +106,7 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
         tyrantFight = new TyrantFight(this, guardians, abilities, tyrantFighters, tyrantLoot, hallOfFame, getLogger());
         dev.sirbepy.mc.minibosses.tyrant.SummonCooldown tyrantCooldown =
                 new dev.sirbepy.mc.minibosses.tyrant.SummonCooldown(TyrantDiscovery.COOLDOWN_MILLIS, System::currentTimeMillis);
-        tyrantDiscovery = new TyrantDiscovery(this, tyrantFight, tyrantCooldown, new Random());
+        tyrantDiscovery = new TyrantDiscovery(this, tyrantFight, tyrantCooldown, new Random(), picker);
 
         // Void Sovereign: all 3 tiers now real (Phase B), wired into Hall of Fame/Guild the same
         // way the Sentinel's and Tyrant's own follow-up dispatches did. Its own DragonFighters
@@ -113,9 +119,11 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
         sovereignFight = new SovereignFight(this, guardians, abilities, sovereignFighters, sovereignLoot, hallOfFame, getLogger());
         dev.sirbepy.mc.minibosses.sovereign.SummonCooldown sovereignCooldown =
                 new dev.sirbepy.mc.minibosses.sovereign.SummonCooldown(SovereignDiscovery.COOLDOWN_MILLIS, System::currentTimeMillis);
-        sovereignDiscovery = new SovereignDiscovery(this, sovereignFight, sovereignCooldown, new Random());
+        sovereignDiscovery = new SovereignDiscovery(this, sovereignFight, sovereignCooldown, new Random(), picker);
 
         getServer().getPluginManager().registerEvents(this, this);
+        getServer().getPluginManager().registerEvents(new MenuListener(), this);
+        getServer().getPluginManager().registerEvents(new KillRecorder(kills), this);
         getServer().getPluginManager().registerEvents(sentinelFight, this);
         getServer().getPluginManager().registerEvents(sentinelDiscovery, this);
         getServer().getPluginManager().registerEvents(tyrantFight, this);

@@ -4,6 +4,8 @@ import dev.sirbepy.mc.core.dragon.DragonFighters;
 import dev.sirbepy.mc.guild.events.GuardianDefeatedEvent;
 import dev.sirbepy.mc.minibosses.ability.GuardianAbilityRegistry;
 import dev.sirbepy.mc.minibosses.hof.HallOfFame;
+import dev.sirbepy.mc.minibosses.progress.GuardianKills;
+import dev.sirbepy.mc.minibosses.summon.TierPicker;
 import dev.sirbepy.mc.minibosses.registry.GuardianDef;
 import dev.sirbepy.mc.minibosses.registry.GuardianRegistry;
 import dev.sirbepy.mc.minibosses.registry.Tier;
@@ -75,6 +77,8 @@ class SovereignFightTest {
     private SovereignFight fight;
     private HollowCrown hollowCrown;
     private HallOfFame hallOfFame;
+    private GuardianKills kills;
+    private TierPicker picker;
     private final AtomicLong clock = new AtomicLong(0);
 
     @BeforeEach
@@ -99,6 +103,8 @@ class SovereignFightTest {
         SovereignLoot loot = new SovereignLoot(hollowCrown);
         DragonFighters fighters = new DragonFighters(KEY, clock::get);
         hallOfFame = new HallOfFame(tempDir.toFile(), Logger.getLogger("minibosses-test"));
+        kills = new GuardianKills(tempDir.toFile(), Logger.getLogger("minibosses-test"));
+        picker = new TierPicker(guardians, kills);
         fight = new SovereignFight(plugin, guardians, abilities, fighters, loot, hallOfFame, Logger.getLogger("minibosses-test"));
     }
 
@@ -346,27 +352,27 @@ class SovereignFightTest {
     @Test
     void discoveryCooldownBlocksARepeatSummonWithinTheWindow() {
         SummonCooldown cooldown = new SummonCooldown(SovereignDiscovery.COOLDOWN_MILLIS, clock::get);
-        SovereignDiscovery discovery = new SovereignDiscovery(plugin, fight, cooldown, new Random(0));
+        SovereignDiscovery discovery = new SovereignDiscovery(plugin, fight, cooldown, new Random(0), picker);
 
         ItemStack shard = discovery.createShard();
         alice.getInventory().setItemInMainHand(shard);
         alice.teleport(new Location(world, 5, 64, 5));
 
-        discovery.onShardUsed(interactWith(shard));
+        discovery.summon(alice, Tier.NORMAL);
         assertEquals(1, world.getEntitiesByClass(Enderman.class).size(),
                 "the first summon within cooldown must spawn a Sovereign");
 
         // Give Alice a second shard and try again immediately: must be refused by the cooldown.
         ItemStack secondShard = discovery.createShard();
         alice.getInventory().setItemInMainHand(secondShard);
-        discovery.onShardUsed(interactWith(secondShard));
+        discovery.summon(alice, Tier.NORMAL);
         assertEquals(1, world.getEntitiesByClass(Enderman.class).size(),
                 "a repeat summon inside the cooldown window must not spawn a second Sovereign");
         assertEquals(1, secondShard.getAmount(), "a refused summon must not consume the shard");
 
         // Advance past the cooldown window: the third attempt must succeed again.
         clock.addAndGet(SovereignDiscovery.COOLDOWN_MILLIS + 1);
-        discovery.onShardUsed(interactWith(secondShard));
+        discovery.summon(alice, Tier.NORMAL);
         assertEquals(2, world.getEntitiesByClass(Enderman.class).size(),
                 "once the cooldown has elapsed, the summon must work again");
     }
@@ -380,7 +386,7 @@ class SovereignFightTest {
             public double nextDouble() {
                 return 0.0;
             }
-        });
+        }, picker);
 
         alice.teleport(new Location(world, 0, 64, 0));
         EndermanMock wild = (EndermanMock) world.spawnEntity(new Location(world, 1, 64, 1),

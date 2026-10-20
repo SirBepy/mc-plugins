@@ -1,6 +1,7 @@
 package dev.sirbepy.mc.minibosses.tyrant;
 
 import dev.sirbepy.mc.minibosses.registry.Tier;
+import dev.sirbepy.mc.minibosses.summon.TierPicker;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -26,8 +27,8 @@ import java.util.Random;
  * The Ashen Tyrant's discovery/summon hook, the {@code ashen_tyrant.yml} {@code summon-hook}
  * names ({@code ashen_tyrant_discovery}): killing a wild (ordinary, non-boss) Wither Skeleton -
  * the mob that actually spawns inside a real Nether Fortress - has a small chance to drop an Ashen
- * Ember, and right-clicking with the Ember in the main hand spends it to summon a Normal-tier
- * Tyrant at the player's own feet, no built arena required yet (ImMijo is building one himself, a
+ * Ember, and right-clicking with the Ember in the main hand opens the {@link TierPicker}; picking a
+ * tier spends it to summon the Tyrant at the player's own feet, no built arena required yet (ImMijo is building one himself, a
  * separate follow-up concern). {@link TyrantFight#isOurs} tells a wild Wither
  * Skeleton's death apart from a real Tyrant fight ending (both are the same entity type), so a kill
  * credited to the fight itself never also rolls a seed. {@link SummonCooldown} mirrors
@@ -47,8 +48,11 @@ public final class TyrantDiscovery implements Listener {
     private final TyrantFight fight;
     private final SummonCooldown cooldown;
     private final Random random;
+    private final TierPicker picker;
 
-    public TyrantDiscovery(JavaPlugin plugin, TyrantFight fight, SummonCooldown cooldown, Random random) {
+    public TyrantDiscovery(JavaPlugin plugin, TyrantFight fight, SummonCooldown cooldown, Random random,
+            TierPicker picker) {
+        this.picker = picker;
         this.emberKey = new NamespacedKey(plugin, "ashen_ember");
         this.fight = fight;
         this.cooldown = cooldown;
@@ -100,15 +104,36 @@ public final class TyrantDiscovery implements Listener {
         }
         event.setCancelled(true);
         Player player = event.getPlayer();
-        if (!cooldown.tryConsume(player.getUniqueId())) {
-            long minutesLeft = (cooldown.remainingMillis(player.getUniqueId()) / 60_000L) + 1;
-            player.sendMessage(Component.text("The Tyrant still smolders, resting. Try again in about "
-                    + minutesLeft + " minute(s).", NamedTextColor.GRAY));
+        if (refuseOnCooldown(player)) {
             return;
         }
+        picker.open(player, TyrantFight.GUARDIAN_ID, NamedTextColor.RED, tier -> summon(player, tier));
+    }
+
+    /** Spends the ember in the main hand and summons at {@code tier}. Everything is checked again
+     * here because the tier picker was open in between: the ember may have moved, another summon
+     * may have started the cooldown, and a forged click must not reach a locked tier. */
+    public boolean summon(Player player, Tier tier) {
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (!isEmber(item) || !picker.unlocked(player.getUniqueId(), TyrantFight.GUARDIAN_ID, tier)
+                || refuseOnCooldown(player)) {
+            return false;
+        }
+        cooldown.tryConsume(player.getUniqueId());
         item.subtract();
-        fight.spawn(player.getLocation(), Tier.NORMAL);
+        fight.spawn(player.getLocation(), tier);
         player.sendMessage(Component.text("The ashes rise - the Ashen Tyrant awakens!",
                 NamedTextColor.RED));
+        return true;
+    }
+
+    private boolean refuseOnCooldown(Player player) {
+        long left = cooldown.remainingMillis(player.getUniqueId());
+        if (left <= 0) {
+            return false;
+        }
+        player.sendMessage(Component.text("The Tyrant still smolders, resting. Try again in about "
+                + (left / 60_000L + 1) + " minute(s).", NamedTextColor.GRAY));
+        return true;
     }
 }
