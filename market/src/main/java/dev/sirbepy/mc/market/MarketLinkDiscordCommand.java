@@ -8,7 +8,6 @@ import io.papermc.paper.command.brigadier.Commands;
 import org.bukkit.entity.Player;
 
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 
 /**
  * {@code /market linkdiscord <id>}: a player pastes their own Discord numeric user id (Discord's
@@ -17,9 +16,6 @@ import java.util.regex.Pattern;
  * {@link MarketWatchCommand}/{@link MarketWatches}.
  */
 final class MarketLinkDiscordCommand {
-
-    // Discord snowflakes are 64-bit ids; in practice always 17-19 decimal digits.
-    private static final Pattern SNOWFLAKE_ID = Pattern.compile("\\d{17,20}");
 
     private final MarketDiscordLinks links;
     private final Supplier<MarketConfig> config;
@@ -41,7 +37,7 @@ final class MarketLinkDiscordCommand {
 
     private void link(Player player, String discordId) {
         var messages = config.get().messages();
-        if (!SNOWFLAKE_ID.matcher(discordId).matches()) {
+        if (!MarketDiscordLinks.isValidSnowflake(discordId)) {
             messages.send(player, "linkdiscord-invalid");
             return;
         }

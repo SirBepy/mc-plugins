@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 /**
  * {@code /market linkdiscord <id>}: a player's own Discord numeric user id, so {@link DealAnnouncer}
@@ -20,6 +21,8 @@ import java.util.logging.Logger;
  * {@link YamlFiles} helper {@code watches.yml} uses, so a restart doesn't lose anyone's link.
  */
 public final class MarketDiscordLinks {
+
+    private static final Pattern SNOWFLAKE_ID = Pattern.compile("\\d{17,20}");
 
     private final File stateFile;
     private final Logger logger;
@@ -34,6 +37,11 @@ public final class MarketDiscordLinks {
     /** This player's linked Discord user id, or null if they've never run {@code /market linkdiscord}. */
     public String idOf(UUID playerId) {
         return links.get(playerId);
+    }
+
+    /** Discord snowflakes are 64-bit ids; in practice always 17-19 decimal digits. */
+    public static boolean isValidSnowflake(String discordId) {
+        return SNOWFLAKE_ID.matcher(discordId).matches();
     }
 
     public void link(UUID playerId, String discordId) {

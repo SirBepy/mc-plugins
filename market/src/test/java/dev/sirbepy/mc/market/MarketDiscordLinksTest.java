@@ -8,7 +8,9 @@ import java.util.UUID;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** {@code /market linkdiscord <id>}'s backing store: link/lookup and the {@code discord-links.yml} round trip. */
 class MarketDiscordLinksTest {
@@ -32,6 +34,14 @@ class MarketDiscordLinksTest {
 
         links.link(id, "876543210987654321");
         assertEquals("876543210987654321", links.idOf(id), "relinking replaces the old id");
+    }
+
+    @Test
+    void onlySeventeenToTwentyDigitIdsAreValidSnowflakes() {
+        assertTrue(MarketDiscordLinks.isValidSnowflake("123456789012345678"));
+        assertFalse(MarketDiscordLinks.isValidSnowflake("1234567890123456"), "too short");
+        assertFalse(MarketDiscordLinks.isValidSnowflake("123456789012345678901"), "too long");
+        assertFalse(MarketDiscordLinks.isValidSnowflake("12345678901234567x"), "non-digit");
     }
 
     @Test
