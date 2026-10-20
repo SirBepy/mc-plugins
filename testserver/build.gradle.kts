@@ -50,6 +50,14 @@ fun registerPrepare(name: String, dir: java.io.File, withDatapacks: Boolean, mot
             // Treecapitator cap and the logs-only reach.
             serverAuraSkillsManaConfig.copyTo(dir.resolve("plugins/AuraSkills/mana_abilities.yml"), overwrite = true)
             serverAuraSkillsForagingConfig.copyTo(dir.resolve("plugins/AuraSkills/sources/foraging.yml"), overwrite = true)
+            // The Guardian Chronicles stay locked without their key (guardian-chronicles.mjs needs them open).
+            val secrets = rootProject.layout.projectDirectory.file("server/secrets.properties").asFile
+            if (secrets.exists()) {
+                val props = java.util.Properties().apply { secrets.inputStream().use { load(it) } }
+                props.getProperty("minibosses.chronicles-key")?.let { key ->
+                    dir.resolve("plugins/Minibosses").apply { mkdirs() }.resolve("chronicles.key").writeText(key.trim())
+                }
+            }
             // Offline mode lets the e2e bots join and RCON lets them run admin commands; this is a
             // local-only test server, so the RCON password is random per checkout and never committed.
             val props = dir.resolve("server.properties")
