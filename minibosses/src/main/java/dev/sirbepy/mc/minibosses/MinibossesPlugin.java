@@ -1,8 +1,16 @@
 package dev.sirbepy.mc.minibosses;
 
+import dev.sirbepy.mc.core.bedrock.BedrockForms;
 import dev.sirbepy.mc.core.dragon.DragonFighters;
 import dev.sirbepy.mc.core.gui.MenuListener;
 import dev.sirbepy.mc.minibosses.ability.GuardianAbilityRegistry;
+import dev.sirbepy.mc.minibosses.chronicle.Chronicle;
+import dev.sirbepy.mc.minibosses.chronicle.ChronicleCipher;
+import dev.sirbepy.mc.minibosses.chronicle.ChronicleCommand;
+import dev.sirbepy.mc.minibosses.chronicle.ChronicleListener;
+import dev.sirbepy.mc.minibosses.chronicle.ChronicleProgress;
+import dev.sirbepy.mc.minibosses.chronicle.ChronicleText;
+import dev.sirbepy.mc.minibosses.chronicle.ChroniclerNpc;
 import dev.sirbepy.mc.minibosses.hof.HallOfFame;
 import dev.sirbepy.mc.minibosses.progress.GuardianKills;
 import dev.sirbepy.mc.minibosses.progress.KillRecorder;
@@ -30,6 +38,8 @@ import dev.sirbepy.mc.minibosses.tyrant.BlazeWaveAbility;
 import dev.sirbepy.mc.minibosses.tyrant.TyrantDiscovery;
 import dev.sirbepy.mc.minibosses.tyrant.TyrantFight;
 import dev.sirbepy.mc.minibosses.tyrant.TyrantLoot;
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -38,6 +48,10 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.Optional;
 import java.util.Random;
 
 public final class MinibossesPlugin extends JavaPlugin implements Listener {
@@ -142,7 +156,53 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
             }
         }, 20L, 20L);
 
+        enableChronicles(kills);
+
         getLogger().info("Minibosses ready: " + guardians.all().size() + " Guardian(s) loaded.");
+    }
+
+    /** The Guardian Chronicles run only where the story key is present; without it the NPC stays away. */
+    private void enableChronicles(GuardianKills kills) {
+        ChroniclerNpc chronicler = new ChroniclerNpc(this, getDataFolder(), getLogger(),
+                BedrockForms.create(this)::isBedrock);
+        Chronicle chronicle = null;
+        ChronicleListener listener = null;
+        Optional<ChronicleText> story = unlockChronicles();
+        if (story.isPresent()) {
+            ChronicleText text = story.get();
+            TextColor color = TextColor.fromHexString(text.color());
+            chronicler.setLook(text.name(), text.title(), color == null ? chronicler.color() : color);
+            chronicle = new Chronicle(text, new ChronicleProgress(getDataFolder(), getLogger()), kills, new Random());
+            listener = new ChronicleListener(this, chronicle, chronicler);
+            getServer().getPluginManager().registerEvents(listener, this);
+            getServer().getPluginManager().registerEvents(chronicler.viewers(), this);
+            getServer().getScheduler().runTaskTimer(this, chronicler::ensure, 60L, 100L);
+            getServer().getScheduler().runTaskTimer(this, chronicler::lookAtVisitors, 20L, 10L);
+            getServer().getScheduler().runTaskTimer(this, listener::checkDiscoveries, 40L, 40L);
+        }
+        ChronicleCommand command = new ChronicleCommand(chronicler, chronicle, listener);
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
+                event -> command.registerInto(event.registrar()));
+    }
+
+    private Optional<ChronicleText> unlockChronicles() {
+        File keyFile = new File(getDataFolder(), "chronicles.key");
+        if (!keyFile.exists()) {
+            getLogger().info("No chronicles.key; the Guardian Chronicles stay locked on this server.");
+            return Optional.empty();
+        }
+        try (InputStream in = getResource("chronicles.enc")) {
+            if (in == null) {
+                getLogger().warning("This jar has no chronicles.enc; the Guardian Chronicles stay locked.");
+                return Optional.empty();
+            }
+            byte[] plain = ChronicleCipher.decrypt(in.readAllBytes(), Files.readString(keyFile.toPath()));
+            return Optional.of(ChronicleText.parse(new String(plain, StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            getLogger().log(java.util.logging.Level.WARNING,
+                    "Could not unlock the Guardian Chronicles; they stay locked", e);
+            return Optional.empty();
+        }
     }
 
     @EventHandler

@@ -1,0 +1,53 @@
+# A stand-in story for tests only: same shape as the real (encrypted) chronicles.yml, none of its words.
+name: "Scribe"
+title: "Test Chronicler"
+color: "#112233"
+idle: ["idle line"]
+prologue:
+  lines: ["prologue 1", "prologue 2"]
+  pages: ["prologue page"]
+chapters:
+  first:
+    guardian: overgrown_sentinel
+    title: "One"
+    hunt: "hunt one"
+    waiting: ["waiting one"]
+    told: ["told one"]
+    pages: ["page one"]
+    fragment: {name: "Fragment One", pages: ["fragment one page"]}
+    clue: "clue one"
+    reminder: ["reminder one"]
+    discovery: {biome: "minecraft:lush_caves", echo: ["echo one"], pages: ["discovery one page"]}
+  second:
+    guardian: ashen_tyrant
+    title: "Two"
+    hunt: "hunt two"
+    waiting: ["waiting two"]
+    told: ["told two"]
+    pages: ["page two"]
+    fragment: {name: "Fragment Two", pages: ["fragment two page"]}
+    clue: "clue two"
+    reminder: ["reminder two"]
+    discovery: {biome: "minecraft:basalt_deltas", echo: ["echo two"], pages: ["discovery two page"]}
+  third:
+    guardian: void_sovereign
+    title: "Three"
+    hunt: "hunt three"
+    waiting: ["waiting three"]
+    told: ["told three"]
+    pages: ["page three"]
+    fragment: {name: "Fragment Three", pages: ["fragment three page"]}
+    clue: "clue three"
+    reminder: ["reminder three"]
+    discovery: {biome: "minecraft:end_highlands", echo: ["echo three"], pages: ["discovery three page"]}
+finale:
+  objective: "go back"
+  lines: ["it was {wisher}"]
+  pages: ["finale page {wisher}"]
+  wisher: "00000000-0000-0000-0000-00000000000a"
+  wisher-self: "you"
+  wisher-other: "them"
+  book-title: "Test Book"
+  book-author: "Scribe"
+  dedication-self: "for you"
+  announce: "{player} finished"

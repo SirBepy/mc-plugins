@@ -3,4 +3,9 @@ version: ${version}
 main: dev.sirbepy.mc.minibosses.MinibossesPlugin
 api-version: "26.2"
 author: sirbepy
-softdepend: [Guild]
+softdepend: [Guild, floodgate]
+
+permissions:
+  minibosses.admin:
+    description: Place the Chronicler and inspect or set Guardian Chronicles progress.
+    default: op

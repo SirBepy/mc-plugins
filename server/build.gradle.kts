@@ -122,6 +122,10 @@ fun injectSecrets(distDir: File) {
     val secretsFile = layout.projectDirectory.file("secrets.properties").asFile
     if (!secretsFile.exists()) return
     val props = java.util.Properties().apply { secretsFile.inputStream().use { load(it) } }
+    // Minibosses decrypts the Guardian Chronicles at startup with this key; without it they stay locked.
+    props.getProperty("minibosses.chronicles-key")?.let { key ->
+        distDir.resolve("plugins/Minibosses").apply { mkdirs() }.resolve("chronicles.key").writeText(key.trim())
+    }
     val discordToken = props.getProperty("discordbot.token") ?: return
     val configFile = distDir.resolve("plugins/DiscordBot/config.yml")
     // A brand-new plugin's data folder doesn't exist yet on a fresh dist (only created by the

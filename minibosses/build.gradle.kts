@@ -26,3 +26,17 @@ dependencies {
         exclude(group = "org.bukkit")
     }
 }
+
+// The Guardian Chronicles' story must not be readable in this public repo, so only its AES-GCM
+// ciphertext is committed (src/main/resources/chronicles.enc). The plaintext lives in the
+// gitignored .for_bepy/chronicles/chronicles.yml and the key in server/secrets.properties
+// (minibosses.chronicles-key). Both tasks run ChronicleCipher itself, so the build and the plugin
+// can never disagree on the format; decryptChronicles rebuilds the plaintext on a machine with the key.
+listOf("encryptChronicles" to "encrypt", "decryptChronicles" to "decrypt").forEach { (taskName, mode) ->
+    tasks.register<JavaExec>(taskName) {
+        classpath = sourceSets["main"].runtimeClasspath
+        mainClass = "dev.sirbepy.mc.minibosses.chronicle.ChronicleCipher"
+        args(mode, rootProject.file(".for_bepy/chronicles/chronicles.yml"),
+            file("src/main/resources/chronicles.enc"), rootProject.file("server/secrets.properties"))
+    }
+}
