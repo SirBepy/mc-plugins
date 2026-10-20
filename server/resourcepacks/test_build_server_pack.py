@@ -617,6 +617,11 @@ class BuiltPackTest(unittest.TestCase):
         cape = Image.open(io.BytesIO(self.entries[asset("claudesmp:entity/guild/examiner_cape", "textures", "png")]))
         self.assertEqual(cape.size, (64, 32))
 
+    def test_chronicler_skin_is_in_the_pack(self):
+        # The minibosses plugin's Thessa NPC points its Mannequin at claudesmp:entity/chronicler.
+        skin = Image.open(io.BytesIO(self.entries[asset("claudesmp:entity/chronicler", "textures", "png")]))
+        self.assertEqual(skin.size, (64, 64))
+
     def test_dragonkind_evolved_names_its_dragons(self):
         # The datapack names each dragon with translation keys; without these the boss bar shows them raw.
         lang = self.json("assets/minecraft/lang/en_us.json")
