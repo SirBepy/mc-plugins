@@ -199,12 +199,11 @@ class ClaudeCommandTest {
         assertEquals(2, inboxLines().size());
     }
 
-    // ClaudeBridgeConfig(plugin) on this mock plugin has no backing jar, so its "messages" config
-    // section is empty and Messages.render falls back to "[missing message: <key>]" (see
-    // Messages#render) - same fallback NamesReloadCommandTest documents for a missing key. That
-    // fallback still proves which key got picked, which is exactly what these tests check: the
-    // online/offline branch in ClaudeCommand#handle, not the configured wording (covered by
-    // config.yml itself + the live text chosen in this feature's commit).
+    // ClaudeBridgeConfig(plugin) on this mock plugin has no config file of its own, exactly like a
+    // live plugins/ClaudeBridge/config.yml that predates a key, so every reply below comes from
+    // the jar's bundled config.yml through ClaudeBridgeConfig's fallback.
+    private static final String SENT = "Sent to Claude. The answer will show up in chat (usually within a minute).";
+    private static final String OFFLINE = "Shenron is napping right now - I've got your message, he'll reply once he's back.";
 
     @Test
     void recentHeartbeatGetsTheSentReply() throws Exception {
@@ -215,7 +214,7 @@ class ClaudeCommandTest {
         command.handle(player, "hello");
 
         String text = PlainTextComponentSerializer.plainText().serialize(player.nextComponentMessage());
-        assertEquals("[missing message: sent]", text);
+        assertEquals(SENT, text);
         // Still written through either way: the offline branch only changes the reply, never
         // whether the message reaches Shenron.
         assertEquals(1, inboxLines().size());
@@ -231,7 +230,7 @@ class ClaudeCommandTest {
         command.handle(player, "hello");
 
         String text = PlainTextComponentSerializer.plainText().serialize(player.nextComponentMessage());
-        assertEquals("[missing message: shenron-offline]", text);
+        assertEquals(OFFLINE, text);
         assertEquals(1, inboxLines().size());
     }
 
@@ -245,6 +244,6 @@ class ClaudeCommandTest {
         command.handle(player, "hello");
 
         String text = PlainTextComponentSerializer.plainText().serialize(player.nextComponentMessage());
-        assertEquals("[missing message: shenron-offline]", text);
+        assertEquals(OFFLINE, text);
     }
 }
