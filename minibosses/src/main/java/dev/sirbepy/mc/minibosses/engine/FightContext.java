@@ -37,6 +37,7 @@ public final class FightContext {
     private final Map<Class<?>, Object> state = new HashMap<>();
     private Animator animator = Animator.NONE;
     private int phase;
+    private int staggerLeft;
 
     /**
      * {@code onGround} is a seam: the live check reads the client-reported flag, which a test cannot
@@ -125,6 +126,23 @@ public final class FightContext {
         }
         tickers.clear();
         state.clear();
+    }
+
+    /**
+     * Stuns the boss's attack loop for {@code ticks} ticks: the brain drops the attack in progress and
+     * starts none until they have passed. Only ticks with a fighter inside the area count down.
+     */
+    public void stagger(int ticks) {
+        staggerLeft = Math.max(staggerLeft, ticks);
+    }
+
+    /** One tick of stagger used up; false when the boss is not staggered. */
+    boolean consumeStagger() {
+        if (staggerLeft <= 0) {
+            return false;
+        }
+        staggerLeft--;
+        return true;
     }
 
     /** Index of the phase the fight is in now (0 is the opening phase). */

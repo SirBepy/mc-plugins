@@ -80,6 +80,14 @@ public final class BossBrain {
             gap = plan.openingGapTicks(); // a returning fighter gets the same breathing room as the opening
             return true;
         }
+        if (ctx.consumeStagger()) {
+            // A staggered boss drops what it was winding up and starts nothing until it has recovered.
+            if (current != null) {
+                cancelAttack();
+                gap = plan.phase(phase).gapTicks();
+            }
+            return true;
+        }
         if (current != null) {
             if (current.tick()) {
                 finishAttack();
@@ -113,7 +121,7 @@ public final class BossBrain {
 
     private void startNext() {
         Optional<BossAttack> next = plan.pick(phase, ctx.rng(), lastId,
-                attack -> cooldownUntil.getOrDefault(attack.id(), 0L) > ticks);
+                attack -> cooldownUntil.getOrDefault(attack.id(), 0L) > ticks || !attack.canStart(ctx));
         if (next.isEmpty()) {
             return;
         }

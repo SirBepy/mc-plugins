@@ -5,6 +5,7 @@ import dev.sirbepy.mc.guild.events.GuardianDefeatedEvent;
 import dev.sirbepy.mc.minibosses.ability.GuardianAbilityRegistry;
 import dev.sirbepy.mc.minibosses.arena.ArenaRegistry;
 import dev.sirbepy.mc.minibosses.engine.BossBrain;
+import dev.sirbepy.mc.minibosses.engine.EngineKeys;
 import dev.sirbepy.mc.minibosses.engine.FightArea;
 import dev.sirbepy.mc.minibosses.engine.FightContext;
 import dev.sirbepy.mc.minibosses.engine.GuardianRuntime;
@@ -17,6 +18,8 @@ import dev.sirbepy.mc.minibosses.registry.Tier;
 import dev.sirbepy.mc.minibosses.rig.BedrockStandIn;
 import dev.sirbepy.mc.minibosses.rig.RigBody;
 import dev.sirbepy.mc.minibosses.rig.RigDefinition;
+import dev.sirbepy.mc.minibosses.sentinel.attack.SentinelAnchors;
+import dev.sirbepy.mc.minibosses.sentinel.attack.SentinelDefence;
 import dev.sirbepy.mc.minibosses.sentinel.attack.SentinelPlans;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -41,6 +44,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -60,7 +65,8 @@ import java.util.logging.Logger;
 /**
  * Owns the Overgrown Sentinel's spawn (with solo/group scaling via {@link SentinelScaling}),
  * fighter tracking, the per-tier attack kit it is started with (see {@link SentinelPlans}), the
- * hit flash of its body, and death handling - loot, the {@code minibosses} Hall of Fame, and the
+ * hit flash of its body, the damage scaling of its Heartguard shield and stagger window, hits on
+ * its anchors, and death handling - loot, the {@code minibosses} Hall of Fame, and the
  * {@code guild} {@code GuardianDefeatedEvent} contract hook. A single
  * {@link Ravager} stands in for the whole boss (no {@code ComplexEntityPart}s needed): chosen
  * over an {@link org.bukkit.entity.IronGolem} because this repo's own
@@ -191,6 +197,7 @@ public final class SentinelFight implements Listener {
             return;
         }
         FightContext ctx = brain.context();
+        SentinelAnchors.clearStale(ctx);
         // A boss saved mid-attack must not wake up with its AI still held off.
         if (ctx.boss() instanceof Mob mob) {
             ctx.effects().hold(mob, false);
@@ -240,6 +247,11 @@ public final class SentinelFight implements Listener {
         if (event.isCancelled() || !(event.getEntity() instanceof LivingEntity boss) || !isOurs(boss)) {
             return;
         }
+        // Before anything reads the damage: credit, the bar and the flash all see what the boss really takes.
+        double scale = runtime.get(boss.getUniqueId()).map(b -> SentinelDefence.of(b.context()).damageMultiplier()).orElse(1.0);
+        if (scale != 1.0) {
+            event.setDamage(event.getDamage() * scale);
+        }
         fighters.onDamage(event, boss);
         if (event instanceof EntityDamageByEntityEvent byEntity && boss instanceof Mob mob
                 && byEntity.getDamager() instanceof Player player) {
@@ -255,10 +267,61 @@ public final class SentinelFight implements Listener {
     }
 
     private void updateBossBar(LivingEntity boss) {
+        updateBossBar(boss, boss.getHealth());
+    }
+
+    private void updateBossBar(LivingEntity boss, double health) {
         BossBar bar = bossBars.get(boss.getUniqueId());
         AttributeInstance max = boss.getAttribute(Attribute.MAX_HEALTH);
         if (bar != null && max != null && max.getValue() > 0) {
-            bar.setProgress(Math.max(0, Math.min(1, boss.getHealth() / max.getValue())));
+            bar.setProgress(Math.max(0, Math.min(1, health / max.getValue())));
+        }
+    }
+
+    /** Wild Regrowth heals the boss between hits; the bar shows it as it happens (the event fires before the health changes). */
+    @EventHandler(ignoreCancelled = true)
+    public void onRegain(EntityRegainHealthEvent event) {
+        if (event.getEntity() instanceof LivingEntity boss && isOurs(boss)) {
+            updateBossBar(boss, boss.getHealth() + event.getAmount());
+        }
+    }
+
+    /**
+     * A hit on one of the boss's anchors never damages it: every damage event aimed at an anchor is
+     * cancelled (explosions, fire, the boss's own blows), and only a player's blow or arrow counts toward
+     * breaking it. Handled even when the event arrives already cancelled.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onAnchorDamage(EntityDamageEvent event) {
+        Entity anchor = event.getEntity();
+        if (!SentinelAnchors.isAnchor(anchor)) {
+            return;
+        }
+        event.setCancelled(true);
+        Player attacker = event instanceof EntityDamageByEntityEvent byEntity ? playerBehind(byEntity.getDamager()) : null;
+        if (attacker != null) {
+            anchorsOf(anchor).ifPresent(anchors -> anchors.hit(anchor, attacker));
+        }
+    }
+
+    /** Right-clicking an anchor would swap its block for the player's item. */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onAnchorManipulate(PlayerArmorStandManipulateEvent event) {
+        if (SentinelAnchors.isAnchor(event.getRightClicked())) {
+            event.setCancelled(true);
+        }
+    }
+
+    /** The anchors of the fight that owns this anchor stand, if that fight is still running. */
+    private Optional<SentinelAnchors> anchorsOf(Entity anchor) {
+        String owner = anchor.getPersistentDataContainer().get(EngineKeys.owner(plugin), PersistentDataType.STRING);
+        if (owner == null) {
+            return Optional.empty();
+        }
+        try {
+            return runtime.get(UUID.fromString(owner)).map(brain -> SentinelAnchors.of(brain.context()));
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
         }
     }
 

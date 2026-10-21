@@ -144,6 +144,61 @@ class BossBrainTest extends EngineTestBase {
     }
 
     @Test
+    void anAttackThatCannotStartIsSkippedAndPicksGoToTheOthersUntilItCan() {
+        boolean[] open = {false};
+        BossAttack gated = new BossAttack() {
+            @Override
+            public String id() {
+                return "gated";
+            }
+
+            @Override
+            public boolean canStart(FightContext ctx) {
+                return open[0];
+            }
+
+            @Override
+            public RunningAttack start(FightContext ctx) {
+                log.add("gated");
+                return fake("gated", 1).start(ctx);
+            }
+        };
+        BossAttack light = fake("light", 1);
+        BossAttack other = fake("other", 1);
+        BossBrain brain = new BossBrain(context(boss(), 3), new PhasePlan(List.of(
+                phase("one", 0, BossBrainTest::noHook, gated, light, other),
+                phase("two", 0, BossBrainTest::noHook, light),
+                phase("three", 0, BossBrainTest::noHook, light))));
+
+        run(brain, 100);
+        assertEquals(Set.of("light", "other"), new HashSet<>(log), "closed: never picked, however long the loop runs");
+        assertTrue(log.size() > 3, "and the loop is not stalled by it");
+
+        open[0] = true;
+        run(brain, 200);
+        assertTrue(log.contains("gated"), "open: picked again");
+    }
+
+    @Test
+    void aStaggerDropsTheRunningAttackAndStartsNothingUntilItHasPassed() {
+        FightContext ctx = context(boss(), 1);
+        BossBrain brain = new BossBrain(ctx, new PhasePlan(List.of(
+                phase("one", 0, BossBrainTest::noHook, fake("slow", 100)),
+                phase("two", 0, BossBrainTest::noHook, fake("slow", 100)),
+                phase("three", 0, BossBrainTest::noHook, fake("slow", 100)))));
+        run(brain, PhasePlan.DEFAULT_OPENING_GAP_TICKS + 10);
+        assertEquals(List.of("slow"), log, "winding up");
+
+        ctx.stagger(30);
+        run(brain, 30);
+
+        assertEquals(List.of("slow"), cancelled, "the attack in progress was dropped");
+        assertEquals(List.of("slow"), log, "and nothing new started while staggered");
+        run(brain, 2);
+        assertEquals(List.of("slow", "slow"), log, "the boss attacks again once the stagger is over");
+    }
+
+    @Test
     void thePoolChangesWithThePhase() {
         LivingEntity boss = boss();
         BossBrain brain = new BossBrain(context(boss, 1), plan(fake("one", 1), fake("two", 1), fake("three", 1)));

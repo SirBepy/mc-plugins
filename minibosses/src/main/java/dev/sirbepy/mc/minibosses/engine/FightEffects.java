@@ -8,8 +8,10 @@ import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.World;
 import org.bukkit.damage.DamageSource;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
 
 /**
  * The only place the engine draws, plays sound, hurts a player and holds the boss's body still. A
@@ -40,6 +42,11 @@ public interface FightEffects {
     /** Hurts {@code target} as the damage {@code source} describes. */
     default void hurt(Player target, double amount, DamageSource source) {
         target.damage(amount, source);
+    }
+
+    /** Restores {@code amount} health to {@code target} (never above its maximum); fires the regain event plugins listen to. */
+    default void heal(LivingEntity target, double amount) {
+        target.heal(amount, EntityRegainHealthEvent.RegainReason.CUSTOM);
     }
 
     /**

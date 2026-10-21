@@ -116,6 +116,79 @@ public final class SentinelTuning {
     public static final int BLOOM_DARKNESS_TICKS = 100;
     public static final int BLOOM_RECOVERY_TICKS = 10;
 
+    // --- Anchors (Heartguard and Wild Regrowth) ---
+
+    /** Counted player hits that break one anchor. */
+    public static int anchorHitsToBreak(Tier tier) {
+        return byTier(tier, 3, 4, 5);
+    }
+
+    /** An anchor counts one hit per this many ticks, so a fast weapon cannot skip the mechanic inside a frame. */
+    public static final int ANCHOR_HIT_INTERVAL_TICKS = 10;
+    /** Anchors stand this far (horizontally) from the boss: at least, and at most. */
+    public static final double ANCHOR_MIN_DISTANCE = 5.0;
+    public static final double ANCHOR_MAX_DISTANCE = 8.0;
+    /** Closest two anchors of one cast may stand. */
+    public static final double ANCHOR_MIN_SPACING = 3.0;
+    /** Blocks above the ground the anchor stand floats, so melee reaches it. */
+    public static final double ANCHOR_HEIGHT = 1.2;
+    /** Ticks between redraws of the green beams from each anchor to the heart. */
+    public static final int BEAM_EVERY_TICKS = 4;
+    public static final double BEAM_SPACING = 0.5;
+
+    // --- Anchor break: the stagger and the window it opens ---
+
+    /** Ticks the boss staggers (no attack, held still) after its last anchor is broken. */
+    public static final int STAGGER_TICKS = 30;
+    /** Ticks of extra damage after a stagger: 4 seconds. */
+    public static final int VULNERABLE_TICKS = 80;
+    public static final double VULNERABLE_DAMAGE_MULTIPLIER = 1.25;
+
+    // --- Heartguard ---
+
+    public static final int HEARTGUARD_COOLDOWN_TICKS = 500;
+    /** The cast: the chest opens for this many ticks before the anchors appear. */
+    public static final int HEARTGUARD_OPEN_TICKS = 20;
+    /** The whole cast; the boss fights on after it while the shield lasts. */
+    public static final int HEARTGUARD_CAST_TICKS = 30;
+    /** What the boss takes while any Heartguard anchor stands. */
+    public static final double HEARTGUARD_DAMAGE_MULTIPLIER = 0.25;
+    /** Ticks between brighter pulses at the exposed heart while the shield holds. */
+    public static final int HEARTGUARD_PULSE_TICKS = 10;
+    public static final int HEARTGUARD_WEIGHT = 2;
+
+    public static int heartguardAnchors(Tier tier) {
+        return byTier(tier, 3, 4, 4);
+    }
+
+    /** Longest the shield holds: 20, 18 and 16 seconds. */
+    public static int heartguardLifeTicks(Tier tier) {
+        return byTier(tier, 400, 360, 320);
+    }
+
+    // --- Wild Regrowth ---
+
+    public static final int REGROWTH_COOLDOWN_TICKS = 600;
+    public static final int REGROWTH_WEIGHT = 2;
+    /** Above this share of max health the boss has nothing to regrow and does not cast it. */
+    public static final double REGROWTH_MAX_START_HEALTH = 0.9;
+    /** Ticks between heals: once a second. */
+    public static final int REGROWTH_HEAL_EVERY_TICKS = 20;
+    /** Max health restored per live anchor per heal. */
+    public static final double REGROWTH_HEAL_FRACTION = 0.01;
+    /** Redraw rate and size of the green ring on the ground that shows the boss is healing. */
+    public static final int REGROWTH_RING_EVERY_TICKS = 4;
+    public static final double REGROWTH_RING_RADIUS = 3.0;
+
+    public static int regrowthAnchors(Tier tier) {
+        return byTier(tier, 2, 3, 4);
+    }
+
+    /** How long the boss stays planted: 8, 10 and 12 seconds. */
+    public static int regrowthChannelTicks(Tier tier) {
+        return byTier(tier, 160, 200, 240);
+    }
+
     // --- Phases ---
 
     /** Ticks between attacks in phase {@code phase} (0 awakened, 1 cracking, 2 breaking). */

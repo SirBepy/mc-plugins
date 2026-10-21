@@ -72,17 +72,21 @@ class SentinelKitLifecycleTest extends SentinelKitTestBase {
         PhasePlan mythic = SentinelPlans.forTier(Tier.MYTHIC);
 
         assertEquals(List.of("stonebreaker_slam", "thorn_sweep"), ids(normal, 0));
-        assertEquals(List.of("stonebreaker_slam", "thorn_sweep", "root_eruption"), ids(normal, 1));
-        assertEquals(ids(normal, 1), ids(normal, 2));
+        assertEquals(List.of("stonebreaker_slam", "thorn_sweep", "root_eruption", "heartguard"), ids(normal, 1));
+        assertEquals(List.of("stonebreaker_slam", "thorn_sweep", "root_eruption", "heartguard", "wild_regrowth"),
+                ids(normal, 2));
 
         assertEquals(List.of("stonebreaker_slam", "thorn_sweep"), ids(heroic, 0));
-        assertEquals(List.of("stonebreaker_slam", "thorn_sweep", "root_eruption", "slam_sweep_combo"), ids(heroic, 1));
-        assertEquals(ids(heroic, 1), ids(heroic, 2));
+        assertEquals(List.of("stonebreaker_slam", "thorn_sweep", "root_eruption", "heartguard", "slam_sweep_combo"),
+                ids(heroic, 1));
+        assertEquals(List.of("stonebreaker_slam", "thorn_sweep", "root_eruption", "heartguard", "wild_regrowth",
+                "slam_sweep_combo"), ids(heroic, 2));
 
         assertEquals(List.of("stonebreaker_slam", "thorn_sweep", "shadow_bloom"), ids(mythic, 0));
-        assertEquals(List.of("stonebreaker_slam", "thorn_sweep", "root_eruption", "slam_sweep_combo", "shadow_bloom"),
-                ids(mythic, 1));
-        assertEquals(ids(mythic, 1), ids(mythic, 2));
+        assertEquals(List.of("stonebreaker_slam", "thorn_sweep", "root_eruption", "heartguard", "slam_sweep_combo",
+                "shadow_bloom"), ids(mythic, 1));
+        assertEquals(List.of("stonebreaker_slam", "thorn_sweep", "root_eruption", "heartguard", "wild_regrowth",
+                "slam_sweep_combo", "shadow_bloom"), ids(mythic, 2));
 
         for (Tier tier : Tier.values()) {
             assertFalse(ids(SentinelPlans.forTier(tier), 0).contains("root_eruption"), tier + " roots in phase 1");

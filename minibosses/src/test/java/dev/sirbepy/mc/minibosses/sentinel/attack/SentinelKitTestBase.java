@@ -26,6 +26,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -74,6 +75,8 @@ abstract class SentinelKitTestBase {
     static final RootEruption ROOTS = new RootEruption();
     static final ShadowBloom BLOOM = new ShadowBloom();
     static final SlamSweepCombo COMBO = new SlamSweepCombo(SLAM, SWEEP);
+    static final Heartguard HEARTGUARD = new Heartguard();
+    static final WildRegrowth REGROWTH = new WildRegrowth();
 
     /** What the fight drew and played, with positions, so a test can check where it drew. */
     static final class Recorder implements FightEffects {
@@ -93,6 +96,16 @@ abstract class SentinelKitTestBase {
         @Override
         public void hurt(Player target, double amount, DamageSource source) {
             target.setHealth(Math.max(0.0, target.getHealth() - amount));
+        }
+
+        /** Max-health shares healed, one entry per call, so a test can read what each heal was. */
+        final List<Double> heals = new ArrayList<>();
+
+        @Override
+        public void heal(LivingEntity target, double amount) {
+            heals.add(amount);
+            double max = target.getAttribute(Attribute.MAX_HEALTH).getValue();
+            target.setHealth(Math.min(max, target.getHealth() + amount));
         }
 
         @Override
@@ -216,6 +229,7 @@ abstract class SentinelKitTestBase {
         effects.cracks.clear();
         effects.sounds.clear();
         effects.particles.clear();
+        effects.heals.clear();
     }
 
     /** Ticks {@code attack} until it finishes; the number of ticks that took, or -1 if it outlasts {@code max}. */

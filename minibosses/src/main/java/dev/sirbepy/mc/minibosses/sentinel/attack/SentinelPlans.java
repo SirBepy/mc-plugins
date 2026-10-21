@@ -21,6 +21,8 @@ public final class SentinelPlans {
     private static final RootEruption ROOTS = new RootEruption();
     private static final SlamSweepCombo COMBO = new SlamSweepCombo(SLAM, SWEEP);
     private static final ShadowBloom BLOOM = new ShadowBloom();
+    private static final Heartguard HEARTGUARD = new Heartguard();
+    private static final WildRegrowth REGROWTH = new WildRegrowth();
 
     private SentinelPlans() {
     }
@@ -46,14 +48,15 @@ public final class SentinelPlans {
     }
 
     /**
-     * 70 to 35 percent: roots join in, and from Heroic up the slam can chain into a sweep.
-     * Part 2 plugs Heartguard in here (phase 2 and 3 pools).
+     * 70 to 35 percent: roots join in, the heart can be shielded behind crystals, and from Heroic up
+     * the slam can chain into a sweep.
      */
     private static List<Entry> cracking(Tier tier) {
         List<Entry> pool = new ArrayList<>();
         pool.add(new Entry(SLAM, 3));
         pool.add(new Entry(SWEEP, 3));
         pool.add(new Entry(ROOTS, 2));
+        pool.add(new Entry(HEARTGUARD, SentinelTuning.HEARTGUARD_WEIGHT));
         if (tier != Tier.NORMAL) {
             pool.add(new Entry(COMBO, 2));
         }
@@ -65,14 +68,16 @@ public final class SentinelPlans {
 
     /**
      * Below 35 percent: the same pool with roots and combos weighted up, and the shorter gaps of
-     * {@link SentinelTuning#gapTicks}, so the blows come faster and run together.
-     * Part 2 plugs Heartguard and Wild Regrowth in here (Wild Regrowth is phase 3 only).
+     * {@link SentinelTuning#gapTicks}, so the blows come faster and run together. Wild Regrowth is
+     * cast in this phase only.
      */
     private static List<Entry> breaking(Tier tier) {
         List<Entry> pool = new ArrayList<>();
         pool.add(new Entry(SLAM, 3));
         pool.add(new Entry(SWEEP, 3));
         pool.add(new Entry(ROOTS, 4));
+        pool.add(new Entry(HEARTGUARD, SentinelTuning.HEARTGUARD_WEIGHT));
+        pool.add(new Entry(REGROWTH, SentinelTuning.REGROWTH_WEIGHT));
         if (tier != Tier.NORMAL) {
             pool.add(new Entry(COMBO, 3));
         }

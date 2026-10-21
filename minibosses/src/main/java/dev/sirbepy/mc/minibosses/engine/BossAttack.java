@@ -16,6 +16,15 @@ public interface BossAttack {
         return 0;
     }
 
+    /**
+     * Whether the brain may pick this attack now. An attack that makes no sense in the fight's
+     * current state (a heal at full health, a second shield over a first) says so here and the brain
+     * picks something else, instead of starting it and burning its cooldown on nothing.
+     */
+    default boolean canStart(FightContext ctx) {
+        return true;
+    }
+
     RunningAttack start(FightContext ctx);
 
     static BossAttack of(String id, Function<FightContext, RunningAttack> factory) {
