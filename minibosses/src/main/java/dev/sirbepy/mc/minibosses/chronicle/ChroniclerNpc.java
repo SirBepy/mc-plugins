@@ -95,10 +95,6 @@ public final class ChroniclerNpc {
         return entity != null && entity.getPersistentDataContainer().has(marker, PersistentDataType.STRING);
     }
 
-    public Location home() {
-        return home == null ? null : home.clone();
-    }
-
     /** Moves her to {@code spot}, removing the old bodies, and spawns her now if the chunk is loaded. */
     public void place(Location spot) {
         removeBodies();

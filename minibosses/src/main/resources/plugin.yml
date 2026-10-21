@@ -7,5 +7,5 @@ softdepend: [Guild, floodgate]
 
 permissions:
   minibosses.admin:
-    description: Place the Chronicler and inspect or set Guardian Chronicles progress.
+    description: Chronicler admin (/chronicle admin) and Guardian arenas (/guardianadmin arena).
     default: op

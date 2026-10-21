@@ -67,11 +67,6 @@ public final class ArenaRegistry {
         return arena.contains(at) ? Rule.IN_ARENA : Rule.WRONG_PLACE;
     }
 
-    /** The arena whose box holds {@code at}, if any. */
-    public Optional<Arena> at(Location at) {
-        return arenas.values().stream().filter(arena -> arena.contains(at)).findFirst();
-    }
-
     public void set(Arena arena) {
         arenas.put(arena.guardianId(), arena);
         save();
