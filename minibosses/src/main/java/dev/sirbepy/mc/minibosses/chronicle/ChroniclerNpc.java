@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -165,8 +166,11 @@ public final class ChroniclerNpc {
 
     /** Removes marked entities that are not her recorded bodies (a duplicate from a restore). */
     public void removeStrays(Entity[] entities) {
+        // Arrays.asList, not List.of: a slot is null before she is placed, after a remove, or
+        // after a partial chronicler.yml, and List.of throws on a null element.
+        List<UUID> bodies = Arrays.asList(ids);
         for (Entity entity : entities) {
-            if (isChronicler(entity) && !List.of(ids).contains(entity.getUniqueId())) {
+            if (isChronicler(entity) && !bodies.contains(entity.getUniqueId())) {
                 entity.remove();
             }
         }
