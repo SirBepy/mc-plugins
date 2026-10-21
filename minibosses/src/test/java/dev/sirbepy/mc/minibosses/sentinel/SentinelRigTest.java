@@ -360,6 +360,21 @@ class SentinelRigTest {
     }
 
     @Test
+    void aSwordSweepThatClipsTheStandInIsNotReplayedOntoTheBoss() {
+        LivingEntity boss = spawn(Tier.NORMAL);
+        Ravager standIn = standIn();
+        double before = boss.getHealth();
+
+        EntityDamageByEntityEvent sweep = new EntityDamageByEntityEvent(alice, standIn,
+                EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK,
+                DamageSource.builder(DamageType.PLAYER_ATTACK).withDirectEntity(alice).build(), 3.0);
+        server.getPluginManager().callEvent(sweep);
+
+        assertTrue(sweep.isCancelled(), "the stand-in itself takes nothing");
+        assertEquals(before, boss.getHealth(), 1e-9, "the sweep's main hit already landed on the boss itself");
+    }
+
+    @Test
     void theStandInPaysNothingIfItDiesAnyway() {
         spawn(Tier.NORMAL);
         Ravager standIn = standIn();

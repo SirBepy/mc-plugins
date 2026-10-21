@@ -368,7 +368,10 @@ public final class SentinelFight implements Listener {
         }
         event.setCancelled(true);
         RigBody body = bodies.get(owner.get());
-        if (body == null || !(event instanceof EntityDamageByEntityEvent byEntity)) {
+        // The server sweeps entities it hid from a Java client too, and the stand-in sits on the
+        // boss, so a sword sweep at the boss always clips it; replaying that would hit twice.
+        if (body == null || !(event instanceof EntityDamageByEntityEvent byEntity)
+                || event.getCause() == EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK) {
             return;
         }
         Player attacker = playerBehind(byEntity.getDamager());
