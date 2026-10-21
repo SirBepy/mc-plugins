@@ -335,6 +335,20 @@ class GuardianRuntimeTest extends EngineTestBase {
     }
 
     @Test
+    void aResumedFightHandsItsNewBrainToTheGuardiansStartedHook() {
+        LivingEntity boss = boss();
+        stampAsGuardian(boss, "test_guardian", Tier.NORMAL);
+        List<BossBrain> handedBack = new ArrayList<>();
+        runtime.register("test_guardian", (found, tier) ->
+                Optional.of(new GuardianRuntime.Resumed(plan(), area(), handedBack::add)));
+
+        runtime.onEntitiesLoad(new EntitiesLoadEvent(world.getChunkAt(0, 0), List.<Entity>of(boss)));
+
+        assertEquals(List.of(runtime.get(boss.getUniqueId()).orElseThrow()), handedBack,
+                "the Guardian can give the rebuilt brain its model rig");
+    }
+
+    @Test
     void aResumedFightContinuesInTheStoredPhaseWithoutRefiringHooks() {
         LivingEntity boss = boss();
         stampAsGuardian(boss, "test_guardian", Tier.NORMAL);

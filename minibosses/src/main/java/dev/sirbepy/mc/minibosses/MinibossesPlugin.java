@@ -77,6 +77,7 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
     private SovereignDiscovery sovereignDiscovery;
     private ArenaFights arenaFights;
     private GuardianRuntime runtime;
+    private BedrockForms bedrock;
 
     @Override
     public void onEnable() {
@@ -119,7 +120,11 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
                 System::currentTimeMillis);
         heartOfTheWild = new HeartOfTheWild(this);
         SentinelLoot loot = new SentinelLoot(heartOfTheWild);
-        sentinelFight = new SentinelFight(this, guardians, abilities, sentinelFighters, loot, hallOfFame, getLogger());
+        // Created before the Guardians so each one can register how its bosses resume after a restart.
+        runtime = new GuardianRuntime(this);
+        bedrock = BedrockForms.create(this);
+        sentinelFight = new SentinelFight(this, guardians, abilities, sentinelFighters, loot, hallOfFame, getLogger(),
+                runtime, arenas, bedrock::isBedrock);
         SummonCooldown cooldown = new SummonCooldown(SentinelDiscovery.COOLDOWN_MILLIS, System::currentTimeMillis);
         sentinelDiscovery = new SentinelDiscovery(this, sentinelFight, cooldown, new Random(), picker, gate);
 
@@ -166,9 +171,8 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(sovereignFight, this);
         getServer().getPluginManager().registerEvents(sovereignDiscovery, this);
 
-        // Shared boss-fight engine: one task ticks every live Guardian's attack loop. No Guardian
-        // registers a plan yet; each one's own class adds a runtime.register(...) line when it does.
-        runtime = new GuardianRuntime(this);
+        // Shared boss-fight engine: one task ticks every live Guardian's attack loop. The Sentinel
+        // registers its resume plan in its own constructor; the other Guardians have none yet.
         getServer().getPluginManager().registerEvents(runtime, this);
         getServer().getScheduler().runTaskTimer(this, runtime::tick, 1L, 1L);
         runtime.sweepStrays();
@@ -191,8 +195,7 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
 
     /** The Guardian Chronicles run only where the story key is present; without it the NPC stays away. */
     private void enableChronicles(GuardianKills kills) {
-        ChroniclerNpc chronicler = new ChroniclerNpc(this, getDataFolder(), getLogger(),
-                BedrockForms.create(this)::isBedrock);
+        ChroniclerNpc chronicler = new ChroniclerNpc(this, getDataFolder(), getLogger(), bedrock::isBedrock);
         Chronicle chronicle = null;
         ChronicleListener listener = null;
         Optional<ChronicleText> story = unlockChronicles();

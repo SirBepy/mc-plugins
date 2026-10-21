@@ -3,6 +3,8 @@ package dev.sirbepy.mc.minibosses.arena;
 import dev.sirbepy.mc.core.dragon.DragonFighters;
 import dev.sirbepy.mc.guild.events.GuardianDefeatedEvent;
 import dev.sirbepy.mc.minibosses.ability.GuardianAbilityRegistry;
+import dev.sirbepy.mc.minibosses.engine.FightEntities;
+import dev.sirbepy.mc.minibosses.engine.GuardianRuntime;
 import dev.sirbepy.mc.minibosses.engine.TestFight;
 import dev.sirbepy.mc.minibosses.hof.HallOfFame;
 import dev.sirbepy.mc.minibosses.progress.GuardianKills;
@@ -108,7 +110,7 @@ class GuardianTestCommandTest {
         heart = new HeartOfTheWild(plugin);
         fight = new SentinelFight(plugin, guardians, new GuardianAbilityRegistry(),
                 new DragonFighters(new NamespacedKey("test", "sentinel-fighters"), clock::get), new SentinelLoot(heart),
-                hallOfFame, LOG);
+                hallOfFame, LOG, new GuardianRuntime(plugin), arenas, id -> false);
         server.getPluginManager().registerEvents(fight, plugin);
         server.getPluginManager().registerEvents(new KillRecorder(kills), plugin);
         cooldown = new SummonCooldown(SentinelDiscovery.COOLDOWN_MILLIS, clock::get);
@@ -128,7 +130,9 @@ class GuardianTestCommandTest {
     }
 
     private List<LivingEntity> bosses() {
-        return new ArrayList<>(world.getEntitiesByClass(Ravager.class));
+        // The Bedrock stand-in is a second Ravager but a fight entity, never a Guardian.
+        return world.getEntitiesByClass(Ravager.class).stream().filter(r -> !FightEntities.isTemp(r))
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
     }
 
     private LivingEntity onlyBoss() {

@@ -249,6 +249,53 @@ class BossBrainTest extends EngineTestBase {
     }
 
     @Test
+    void aPhaseWithNoAttacksStartsNothingButStillFiresItsTransitionHook() {
+        LivingEntity boss = boss();
+        List<String> hooks = new ArrayList<>();
+        PhasePlan plan = new PhasePlan(List.of(
+                phase("one", 5, BossBrainTest::noHook),
+                phase("two", 5, c -> hooks.add("two")),
+                phase("three", 5, c -> hooks.add("three"), fake("late", 1))));
+        BossBrain brain = new BossBrain(context(boss, 1), plan);
+
+        run(brain, 200);
+        assertTrue(log.isEmpty(), "an empty pool means the boss just walks and melees");
+        assertTrue(brain.currentAttackId().isEmpty());
+
+        boss.setHealth(60);
+        run(brain, 200);
+        assertEquals(List.of("two"), hooks);
+        assertTrue(log.isEmpty());
+
+        boss.setHealth(20);
+        run(brain, 50);
+        assertEquals(List.of("two", "three"), hooks);
+        assertTrue(log.contains("late"), "a later phase with attacks still runs them");
+    }
+
+    @Test
+    void theAnimatorIsTickedEveryTickWhileTheFightRuns() {
+        LivingEntity boss = boss();
+        FightContext ctx = context(boss, 1);
+        int[] ticks = {0};
+        ctx.animator(new Animator() {
+            @Override
+            public void play(String pose, int duration) {
+            }
+
+            @Override
+            public void tick() {
+                ticks[0]++;
+            }
+        });
+        BossBrain brain = new BossBrain(ctx, plan(fake("a", 1), fake("b", 1), fake("c", 1)));
+
+        run(brain, 7);
+
+        assertEquals(7, ticks[0]);
+    }
+
+    @Test
     void thePhaseIsKeptOnTheBossAndARebuiltBrainResumesItWithoutRefiring() {
         LivingEntity boss = boss();
         List<String> hooks = new ArrayList<>();

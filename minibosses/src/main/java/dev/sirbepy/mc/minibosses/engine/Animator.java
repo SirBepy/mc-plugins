@@ -13,4 +13,8 @@ public interface Animator {
 
     /** Plays {@code pose} for about {@code ticks} server ticks, then returns to idle. */
     void play(String pose, int ticks);
+
+    /** Called once per server tick while the fight runs, for a rig that follows its boss and idles on its own. */
+    default void tick() {
+    }
 }

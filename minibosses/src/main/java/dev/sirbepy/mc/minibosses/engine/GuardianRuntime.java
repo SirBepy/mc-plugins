@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -35,8 +36,16 @@ import java.util.logging.Level;
  */
 public final class GuardianRuntime implements Listener {
 
-    /** What a Guardian's own class says about a boss found alive after a restart. */
-    public record Resumed(PhasePlan plan, FightArea area) {
+    /**
+     * What a Guardian's own class says about a boss found alive after a restart. {@code started} runs
+     * with the rebuilt brain, so the Guardian can give it back what only it knows how to make (its
+     * model rig).
+     */
+    public record Resumed(PhasePlan plan, FightArea area, Consumer<BossBrain> started) {
+        public Resumed(PhasePlan plan, FightArea area) {
+            this(plan, area, brain -> {
+            });
+        }
     }
 
     /** Rebuilds the plan and area for a boss of one Guardian at the tier it was summoned at. */
@@ -177,6 +186,7 @@ public final class GuardianRuntime implements Listener {
         }
         String tierName = boss.getPersistentDataContainer().get(tierKey, PersistentDataType.STRING);
         Tier tier = tierName == null ? Tier.NORMAL : Tier.valueOf(tierName);
-        resolver.resolve(boss, tier).ifPresent(resumed -> start(boss, tier, resumed.plan(), resumed.area()));
+        resolver.resolve(boss, tier).ifPresent(resumed ->
+                resumed.started().accept(start(boss, tier, resumed.plan(), resumed.area())));
     }
 }

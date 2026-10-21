@@ -4,6 +4,7 @@ import dev.sirbepy.mc.core.dragon.DragonFighters;
 import dev.sirbepy.mc.core.gui.Menu;
 import dev.sirbepy.mc.guild.events.GuardianDefeatedEvent;
 import dev.sirbepy.mc.minibosses.ability.GuardianAbilityRegistry;
+import dev.sirbepy.mc.minibosses.engine.GuardianRuntime;
 import dev.sirbepy.mc.minibosses.hof.HallOfFame;
 import dev.sirbepy.mc.minibosses.progress.GuardianKills;
 import dev.sirbepy.mc.minibosses.progress.KillRecorder;
@@ -122,7 +123,8 @@ class SentinelFightTest {
         picker = new TierPicker(guardians, kills);
         arenas = new ArenaRegistry(tempDir.toFile(), Logger.getLogger("minibosses-test"), guardians);
         gate = new SummonGate(arenas, new ArenaFights(plugin, arenas, clock::get));
-        fight = new SentinelFight(plugin, guardians, abilities, fighters, loot, hallOfFame, Logger.getLogger("minibosses-test"));
+        fight = new SentinelFight(plugin, guardians, abilities, fighters, loot, hallOfFame, Logger.getLogger("minibosses-test"),
+                new GuardianRuntime(plugin), arenas, id -> false);
     }
 
     @AfterEach
@@ -159,6 +161,12 @@ class SentinelFightTest {
         // Phase B: both Heroic and Mythic's own ability ids now resolve to real implementations.
         assertTrue(abilities.get(ThornVinesAbility.ID).isPresent());
         assertTrue(abilities.get(RegrowthAbility.ID).isPresent());
+    }
+
+    /** The Sentinels in the world; the Bedrock stand-in is a second Ravager but a fight entity, never a Guardian. */
+    private java.util.Collection<org.bukkit.entity.Ravager> guardians() {
+        return world.getEntitiesByClass(org.bukkit.entity.Ravager.class).stream()
+                .filter(r -> !dev.sirbepy.mc.minibosses.engine.FightEntities.isTemp(r)).toList();
     }
 
     private LivingEntity spawnNormal() {
@@ -388,21 +396,21 @@ class SentinelFightTest {
         alice.teleport(new Location(world, 5, 64, 5));
 
         discovery.summon(alice, Tier.NORMAL);
-        long afterFirst = world.getEntitiesByClass(org.bukkit.entity.Ravager.class).size();
+        long afterFirst = guardians().size();
         assertEquals(1, afterFirst, "the first summon within cooldown must spawn a Sentinel");
 
         // Give Alice a second seed and try again immediately: must be refused by the cooldown.
         ItemStack secondSeed = discovery.createSeed();
         alice.getInventory().setItemInMainHand(secondSeed);
         discovery.summon(alice, Tier.NORMAL);
-        assertEquals(1, world.getEntitiesByClass(org.bukkit.entity.Ravager.class).size(),
+        assertEquals(1, guardians().size(),
                 "a repeat summon inside the cooldown window must not spawn a second Sentinel");
         assertEquals(1, secondSeed.getAmount(), "a refused summon must not consume the seed");
 
         // Advance past the cooldown window: the third attempt must succeed again.
         clock.addAndGet(SentinelDiscovery.COOLDOWN_MILLIS + 1);
         discovery.summon(alice, Tier.NORMAL);
-        assertEquals(2, world.getEntitiesByClass(org.bukkit.entity.Ravager.class).size(),
+        assertEquals(2, guardians().size(),
                 "once the cooldown has elapsed, the summon must work again");
     }
 
@@ -439,7 +447,7 @@ class SentinelFightTest {
 
         assertTrue(alice.getOpenInventory().getTopInventory().getHolder() instanceof Menu,
                 "right-clicking the seed must open the tier picker");
-        assertEquals(0, world.getEntitiesByClass(org.bukkit.entity.Ravager.class).size());
+        assertEquals(0, guardians().size());
         assertEquals(1, seed.getAmount(), "opening the picker must not spend the seed");
     }
 
@@ -454,7 +462,7 @@ class SentinelFightTest {
                 tier -> discovery.summon(alice, tier));
         assertTrue(menu.click(11, ClickType.LEFT));
 
-        var spawned = world.getEntitiesByClass(org.bukkit.entity.Ravager.class);
+        var spawned = guardians();
         assertEquals(1, spawned.size());
         assertEquals(120.0, spawned.iterator().next().getHealth());
     }
@@ -477,7 +485,7 @@ class SentinelFightTest {
         assertFalse(picker.unlocked(alice.getUniqueId(), SentinelFight.GUARDIAN_ID, Tier.MYTHIC),
                 "Mythic needs a Heroic kill, not just a Normal one");
         assertTrue(discovery.summon(alice, Tier.HEROIC));
-        assertEquals(260.0, world.getEntitiesByClass(org.bukkit.entity.Ravager.class).iterator().next().getHealth());
+        assertEquals(260.0, guardians().iterator().next().getHealth());
     }
 
     @Test

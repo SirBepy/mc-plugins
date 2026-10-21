@@ -30,13 +30,12 @@ public final class PhasePlan {
 
     /**
      * One stage of the fight. {@code onEnter} runs once when the fight moves into this phase (the
-     * roar, the arena changing); it does not run for the opening phase.
+     * roar, the arena changing); it does not run for the opening phase. An empty {@code pool} is a
+     * phase with no attacks yet: the boss just walks and melees through it, and its transition
+     * hook still fires.
      */
     public record Phase(String name, int gapTicks, List<Entry> pool, Consumer<FightContext> onEnter) {
         public Phase {
-            if (pool.isEmpty()) {
-                throw new IllegalArgumentException("phase " + name + " has no attacks");
-            }
             pool = List.copyOf(pool);
         }
 
