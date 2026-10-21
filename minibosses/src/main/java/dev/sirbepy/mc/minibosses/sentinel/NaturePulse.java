@@ -49,10 +49,6 @@ public final class NaturePulse implements RelicActive {
         this.visuals = visuals;
     }
 
-    public static int radius(int rank) {
-        return RADIUS[index(rank)];
-    }
-
     @Override
     public String guardianId() {
         return SentinelFight.GUARDIAN_ID;

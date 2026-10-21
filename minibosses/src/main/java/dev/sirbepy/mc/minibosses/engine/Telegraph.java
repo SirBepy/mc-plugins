@@ -33,9 +33,4 @@ public record Telegraph(Shape shape, int warnTicks, Color color, float size, Sou
     public Telegraph withGrounded(boolean grounded) {
         return new Telegraph(shape, warnTicks, color, size, startSound, resolveSound, grounded);
     }
-
-    /** The same telegraph with a different warning time, for tiers that differ only in how fast they hit. */
-    public Telegraph withWarnTicks(int warnTicks) {
-        return new Telegraph(shape, warnTicks, color, size, startSound, resolveSound, grounded);
-    }
 }

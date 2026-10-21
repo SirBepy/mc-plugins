@@ -61,12 +61,6 @@ public final class FightEntities {
         return entity;
     }
 
-    /** Brings an entity made elsewhere under the fight's cleanup. */
-    public void adopt(Entity entity, boolean attackScoped) {
-        mark(entity);
-        entities.put(entity, attackScoped);
-    }
-
     private void mark(Entity entity) {
         entity.addScoreboardTag(TAG);
         entity.getPersistentDataContainer().set(EngineKeys.owner(plugin), PersistentDataType.STRING, owner.toString());
