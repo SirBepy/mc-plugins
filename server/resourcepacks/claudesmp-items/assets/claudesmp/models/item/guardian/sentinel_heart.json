@@ -1,0 +1,253 @@
+{
+  "textures": {
+    "t": "claudesmp:item/guardian/sentinel",
+    "particle": "claudesmp:item/guardian/sentinel"
+  },
+  "elements": [
+    {
+      "from": [
+        6.0,
+        5.5,
+        6.5
+      ],
+      "to": [
+        10.0,
+        10.0,
+        9.0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4.0,
+            14.0,
+            6.0,
+            16.0
+          ],
+          "texture": "#t",
+          "tintindex": 2
+        },
+        "south": {
+          "uv": [
+            4.0,
+            14.0,
+            6.0,
+            16.0
+          ],
+          "texture": "#t",
+          "tintindex": 2
+        },
+        "east": {
+          "uv": [
+            4.0,
+            14.0,
+            6.0,
+            16.0
+          ],
+          "texture": "#t",
+          "tintindex": 2
+        },
+        "west": {
+          "uv": [
+            4.0,
+            14.0,
+            6.0,
+            16.0
+          ],
+          "texture": "#t",
+          "tintindex": 2
+        },
+        "up": {
+          "uv": [
+            4.0,
+            14.0,
+            6.0,
+            16.0
+          ],
+          "texture": "#t",
+          "tintindex": 2
+        },
+        "down": {
+          "uv": [
+            4.0,
+            14.0,
+            6.0,
+            16.0
+          ],
+          "texture": "#t",
+          "tintindex": 2
+        }
+      },
+      "light_emission": 15
+    },
+    {
+      "from": [
+        6.5,
+        6.25,
+        6.25
+      ],
+      "to": [
+        9.5,
+        9.25,
+        8.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4.0,
+            14.0,
+            6.0,
+            16.0
+          ],
+          "texture": "#t",
+          "tintindex": 2
+        },
+        "south": {
+          "uv": [
+            4.0,
+            14.0,
+            6.0,
+            16.0
+          ],
+          "texture": "#t",
+          "tintindex": 2
+        },
+        "east": {
+          "uv": [
+            4.0,
+            14.0,
+            6.0,
+            16.0
+          ],
+          "texture": "#t",
+          "tintindex": 2
+        },
+        "west": {
+          "uv": [
+            4.0,
+            14.0,
+            6.0,
+            16.0
+          ],
+          "texture": "#t",
+          "tintindex": 2
+        },
+        "up": {
+          "uv": [
+            4.0,
+            14.0,
+            6.0,
+            16.0
+          ],
+          "texture": "#t",
+          "tintindex": 2
+        },
+        "down": {
+          "uv": [
+            4.0,
+            14.0,
+            6.0,
+            16.0
+          ],
+          "texture": "#t",
+          "tintindex": 2
+        }
+      },
+      "rotation": {
+        "origin": [
+          8.0,
+          7.75,
+          7.75
+        ],
+        "x": 0,
+        "y": 45,
+        "z": 0
+      },
+      "light_emission": 15
+    },
+    {
+      "from": [
+        6.5,
+        6.25,
+        6.25
+      ],
+      "to": [
+        9.5,
+        9.25,
+        8.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4.0,
+            14.0,
+            6.0,
+            16.0
+          ],
+          "texture": "#t",
+          "tintindex": 2
+        },
+        "south": {
+          "uv": [
+            4.0,
+            14.0,
+            6.0,
+            16.0
+          ],
+          "texture": "#t",
+          "tintindex": 2
+        },
+        "east": {
+          "uv": [
+            4.0,
+            14.0,
+            6.0,
+            16.0
+          ],
+          "texture": "#t",
+          "tintindex": 2
+        },
+        "west": {
+          "uv": [
+            4.0,
+            14.0,
+            6.0,
+            16.0
+          ],
+          "texture": "#t",
+          "tintindex": 2
+        },
+        "up": {
+          "uv": [
+            4.0,
+            14.0,
+            6.0,
+            16.0
+          ],
+          "texture": "#t",
+          "tintindex": 2
+        },
+        "down": {
+          "uv": [
+            4.0,
+            14.0,
+            6.0,
+            16.0
+          ],
+          "texture": "#t",
+          "tintindex": 2
+        }
+      },
+      "rotation": {
+        "origin": [
+          8.0,
+          7.75,
+          7.75
+        ],
+        "x": 45,
+        "y": 0,
+        "z": 45
+      },
+      "light_emission": 15
+    }
+  ]
+}

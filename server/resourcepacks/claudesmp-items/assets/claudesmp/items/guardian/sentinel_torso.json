@@ -1,0 +1,23 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "claudesmp:item/guardian/sentinel_torso",
+    "tints": [
+      {
+        "type": "minecraft:custom_model_data",
+        "index": 0,
+        "default": 11119525
+      },
+      {
+        "type": "minecraft:custom_model_data",
+        "index": 1,
+        "default": 6727740
+      },
+      {
+        "type": "minecraft:custom_model_data",
+        "index": 2,
+        "default": 5832517
+      }
+    ]
+  }
+}

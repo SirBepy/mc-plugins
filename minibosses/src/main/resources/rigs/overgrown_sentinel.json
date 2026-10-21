@@ -1,0 +1,1641 @@
+{
+  "_doc": [
+    "Overgrown Sentinel rig. Single source of truth for the pack generator, the Python preview twin and the Java runtime.",
+    "UNITS: every length is in blocks (1 block = 16 model pixels). Angles are degrees. Matrices are column-vector (v' = M * v), right-handed, as in JOML.",
+    "RIG FRAME: origin on the ground under the body's centre (feet at y = 0). +Y up. -Z is the front (the way the Sentinel faces). +X is the character's own right (the slam-fist side). -X is its left (the root-claw side).",
+    "PARTS: array in parent-before-child order. name is unique. model is the item_model id to put on the display's item (ItemStack PAPER with meta.setItemModel(NamespacedKey claudesmp:guardian/sentinel_<part>)). parent is a part name or null. pivot is the joint position in the PARENT's local frame (the frame whose origin is the parent's pivot, before the parent's pose), or relative to the rig origin (feet) when parent is null. scale is a uniform extra scale for that part (1.0 = as authored). tiers lists the tiers that spawn this part.",
+    "MODEL ORIGIN: an item display with ItemDisplayTransform NONE draws its item model with the model-space point (8, 8, 8) (the centre of the 0..16 cube) exactly at the display's own origin. Verified in the 26.3 client jar: ItemStackRenderState$LayerRenderState.applyTransform calls ItemTransform.apply, whose NO_TRANSFORM path and its normal path both end with PoseStack$Pose.translate(-0.5, -0.5, -0.5) after the model has been divided by 16. Every part model here is authored so its pivot sits at model point (8, 8, 8): the pivot IS the display origin, and a display rotates and scales about its pivot.",
+    "MODEL SCALE: models are drawn at 1/modelScale of their true size so a part fits the item model's -16..32 range. A model point m (model units) therefore lands, in the part's own frame, at (m - 8) / 16 * modelScale * part.scale blocks from the pivot.",
+    "POSE: poses.<name>.<part> = { rot: [x, y, z] degrees, offset: [dx, dy, dz] blocks, scale: number } and any key may be missing (identity rot, zero offset, scale 1). Rotation matrix R = Rz(z) * Ry(y) * Rx(x), i.e. rotate about X first, then Y, then Z, each about the part's pivot, in the parent's frame (JOML rotationZYX(z, y, x)). Rx(a)(0,-1,0) = (0,-cos a,-sin a): a positive x swings a hanging limb forward (-Z) and tips an upright torso backward (+Z). Rz(a)(0,-1,0) = (sin a,-cos a,0): a positive z swings a hanging limb to +X (the right). Ry(a)(-1,0,0) = (-cos a,0,sin a): a positive y turns the part to its left. pose.scale is optional, multiplies only this part's own drawn size (children are unaffected, it never enters the parent chain) and is used for the heart's pulse.",
+    "COMPOSITION: local(part) = Translate(pivot + pose.offset) * R(pose.rot). world(part) = world(parent) * local(part), with world(null) = identity. rigMatrix(part) = world(part) * Scale(part.scale * pose.scale * modelScale). A model point m (model units) is at rigMatrix(part) * ((m - 8) / 16) in the rig frame. Note world(parent) carries the parent's rotation and offset but NOT its scale.",
+    "DISPLAYS: spawn every part as an ItemDisplay at the base mob's FEET position, with the base mob's yaw as the display's yaw, pitch 0, billboard FIXED, ItemDisplayTransform NONE, and put the part's whole placement into the display Transformation. The 26.3 client draws a display as: Ry(-yaw) * Transformation(T * Lrot * S * Rrot) * Ry(pi) * ((m - 8) / 16), and the Ry(pi) turns a model's -Z side to face the way the entity looks. The rig frame is the model frame, so the Transformation must be conjugated by Ry(pi) = diag(-1, 1, -1): Transformation = Ry(pi) * rigMatrix * Ry(pi).",
+    "TRANSFORMATION FIELDS: for Bukkit Transformation(translation, leftRotation, scale, rightRotation): translation = (-t.x, t.y, -t.z) where t is the translation column of rigMatrix(part) (= world(part) origin); leftRotation = quaternion (-q.x, q.y, -q.z, q.w) where q is the quaternion of the rotation part of world(part); scale = (s, s, s) with s = part.scale * pose.scale * modelScale; rightRotation = identity. Set the interpolation duration and start-interpolation on the display to animate between poses client-side.",
+    "FACING: rig -Z follows the entity yaw (yaw 0 = south = +Z in the world, so the Sentinel looks along +Z at yaw 0). world position of a model point = feet + Ry(-yaw) * Transformation * Ry(pi) * ((m - 8) / 16). Ry(a) is the standard matrix [[cos,0,sin],[0,1,0],[-sin,0,cos]].",
+    "PALETTES: palettes.<tier> = [stone, moss, glow] as 0xRRGGBB ints, for custom_model_data colour indices 0, 1, 2. Set them with CustomModelDataComponent.setColors(List.of(Color.fromRGB(...) x3)) on every part's item. Glow tints the heart, eyes, plate slits, fist seams, crystals, crown thorns and vein seams; bark and blossoms are untinted.",
+    "TIERS: a part is spawned only when its tiers contains the fight's tier (normal, heroic, mythic). Heroic adds crystals_r, crystals_l, crystals_back; mythic keeps those and adds crown, blossoms_r, blossoms_l, veins_torso, veins_pelvis, veins_fist_r. blossoms_* are children of vines_*, veins_* of the part they trace, so they move with it.",
+    "POSES: idle, walk_a and walk_b (alternate them for the stride), slam_windup (both arms raised), slam_hit (both fists slammed down in front), sweep_windup (torso twisted, root arm drawn back to its left), sweep_hit (root arm swept across the front), rooted (crouched, roots dug in, the healing phase), heartguard (chest plates open, heart exposed and enlarged), stagger (reeling back, phase transitions). Blend between poses by interpolating rot/offset/scale per part, or rely on display interpolation.",
+    "ANCHORS: anchors.<name> = { part, local: [x, y, z] blocks } a point in that part's local frame (origin at its pivot, before scale). World position in the rig frame = world(part) * local (no part scale). Use for the heart, the eyes, the slam impact point under the fist and the claw tip. Convert rig -> world with feet + Ry(-yaw) * Ry(pi) * rigPoint (rig -Z becomes the entity's forward).",
+    "HITBOX: hitbox.entity is the invisible base mob and hitbox.scaleAttribute the generic.scale to give it; the Ravager's 1.95 x 2.2 box then covers the body's lower two thirds (about 2.7 wide, 3.1 tall). The body stands about 4.3 blocks tall to the top of the head (horns and spikes reach about 4.8), about 4.7 wide from fist to claw."
+  ],
+  "id": "overgrown_sentinel",
+  "modelScale": 2.0,
+  "tiers": [
+    "normal",
+    "heroic",
+    "mythic"
+  ],
+  "hitbox": {
+    "entity": "ravager",
+    "scaleAttribute": 1.4
+  },
+  "palettes": {
+    "normal": [
+      11119525,
+      6727740,
+      5832517
+    ],
+    "heroic": [
+      5922675,
+      4103288,
+      3014614
+    ],
+    "mythic": [
+      3814724,
+      3045946,
+      16762414
+    ]
+  },
+  "parts": [
+    {
+      "name": "pelvis",
+      "model": "claudesmp:guardian/sentinel_pelvis",
+      "parent": null,
+      "pivot": [
+        0.0,
+        1.75,
+        0.0
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "leg_r",
+      "model": "claudesmp:guardian/sentinel_leg_r",
+      "parent": "pelvis",
+      "pivot": [
+        0.5625,
+        -0.125,
+        0.0
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "leg_l",
+      "model": "claudesmp:guardian/sentinel_leg_l",
+      "parent": "pelvis",
+      "pivot": [
+        -0.5625,
+        -0.125,
+        0.0
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "torso",
+      "model": "claudesmp:guardian/sentinel_torso",
+      "parent": "pelvis",
+      "pivot": [
+        0.0,
+        0.375,
+        0.0
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "plate_r",
+      "model": "claudesmp:guardian/sentinel_plate_r",
+      "parent": "torso",
+      "pivot": [
+        1.0,
+        0.875,
+        -0.625
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "plate_l",
+      "model": "claudesmp:guardian/sentinel_plate_l",
+      "parent": "torso",
+      "pivot": [
+        -1.0,
+        0.875,
+        -0.625
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "heart",
+      "model": "claudesmp:guardian/sentinel_heart",
+      "parent": "torso",
+      "pivot": [
+        0.0,
+        0.75,
+        -0.5
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "head",
+      "model": "claudesmp:guardian/sentinel_head",
+      "parent": "torso",
+      "pivot": [
+        0.0,
+        1.4375,
+        -0.0625
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "arm_r_upper",
+      "model": "claudesmp:guardian/sentinel_arm_r_upper",
+      "parent": "torso",
+      "pivot": [
+        1.6875,
+        1.25,
+        0.0
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "arm_r_fore",
+      "model": "claudesmp:guardian/sentinel_arm_r_fore",
+      "parent": "arm_r_upper",
+      "pivot": [
+        0.0,
+        -1.125,
+        0.0
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "fist_r",
+      "model": "claudesmp:guardian/sentinel_fist_r",
+      "parent": "arm_r_fore",
+      "pivot": [
+        0.0,
+        -0.625,
+        0.0
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "arm_l_upper",
+      "model": "claudesmp:guardian/sentinel_arm_l_upper",
+      "parent": "torso",
+      "pivot": [
+        -1.625,
+        1.25,
+        0.0
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "arm_l_fore",
+      "model": "claudesmp:guardian/sentinel_arm_l_fore",
+      "parent": "arm_l_upper",
+      "pivot": [
+        0.0,
+        -1.375,
+        0.0
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "claw_l",
+      "model": "claudesmp:guardian/sentinel_claw_l",
+      "parent": "arm_l_fore",
+      "pivot": [
+        -0.0625,
+        -1.125,
+        0.0
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "vines_r",
+      "model": "claudesmp:guardian/sentinel_vines_r",
+      "parent": "torso",
+      "pivot": [
+        1.75,
+        1.75,
+        0.5
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "vines_l",
+      "model": "claudesmp:guardian/sentinel_vines_l",
+      "parent": "torso",
+      "pivot": [
+        -1.625,
+        1.75,
+        0.5
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "roots_back",
+      "model": "claudesmp:guardian/sentinel_roots_back",
+      "parent": "torso",
+      "pivot": [
+        0.0,
+        0.75,
+        0.9375
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "roots_low",
+      "model": "claudesmp:guardian/sentinel_roots_low",
+      "parent": "pelvis",
+      "pivot": [
+        0.0,
+        0.125,
+        0.5
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "roots_leg_r",
+      "model": "claudesmp:guardian/sentinel_roots_leg_r",
+      "parent": "leg_r",
+      "pivot": [
+        0.5,
+        -0.625,
+        0.0
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "roots_leg_l",
+      "model": "claudesmp:guardian/sentinel_roots_leg_l",
+      "parent": "leg_l",
+      "pivot": [
+        -0.5,
+        -0.625,
+        0.0
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "normal",
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "crystals_r",
+      "model": "claudesmp:guardian/sentinel_crystals_r",
+      "parent": "torso",
+      "pivot": [
+        1.75,
+        1.75,
+        0.0
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "crystals_l",
+      "model": "claudesmp:guardian/sentinel_crystals_l",
+      "parent": "torso",
+      "pivot": [
+        -1.625,
+        1.6875,
+        0.125
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "crystals_back",
+      "model": "claudesmp:guardian/sentinel_crystals_back",
+      "parent": "torso",
+      "pivot": [
+        0.0,
+        1.5,
+        0.875
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "heroic",
+        "mythic"
+      ]
+    },
+    {
+      "name": "crown",
+      "model": "claudesmp:guardian/sentinel_crown",
+      "parent": "head",
+      "pivot": [
+        0.0,
+        0.625,
+        -0.09375
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "mythic"
+      ]
+    },
+    {
+      "name": "blossoms_r",
+      "model": "claudesmp:guardian/sentinel_blossoms_r",
+      "parent": "vines_r",
+      "pivot": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "mythic"
+      ]
+    },
+    {
+      "name": "blossoms_l",
+      "model": "claudesmp:guardian/sentinel_blossoms_l",
+      "parent": "vines_l",
+      "pivot": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "mythic"
+      ]
+    },
+    {
+      "name": "veins_torso",
+      "model": "claudesmp:guardian/sentinel_veins_torso",
+      "parent": "torso",
+      "pivot": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "mythic"
+      ]
+    },
+    {
+      "name": "veins_pelvis",
+      "model": "claudesmp:guardian/sentinel_veins_pelvis",
+      "parent": "pelvis",
+      "pivot": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "mythic"
+      ]
+    },
+    {
+      "name": "veins_fist_r",
+      "model": "claudesmp:guardian/sentinel_veins_fist_r",
+      "parent": "fist_r",
+      "pivot": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": 1.0,
+      "tiers": [
+        "mythic"
+      ]
+    }
+  ],
+  "poses": {
+    "idle": {
+      "torso": {
+        "rot": [
+          -6.0,
+          0.0,
+          0.0
+        ]
+      },
+      "head": {
+        "rot": [
+          6.0,
+          0.0,
+          0.0
+        ]
+      },
+      "arm_r_upper": {
+        "rot": [
+          3.0,
+          0.0,
+          3.0
+        ]
+      },
+      "arm_r_fore": {
+        "rot": [
+          6.0,
+          0.0,
+          0.0
+        ]
+      },
+      "fist_r": {
+        "rot": [
+          -3.0,
+          0.0,
+          0.0
+        ]
+      },
+      "arm_l_upper": {
+        "rot": [
+          -3.0,
+          0.0,
+          -6.0
+        ]
+      },
+      "arm_l_fore": {
+        "rot": [
+          8.0,
+          0.0,
+          0.0
+        ]
+      },
+      "claw_l": {
+        "rot": [
+          10.0,
+          0.0,
+          0.0
+        ]
+      },
+      "vines_r": {
+        "rot": [
+          0.0,
+          0.0,
+          3.0
+        ]
+      },
+      "vines_l": {
+        "rot": [
+          0.0,
+          0.0,
+          -3.0
+        ]
+      },
+      "roots_back": {
+        "rot": [
+          3.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "walk_a": {
+      "pelvis": {
+        "rot": [
+          0.0,
+          -4.0,
+          0.0
+        ],
+        "offset": [
+          0.0,
+          0.0625,
+          0.0
+        ]
+      },
+      "torso": {
+        "rot": [
+          -7.0,
+          6.0,
+          0.0
+        ]
+      },
+      "head": {
+        "rot": [
+          7.0,
+          -5.0,
+          0.0
+        ]
+      },
+      "leg_r": {
+        "rot": [
+          26.0,
+          0.0,
+          0.0
+        ]
+      },
+      "leg_l": {
+        "rot": [
+          -26.0,
+          0.0,
+          0.0
+        ]
+      },
+      "arm_r_upper": {
+        "rot": [
+          -22.0,
+          0.0,
+          6.0
+        ]
+      },
+      "arm_r_fore": {
+        "rot": [
+          8.0,
+          0.0,
+          0.0
+        ]
+      },
+      "fist_r": {
+        "rot": [
+          -4.0,
+          0.0,
+          0.0
+        ]
+      },
+      "arm_l_upper": {
+        "rot": [
+          26.0,
+          0.0,
+          -8.0
+        ]
+      },
+      "arm_l_fore": {
+        "rot": [
+          12.0,
+          0.0,
+          0.0
+        ]
+      },
+      "claw_l": {
+        "rot": [
+          10.0,
+          0.0,
+          0.0
+        ]
+      },
+      "vines_r": {
+        "rot": [
+          -5.0,
+          0.0,
+          6.0
+        ]
+      },
+      "vines_l": {
+        "rot": [
+          -5.0,
+          0.0,
+          -6.0
+        ]
+      },
+      "roots_back": {
+        "rot": [
+          8.0,
+          0.0,
+          3.0
+        ]
+      },
+      "roots_low": {
+        "rot": [
+          6.0,
+          0.0,
+          -3.0
+        ]
+      },
+      "roots_leg_r": {
+        "rot": [
+          -20.0,
+          0.0,
+          0.0
+        ]
+      },
+      "roots_leg_l": {
+        "rot": [
+          26.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "walk_b": {
+      "pelvis": {
+        "rot": [
+          0.0,
+          4.0,
+          0.0
+        ],
+        "offset": [
+          0.0,
+          0.0625,
+          0.0
+        ]
+      },
+      "torso": {
+        "rot": [
+          -7.0,
+          -6.0,
+          0.0
+        ]
+      },
+      "head": {
+        "rot": [
+          7.0,
+          5.0,
+          0.0
+        ]
+      },
+      "leg_r": {
+        "rot": [
+          -26.0,
+          0.0,
+          0.0
+        ]
+      },
+      "leg_l": {
+        "rot": [
+          26.0,
+          0.0,
+          0.0
+        ]
+      },
+      "arm_r_upper": {
+        "rot": [
+          20.0,
+          0.0,
+          6.0
+        ]
+      },
+      "arm_r_fore": {
+        "rot": [
+          14.0,
+          0.0,
+          0.0
+        ]
+      },
+      "fist_r": {
+        "rot": [
+          -4.0,
+          0.0,
+          0.0
+        ]
+      },
+      "arm_l_upper": {
+        "rot": [
+          -24.0,
+          0.0,
+          -8.0
+        ]
+      },
+      "arm_l_fore": {
+        "rot": [
+          6.0,
+          0.0,
+          0.0
+        ]
+      },
+      "claw_l": {
+        "rot": [
+          12.0,
+          0.0,
+          0.0
+        ]
+      },
+      "vines_r": {
+        "rot": [
+          -5.0,
+          0.0,
+          0.0
+        ]
+      },
+      "vines_l": {
+        "rot": [
+          -5.0,
+          0.0,
+          0.0
+        ]
+      },
+      "roots_back": {
+        "rot": [
+          8.0,
+          0.0,
+          -3.0
+        ]
+      },
+      "roots_low": {
+        "rot": [
+          6.0,
+          0.0,
+          3.0
+        ]
+      },
+      "roots_leg_r": {
+        "rot": [
+          26.0,
+          0.0,
+          0.0
+        ]
+      },
+      "roots_leg_l": {
+        "rot": [
+          -20.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "slam_windup": {
+      "pelvis": {
+        "offset": [
+          0.0,
+          0.0,
+          0.125
+        ]
+      },
+      "torso": {
+        "rot": [
+          14.0,
+          0.0,
+          0.0
+        ]
+      },
+      "head": {
+        "rot": [
+          12.0,
+          0.0,
+          0.0
+        ]
+      },
+      "leg_r": {
+        "rot": [
+          -6.0,
+          0.0,
+          4.0
+        ]
+      },
+      "leg_l": {
+        "rot": [
+          8.0,
+          0.0,
+          -4.0
+        ]
+      },
+      "arm_r_upper": {
+        "rot": [
+          155.0,
+          0.0,
+          10.0
+        ]
+      },
+      "arm_r_fore": {
+        "rot": [
+          28.0,
+          0.0,
+          0.0
+        ]
+      },
+      "fist_r": {
+        "rot": [
+          14.0,
+          0.0,
+          0.0
+        ]
+      },
+      "arm_l_upper": {
+        "rot": [
+          150.0,
+          0.0,
+          -12.0
+        ]
+      },
+      "arm_l_fore": {
+        "rot": [
+          22.0,
+          0.0,
+          0.0
+        ]
+      },
+      "claw_l": {
+        "rot": [
+          -10.0,
+          0.0,
+          0.0
+        ]
+      },
+      "vines_r": {
+        "rot": [
+          14.0,
+          0.0,
+          8.0
+        ]
+      },
+      "vines_l": {
+        "rot": [
+          14.0,
+          0.0,
+          -8.0
+        ]
+      },
+      "roots_back": {
+        "rot": [
+          -8.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "slam_hit": {
+      "pelvis": {
+        "offset": [
+          0.0,
+          -0.1875,
+          -0.1875
+        ]
+      },
+      "torso": {
+        "rot": [
+          -34.0,
+          0.0,
+          0.0
+        ]
+      },
+      "head": {
+        "rot": [
+          28.0,
+          0.0,
+          0.0
+        ]
+      },
+      "leg_r": {
+        "rot": [
+          14.0,
+          0.0,
+          4.0
+        ]
+      },
+      "leg_l": {
+        "rot": [
+          -8.0,
+          0.0,
+          -4.0
+        ]
+      },
+      "arm_r_upper": {
+        "rot": [
+          58.0,
+          0.0,
+          4.0
+        ]
+      },
+      "arm_r_fore": {
+        "rot": [
+          34.0,
+          0.0,
+          0.0
+        ]
+      },
+      "fist_r": {
+        "rot": [
+          20.0,
+          0.0,
+          0.0
+        ]
+      },
+      "arm_l_upper": {
+        "rot": [
+          60.0,
+          0.0,
+          -6.0
+        ]
+      },
+      "arm_l_fore": {
+        "rot": [
+          26.0,
+          0.0,
+          0.0
+        ]
+      },
+      "claw_l": {
+        "rot": [
+          30.0,
+          0.0,
+          0.0
+        ]
+      },
+      "vines_r": {
+        "rot": [
+          -24.0,
+          0.0,
+          10.0
+        ]
+      },
+      "vines_l": {
+        "rot": [
+          -24.0,
+          0.0,
+          -10.0
+        ]
+      },
+      "roots_back": {
+        "rot": [
+          22.0,
+          0.0,
+          0.0
+        ]
+      },
+      "roots_low": {
+        "rot": [
+          10.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "sweep_windup": {
+      "pelvis": {
+        "rot": [
+          0.0,
+          10.0,
+          0.0
+        ]
+      },
+      "torso": {
+        "rot": [
+          -6.0,
+          34.0,
+          0.0
+        ]
+      },
+      "head": {
+        "rot": [
+          6.0,
+          -30.0,
+          0.0
+        ]
+      },
+      "leg_r": {
+        "rot": [
+          8.0,
+          0.0,
+          3.0
+        ]
+      },
+      "leg_l": {
+        "rot": [
+          -8.0,
+          0.0,
+          -3.0
+        ]
+      },
+      "arm_r_upper": {
+        "rot": [
+          30.0,
+          0.0,
+          12.0
+        ]
+      },
+      "arm_r_fore": {
+        "rot": [
+          40.0,
+          0.0,
+          0.0
+        ]
+      },
+      "fist_r": {
+        "rot": [
+          -10.0,
+          0.0,
+          0.0
+        ]
+      },
+      "arm_l_upper": {
+        "rot": [
+          -42.0,
+          0.0,
+          -88.0
+        ]
+      },
+      "arm_l_fore": {
+        "rot": [
+          -14.0,
+          0.0,
+          -6.0
+        ]
+      },
+      "claw_l": {
+        "rot": [
+          -20.0,
+          0.0,
+          0.0
+        ]
+      },
+      "vines_l": {
+        "rot": [
+          20.0,
+          0.0,
+          -16.0
+        ]
+      },
+      "roots_back": {
+        "rot": [
+          6.0,
+          14.0,
+          0.0
+        ]
+      }
+    },
+    "sweep_hit": {
+      "pelvis": {
+        "rot": [
+          0.0,
+          -10.0,
+          0.0
+        ]
+      },
+      "torso": {
+        "rot": [
+          -10.0,
+          -38.0,
+          0.0
+        ]
+      },
+      "head": {
+        "rot": [
+          8.0,
+          30.0,
+          0.0
+        ]
+      },
+      "leg_r": {
+        "rot": [
+          -8.0,
+          0.0,
+          3.0
+        ]
+      },
+      "leg_l": {
+        "rot": [
+          10.0,
+          0.0,
+          -3.0
+        ]
+      },
+      "arm_r_upper": {
+        "rot": [
+          -24.0,
+          0.0,
+          14.0
+        ]
+      },
+      "arm_r_fore": {
+        "rot": [
+          30.0,
+          0.0,
+          0.0
+        ]
+      },
+      "fist_r": {
+        "rot": [
+          -6.0,
+          0.0,
+          0.0
+        ]
+      },
+      "arm_l_upper": {
+        "rot": [
+          122.0,
+          0.0,
+          -88.0
+        ]
+      },
+      "arm_l_fore": {
+        "rot": [
+          10.0,
+          0.0,
+          4.0
+        ]
+      },
+      "claw_l": {
+        "rot": [
+          -6.0,
+          0.0,
+          0.0
+        ]
+      },
+      "vines_l": {
+        "rot": [
+          -10.0,
+          0.0,
+          16.0
+        ]
+      },
+      "roots_back": {
+        "rot": [
+          6.0,
+          -14.0,
+          0.0
+        ]
+      }
+    },
+    "rooted": {
+      "pelvis": {
+        "offset": [
+          0.0,
+          -0.25,
+          0.0625
+        ]
+      },
+      "torso": {
+        "rot": [
+          -30.0,
+          0.0,
+          0.0
+        ]
+      },
+      "head": {
+        "rot": [
+          26.0,
+          0.0,
+          0.0
+        ]
+      },
+      "leg_r": {
+        "rot": [
+          22.0,
+          0.0,
+          20.0
+        ]
+      },
+      "leg_l": {
+        "rot": [
+          22.0,
+          0.0,
+          -20.0
+        ]
+      },
+      "arm_r_upper": {
+        "rot": [
+          50.0,
+          0.0,
+          14.0
+        ]
+      },
+      "arm_r_fore": {
+        "rot": [
+          30.0,
+          0.0,
+          0.0
+        ]
+      },
+      "fist_r": {
+        "rot": [
+          14.0,
+          0.0,
+          0.0
+        ]
+      },
+      "arm_l_upper": {
+        "rot": [
+          52.0,
+          0.0,
+          -14.0
+        ]
+      },
+      "arm_l_fore": {
+        "rot": [
+          28.0,
+          0.0,
+          0.0
+        ]
+      },
+      "claw_l": {
+        "rot": [
+          30.0,
+          0.0,
+          0.0
+        ]
+      },
+      "vines_r": {
+        "rot": [
+          -30.0,
+          0.0,
+          14.0
+        ]
+      },
+      "vines_l": {
+        "rot": [
+          -30.0,
+          0.0,
+          -14.0
+        ]
+      },
+      "roots_back": {
+        "rot": [
+          20.0,
+          0.0,
+          0.0
+        ],
+        "offset": [
+          0.0,
+          -0.1875,
+          0.1875
+        ]
+      },
+      "roots_low": {
+        "rot": [
+          22.0,
+          0.0,
+          0.0
+        ],
+        "offset": [
+          0.0,
+          -0.3125,
+          0.125
+        ]
+      },
+      "roots_leg_r": {
+        "rot": [
+          0.0,
+          0.0,
+          20.0
+        ],
+        "offset": [
+          0.1875,
+          -0.3125,
+          0.0
+        ]
+      },
+      "roots_leg_l": {
+        "rot": [
+          0.0,
+          0.0,
+          -20.0
+        ],
+        "offset": [
+          -0.1875,
+          -0.3125,
+          0.0
+        ]
+      }
+    },
+    "heartguard": {
+      "torso": {
+        "rot": [
+          8.0,
+          0.0,
+          0.0
+        ]
+      },
+      "head": {
+        "rot": [
+          14.0,
+          0.0,
+          0.0
+        ]
+      },
+      "plate_r": {
+        "rot": [
+          0.0,
+          -78.0,
+          0.0
+        ]
+      },
+      "plate_l": {
+        "rot": [
+          0.0,
+          78.0,
+          0.0
+        ]
+      },
+      "heart": {
+        "offset": [
+          0.0,
+          0.0,
+          -0.15625
+        ],
+        "scale": 1.45
+      },
+      "leg_r": {
+        "rot": [
+          -4.0,
+          0.0,
+          6.0
+        ]
+      },
+      "leg_l": {
+        "rot": [
+          4.0,
+          0.0,
+          -6.0
+        ]
+      },
+      "arm_r_upper": {
+        "rot": [
+          -6.0,
+          0.0,
+          32.0
+        ]
+      },
+      "arm_r_fore": {
+        "rot": [
+          14.0,
+          0.0,
+          0.0
+        ]
+      },
+      "fist_r": {
+        "rot": [
+          -8.0,
+          0.0,
+          0.0
+        ]
+      },
+      "arm_l_upper": {
+        "rot": [
+          -8.0,
+          0.0,
+          -34.0
+        ]
+      },
+      "arm_l_fore": {
+        "rot": [
+          14.0,
+          0.0,
+          0.0
+        ]
+      },
+      "claw_l": {
+        "rot": [
+          6.0,
+          0.0,
+          0.0
+        ]
+      },
+      "vines_r": {
+        "rot": [
+          6.0,
+          0.0,
+          16.0
+        ]
+      },
+      "vines_l": {
+        "rot": [
+          6.0,
+          0.0,
+          -16.0
+        ]
+      },
+      "roots_back": {
+        "rot": [
+          -6.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "stagger": {
+      "pelvis": {
+        "rot": [
+          6.0,
+          0.0,
+          0.0
+        ],
+        "offset": [
+          0.0,
+          0.0,
+          0.3125
+        ]
+      },
+      "torso": {
+        "rot": [
+          26.0,
+          4.0,
+          0.0
+        ]
+      },
+      "head": {
+        "rot": [
+          30.0,
+          14.0,
+          0.0
+        ]
+      },
+      "plate_r": {
+        "rot": [
+          0.0,
+          -12.0,
+          0.0
+        ]
+      },
+      "plate_l": {
+        "rot": [
+          0.0,
+          12.0,
+          0.0
+        ]
+      },
+      "leg_r": {
+        "rot": [
+          -20.0,
+          0.0,
+          6.0
+        ]
+      },
+      "leg_l": {
+        "rot": [
+          14.0,
+          0.0,
+          -6.0
+        ]
+      },
+      "arm_r_upper": {
+        "rot": [
+          -28.0,
+          0.0,
+          44.0
+        ]
+      },
+      "arm_r_fore": {
+        "rot": [
+          20.0,
+          0.0,
+          8.0
+        ]
+      },
+      "fist_r": {
+        "rot": [
+          -6.0,
+          0.0,
+          0.0
+        ]
+      },
+      "arm_l_upper": {
+        "rot": [
+          -44.0,
+          0.0,
+          -52.0
+        ]
+      },
+      "arm_l_fore": {
+        "rot": [
+          16.0,
+          0.0,
+          -8.0
+        ]
+      },
+      "claw_l": {
+        "rot": [
+          -14.0,
+          0.0,
+          0.0
+        ]
+      },
+      "vines_r": {
+        "rot": [
+          28.0,
+          0.0,
+          14.0
+        ]
+      },
+      "vines_l": {
+        "rot": [
+          28.0,
+          0.0,
+          -14.0
+        ]
+      },
+      "roots_back": {
+        "rot": [
+          -16.0,
+          0.0,
+          0.0
+        ]
+      },
+      "roots_low": {
+        "rot": [
+          -14.0,
+          0.0,
+          0.0
+        ]
+      }
+    }
+  },
+  "anchors": {
+    "heart": {
+      "part": "heart",
+      "local": [
+        0.0,
+        0.0,
+        -0.25
+      ]
+    },
+    "eyes": {
+      "part": "head",
+      "local": [
+        0.0,
+        0.28125,
+        -0.65625
+      ]
+    },
+    "slam_fist": {
+      "part": "fist_r",
+      "local": [
+        0.0,
+        -1.5,
+        -0.1875
+      ]
+    },
+    "sweep_claw": {
+      "part": "claw_l",
+      "local": [
+        0.0,
+        -0.84375,
+        -0.75
+      ]
+    }
+  }
+}
