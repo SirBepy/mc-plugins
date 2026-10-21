@@ -7,6 +7,7 @@ import dev.sirbepy.mc.minibosses.ability.GuardianAbilityRegistry;
 import dev.sirbepy.mc.minibosses.arena.ArenaCommand;
 import dev.sirbepy.mc.minibosses.arena.ArenaFights;
 import dev.sirbepy.mc.minibosses.arena.ArenaRegistry;
+import dev.sirbepy.mc.minibosses.arena.GuardianTestCommand;
 import dev.sirbepy.mc.minibosses.arena.SummonGate;
 import dev.sirbepy.mc.minibosses.chronicle.Chronicle;
 import dev.sirbepy.mc.minibosses.chronicle.ChronicleCipher;
@@ -15,6 +16,7 @@ import dev.sirbepy.mc.minibosses.chronicle.ChronicleListener;
 import dev.sirbepy.mc.minibosses.chronicle.ChronicleProgress;
 import dev.sirbepy.mc.minibosses.chronicle.ChronicleText;
 import dev.sirbepy.mc.minibosses.chronicle.ChroniclerNpc;
+import dev.sirbepy.mc.minibosses.engine.GuardianRuntime;
 import dev.sirbepy.mc.minibosses.hof.HallOfFame;
 import dev.sirbepy.mc.minibosses.progress.GuardianKills;
 import dev.sirbepy.mc.minibosses.progress.KillRecorder;
@@ -55,6 +57,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 
@@ -73,6 +76,7 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
     private SovereignFight sovereignFight;
     private SovereignDiscovery sovereignDiscovery;
     private ArenaFights arenaFights;
+    private GuardianRuntime runtime;
 
     @Override
     public void onEnable() {
@@ -148,7 +152,11 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(new KillRecorder(kills), this);
         getServer().getPluginManager().registerEvents(arenaFights, this);
         getServer().getScheduler().runTaskTimer(this, arenaFights::tick, 20L, 20L);
-        ArenaCommand arenaCommand = new ArenaCommand(arenas, guardians);
+        GuardianTestCommand testCommand = new GuardianTestCommand(this, arenas, arenaFights, gate, Map.of(
+                SentinelFight.GUARDIAN_ID, sentinelFight::spawn,
+                TyrantFight.GUARDIAN_ID, tyrantFight::spawn,
+                SovereignFight.GUARDIAN_ID, sovereignFight::spawn));
+        ArenaCommand arenaCommand = new ArenaCommand(arenas, guardians, testCommand);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> arenaCommand.registerInto(event.registrar()));
         getServer().getPluginManager().registerEvents(sentinelFight, this);
@@ -157,6 +165,13 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(tyrantDiscovery, this);
         getServer().getPluginManager().registerEvents(sovereignFight, this);
         getServer().getPluginManager().registerEvents(sovereignDiscovery, this);
+
+        // Shared boss-fight engine: one task ticks every live Guardian's attack loop. No Guardian
+        // registers a plan yet; each one's own class adds a runtime.register(...) line when it does.
+        runtime = new GuardianRuntime(this);
+        getServer().getPluginManager().registerEvents(runtime, this);
+        getServer().getScheduler().runTaskTimer(this, runtime::tick, 1L, 1L);
+        runtime.sweepStrays();
 
         // Reapplies Heart of the Wild's passive Regeneration, the Ashen Core's passive Fire
         // Resistance, and the Hollow Crown's passive Slow Falling every second to whoever still
@@ -231,6 +246,9 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
     public void onDisable() {
         if (arenaFights != null) {
             arenaFights.releaseAll();
+        }
+        if (runtime != null) {
+            runtime.shutdown();
         }
         getLogger().info("Minibosses disabled.");
     }

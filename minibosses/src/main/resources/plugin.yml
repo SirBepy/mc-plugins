@@ -7,5 +7,5 @@ softdepend: [Guild, floodgate]
 
 permissions:
   minibosses.admin:
-    description: Chronicler admin (/chronicle admin) and Guardian arenas (/guardianadmin arena).
+    description: Chronicler admin (/chronicle admin), Guardian arenas (/guardianadmin arena) and rehearsal fights (/guardianadmin test).
     default: op

@@ -15,16 +15,20 @@ import org.bukkit.World;
 /**
  * {@code /guardianadmin arena ...}, ops, console and RCON only: set a Guardian's arena from two
  * opposite corner blocks, clear it, or list every arena with its size. {@code list} is also how
- * Shenron answers a player asking where a Guardian's arena is.
+ * Shenron answers a player asking where a Guardian's arena is. Also the root of
+ * {@code /guardianadmin test}, whose branch {@link GuardianTestCommand} supplies: one root literal
+ * keeps both subcommands registered together.
  */
 public final class ArenaCommand {
 
     private final ArenaRegistry arenas;
     private final GuardianRegistry guardians;
+    private final GuardianTestCommand test;
 
-    public ArenaCommand(ArenaRegistry arenas, GuardianRegistry guardians) {
+    public ArenaCommand(ArenaRegistry arenas, GuardianRegistry guardians, GuardianTestCommand test) {
         this.arenas = arenas;
         this.guardians = guardians;
+        this.test = test;
     }
 
     public void registerInto(Commands registrar) {
@@ -39,6 +43,7 @@ public final class ArenaCommand {
                         .then(Commands.literal("clear")
                                 .then(Commands.argument("guardian", StringArgumentType.word()).executes(this::clear)))
                         .then(set))
+                .then(test.node())
                 .build(), "Guardian arenas (admin)");
     }
 

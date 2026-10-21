@@ -52,6 +52,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -309,6 +310,30 @@ class TyrantFightTest {
     }
 
     // --- Hall of Fame + Guild contract wiring ---
+
+    @Test
+    void aTestFightBossDropsNothingRecordsNothingAndFiresNoDefeatedEvent() {
+        LivingEntity boss = spawnNormal();
+        melee(boss, 1);
+        dev.sirbepy.mc.minibosses.engine.TestFight.mark(boss, dev.sirbepy.mc.minibosses.engine.TestFight.key(plugin));
+        List<GuardianDefeatedEvent> captured = new java.util.ArrayList<>();
+        server.getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            public void onGuardianDefeated(GuardianDefeatedEvent event) {
+                captured.add(event);
+            }
+        }, plugin);
+        EntityDeathEvent death = new EntityDeathEvent(boss,
+                DamageSource.builder(DamageType.PLAYER_ATTACK).withDirectEntity(alice).build(), new java.util.ArrayList<>());
+        death.setDroppedExp(40);
+
+        fight.onDeath(death);
+
+        assertTrue(death.getDrops().isEmpty(), "a /guardianadmin test rehearsal drops nothing");
+        assertEquals(0, death.getDroppedExp());
+        assertFalse(hallOfFame.done(TyrantFight.GUARDIAN_ID, HallOfFame.Slot.FIRST_KILL));
+        assertTrue(captured.isEmpty());
+    }
 
     @Test
     void aNormalKillRecordsTheFirstEverHallOfFameEntry() {

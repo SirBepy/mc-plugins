@@ -3,6 +3,7 @@ package dev.sirbepy.mc.minibosses.tyrant;
 import dev.sirbepy.mc.core.dragon.DragonFighters;
 import dev.sirbepy.mc.guild.events.GuardianDefeatedEvent;
 import dev.sirbepy.mc.minibosses.ability.GuardianAbilityRegistry;
+import dev.sirbepy.mc.minibosses.engine.TestFight;
 import dev.sirbepy.mc.minibosses.hof.HallOfFame;
 import dev.sirbepy.mc.minibosses.registry.GuardianDef;
 import dev.sirbepy.mc.minibosses.registry.GuardianRegistry;
@@ -74,6 +75,7 @@ public final class TyrantFight implements Listener {
     private final NamespacedKey guardianKey;
     private final NamespacedKey tierKey;
     private final NamespacedKey blazeSummonTriggeredKey;
+    private final NamespacedKey testFightKey;
 
     private final Map<UUID, BossBar> bossBars = new ConcurrentHashMap<>();
 
@@ -87,6 +89,7 @@ public final class TyrantFight implements Listener {
         this.logger = logger;
         this.guardianKey = new NamespacedKey(plugin, "guardian");
         this.tierKey = new NamespacedKey(plugin, "guardian_tier");
+        this.testFightKey = TestFight.key(plugin);
         this.blazeSummonTriggeredKey = new NamespacedKey(plugin, "blaze_summon_triggered");
     }
 
@@ -229,14 +232,20 @@ public final class TyrantFight implements Listener {
         }
         Tier tier = tierOf(boss);
         event.getDrops().clear();
-        event.getDrops().addAll(loot.forTier(tier));
+        if (TestFight.is(boss, testFightKey)) {
+            // A /guardianadmin test rehearsal pays and records nothing: no loot, no XP, no Hall of Fame,
+            // and no GuardianDefeatedEvent (which would credit Guild contracts, kills, tiers and fragments).
+            event.setDroppedExp(0);
+        } else {
+            event.getDrops().addAll(loot.forTier(tier));
 
-        Set<UUID> fighterIds = fighters.fighters(boss);
-        hallOfFame.guardianKilled(GUARDIAN_ID, tier, fighterIds, boss.getWorld().getName());
-        // A plain Bukkit event, not a direct call: Guild is a softdepend (plugin.yml), so this must
-        // not require Guild to be installed - firing to no listener is harmless, same shape as
-        // GuardianDefeatedEvent's own javadoc describes.
-        Bukkit.getPluginManager().callEvent(new GuardianDefeatedEvent(GUARDIAN_ID, tier.name(), fighterIds));
+            Set<UUID> fighterIds = fighters.fighters(boss);
+            hallOfFame.guardianKilled(GUARDIAN_ID, tier, fighterIds, boss.getWorld().getName());
+            // A plain Bukkit event, not a direct call: Guild is a softdepend (plugin.yml), so this must
+            // not require Guild to be installed - firing to no listener is harmless, same shape as
+            // GuardianDefeatedEvent's own javadoc describes.
+            Bukkit.getPluginManager().callEvent(new GuardianDefeatedEvent(GUARDIAN_ID, tier.name(), fighterIds));
+        }
 
         BossBar bar = bossBars.remove(boss.getUniqueId());
         if (bar != null) {
