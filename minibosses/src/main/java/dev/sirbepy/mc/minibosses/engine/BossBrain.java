@@ -73,6 +73,7 @@ public final class BossBrain {
         }
         ticks++;
         ctx.animator().tick();
+        ctx.tickTickers();
         advancePhase();
         if (ctx.fighters().isEmpty()) {
             cancelAttack();
@@ -153,6 +154,7 @@ public final class BossBrain {
         }
         ended = true;
         cancelAttack();
+        ctx.endTickers();
         ctx.entities().clear();
     }
 }

@@ -397,4 +397,79 @@ class BossBrainTest extends EngineTestBase {
         assertTrue(brain.ended());
         assertEquals(List.of("slam"), cancelled, "the attack in progress is cancelled when the boss goes");
     }
+
+    @Test
+    void aTickerKeepsRunningBetweenAttacksAndWithNobodyInsideThenClosesWhenTheFightEnds() {
+        FightContext ctx = context(boss(), 1);
+        BossBrain brain = new BossBrain(ctx, plan(fake("slam", 10), fake("b", 10), fake("c", 10)));
+        int[] ticked = {0};
+        boolean[] closed = {false};
+        ctx.addTicker(new FightTicker() {
+            @Override
+            public boolean tick() {
+                ticked[0]++;
+                return false;
+            }
+
+            @Override
+            public void close() {
+                closed[0] = true;
+            }
+        });
+        alice.teleport(at(100, 64, 100)); // out of the area: no fighters, so no attack ever runs
+
+        run(brain, 30);
+
+        assertEquals(30, ticked[0], "ticked every brain tick, fighters or not");
+        assertFalse(closed[0]);
+        brain.end();
+        assertTrue(closed[0]);
+    }
+
+    @Test
+    void aTickerThatReportsDoneIsDroppedAndClosedOnce() {
+        FightContext ctx = context(boss(), 1);
+        BossBrain brain = new BossBrain(ctx, plan(fake("slam", 10), fake("b", 10), fake("c", 10)));
+        int[] ticked = {0};
+        int[] closed = {0};
+        ctx.addTicker(new FightTicker() {
+            @Override
+            public boolean tick() {
+                return ++ticked[0] == 3;
+            }
+
+            @Override
+            public void close() {
+                closed[0]++;
+            }
+        });
+
+        run(brain, 10);
+        brain.end();
+
+        assertEquals(3, ticked[0]);
+        assertEquals(1, closed[0]);
+    }
+
+    @Test
+    void perFightStateIsCreatedOnceAndForgottenWhenTheFightEnds() {
+        FightContext ctx = context(boss(), 1);
+        BossBrain brain = new BossBrain(ctx, plan(fake("slam", 10), fake("b", 10), fake("c", 10)));
+        int[] made = {0};
+
+        Object first = ctx.state(StringBuilder.class, c -> {
+            made[0]++;
+            return new StringBuilder();
+        });
+        Object second = ctx.state(StringBuilder.class, c -> {
+            made[0]++;
+            return new StringBuilder();
+        });
+        brain.end();
+        Object afterEnd = ctx.state(StringBuilder.class, c -> new StringBuilder());
+
+        assertTrue(first == second);
+        assertEquals(1, made[0]);
+        assertFalse(first == afterEnd);
+    }
 }

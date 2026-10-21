@@ -8,7 +8,6 @@ import dev.sirbepy.mc.minibosses.engine.BossBrain;
 import dev.sirbepy.mc.minibosses.engine.FightArea;
 import dev.sirbepy.mc.minibosses.engine.FightContext;
 import dev.sirbepy.mc.minibosses.engine.GuardianRuntime;
-import dev.sirbepy.mc.minibosses.engine.PhasePlan;
 import dev.sirbepy.mc.minibosses.engine.TestFight;
 import dev.sirbepy.mc.minibosses.hof.HallOfFame;
 import dev.sirbepy.mc.minibosses.registry.GuardianDef;
@@ -18,12 +17,12 @@ import dev.sirbepy.mc.minibosses.registry.Tier;
 import dev.sirbepy.mc.minibosses.rig.BedrockStandIn;
 import dev.sirbepy.mc.minibosses.rig.RigBody;
 import dev.sirbepy.mc.minibosses.rig.RigDefinition;
+import dev.sirbepy.mc.minibosses.sentinel.attack.SentinelPlans;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
-import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.boss.BarColor;
@@ -60,10 +59,9 @@ import java.util.logging.Logger;
 
 /**
  * Owns the Overgrown Sentinel's spawn (with solo/group scaling via {@link SentinelScaling}),
- * fighter tracking, half-health ability trigger (all 3 tiers, see {@link RootAbility},
- * {@link ThornVinesAbility}, {@link RegrowthAbility}) and death handling - loot, the
- * {@code minibosses} Hall of Fame, and the {@code guild} {@code GuardianDefeatedEvent} contract
- * hook. A single
+ * fighter tracking, the per-tier attack kit it is started with (see {@link SentinelPlans}), the
+ * hit flash of its body, and death handling - loot, the {@code minibosses} Hall of Fame, and the
+ * {@code guild} {@code GuardianDefeatedEvent} contract hook. A single
  * {@link Ravager} stands in for the whole boss (no {@code ComplexEntityPart}s needed): chosen
  * over an {@link org.bukkit.entity.IronGolem} because this repo's own
  * {@code core.dragon.DragonFightersTest} already proves a Ravager works as the generalized
@@ -81,7 +79,6 @@ public final class SentinelFight implements Listener {
 
     private final JavaPlugin plugin;
     private final GuardianRegistry guardians;
-    private final GuardianAbilityRegistry abilities;
     private final DragonFighters fighters;
     private final SentinelLoot loot;
     private final HallOfFame hallOfFame;
@@ -94,20 +91,20 @@ public final class SentinelFight implements Listener {
 
     private final NamespacedKey guardianKey;
     private final NamespacedKey tierKey;
-    private final NamespacedKey rootTriggeredKey;
     private final NamespacedKey testFightKey;
     private final NamespacedKey centerKey;
 
     private final Map<UUID, BossBar> bossBars = new ConcurrentHashMap<>();
     /** Live model bodies by boss UUID, for the join refresh and the stand-in hit forwarding. */
     private final Map<UUID, RigBody> bodies = new ConcurrentHashMap<>();
+    private final Map<UUID, HitFlash> flashes = new ConcurrentHashMap<>();
 
+    /** {@code abilities} is no longer read: the Sentinel's kit is its phase plan, not Guardian-file ability ids. */
     public SentinelFight(JavaPlugin plugin, GuardianRegistry guardians, GuardianAbilityRegistry abilities,
                           DragonFighters fighters, SentinelLoot loot, HallOfFame hallOfFame, Logger logger,
                           GuardianRuntime runtime, ArenaRegistry arenas, Predicate<UUID> isBedrock) {
         this.plugin = plugin;
         this.guardians = guardians;
-        this.abilities = abilities;
         this.fighters = fighters;
         this.loot = loot;
         this.hallOfFame = hallOfFame;
@@ -119,7 +116,6 @@ public final class SentinelFight implements Listener {
         this.guardianKey = new NamespacedKey(plugin, "guardian");
         this.tierKey = new NamespacedKey(plugin, "guardian_tier");
         this.testFightKey = TestFight.key(plugin);
-        this.rootTriggeredKey = new NamespacedKey(plugin, "root_triggered");
         this.centerKey = new NamespacedKey(plugin, "spawn_center");
         runtime.register(GUARDIAN_ID, this::resume);
     }
@@ -178,7 +174,7 @@ public final class SentinelFight implements Listener {
         }
         bossBars.put(sentinel.getUniqueId(), bar);
 
-        attachBody(runtime.start(sentinel, tier, plan(), areaAround(location)));
+        attachBody(runtime.start(sentinel, tier, SentinelPlans.forTier(tier), areaAround(location)));
 
         return Optional.of(sentinel);
     }
@@ -195,34 +191,25 @@ public final class SentinelFight implements Listener {
             return;
         }
         FightContext ctx = brain.context();
+        // A boss saved mid-attack must not wake up with its AI still held off.
+        if (ctx.boss() instanceof Mob mob) {
+            ctx.effects().hold(mob, false);
+        }
         try {
             RigBody body = new RigBody(rig.get(), ctx, isBedrock);
             ctx.animator(body);
             bodies.put(ctx.boss().getUniqueId(), body);
+            HitFlash flash = new HitFlash(body);
+            ctx.addTicker(flash);
+            flashes.put(ctx.boss().getUniqueId(), flash);
         } catch (RuntimeException e) {
             logger.log(Level.SEVERE, "Could not build the Sentinel's model; it fights without one", e);
         }
     }
 
-    /**
-     * Three phases (health 100 to 70 to 35 to 0 percent) with no attacks yet: the Sentinel walks and
-     * melees, and each transition already staggers the body and cracks stone.
-     */
-    static PhasePlan plan() {
-        return new PhasePlan(List.of(
-                new PhasePlan.Phase("awakened", 60, List.of()),
-                new PhasePlan.Phase("cracking", 50, List.of(), SentinelFight::stagger),
-                new PhasePlan.Phase("breaking", 40, List.of(), SentinelFight::stagger)));
-    }
-
-    private static void stagger(FightContext ctx) {
-        ctx.animator().play("stagger", 20);
-        ctx.effects().sound(ctx.boss().getLocation(), Sound.BLOCK_STONE_BREAK, 2.0f, 0.5f);
-    }
-
-    /** A boss found alive after a restart: same plan, the area it rose in, and the model rebuilt on its new brain. */
+    /** A boss found alive after a restart: same tier plan, the area it rose in, and the model rebuilt on its new brain. */
     private Optional<GuardianRuntime.Resumed> resume(LivingEntity boss, Tier tier) {
-        return Optional.of(new GuardianRuntime.Resumed(plan(), areaAround(storedCenter(boss)), this::attachBody));
+        return Optional.of(new GuardianRuntime.Resumed(SentinelPlans.forTier(tier), areaAround(storedCenter(boss)), this::attachBody));
     }
 
     private Location storedCenter(LivingEntity boss) {
@@ -261,19 +248,10 @@ public final class SentinelFight implements Listener {
             mob.setTarget(player);
         }
         updateBossBar(boss);
-        maybeTriggerRoot(boss, event.getFinalDamage());
-        notifyRegrowth(boss, event.getFinalDamage());
-    }
-
-    /** Forwards this hit to {@link RegrowthAbility} if a Mythic fight's healing-roots phase is
-     * currently active on this boss - a no-op the rest of the time (Normal/Heroic never register
-     * this ability id, and {@code RegrowthAbility.isActive} is false outside its own window). */
-    private void notifyRegrowth(LivingEntity boss, double damage) {
-        abilities.get(RegrowthAbility.ID).ifPresent(ability -> {
-            if (ability instanceof RegrowthAbility regrowth && regrowth.isActive(boss)) {
-                regrowth.onIncomingDamage(boss, damage);
-            }
-        });
+        HitFlash flash = flashes.get(boss.getUniqueId());
+        if (flash != null) {
+            flash.hit();
+        }
     }
 
     private void updateBossBar(LivingEntity boss) {
@@ -282,37 +260,6 @@ public final class SentinelFight implements Listener {
         if (bar != null && max != null && max.getValue() > 0) {
             bar.setProgress(Math.max(0, Math.min(1, boss.getHealth() / max.getValue())));
         }
-    }
-
-    /** Fires every ability id this boss's own tier lists the first time the Sentinel's projected
-     * health crosses half its max - a PDC flag makes sure a long fight sitting at the threshold
-     * only triggers it once. An ability id with no registered {@code GuardianAbility} (any future
-     * tier row naming an id nobody implemented yet) is skipped, never a crash - see
-     * {@code GuardianAbilityRegistry}. */
-    private void maybeTriggerRoot(LivingEntity boss, double incomingDamage) {
-        PersistentDataContainer pdc = boss.getPersistentDataContainer();
-        if (pdc.has(rootTriggeredKey, PersistentDataType.BOOLEAN)) {
-            return;
-        }
-        AttributeInstance max = boss.getAttribute(Attribute.MAX_HEALTH);
-        if (max == null) {
-            return;
-        }
-        double projectedHealth = boss.getHealth() - incomingDamage;
-        if (projectedHealth > max.getValue() * 0.5) {
-            return;
-        }
-        GuardianDef def = guardians.get(GUARDIAN_ID).orElse(null);
-        if (def == null) {
-            return;
-        }
-        GuardianTierRow row = def.tiers().get(tierOf(boss));
-        for (String abilityId : row.abilityIds()) {
-            abilities.get(abilityId).ifPresentOrElse(ability -> ability.trigger(boss),
-                    () -> logger.fine("Ability '" + abilityId + "' for " + GUARDIAN_ID
-                            + " is not registered yet; skipping it."));
-        }
-        pdc.set(rootTriggeredKey, PersistentDataType.BOOLEAN, true);
     }
 
     @EventHandler
@@ -343,6 +290,7 @@ public final class SentinelFight implements Listener {
             bar.removeAll();
         }
         bodies.remove(boss.getUniqueId());
+        flashes.remove(boss.getUniqueId());
     }
 
     /**

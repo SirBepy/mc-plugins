@@ -2,14 +2,19 @@ package dev.sirbepy.mc.minibosses.engine;
 
 import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.World;
+import org.bukkit.damage.DamageSource;
+import org.bukkit.entity.Mob;
+import org.bukkit.entity.Player;
 
 /**
- * The only place the engine draws and plays sound. A seam so geometry and loop tests never reach
- * MockBukkit's unimplemented particle calls, and a test can record exactly what a telegraph drew.
+ * The only place the engine draws, plays sound, hurts a player and holds the boss's body still. A
+ * seam so geometry and loop tests never reach MockBukkit's unimplemented particle, damage and
+ * pathfinder calls, and a test can record exactly what a telegraph drew and who was hurt.
  */
 public interface FightEffects {
 
@@ -23,6 +28,29 @@ public interface FightEffects {
      * draws them, so the loop tests that only record dust and sound need not know about it.
      */
     default void particle(World world, Particle particle, double x, double y, double z, int count, double spread) {
+    }
+
+    /**
+     * Debris of {@code material} flying up from a point, as if that block cracked. Purely visual:
+     * no block changes. A no-op unless an implementation draws it.
+     */
+    default void blockCrack(World world, Material material, double x, double y, double z, int count, double spread) {
+    }
+
+    /** Hurts {@code target} as the damage {@code source} describes. */
+    default void hurt(Player target, double amount, DamageSource source) {
+        target.damage(amount, source);
+    }
+
+    /**
+     * Stops the boss's own AI (no walking, no melee) while an attack winds up and lands, or gives it
+     * back. An unaware mob still takes knockback and gravity.
+     */
+    default void hold(Mob boss, boolean held) {
+        if (held) {
+            boss.getPathfinder().stopPathfinding();
+        }
+        boss.setAware(!held);
     }
 
     /** The real thing: dust seen from across a 30 block arena, sounds on the hostile channel. */
@@ -41,6 +69,12 @@ public interface FightEffects {
         @Override
         public void particle(World world, Particle particle, double x, double y, double z, int count, double spread) {
             world.spawnParticle(particle, x, y, z, count, spread, spread, spread, 0.0);
+        }
+
+        @Override
+        public void blockCrack(World world, Material material, double x, double y, double z, int count,
+                double spread) {
+            world.spawnParticle(Particle.BLOCK, x, y, z, count, spread, spread * 0.5, spread, 0.0, material.createBlockData());
         }
     };
 }

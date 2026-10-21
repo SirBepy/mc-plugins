@@ -13,6 +13,7 @@ import dev.sirbepy.mc.minibosses.registry.Tier;
 import dev.sirbepy.mc.minibosses.rig.RigBody;
 import dev.sirbepy.mc.minibosses.rig.RigDefinition;
 import dev.sirbepy.mc.minibosses.rig.RigMath;
+import dev.sirbepy.mc.minibosses.sentinel.attack.SentinelPlans;
 import org.bukkit.Color;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -94,6 +95,16 @@ class SentinelRigTest {
         @Override
         public void sound(Location at, Sound sound, float volume, float pitch) {
             sounds.add(sound);
+        }
+
+        @Override
+        public void hold(org.bukkit.entity.Mob boss, boolean held) {
+            // MockBukkit has no pathfinder; the attack kit's tests assert what is held.
+        }
+
+        @Override
+        public void hurt(org.bukkit.entity.Player target, double amount, DamageSource source) {
+            target.setHealth(Math.max(0.0, target.getHealth() - amount));
         }
 
         @Override
@@ -367,6 +378,8 @@ class SentinelRigTest {
     void theDisplaysFollowTheBaseAndStrideWhileItWalksThenRest() {
         LivingEntity boss = spawn(Tier.NORMAL);
         RigBody body = body(boss);
+        // Nobody to fight, so no attack winds up over the 22 ticks this walks and its pose never replaces the stride.
+        alice.teleport(new Location(world, 60, 64, 60));
         tickRuntime(2);
         assertEquals("idle", body.rig().pose());
 
@@ -458,7 +471,7 @@ class SentinelRigTest {
         LivingEntity boss = spawn(Tier.NORMAL);
         BossBrain brain = runtime.get(boss.getUniqueId()).orElseThrow();
         RigBody body = body(boss);
-        assertEquals(3, SentinelFight.plan().phaseCount());
+        assertEquals(3, SentinelPlans.forTier(Tier.NORMAL).phaseCount());
 
         boss.setHealth(boss.getAttribute(Attribute.MAX_HEALTH).getValue() * 0.6);
         runtime.tick();
@@ -466,10 +479,6 @@ class SentinelRigTest {
         assertEquals(1, brain.phase());
         assertEquals("stagger", body.rig().pose());
         assertTrue(effects.sounds.contains(Sound.BLOCK_STONE_BREAK));
-        // No attacks are filled in yet: the boss just walks and melees.
-        tickRuntime(200);
-        assertTrue(brain.currentAttackId().isEmpty());
-        assertEquals("idle", body.rig().pose());
     }
 
     @Test

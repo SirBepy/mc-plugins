@@ -68,9 +68,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
  * {@code guardians/overgrown_sentinel.yml} loads with all 3 tiers (not a hand-duplicated copy,
  * same convention as {@code GuardianRegistryTest}), that a Normal-tier fight can be simulated end
  * to end (spawn, fighter tracking via the generalized {@code core.dragon.DragonFighters}, the
- * Normal-tier defensive ability firing once at half health, a kill dropping the Heart of the
- * Wild), that Heroic/Mythic's own real abilities ({@link ThornVinesAbility}, {@link RegrowthAbility})
- * resolve and fire alongside Root rather than being skipped, that solo/group scaling changes the
+ * old one-shot half-health abilities being gone, a kill dropping the Heart of the
+ * Wild), that solo/group scaling changes the
  * boss's own stats at summon time, that a kill wires into the {@code minibosses} Hall of Fame and
  * fires the {@code guild} {@code GuardianDefeatedEvent}, and that the discovery hook's cooldown
  * blocks a repeat summon. No MockBukkit-free unit test here: every case needs a live
@@ -111,9 +110,6 @@ class SentinelFightTest {
         guardians.load();
 
         abilities = new GuardianAbilityRegistry();
-        abilities.register(new RootAbility());
-        abilities.register(new ThornVinesAbility(plugin));
-        abilities.register(new RegrowthAbility(plugin));
 
         heartOfTheWild = new HeartOfTheWild(plugin);
         SentinelLoot loot = new SentinelLoot(heartOfTheWild);
@@ -140,27 +136,18 @@ class SentinelFightTest {
     }
 
     @Test
-    void theRealGuardianYamlLoadsWithAllThreeTiersAndRealNormalAbilities() {
+    void theRealGuardianYamlLoadsWithAllThreeTiersAndNoAbilityIds() {
         GuardianDef def = guardians.get("overgrown_sentinel").orElseThrow();
 
         assertEquals("overgrown_sentinel", def.id());
         assertEquals("The Overgrown Sentinel", def.displayName());
         assertEquals(World.Environment.NORMAL, def.dimension());
         assertEquals(3, def.tiers().size());
-
-        var normal = def.tiers().get(Tier.NORMAL);
-        assertEquals(List.of(RootAbility.ID), normal.abilityIds());
-        assertEquals(120.0, normal.health());
-
-        var heroic = def.tiers().get(Tier.HEROIC);
-        assertEquals(List.of(RootAbility.ID, "overgrown_sentinel_thorn_vines"), heroic.abilityIds());
-
-        var mythic = def.tiers().get(Tier.MYTHIC);
-        assertEquals(List.of(RootAbility.ID, "overgrown_sentinel_thorn_vines", "overgrown_sentinel_regrowth"),
-                mythic.abilityIds());
-        // Phase B: both Heroic and Mythic's own ability ids now resolve to real implementations.
-        assertTrue(abilities.get(ThornVinesAbility.ID).isPresent());
-        assertTrue(abilities.get(RegrowthAbility.ID).isPresent());
+        assertEquals(120.0, def.tiers().get(Tier.NORMAL).health());
+        // The kit is the phase plan; the file's ability lists stay parseable but empty.
+        for (Tier tier : Tier.values()) {
+            assertEquals(List.of(), def.tiers().get(tier).abilityIds(), tier + " lists no ability ids");
+        }
     }
 
     /** The Sentinels in the world; the Bedrock stand-in is a second Ravager but a fight entity, never a Guardian. */
@@ -181,30 +168,19 @@ class SentinelFightTest {
     }
 
     @Test
-    void aNormalTierFightTracksFightersAndRootsAtHalfHealthOnce() {
+    void aNormalTierFightTracksFightersAndNothingFiresOnceAtHalfHealth() {
         LivingEntity boss = spawnNormal();
         assertEquals(120.0, boss.getHealth());
 
-        // Above half health (120 -> 90): no root yet.
         melee(boss, 30);
-        assertFalse(alice.hasPotionEffect(PotionEffectType.SLOWNESS), "root must not fire before the threshold");
+        melee(boss, 40); // 120 -> 50: the old one-shot Root used to fire here
 
-        // Crosses half health (90 -> 50): root fires exactly once.
-        melee(boss, 40);
-        assertTrue(alice.hasPotionEffect(PotionEffectType.SLOWNESS), "root must fire once the boss crosses half health");
-        assertEquals(RootAbility.AMPLIFIER, alice.getPotionEffect(PotionEffectType.SLOWNESS).getAmplifier());
-
-        // A second crossing-eligible hit must not re-trigger (PDC flag already set); clear the
-        // effect and confirm it is not reapplied by another hit at/under the threshold.
-        alice.removePotionEffect(PotionEffectType.SLOWNESS);
-        melee(boss, 5);
-        assertFalse(alice.hasPotionEffect(PotionEffectType.SLOWNESS), "root is a once-per-fight trigger");
-
+        assertFalse(alice.hasPotionEffect(PotionEffectType.SLOWNESS), "the retired half-health root must not fire");
         assertEquals(java.util.Set.of(alice.getUniqueId()), fight.fightersOf(boss));
     }
 
     @Test
-    void aCancelledHitDoesNotCountAsAFighterOrTriggerRoot() {
+    void aCancelledHitDoesNotCountAsAFighter() {
         LivingEntity boss = spawnNormal();
 
         EntityDamageByEntityEvent cancelled = new EntityDamageByEntityEvent(alice, boss,
@@ -213,8 +189,6 @@ class SentinelFightTest {
         cancelled.setCancelled(true);
         fight.onDamage(cancelled);
 
-        assertFalse(alice.hasPotionEffect(PotionEffectType.SLOWNESS),
-                "a cancelled hit must never trigger Root");
         assertEquals(java.util.Set.of(), fight.fightersOf(boss),
                 "a cancelled hit must never credit its attacker as a fighter");
     }
@@ -318,56 +292,18 @@ class SentinelFightTest {
         assertEquals(java.util.Set.of(alice.getUniqueId()), event.fighterIds());
     }
 
-    // --- Mythic's healing-roots phase (RegrowthAbility) ---
-
     @Test
-    void mythicRegrowthHealsTheBossWhenNeverInterrupted() {
-        LivingEntity boss = fight.spawn(new Location(world, 0, 64, 0), Tier.MYTHIC).orElseThrow();
-        boss.setHealth(boss.getHealth() - 200); // wound it well below max so healing is visible and uncapped
-
-        new RegrowthAbility(plugin).trigger(boss);
-        double healthBeforePulses = boss.getHealth();
-        server.getScheduler().performTicks((int) (RegrowthAbility.HEAL_INTERVAL_TICKS * RegrowthAbility.PULSES) + 5);
-
-        assertTrue(boss.getHealth() > healthBeforePulses, "an uninterrupted regrowth window must heal the boss");
-    }
-
-    @Test
-    void mythicRegrowthIsInterruptedByEnoughDamageDuringTheWindow() {
-        LivingEntity boss = fight.spawn(new Location(world, 0, 64, 0), Tier.MYTHIC).orElseThrow();
-        boss.setHealth(boss.getHealth() - 200);
-
-        RegrowthAbility regrowth = new RegrowthAbility(plugin);
-        abilities.register(regrowth);
-        regrowth.trigger(boss);
-        assertTrue(regrowth.isActive(boss));
-
-        // Mythic's max health is 480.0; the interrupt threshold is 15% of that (72.0).
-        regrowth.onIncomingDamage(boss, 80.0);
-
-        assertFalse(regrowth.isActive(boss), "enough damage during the window must interrupt regrowth immediately");
-        double healthAfterInterrupt = boss.getHealth();
-        server.getScheduler().performTicks((int) (RegrowthAbility.HEAL_INTERVAL_TICKS * RegrowthAbility.PULSES) + 5);
-        assertEquals(healthAfterInterrupt, boss.getHealth(), 0.0001, "an interrupted regrowth must not keep healing");
-    }
-
-    @Test
-    void aHeroicTierFightTriggersRootAndThornVinesTogetherAtHalfHealth() {
+    void aHeroicFightCrossingHalfHealthAppliesNoOneShotAbility() {
         alice.teleport(new Location(world, 0, 64, 0));
         LivingEntity boss = fight.spawn(new Location(world, 0, 64, 0), Tier.HEROIC).orElseThrow();
         assertEquals(260.0, boss.getHealth());
 
-        // Crosses half of Heroic's 260 health (260 -> 100): triggers both root and
-        // overgrown_sentinel_thorn_vines, which are both registered for Heroic.
-        assertDoesNotThrow(() -> melee(boss, 160));
+        assertDoesNotThrow(() -> melee(boss, 160)); // 260 -> 100: thorn vines and root used to fire here
+        server.getScheduler().performTicks(60);
 
-        assertTrue(alice.hasPotionEffect(PotionEffectType.SLOWNESS), "root must still fire alongside thorn vines");
-
-        // Thorn vines' first check (40 ticks later): Alice hasn't moved, so she takes a bite.
-        double healthBefore = alice.getHealth();
-        server.getScheduler().performTicks(ThornVinesAbility.CHECK_INTERVAL_TICKS);
-        assertTrue(alice.getHealth() < healthBefore, "standing still under thorn vines must deal damage");
-        assertTrue(alice.hasPotionEffect(PotionEffectType.POISON), "thorn vines must also apply Poison");
+        assertFalse(alice.hasPotionEffect(PotionEffectType.SLOWNESS), "no root");
+        assertFalse(alice.hasPotionEffect(PotionEffectType.POISON), "no thorn vines");
+        assertEquals(20.0, alice.getHealth(), "nothing bit Alice");
     }
 
     @Test

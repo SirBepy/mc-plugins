@@ -10,8 +10,12 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
@@ -29,6 +33,8 @@ public final class FightContext {
     private final FightEntities entities;
     private final FightEffects effects;
     private final Predicate<Player> onGround;
+    private final List<FightTicker> tickers = new ArrayList<>();
+    private final Map<Class<?>, Object> state = new HashMap<>();
     private Animator animator = Animator.NONE;
     private int phase;
 
@@ -85,6 +91,42 @@ public final class FightContext {
         this.animator = animator == null ? Animator.NONE : animator;
     }
 
+    /**
+     * Keeps {@code ticker} running for the rest of the fight, whatever attack is or is not in
+     * progress, until it reports done or the fight ends.
+     */
+    public void addTicker(FightTicker ticker) {
+        tickers.add(ticker);
+    }
+
+    /**
+     * One per-fight object of {@code type}, made by {@code init} on first use. How a hazard that
+     * several attacks feed (thorn patches) finds the single copy this fight owns, without the
+     * attacks themselves holding any per-fight state.
+     */
+    public <T> T state(Class<T> type, Function<FightContext, T> init) {
+        return type.cast(state.computeIfAbsent(type, key -> init.apply(this)));
+    }
+
+    /** Advances every ticker, dropping the ones that are done. Called by the brain once per tick. */
+    void tickTickers() {
+        for (FightTicker ticker : new ArrayList<>(tickers)) {
+            if (ticker.tick()) {
+                tickers.remove(ticker);
+                ticker.close();
+            }
+        }
+    }
+
+    /** Closes every ticker and forgets the per-fight state: the fight is over. */
+    void endTickers() {
+        for (FightTicker ticker : new ArrayList<>(tickers)) {
+            ticker.close();
+        }
+        tickers.clear();
+        state.clear();
+    }
+
     /** Index of the phase the fight is in now (0 is the opening phase). */
     public int phase() {
         return phase;
@@ -128,7 +170,7 @@ public final class FightContext {
      * event see the Guardian, not an anonymous source.
      */
     public void damage(Player target, double amount, DamageType type) {
-        target.damage(amount, sourceOf(type));
+        effects.hurt(target, amount, sourceOf(type));
     }
 
     /** The damage source {@link #damage} uses: the boss as both the direct and the causing entity. */

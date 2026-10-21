@@ -1,10 +1,8 @@
-# The Overgrown Sentinel: first of the Three Ancient Guardians. All 3 tiers are real, tested fight
-# content (dev.sirbepy.mc.minibosses.sentinel): Normal's overgrown_sentinel_root, Heroic's
-# overgrown_sentinel_thorn_vines (ThornVinesAbility - standing still near the boss gets you bitten)
-# and Mythic's overgrown_sentinel_regrowth (RegrowthAbility - a healing phase that must be
-# interrupted by damage) all fire at half health, registered in MinibossesPlugin#onEnable.
-# GuardianAbilityRegistry.get() still returns empty for any id nobody registered, so a future tier
-# addition that names an unimplemented id still fails safe rather than crashing the trigger path.
+# The Overgrown Sentinel: first of the Three Ancient Guardians. Its fight is not driven by ability
+# ids: the attack kit (Stonebreaker Slam, Thorn Sweep, Root Eruption, Shadow Bloom and the rest)
+# lives in the per-tier phase plan in dev.sirbepy.mc.minibosses.sentinel.attack.SentinelPlans, so
+# every tier's `abilities` list is empty and nothing reads it. The key stays so the file parses
+# like every other Guardian's.
 id: overgrown_sentinel
 display-name: "The Overgrown Sentinel"
 dimension: NORMAL
@@ -14,15 +12,15 @@ tiers:
   normal:
     health: 120.0
     damage: 8.0
-    abilities: ["overgrown_sentinel_root"]
+    abilities: []
     loot-table: "overgrown_sentinel_normal"
   heroic:
     health: 260.0
     damage: 14.0
-    abilities: ["overgrown_sentinel_root", "overgrown_sentinel_thorn_vines"]
+    abilities: []
     loot-table: "overgrown_sentinel_heroic"
   mythic:
     health: 480.0
     damage: 22.0
-    abilities: ["overgrown_sentinel_root", "overgrown_sentinel_thorn_vines", "overgrown_sentinel_regrowth"]
+    abilities: []
     loot-table: "overgrown_sentinel_mythic"
