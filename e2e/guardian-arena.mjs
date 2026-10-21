@@ -25,9 +25,12 @@ async function step(name, fn) {
 }
 
 const gameMode = async () => (await rcon.command(`minecraft:data get entity ${BOT} playerGameType`)).match(/(\d+)$/)?.[1];
-// One block of slack: the lock checks block crossings, and the Sentinel's slam and sweep knockback can
-// leave the bot standing on the arena's edge with its feet a hair past the last block.
-const inArena = (pos) => pos.x >= ARENA.x1 - 1 && pos.x < ARENA.x2 + 2 && pos.z >= ARENA.z1 - 1 && pos.z < ARENA.z2 + 2;
+// 0.3 blocks of slack (a player's half-width): the lock checks block crossings, and the Sentinel's
+// slam and sweep knockback can leave the bot standing on the rim with its feet a hair (0.01 measured)
+// past the last block. A real escape is a whole block or more, so it still fails this check.
+const SLACK = 0.3;
+const inArena = (pos) => pos.x >= ARENA.x1 - SLACK && pos.x < ARENA.x2 + 1 + SLACK
+  && pos.z >= ARENA.z1 - SLACK && pos.z < ARENA.z2 + 1 + SLACK;
 
 function nextWindow(bot, timeoutMs = 5_000) {
   return new Promise((resolve, reject) => {

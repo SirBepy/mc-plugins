@@ -95,7 +95,7 @@ try {
   process.exitCode = 1;
 } finally {
   await rcon.command('minecraft:kill @e[type=ravager,distance=0..]').catch(() => {});
-  await rcon.command('minecraft:kill @e[tag=minibosses.fight_temp]').catch(() => {});
+  await rcon.command(`minecraft:kill @e[tag=minibosses.fight_temp,${NEAR}]`).catch(() => {});
   await rcon.command('guardianadmin arena clear overgrown_sentinel').catch(() => {});
   await releasePlatform(rcon, BX, BZ);
   await quit(...bots);
