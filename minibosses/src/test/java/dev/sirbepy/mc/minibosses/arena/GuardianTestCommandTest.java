@@ -109,7 +109,8 @@ class GuardianTestCommandTest {
 
         heart = new HeartOfTheWild(plugin);
         fight = new SentinelFight(plugin, guardians, new GuardianAbilityRegistry(),
-                new DragonFighters(new NamespacedKey("test", "sentinel-fighters"), clock::get), new SentinelLoot(heart),
+                new DragonFighters(new NamespacedKey("test", "sentinel-fighters"), clock::get), new SentinelLoot(heart,
+                        new dev.sirbepy.mc.minibosses.relic.RelicRanks(plugin), new dev.sirbepy.mc.minibosses.relic.Sigils(plugin)),
                 hallOfFame, LOG, new GuardianRuntime(plugin), arenas, id -> false);
         server.getPluginManager().registerEvents(fight, plugin);
         server.getPluginManager().registerEvents(new KillRecorder(kills), plugin);

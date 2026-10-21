@@ -146,7 +146,8 @@ class SentinelRigTest {
         server.getPluginManager().registerEvents(runtime, plugin);
         fight = new SentinelFight(plugin, guardians, new GuardianAbilityRegistry(),
                 new DragonFighters(new NamespacedKey("test", "sentinel-fighters"), clock::get),
-                new SentinelLoot(new HeartOfTheWild(plugin)), new HallOfFame(dir.toFile(), LOG), LOG,
+                new SentinelLoot(new HeartOfTheWild(plugin), new dev.sirbepy.mc.minibosses.relic.RelicRanks(plugin),
+                        new dev.sirbepy.mc.minibosses.relic.Sigils(plugin)), new HallOfFame(dir.toFile(), LOG), LOG,
                 runtime, arenas, bedrock::contains);
         server.getPluginManager().registerEvents(fight, plugin);
         def = RigDefinition.load(ID, LOG).orElseThrow();

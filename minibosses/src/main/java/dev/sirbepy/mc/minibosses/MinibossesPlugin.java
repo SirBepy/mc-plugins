@@ -21,7 +21,16 @@ import dev.sirbepy.mc.minibosses.hof.HallOfFame;
 import dev.sirbepy.mc.minibosses.progress.GuardianKills;
 import dev.sirbepy.mc.minibosses.progress.KillRecorder;
 import dev.sirbepy.mc.minibosses.registry.GuardianRegistry;
+import dev.sirbepy.mc.minibosses.relic.RelicActiveListener;
+import dev.sirbepy.mc.minibosses.relic.RelicRanks;
+import dev.sirbepy.mc.minibosses.relic.RelicUpgradeListener;
+import dev.sirbepy.mc.minibosses.relic.RelicUpgrades;
+import dev.sirbepy.mc.minibosses.relic.Relics;
+import dev.sirbepy.mc.minibosses.relic.SigilGuardListener;
+import dev.sirbepy.mc.minibosses.relic.Sigils;
 import dev.sirbepy.mc.minibosses.sentinel.HeartOfTheWild;
+import dev.sirbepy.mc.minibosses.sentinel.NaturePulse;
+import dev.sirbepy.mc.minibosses.sentinel.NaturePulseVisuals;
 import dev.sirbepy.mc.minibosses.sentinel.SentinelDiscovery;
 import dev.sirbepy.mc.minibosses.sentinel.SentinelFight;
 import dev.sirbepy.mc.minibosses.sentinel.SentinelLoot;
@@ -43,6 +52,7 @@ import dev.sirbepy.mc.minibosses.tyrant.TyrantFight;
 import dev.sirbepy.mc.minibosses.tyrant.TyrantLoot;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.kyori.adventure.text.format.TextColor;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -54,6 +64,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
@@ -113,7 +124,9 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
         DragonFighters sentinelFighters = new DragonFighters(new NamespacedKey(this, "sentinel-fighters"),
                 System::currentTimeMillis);
         heartOfTheWild = new HeartOfTheWild(this);
-        SentinelLoot loot = new SentinelLoot(heartOfTheWild);
+        RelicRanks relicRanks = new RelicRanks(this);
+        Sigils sigils = new Sigils(this);
+        SentinelLoot loot = new SentinelLoot(heartOfTheWild, relicRanks, sigils);
         // Created before the Guardians so each one can register how its bosses resume after a restart.
         runtime = new GuardianRuntime(this);
         bedrock = BedrockForms.create(this);
@@ -164,6 +177,20 @@ public final class MinibossesPlugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(tyrantDiscovery, this);
         getServer().getPluginManager().registerEvents(sovereignFight, this);
         getServer().getPluginManager().registerEvents(sovereignDiscovery, this);
+
+        // Relic ranks: sigil drops are in the loot tables; this block adds the smithing upgrade,
+        // the sigil guard, and the sneak + swap-hands active (only the Heart has one so far).
+        Relics relics = new Relics();
+        relics.register(SentinelFight.GUARDIAN_ID, Material.HEART_OF_THE_SEA, heartOfTheWild::isHeartOfTheWild);
+        relics.register(TyrantFight.GUARDIAN_ID, Material.NETHER_STAR, ashenCore::isAshenCore);
+        relics.register(SovereignFight.GUARDIAN_ID, Material.SHULKER_SHELL, hollowCrown::isHollowCrown);
+        RelicUpgradeListener relicUpgrades = new RelicUpgradeListener(this, relics,
+                new RelicUpgrades(relics, relicRanks, sigils));
+        relicUpgrades.registerRecipe();
+        getServer().getPluginManager().registerEvents(relicUpgrades, this);
+        getServer().getPluginManager().registerEvents(new SigilGuardListener(sigils), this);
+        getServer().getPluginManager().registerEvents(new RelicActiveListener(relics, relicRanks,
+                System::currentTimeMillis, List.of(new NaturePulse(new NaturePulseVisuals(this)))), this);
 
         // Shared boss-fight engine: one task ticks every live Guardian's attack loop. The Sentinel
         // registers its resume plan in its own constructor; the other Guardians have none yet.

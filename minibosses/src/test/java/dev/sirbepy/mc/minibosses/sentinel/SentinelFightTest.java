@@ -112,7 +112,8 @@ class SentinelFightTest {
         abilities = new GuardianAbilityRegistry();
 
         heartOfTheWild = new HeartOfTheWild(plugin);
-        SentinelLoot loot = new SentinelLoot(heartOfTheWild);
+        SentinelLoot loot = new SentinelLoot(heartOfTheWild,
+                new dev.sirbepy.mc.minibosses.relic.RelicRanks(plugin), new dev.sirbepy.mc.minibosses.relic.Sigils(plugin));
         DragonFighters fighters = new DragonFighters(KEY, clock::get);
         hallOfFame = new HallOfFame(tempDir.toFile(), Logger.getLogger("minibosses-test"));
         kills = new GuardianKills(tempDir.toFile(), Logger.getLogger("minibosses-test"));
